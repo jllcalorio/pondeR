@@ -180,13 +180,13 @@ performDescriptive <- function(
   # --- Parameter checks and improvements ---
 
   # 1. split_by
-    if (!is.null(split_by)) {
-      if (!is.character(split_by) || length(split_by) != 1) {
-        stop("The 'split_by' parameter must be a single string representing a column name.")
-      }
-      if (!(split_by %in% names(df))) {
-        stop(paste0("The 'split_by' parameter ('", split_by, "') is not a valid column name in the data frame."))
-      }
+  if (!is.null(split_by)) {
+    if (!is.character(split_by) || length(split_by) != 1) {
+      stop("The 'split_by' parameter must be a single string representing a column name.")
+    }
+    if (!(split_by %in% names(df))) {
+      stop(paste0("The 'split_by' parameter ('", split_by, "') is not a valid column name in the data frame."))
+    }
 
     column_data <- df[[split_by]]
 
@@ -389,11 +389,19 @@ performDescriptive <- function(
 
   # Define 'type' argument for tbl_summary
   type_list <- list()
+
   if (!is.null(force_continuous)) {
-    type_list <- c(type_list, stats::setNames(list("continuous"), force_continuous))
+    for (col_name in force_continuous) {
+      # Enclose column names in backticks if they contain spaces or special characters
+      type_list[[length(type_list) + 1]] <- as.formula(paste0("`", col_name, "` ~ 'continuous'"))
+    }
   }
+
   if (!is.null(force_categorical)) {
-    type_list <- c(type_list, stats::setNames(list("categorical"), force_categorical))
+    for (col_name in force_categorical) {
+      # Enclose column names in backticks if they contain spaces or special characters
+      type_list[[length(type_list) + 1]] <- as.formula(paste0("`", col_name, "` ~ 'categorical'"))
+    }
   }
 
   # Pre-filter the data if stratification is requested
