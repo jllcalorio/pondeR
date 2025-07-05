@@ -402,9 +402,9 @@ performDescriptive <- function(
   if (!is.null(bold_significant_pvalues) && !is.logical(bold_significant_pvalues)) {
     stop("The 'bold_significant_pvalues' parameter must be a logical value (TRUE or FALSE) or NULL.")
   }
-  if (!is.null(bold_significant_pvalues)) { # If not NULL, do something
-    if (bold_significant_pvalues == TRUE && !is.null(split_by)) {
-      message("Warning: The 'bold_significant_pvalues' parameter cannot be used when 'strata_by' is specified. Set 'strata_by = NULL' if p-values are still desired.")
+  if (!is.null(strata_by)) {
+    if (!is.null(bold_significant_pvalues) || bold_significant_pvalues == TRUE) { # If not NULL, do something
+      stop("The 'bold_significant_pvalues' parameter cannot be used when 'strata_by' is specified. Set 'strata_by = NULL' if p-values are still desired.")
     }
   }
 
@@ -412,9 +412,9 @@ performDescriptive <- function(
   if (!is.numeric(bold_significant_pvalues_at)) {
     stop("The 'bold_significant_pvalues_at' parameter must be a decimal/numeric value.")
   }
-  if (is.null(split_by)) {
+  if (!is.null(strata_by)) {
     if (is.null(bold_significant_pvalues) || bold_significant_pvalues == TRUE) {
-      message("Warning: The 'bold_significant_pvalues_at' parameter cannot be used when 'strata_by' is specified. Set 'strata_by = NULL' if p-values are still desired.")
+      stop("The 'bold_significant_pvalues_at' parameter cannot be used when 'strata_by' is specified. Set 'strata_by = NULL' if p-values are still desired.")
     }
   }
 
