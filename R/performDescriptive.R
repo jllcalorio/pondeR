@@ -72,6 +72,10 @@
 #' @param clean_table Boolean. If `TRUE` (default), cells with a count of 0 are removed (replaced with empty space) from the descriptive table, making it cleaner.
 #' @param bold_labels Boolean. If `TRUE` (default), variable labels in the table will be bolded.
 #' @param italicize_levels Boolean. If `TRUE` (default), categorical variable levels in the table will be italicized.
+#' @param add_inferential_pvalues Boolan. If `TRUE`, adds the common comparative statistical tests such as t-tests, chi-square test, ANOVA, and their nonparametric counterparts.
+#' @param n_digits_pvalues Numeric. The number of digits of p-values if `add_inferential_pvalues` is set to `TRUE`.
+#' @param bold_significant_pvalues Boolean/NULL. If `TRUE` or `NULL`, automatically detects if `add_inferential_pvalues = TRUE` then bolds the font of p-values under 0.05 (default) unless set in `bold_significant_pvalues_at`.
+#' @param bold_significant_pvalues_at Numeric. The threshold for `bold_significant_pvalues` to bold font if significant.
 #'
 #' @returns A `gtsummary` table object (inherits from `gt_tbl`), representing the simple descriptive statistics.
 #' @export
@@ -156,7 +160,11 @@ performDescriptive <- function(
     header = "Variable",
     clean_table = TRUE,
     bold_labels = TRUE,
-    italicize_levels = TRUE
+    italicize_levels = TRUE,
+    add_inferential_pvalues = FALSE,
+    n_digits_pvalues = 3,
+    bold_significant_pvalues = NULL,
+    bold_significant_pvalues_at = 0.05
 ) {
   # Load necessary packages
   if (!requireNamespace("gtsummary", quietly = TRUE)) {
@@ -234,6 +242,13 @@ performDescriptive <- function(
     }
   }
 
+  # # 2b strata_by and add_inferential_pvalues
+  # if (!is.null(strata_by)) {
+  #   if (add_inferential_pvalues == TRUE) {
+  #     stop("p-values cannot be generated when 'strata_by' is applied. Set 'strata_by = NULL' to proceed calculating p-values.")
+  #   }
+  # }
+
   # 3. label
   if (!is.null(label)) {
     if (!is.list(label) || any(!sapply(label, inherits, "formula"))) {
@@ -248,7 +263,7 @@ performDescriptive <- function(
   }
 
   # 4. continuous_statistics
-  valid_continuous_stats <- c("meanSD", "meanSD2", "medianIQR", "mean", "sd", "p0", "p25", "p50", "p75", "p100", "IQR")
+  valid_continuous_stats <- c("meanSD", "meanSD2", "medianIQR", "mean", "sd", "median", "p0", "p25", "p50", "p75", "p100", "IQR")
 
   if (is.character(continuous_statistics)) {
     if (!all(continuous_statistics %in% valid_continuous_stats)) {
@@ -260,17 +275,18 @@ performDescriptive <- function(
 
     # Construct gtsummary statistic string
     stat_exprs <- c(
-      meanSD = "{mean} ± {sd}",
-      meanSD2 = "{mean} ({sd})",
+      meanSD    = "{mean} ± {sd}",
+      meanSD2   = "{mean} ({sd})",
       medianIQR = "{median} ({p25}, {p75})",
-      mean = "{mean}",
-      sd = "{sd}",
-      p0 = "{p0}",
-      p25 = "{p25}",
-      p50 = "{p50}",
-      p75 = "{p75}",
-      p100 = "{p100}",
-      IQR = "{p25}, {p75}"
+      mean      = "{mean}",
+      sd        = "{sd}",
+      median    = "{median}",
+      p0        = "{p0}",
+      p25       = "{p25}",
+      p50       = "{p50}",
+      p75       = "{p75}",
+      p100      = "{p100}",
+      IQR       = "{p25}, {p75}"
     )
 
     gts_continuous_stat <- paste(stat_exprs[continuous_statistics], collapse = ", ")
@@ -287,8 +303,8 @@ performDescriptive <- function(
   # Map to gtsummary format
   gts_categorical_stat <- switch(categorical_statistics,
                                  "n_pct" = "{n} ({p}%)",
-                                 "n" = "{n}",
-                                 "pct" = "{p}%")
+                                 "n"     = "{n}",
+                                 "pct"   = "{p}%")
 
   # 6 and 7. force_continuous and force_categorical
   # Check if they are character vectors and if column names exist in df
@@ -349,8 +365,8 @@ performDescriptive <- function(
   # Map to gtsummary format for missing_stat
   gts_missing_stat <- switch(missing_stat,
                              "n_pct" = "{N_miss} ({p_miss}%)", # Consistent with categorical "n_pct"
-                             "n" = "{N_miss}",
-                             "pct" = "{p_miss}%") # Consistent with categorical "pct"
+                             "n"     = "{N_miss}",
+                             "pct"   = "{p_miss}%") # Consistent with categorical "pct"
 
   # 13. sort_categorical_variables_by
   valid_sort_cat_by <- c("alphanumeric", "frequency")
@@ -379,12 +395,43 @@ performDescriptive <- function(
     stop("The 'italicize_levels' parameter must be a single logical value (TRUE or FALSE).")
   }
 
+  # 19, add_inferential_pvalues
+  if (!is.logical(add_inferential_pvalues)) {
+    stop("The 'add_inferential_pvalues' parameter must be a logical value (TRUE or FALSE).")
+  }
+
+  # 20, n_digits_pvalues
+  if (!is.numeric(n_digits_pvalues)) {
+    stop("The 'n_digits_pvalues' parameter must be a numeric value.")
+  }
+
+  # 21, bold_significant_pvalues
+  if (!is.null(bold_significant_pvalues) && !is.logical(bold_significant_pvalues)) {
+    stop("The 'bold_significant_pvalues' parameter must be a logical value (TRUE or FALSE) or NULL.")
+  }
+  if (!is.null(bold_significant_pvalues)) { # If not NULL, do something
+    if (bold_significant_pvalues == TRUE && !is.null(split_by)) {
+      message("Warning: The 'bold_significant_pvalues' parameter cannot be used when 'strata_by' is specified. Set 'strata_by = NULL' if p-values are still desired.")
+    }
+  }
+
+  # 22, bold_significant_pvalues_at
+  if (!is.numeric(bold_significant_pvalues_at)) {
+    stop("The 'bold_significant_pvalues_at' parameter must be a decimal/numeric value.")
+  }
+  if ((is.null(bold_significant_pvalues) || bold_significant_pvalues == TRUE) && !is.null(split_by)) {
+    message("Warning: The 'bold_significant_pvalues_at' parameter cannot be used when 'strata_by' is specified. Set 'strata_by = NULL' if p-values are still desired.")
+  }
+
 
   # --- Analysis using gtsummary ---
 
   # Set 'calc_percent_by' automatically to 'row' if 'split_by' is not NULL
-  if (!is.null(split_by)) {
-    calc_percent_by = 'row'
+  if (is.null(calc_percent_by)) {
+    if (!is.null(split_by)) {
+      calc_percent_by = 'row'
+    }
+    print(calc_percent_by)
   }
 
   # Define 'type' argument for tbl_summary
@@ -404,40 +451,10 @@ performDescriptive <- function(
     }
   }
 
-  # Pre-filter the data if stratification is requested
-  if (!is.null(strata_by)) {
-    filtered_data <- df %>% dplyr::filter(!is.na(.data[[strata_by]]))
-
-    result_table <- gtsummary::tbl_strata(
-      data = filtered_data,
-      include = summarize_what,
-      strata = strata_by,
-      ~ .x %>%
-        gtsummary::tbl_summary(
-          by = split_by,
-          label = label,
-          type = type_list,
-          statistic = list(
-            all_continuous() ~ gts_continuous_stat,
-            all_categorical() ~ gts_categorical_stat
-          ),
-          digits = list(
-            all_categorical() ~ n_digits_categorical,
-            all_continuous() ~ n_digits_continuous
-          ),
-          missing = display_missing,
-          missing_text = missing_text,
-          missing_stat = gts_missing_stat,
-          sort = list(all_categorical() ~ sort_categorical_variables_by),
-          percent = calc_percent_by
-        )
-    ) %>%
-      gtsummary::modify_header(label = paste0("**", header, "**"))
-
-  } else {
-    # Otherwise just do the normal data analysis
-    result_table <- gtsummary::tbl_summary(
-      data = df,
+  # Helper function to create summary table
+  create_summary <- function(data) {
+    gtsummary::tbl_summary(
+      data = data,
       include = summarize_what,
       by = split_by,
       label = label,
@@ -459,6 +476,20 @@ performDescriptive <- function(
       gtsummary::modify_header(label = paste0("**", header, "**"))
   }
 
+  # Main logic
+  result_table <- if (!is.null(strata_by)) {
+    df %>%
+      dplyr::filter(!is.na(.data[[strata_by]])) %>%
+      gtsummary::tbl_strata(
+        strata = strata_by,
+        include = summarize_what,
+        .tbl_fun = ~ create_summary(.x)
+      )
+  } else {
+    create_summary(df)
+  }
+
+
   # Modify spanning header for split_by (only if strata_by is NULL)
   if (is.null(strata_by) && !is.null(split_by) && !is.null(split_by_header)) {
     result_table <- result_table %>%
@@ -475,6 +506,21 @@ performDescriptive <- function(
   if (italicize_levels) {
     result_table <- result_table %>%
       gtsummary::italicize_levels()
+  }
+
+  # Add common statistical test p-values (and whether to bold it, and where)
+  if (add_inferential_pvalues) {
+    result_table <- result_table %>%
+      gtsummary::add_p(
+        pvalue_fun = label_style_pvalue(
+          digits = n_digits_pvalues # Also adjust the no. of decimals of p-values
+        ))
+  }
+  if (add_inferential_pvalues) {
+    if (is.null(bold_significant_pvalues) || bold_significant_pvalues == TRUE) { # Automatically bold p-values if less than 'bold_significant_pvalues_at' if either NULL or TRUE
+      result_table <- result_table %>%
+        gtsummary::bold_p(t = bold_significant_pvalues_at) # Also add where to add the bold
+    }
   }
 
   # Clean table (remove "0 (0%)" or similar cells) using modify_table_body
