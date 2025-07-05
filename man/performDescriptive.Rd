@@ -25,7 +25,11 @@ performDescriptive(
   header = "Variable",
   clean_table = TRUE,
   bold_labels = TRUE,
-  italicize_levels = TRUE
+  italicize_levels = TRUE,
+  add_inferential_pvalues = FALSE,
+  n_digits_pvalues = 3,
+  bold_significant_pvalues = NULL,
+  bold_significant_pvalues_at = 0.05
 )
 }
 \arguments{
@@ -114,6 +118,14 @@ Defaults to 'column' if \code{split_by} is not \code{NULL}, otherwise, automatic
 \item{bold_labels}{Boolean. If \code{TRUE} (default), variable labels in the table will be bolded.}
 
 \item{italicize_levels}{Boolean. If \code{TRUE} (default), categorical variable levels in the table will be italicized.}
+
+\item{add_inferential_pvalues}{Boolan. If \code{TRUE}, adds the common comparative statistical tests such as t-tests, chi-square test, ANOVA, and their nonparametric counterparts.}
+
+\item{n_digits_pvalues}{Numeric. The number of digits of p-values if \code{add_inferential_pvalues} is set to \code{TRUE}.}
+
+\item{bold_significant_pvalues}{Boolean/NULL. If \code{TRUE} or \code{NULL}, automatically detects if \code{add_inferential_pvalues = TRUE} then bolds the font of p-values under 0.05 (default) unless set in \code{bold_significant_pvalues_at}.}
+
+\item{bold_significant_pvalues_at}{Numeric. The threshold for \code{bold_significant_pvalues} to bold font if significant.}
 }
 \value{
 A \code{gtsummary} table object (inherits from \code{gt_tbl}), representing the simple descriptive statistics.
