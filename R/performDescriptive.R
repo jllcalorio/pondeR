@@ -242,13 +242,6 @@ performDescriptive <- function(
     }
   }
 
-  # # 2b strata_by and add_inferential_pvalues
-  # if (!is.null(strata_by)) {
-  #   if (add_inferential_pvalues == TRUE) {
-  #     stop("p-values cannot be generated when 'strata_by' is applied. Set 'strata_by = NULL' to proceed calculating p-values.")
-  #   }
-  # }
-
   # 3. label
   if (!is.null(label)) {
     if (!is.list(label) || any(!sapply(label, inherits, "formula"))) {
@@ -419,8 +412,10 @@ performDescriptive <- function(
   if (!is.numeric(bold_significant_pvalues_at)) {
     stop("The 'bold_significant_pvalues_at' parameter must be a decimal/numeric value.")
   }
-  if ((is.null(bold_significant_pvalues) || bold_significant_pvalues == TRUE) && !is.null(split_by)) {
-    message("Warning: The 'bold_significant_pvalues_at' parameter cannot be used when 'strata_by' is specified. Set 'strata_by = NULL' if p-values are still desired.")
+  if (is.null(split_by)) {
+    if (is.null(bold_significant_pvalues) || bold_significant_pvalues == TRUE) {
+      message("Warning: The 'bold_significant_pvalues_at' parameter cannot be used when 'strata_by' is specified. Set 'strata_by = NULL' if p-values are still desired.")
+    }
   }
 
 
