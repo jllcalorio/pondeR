@@ -20,16 +20,19 @@ performDescriptive(
   display_missing = "ifany",
   missing_text = "No data/missing",
   missing_stat = "n_pct",
+  include_missing_in_splits = TRUE,
   sort_categorical_variables_by = "alphanumeric",
   calc_percent_by = "column",
+  calc_col_percent_using = "n_valid_in_column",
   header = "Variable",
   clean_table = TRUE,
   bold_labels = TRUE,
   italicize_levels = TRUE,
   add_inferential_pvalues = FALSE,
   n_digits_pvalues = 3,
-  bold_significant_pvalues = NULL,
-  bold_significant_pvalues_at = 0.05
+  bold_significant_pvalues = TRUE,
+  bold_significant_pvalues_at = 0.05,
+  table_name = "auto"
 )
 }
 \arguments{
@@ -49,7 +52,7 @@ performDescriptive(
 \itemize{
 \item 'meanSD': mean ± standard deviation
 \item 'meanSD2': mean (standard deviation), which is another format of meanSD
-\item 'medianIQR': median (interquartile range) or median (p25, p75)
+\item 'medianIQR': median (interquartile range) or equivalently median (p25, p75)
 \item 'mean': mean (average)
 \item 'sd': standard deviation
 \item 'p0': 0th percentile
@@ -74,9 +77,17 @@ Options are 'n_pct' (count (percentage)), 'n' (count only), or 'pct' (percentage
 
 \item{force_categorical}{Vector. A character vector of column names that should be treated as categorical, even if their data type suggests otherwise (e.g., numeric variables that are truly categories, or binary variables that should be presented as full categories rather than dichotomous).}
 
-\item{n_digits_continuous}{Numeric Vector. A vector of two integers specifying the number of digits to round for mean and standard deviation (or median and IQR) respectively, for continuous variables. For example, \code{c(2, 2)} means 2 decimal places for both (default).}
+\item{n_digits_continuous}{Numeric Vector or String.
+\itemize{
+\item c(2, 2): A vector of two integers specifying the number of digits to round for mean and standard deviation (or median and IQR) respectively, for continuous variables. For example, \code{c(2, 2)} means 2 decimal places for both (default).
+\item "dynamic": The other option is 'dynamic' which selects the number of decimal places dynamically.
+}}
 
-\item{n_digits_categorical}{Numeric Vector. A vector of two integers specifying the number of digits to round for counts and percentages respectively, for categorical variables. For example, \code{c(0, 2)} means 0 decimal places for counts and 2 for percentages (default).}
+\item{n_digits_categorical}{Numeric Vector or String.
+\itemize{
+\item c(0, 2): A vector of two integers specifying the number of digits to round for counts and percentages respectively, for categorical variables. For example, \code{c(0, 2)} means 0 decimal places for counts and 2 for percentages (default).
+\item "dynamic": Same as in \code{n_digits_continuous}.
+}}
 
 \item{display_missing}{String. Controls how missing values are reported.
 \itemize{
@@ -96,6 +107,8 @@ Defaults to 'ifany'.}
 }
 Defaults to 'n_pct'.}
 
+\item{include_missing_in_splits}{Boolean. If \code{TRUE} (default), includes the missing values (missing text specified in \code{missing_text}) in the column after specifying \code{split_by} and \code{strata_by}.}
+
 \item{sort_categorical_variables_by}{String. Determines the sorting order for levels within categorical variables.
 \itemize{
 \item 'alphanumeric': Sorts levels alphabetically or numerically. For custom sorting, use \code{factor(data, levels = c(level1, level2, ...))}.
@@ -111,6 +124,14 @@ Defaults to 'alphanumeric'.}
 }
 Defaults to 'column' if \code{split_by} is not \code{NULL}, otherwise, automatically sets to 'row'.}
 
+\item{calc_col_percent_using}{String. Specifies how the percentages are to be calculated.
+\itemize{
+\item 'n_in_column': Percentages are calculated based on the actual number of data points appearing in the column.
+\item 'n_valid_in_column': Percentages are calculated based on the valid (i.e., non missing) values.
+}
+Defaults to 'n_valid_in_column'.
+Note: This only applies when 'calc_percent_by = "column"'.}
+
 \item{header}{String. The header name for the 'Variable' column in the output table. Defaults to 'Variable'.}
 
 \item{clean_table}{Boolean. If \code{TRUE} (default), cells with a count of 0 are removed (replaced with empty space) from the descriptive table, making it cleaner.}
@@ -119,13 +140,15 @@ Defaults to 'column' if \code{split_by} is not \code{NULL}, otherwise, automatic
 
 \item{italicize_levels}{Boolean. If \code{TRUE} (default), categorical variable levels in the table will be italicized.}
 
-\item{add_inferential_pvalues}{Boolan. If \code{TRUE}, adds the common comparative statistical tests such as t-tests, chi-square test, ANOVA, and their nonparametric counterparts.}
+\item{add_inferential_pvalues}{Boolean. If \code{TRUE}, adds the common comparative statistical tests such as t-tests, chi-square test, ANOVA, and their nonparametric counterparts.}
 
-\item{n_digits_pvalues}{Numeric. The number of digits of p-values if \code{add_inferential_pvalues} is set to \code{TRUE}.}
+\item{n_digits_pvalues}{Numeric. Default is 3. The number of digits of p-values if \code{add_inferential_pvalues} is set to \code{TRUE}. This can be set to \code{NULL} which tells the code to automatically format the p-values. If the p-value < 0.10, there will be three decimal places, otherwise, there will only be one.}
 
-\item{bold_significant_pvalues}{Boolean/NULL. If \code{TRUE} or \code{NULL}, automatically detects if \code{add_inferential_pvalues = TRUE} then bolds the font of p-values under 0.05 (default) unless set in \code{bold_significant_pvalues_at}.}
+\item{bold_significant_pvalues}{Boolean. If \code{TRUE} (default), automatically detects if \code{add_inferential_pvalues = TRUE} then bolds the font of p-values under 0.05 (default) unless set in \code{bold_significant_pvalues_at}.}
 
 \item{bold_significant_pvalues_at}{Numeric. The threshold for \code{bold_significant_pvalues} to bold font if significant.}
+
+\item{table_name}{String or NULL. The table name. Default is 'auto', where the table name depends if the table is descriptive or inferential in nature (has p-values), and automatically creates a table name. Set to \code{NULL} to have no table name. Can accept a string that will be used as the table name.}
 }
 \value{
 A \code{gtsummary} table object (inherits from \code{gt_tbl}), representing the simple descriptive statistics.
@@ -147,12 +170,12 @@ library(magrittr)
 # Create a sample dataframe
 set.seed(123)
 sample_df <- data.frame(
-  Age = rnorm(100, 35, 10),
+  Age = sample(c(18:65, NA), 100, replace = TRUE, prob = c(rep(1, 48), 5)),
   Gender = sample(c("Male", "Female", NA), 100, replace = TRUE, prob = c(0.48, 0.48, 0.04)),
-  Education = sample(c("High School", "Bachelors", "Masters", NA), 100, replace = TRUE, prob = c(0.25, 0.35, 0.35, 0.05)),
-  Income = rgamma(100, shape = 5, rate = 0.1) * 1000,
-  Smoker = sample(c(1, 0), 100, replace = TRUE, prob = c(0.3, 0.7)),
-  Region = sample(c("North", "South", "East", "West"), 100, replace = TRUE, prob = c(0.25, 0.25, 0.25, 0.25))
+  Education = sample(c("Elementary", "High School", "Bachelors", "Masters", NA), 100, replace = TRUE, prob = c(0.40, 0.30, 0.15, 0.10, 0.05)),
+  Income = sample(c(seq(5000, 40000, by = 5000), NA), 100, replace = TRUE, prob = c(rep(1, 8), 2)),
+  Smoker = sample(c(1, 0, NA), 100, replace = TRUE, prob = c(0.25, 0.65, 0.10)),
+  Region = sample(c("North", "South", "East", "West", NA), 100, replace = TRUE, prob = c(0.24, 0.24, 0.24, 0.24, .04))
 )
 
 # Basic descriptive statistics
@@ -192,6 +215,13 @@ performDescriptive(
   df = sample_df,
   sort_categorical_variables_by = "frequency",
   calc_percent_by = "row"
+)
+
+# Perform common comparative statistical tests
+performDescriptive(
+  df = sample_df,
+  split_by = "Gender",
+  add_inferential_pvalues = TRUE
 )
 }
 
