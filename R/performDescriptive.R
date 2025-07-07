@@ -17,7 +17,7 @@
 #'   \itemize{
 #'     \item 'meanSD': mean ± standard deviation
 #'     \item 'meanSD2': mean (standard deviation), which is another format of meanSD
-#'     \item 'medianIQR': median (interquartile range) or median (p25, p75)
+#'     \item 'medianIQR': median (interquartile range) or equivalently median (p25, p75)
 #'     \item 'mean': mean (average)
 #'     \item 'sd': standard deviation
 #'     \item 'p0': 0th percentile
@@ -38,8 +38,16 @@
 #' Options are 'n_pct' (count (percentage)), 'n' (count only), or 'pct' (percentage only). Defaults to 'n_pct'.
 #' @param force_continuous Vector. A character vector of column names that should be treated as continuous, even if their data type suggests otherwise (e.g., numeric variables with few unique values that might be misclassified as categorical).
 #' @param force_categorical Vector. A character vector of column names that should be treated as categorical, even if their data type suggests otherwise (e.g., numeric variables that are truly categories, or binary variables that should be presented as full categories rather than dichotomous).
-#' @param n_digits_continuous Numeric Vector. A vector of two integers specifying the number of digits to round for mean and standard deviation (or median and IQR) respectively, for continuous variables. For example, `c(2, 2)` means 2 decimal places for both (default).
-#' @param n_digits_categorical Numeric Vector. A vector of two integers specifying the number of digits to round for counts and percentages respectively, for categorical variables. For example, `c(0, 2)` means 0 decimal places for counts and 2 for percentages (default).
+#' @param n_digits_continuous Numeric Vector or String.
+#'   \itemize{
+#'     \item c(2, 2): A vector of two integers specifying the number of digits to round for mean and standard deviation (or median and IQR) respectively, for continuous variables. For example, `c(2, 2)` means 2 decimal places for both (default).
+#'     \item "dynamic": The other option is 'dynamic' which selects the number of decimal places dynamically.
+#'   }
+#' @param n_digits_categorical Numeric Vector or String.
+#'   \itemize{
+#'     \item c(0, 2): A vector of two integers specifying the number of digits to round for counts and percentages respectively, for categorical variables. For example, `c(0, 2)` means 0 decimal places for counts and 2 for percentages (default).
+#'     \item "dynamic": Same as in `n_digits_continuous`.
+#'   }
 #' @param display_missing String. Controls how missing values are reported.
 #'   \itemize{
 #'     \item 'ifany': Report missing values only if they are present in the data.
@@ -55,6 +63,7 @@
 #'     \item 'pct': Displays only the percentage of missing values.
 #'   }
 #'   Defaults to 'n_pct'.
+#' @param include_missing_in_splits Boolean. If `TRUE` (default), includes the missing values (missing text specified in `missing_text`) in the column after specifying `split_by` and `strata_by`.
 #' @param sort_categorical_variables_by String. Determines the sorting order for levels within categorical variables.
 #'   \itemize{
 #'     \item 'alphanumeric': Sorts levels alphabetically or numerically. For custom sorting, use `factor(data, levels = c(level1, level2, ...))`.
@@ -68,14 +77,22 @@
 #'     \item 'cell': Percentages are calculated based on the total number of observations in the table.
 #'   }
 #'   Defaults to 'column' if `split_by` is not `NULL`, otherwise, automatically sets to 'row'.
+#' @param calc_col_percent_using String. Specifies how the percentages are to be calculated.
+#'   \itemize{
+#'     \item 'n_in_column': Percentages are calculated based on the actual number of data points appearing in the column.
+#'     \item 'n_valid_in_column': Percentages are calculated based on the valid (i.e., non missing) values.
+#'   }
+#'   Defaults to 'n_valid_in_column'.
+#'   Note: This only applies when 'calc_percent_by = "column"'.
 #' @param header String. The header name for the 'Variable' column in the output table. Defaults to 'Variable'.
 #' @param clean_table Boolean. If `TRUE` (default), cells with a count of 0 are removed (replaced with empty space) from the descriptive table, making it cleaner.
 #' @param bold_labels Boolean. If `TRUE` (default), variable labels in the table will be bolded.
 #' @param italicize_levels Boolean. If `TRUE` (default), categorical variable levels in the table will be italicized.
-#' @param add_inferential_pvalues Boolan. If `TRUE`, adds the common comparative statistical tests such as t-tests, chi-square test, ANOVA, and their nonparametric counterparts.
-#' @param n_digits_pvalues Numeric. The number of digits of p-values if `add_inferential_pvalues` is set to `TRUE`.
-#' @param bold_significant_pvalues Boolean/NULL. If `TRUE` or `NULL`, automatically detects if `add_inferential_pvalues = TRUE` then bolds the font of p-values under 0.05 (default) unless set in `bold_significant_pvalues_at`.
+#' @param add_inferential_pvalues Boolean. If `TRUE`, adds the common comparative statistical tests such as t-tests, chi-square test, ANOVA, and their nonparametric counterparts.
+#' @param n_digits_pvalues Numeric. Default is 3. The number of digits of p-values if `add_inferential_pvalues` is set to `TRUE`. This can be set to `NULL` which tells the code to automatically format the p-values. If the p-value < 0.10, there will be three decimal places, otherwise, there will only be one.
+#' @param bold_significant_pvalues Boolean. If `TRUE` (default), automatically detects if `add_inferential_pvalues = TRUE` then bolds the font of p-values under 0.05 (default) unless set in `bold_significant_pvalues_at`.
 #' @param bold_significant_pvalues_at Numeric. The threshold for `bold_significant_pvalues` to bold font if significant.
+#' @param table_name String or NULL. The table name. Default is 'auto', where the table name depends if the table is descriptive or inferential in nature (has p-values), and automatically creates a table name. Set to `NULL` to have no table name. Can accept a string that will be used as the table name.
 #'
 #' @returns A `gtsummary` table object (inherits from `gt_tbl`), representing the simple descriptive statistics.
 #' @export
@@ -90,12 +107,12 @@
 #' # Create a sample dataframe
 #' set.seed(123)
 #' sample_df <- data.frame(
-#'   Age = rnorm(100, 35, 10),
+#'   Age = sample(c(18:65, NA), 100, replace = TRUE, prob = c(rep(1, 48), 5)),
 #'   Gender = sample(c("Male", "Female", NA), 100, replace = TRUE, prob = c(0.48, 0.48, 0.04)),
-#'   Education = sample(c("High School", "Bachelors", "Masters", NA), 100, replace = TRUE, prob = c(0.25, 0.35, 0.35, 0.05)),
-#'   Income = rgamma(100, shape = 5, rate = 0.1) * 1000,
-#'   Smoker = sample(c(1, 0), 100, replace = TRUE, prob = c(0.3, 0.7)),
-#'   Region = sample(c("North", "South", "East", "West"), 100, replace = TRUE, prob = c(0.25, 0.25, 0.25, 0.25))
+#'   Education = sample(c("Elementary", "High School", "Bachelors", "Masters", NA), 100, replace = TRUE, prob = c(0.40, 0.30, 0.15, 0.10, 0.05)),
+#'   Income = sample(c(seq(5000, 40000, by = 5000), NA), 100, replace = TRUE, prob = c(rep(1, 8), 2)),
+#'   Smoker = sample(c(1, 0, NA), 100, replace = TRUE, prob = c(0.25, 0.65, 0.10)),
+#'   Region = sample(c("North", "South", "East", "West", NA), 100, replace = TRUE, prob = c(0.24, 0.24, 0.24, 0.24, .04))
 #' )
 #'
 #' # Basic descriptive statistics
@@ -136,7 +153,14 @@
 #'   sort_categorical_variables_by = "frequency",
 #'   calc_percent_by = "row"
 #' )
-#' }
+#'
+#' # Perform common comparative statistical tests
+#' performDescriptive(
+#'   df = sample_df,
+#'   split_by = "Gender",
+#'   add_inferential_pvalues = TRUE
+#' )
+#'}
 #'
 
 performDescriptive <- function(
@@ -155,37 +179,70 @@ performDescriptive <- function(
     display_missing = "ifany",
     missing_text = "No data/missing",
     missing_stat = "n_pct",
+    include_missing_in_splits = TRUE,
     sort_categorical_variables_by = "alphanumeric",
     calc_percent_by = "column",
+    calc_col_percent_using = "n_valid_in_column", # works only when 'split_by' is NOT NULL and 'calc_percent_by = "column"'
     header = "Variable",
     clean_table = TRUE,
     bold_labels = TRUE,
     italicize_levels = TRUE,
     add_inferential_pvalues = FALSE,
     n_digits_pvalues = 3,
-    bold_significant_pvalues = NULL,
-    bold_significant_pvalues_at = 0.05
+    bold_significant_pvalues = TRUE,
+    bold_significant_pvalues_at = 0.05,
+    table_name = "auto"
 ) {
   # Load necessary packages
   if (!requireNamespace("gtsummary", quietly = TRUE)) {
-    stop("Package 'gtsummary' is required but not installed. Please install it with install.packages('gtsummary').")
+    warning("Package 'gtsummary' is required but not installed.")
+    message("Installing the package...")
+    install.packages('gtsummary')
+    message("Loading the package...")
+    library(gtsummary)
+  } else {
+    library(gtsummary)
   }
-  # dplyr is needed for `across` and other tidyverse functions, so load it
   if (!requireNamespace("dplyr", quietly = TRUE)) {
-    stop("Package 'dplyr' is required but not installed. Please install it with install.packages('dplyr').")
+    warning("Package 'dplyr' is required but not installed.")
+    message("Installing the package...")
+    install.packages('dplyr')
+    message("Loading the package...")
+    library(dplyr)
+  } else {
+    library(dplyr)
   }
   if (!requireNamespace("magrittr", quietly = TRUE)) {
-    stop("Package 'magrittr' is required for the pipe operator (%>%) but not installed. Please install it with install.packages('magrittr').")
+    warning("Package 'magrittr' is required for the pipe operator (%>% or |>) but not installed.")
+    message("Installing the package...")
+    install.packages('magrittr')
+    message("Loading the package...")
+    library(magrittr)
+  } else {
+    library(magrittr)
   }
-
-  # Attach necessary packages
-  library(magrittr)
-  library(dplyr) # Explicitly load dplyr for `across`, `mutate`, `starts_with`
+  if (!requireNamespace("forcats", quietly = TRUE)) {
+    warning("Package 'forcats' is required but not installed.")
+    message("Installing the package...")
+    install.packages('forcats')
+    message("Loading the package...")
+    library(forcats)
+  } else {
+    library(forcats)
+  }
 
   # Ensure df is a data frame
   df <- as.data.frame(df)
 
   # --- Parameter checks and improvements ---
+
+  # Apply force_categorical to split_by and strata_by first if not NULL
+  if (!is.null(force_categorical)) {
+    for (col_name in force_categorical) {
+      # Convert the column to factor
+      df[[col_name]] <- as.factor(df[[col_name]])
+    }
+  }
 
   # 1. split_by
   if (!is.null(split_by)) {
@@ -241,6 +298,57 @@ performDescriptive <- function(
       ))
     }
   }
+
+  # include_missing_in_splits
+  if (!is.logical(include_missing_in_splits)) {
+    stop("The 'include_missing_in_splits' parameter must be a single logical value (TRUE or FALSE).")
+  }
+
+  # calc_col_percent_using
+  valid_method <- c("n_in_column", "n_valid_in_column")
+  if (!(calc_col_percent_using %in% valid_method)) {
+    stop(paste0("The 'calc_col_percent_using' parameter only accepts: '", paste(valid_method, collapse = "', '"), "'."))
+  }
+
+  # Handle missing values in split_by and strata_by columns based on 'include_missing_in_splits'
+  if (include_missing_in_splits) {
+    # Include split_by and strata_by columns when replacing missing values
+    if (calc_percent_by == "column") {
+      if (calc_col_percent_using == "n_in_column") {
+        if (add_inferential_pvalues) {
+          warning("`calc_col_percent_using = 'n_in_column'` is ignored when `add_inferential_pvalues = TRUE` because percentages must reflect valid data only. Missing values will be excluded.")
+          calc_col_percent_using <- "n_valid_in_column"
+        } else {
+          df <- df %>%
+            dplyr::mutate(across(where(is.character) | where(is.factor),
+                                 ~forcats::fct_explicit_na(factor(.), na_level = missing_text)))
+          #warning("Missing values replaced with `missing_text`, INCLUDING `split_by` and `strata_by` columns.")
+        }
+      } else if (calc_col_percent_using == "n_valid_in_column") {
+        #warning("Data includes missing values, INCLUDING `split_by` and `strata_by` columns.")
+      }
+    }
+  } else {
+    # Exclude split_by and strata_by columns from missing value replacement
+    exclude_cols <- unique(c(split_by, strata_by)) %>% .[!is.null(.)]
+
+    if (calc_percent_by == "column") {
+      if (calc_col_percent_using == "n_in_column") {
+        if (add_inferential_pvalues) {
+          warning("`calc_col_percent_using = 'n_in_column'` is ignored when `add_inferential_pvalues = TRUE`. Percentages will be based on valid data only.")
+          calc_col_percent_using <- "n_valid_in_column"
+        } else {
+          df <- df %>%
+            dplyr::mutate(across((where(is.character) | where(is.factor)) & !any_of(exclude_cols),
+                                 ~forcats::fct_explicit_na(factor(.), na_level = missing_text)))
+        }
+        #warning("Missing values replaced with `missing_text`, EXCLUDING `split_by` and `strata_by` columns.")
+      } else if (calc_col_percent_using == "n_valid_in_column") {
+        #warning("Data includes missing values, EXCLUDING `split_by` and `strata_by` columns.")
+      }
+    }
+  }
+
 
   # 3. label
   if (!is.null(label)) {
@@ -335,11 +443,38 @@ performDescriptive <- function(
   }
 
   # 8 and 9. n_digits_continuous and n_digits_categorical
-  if (!is.numeric(n_digits_continuous) || length(n_digits_continuous) != 2 || any(n_digits_continuous < 0)) {
-    stop("The 'n_digits_continuous' parameter must be a numeric vector of two non-negative integers (e.g., c(1, 1)).")
+  if (
+    !(
+      (is.numeric(n_digits_continuous) && # Is it numeric?
+       length(n_digits_continuous) == 2 && # Does it have exactly two elements?
+       all(n_digits_continuous >= 0))     || # Are all elements non-negative? (use all() for vector)
+      (is.character(n_digits_continuous) && # Is it a character string?
+       length(n_digits_continuous) == 1 && # Is it a single string?
+       n_digits_continuous == "dynamic")    # Is that string "dynamic"?
+    )
+  ) {
+    stop("The 'n_digits_continuous' parameter must be a numeric vector of two non-negative integers (e.g., c(1, 1)), representing the number of decimal places of mean and SD, respectively, and median and IQR, respectively. The other option is 'dynamic' which selects the number of decimal places dynamically.")
   }
-  if (!is.numeric(n_digits_categorical) || length(n_digits_categorical) != 2 || any(n_digits_categorical < 0)) {
-    stop("The 'n_digits_categorical' parameter must be a numeric vector of two non-negative integers (e.g., c(0, 1)).")
+  if (
+    !(
+      (is.numeric(n_digits_categorical) && # Is it numeric?
+       length(n_digits_categorical) == 2 && # Does it have exactly two elements?
+       all(n_digits_categorical >= 0))     || # Are all elements non-negative? (use all() for vector)
+      (is.character(n_digits_categorical) && # Is it a character string?
+       length(n_digits_categorical) == 1 && # Is it a single string?
+       n_digits_categorical == "dynamic")    # Is that string "dynamic"?
+    )
+  ) {
+    stop("The 'n_digits_categorical' parameter must be a numeric vector of two non-negative integers (e.g., c(0, 1)), representing the number of decimal places of frequencies or counts and percentages, respectively.  The other option is 'dynamic' which selects the number of decimal places dynamically.")
+  }
+
+  # Set to NULL if "dynamic" is chosen
+  if (isTRUE(identical(n_digits_continuous, "dynamic"))) {
+    n_digits_continuous <- NULL
+  }
+
+  if (isTRUE(identical(n_digits_categorical, "dynamic"))) {
+    n_digits_categorical <- NULL
   }
 
   # 10. display_missing
@@ -357,9 +492,9 @@ performDescriptive <- function(
   }
   # Map to gtsummary format for missing_stat
   gts_missing_stat <- switch(missing_stat,
-                             "n_pct" = "{N_miss} ({p_miss}%)", # Consistent with categorical "n_pct"
+                             "n_pct" = "{N_miss} ({p_miss}%)",
                              "n"     = "{N_miss}",
-                             "pct"   = "{p_miss}%") # Consistent with categorical "pct"
+                             "pct"   = "{p_miss}%")
 
   # 13. sort_categorical_variables_by
   valid_sort_cat_by <- c("alphanumeric", "frequency")
@@ -392,32 +527,37 @@ performDescriptive <- function(
   if (!is.logical(add_inferential_pvalues)) {
     stop("The 'add_inferential_pvalues' parameter must be a logical value (TRUE or FALSE).")
   }
+  if (add_inferential_pvalues) {
+    if (!is.null(strata_by)) {
+      stop("The 'add_inferential_pvalues' cannot be TRUE when 'strata_by' is present. Set 'strata_by = NULL' if p-values are still desired.")
+    }
+  }
 
   # 20, n_digits_pvalues
-  if (!is.numeric(n_digits_pvalues)) {
-    stop("The 'n_digits_pvalues' parameter must be a numeric value.")
+  if (!is.null(n_digits_pvalues) && (!is.numeric(n_digits_pvalues) || n_digits_pvalues <= 0)) {
+    stop("The 'n_digits_pvalues' parameter must be a positive numeric value or NULL.")
   }
 
   # 21, bold_significant_pvalues
-  if (!is.null(bold_significant_pvalues) && !is.logical(bold_significant_pvalues)) {
-    stop("The 'bold_significant_pvalues' parameter must be a logical value (TRUE or FALSE) or NULL.")
+  if (!is.logical(bold_significant_pvalues)) {
+    stop("The 'bold_significant_pvalues' parameter must be a logical value (TRUE or FALSE).")
   }
   if (!is.null(strata_by)) {
-    if (!is.null(bold_significant_pvalues) || bold_significant_pvalues == TRUE) { # If not NULL, do something
-      stop("The 'bold_significant_pvalues' parameter cannot be used when 'strata_by' is specified. Set 'strata_by = NULL' if p-values are still desired.")
+    if (add_inferential_pvalues) {
+      if (bold_significant_pvalues) {
+        stop("The 'bold_significant_pvalues' parameter cannot be used when 'strata_by' is specified. Set 'strata_by = NULL' if p-values are still desired.")
+      }
+    } else {
+      if (bold_significant_pvalues) {
+        message("The 'bold_significant_pvalues = TRUE' (default or inputted) parameter is ignored since 'add_inferential_pvalues = FALSE'.")
+      }
     }
   }
 
   # 22, bold_significant_pvalues_at
   if (!is.numeric(bold_significant_pvalues_at)) {
-    stop("The 'bold_significant_pvalues_at' parameter must be a decimal/numeric value.")
+    stop("The 'bold_significant_pvalues_at' parameter must be a decimal/numeric value where bold p-values will be applied. Default is 0.05 (common). The other common threshold is 0.1, where p-values below 0.1 are bolded.")
   }
-  if (!is.null(strata_by)) {
-    if (is.null(bold_significant_pvalues) || bold_significant_pvalues == TRUE) {
-      stop("The 'bold_significant_pvalues_at' parameter cannot be used when 'strata_by' is specified. Set 'strata_by = NULL' if p-values are still desired.")
-    }
-  }
-
 
   # --- Analysis using gtsummary ---
 
@@ -426,7 +566,6 @@ performDescriptive <- function(
     if (!is.null(split_by)) {
       calc_percent_by = 'row'
     }
-    print(calc_percent_by)
   }
 
   # Define 'type' argument for tbl_summary
@@ -439,11 +578,18 @@ performDescriptive <- function(
     }
   }
 
-  if (!is.null(force_categorical)) {
-    for (col_name in force_categorical) {
-      # Enclose column names in backticks if they contain spaces or special characters
-      type_list[[length(type_list) + 1]] <- as.formula(paste0("`", col_name, "` ~ 'categorical'"))
-    }
+  # Commented since this is already done above after the transformation of df to data frame. Using this code will result to an error, where the force_categorical variables will be missing(?)
+  # if (!is.null(force_categorical)) {
+  #   for (col_name in force_categorical) {
+  #     # Enclose column names in backticks if they contain spaces or special characters
+  #     type_list[[length(type_list) + 1]] <- as.formula(paste0("`", col_name, "` ~ 'categorical'"))
+  #   }
+  # }
+
+  # table_name
+  if (!is.character(table_name) && !is.null(table_name)) {
+    stop("The parameter 'table_name' must be a string or NULL.")
+
   }
 
   # Helper function to create summary table
@@ -471,6 +617,13 @@ performDescriptive <- function(
       gtsummary::modify_header(label = paste0("**", header, "**"))
   }
 
+  # # Replace all missing values with NA if 'calc_col_percent_using' = 'n_in_column' because this will make the percentages equal to 100 with the missing values on.
+  # if (calc_col_percent_using == "n_in_column") {
+  #   warning("")
+  #   df[df == missing_text] <- NA
+  #
+  # }
+
   # Main logic
   result_table <- if (!is.null(strata_by)) {
     df %>%
@@ -483,7 +636,6 @@ performDescriptive <- function(
   } else {
     create_summary(df)
   }
-
 
   # Modify spanning header for split_by (only if strata_by is NULL)
   if (is.null(strata_by) && !is.null(split_by) && !is.null(split_by_header)) {
@@ -506,13 +658,10 @@ performDescriptive <- function(
   # Add common statistical test p-values (and whether to bold it, and where)
   if (add_inferential_pvalues) {
     result_table <- result_table %>%
-      gtsummary::add_p(
-        pvalue_fun = label_style_pvalue(
-          digits = n_digits_pvalues # Also adjust the no. of decimals of p-values
-        ))
+      gtsummary::add_p(pvalue_fun = label_style_pvalue(digits = n_digits_pvalues)) # Also adjust the no. of decimals of p-values
   }
   if (add_inferential_pvalues) {
-    if (is.null(bold_significant_pvalues) || bold_significant_pvalues == TRUE) { # Automatically bold p-values if less than 'bold_significant_pvalues_at' if either NULL or TRUE
+    if (bold_significant_pvalues) { # Automatically bold p-values if less than 'bold_significant_pvalues_at' if either NULL or TRUE
       result_table <- result_table %>%
         gtsummary::bold_p(t = bold_significant_pvalues_at) # Also add where to add the bold
     }
@@ -563,6 +712,45 @@ performDescriptive <- function(
             )
           )
       )
+  }
+
+  # Add table name header
+  if (!is.null(table_name) && length(table_name) == 1 && table_name == "auto") {
+    # Ensure 'gt' package is installed
+    if (!requireNamespace("gt", quietly = TRUE)) {
+      warning("Package 'gt' is required but not installed. Installing now...")
+      install.packages("gt")
+    }
+    library(gt)
+
+    # Compose title
+    title_prefix <- if (add_inferential_pvalues) {
+      "Inferential Statistics Stratified by "
+    } else {
+      "Descriptive Statistics Stratified by "
+    }
+
+    if (!is.null(strata_by) && !is.null(split_by_header)) {
+      title_text <- paste0(title_prefix, strata_by, " and ", split_by_header, " Columns")
+    } else if (is.null(strata_by) && !is.null(split_by_header)) {
+      title_text <- paste0(title_prefix, split_by_header, " Column")
+    } else {
+      title_text <- if (add_inferential_pvalues) {
+        "Inferential Statistics"
+      } else {
+        "Descriptive Statistics"
+      }
+    }
+
+    result_table <- result_table %>%
+      gtsummary::as_gt() %>%
+      gt::tab_header(title = gt::md(paste0("**", title_text, "**")))
+
+  } else if (is.character(table_name) && length(table_name) == 1) {
+    # Custom table name provided
+    result_table <- result_table %>%
+      gtsummary::as_gt() %>%
+      gt::tab_header(title = gt::md(paste0("**", table_name, "**")))
   }
 
   return(result_table) # Always return the gtsummary/gt table object
