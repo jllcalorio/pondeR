@@ -12,7 +12,7 @@
 #' @param split_by String. A column name in `df` (must be a categorical variable with at least 2 unique levels/factors) by which to stratify the descriptive statistics. If `NULL` (default), no stratification is performed.
 #' @param split_by_header String. The header name to display for the `split_by` variable in the output table. Only applicable if `split_by` is not `NULL`, and takes on the value of `split_by`. Defaults to `NULL` initially.
 #' @param strata_by String. A column name in `df` (must be a categorical variable with at least 2 unique levels/factors) by which to stratify the descriptive statistics 'before' `split_by`. If `NULL` (default), no stratification is performed.
-#' @param label List. A list of the format `list(original_variable_name1 ~ new_variable_name1, ...)`, used to rename variables in the output table.
+#' @param rename_variables List. A list of the format `list("original_variable_name1" ~ "new_variable_name1", ...)`, used to rename variables in the output table.
 #' @param continuous_statistics String. The type of statistics to report for continuous variables. Options are:
 #'   \itemize{
 #'     \item 'meanSD': mean ± standard deviation
@@ -30,12 +30,12 @@
 #'     Defaults to 'meanSD'.
 #' @param categorical_statistics String. The type of statistics to report for categorical variables.
 #'   \itemize{
-#'     \item 'n_pct': Displays count and percentage of valid values (e.g., '10 (5.0%)').
+#'     \item 'n_percent': Displays count and percentage of valid values (e.g., '10 (5.0%)').
 #'     \item 'n': Displays only the count of valid values.
-#'     \item 'pct': Displays only the percentage of valid values.
+#'     \item 'percent': Displays only the percentage of valid values.
 #'     }
-#'     Defaults to 'n_pct'.
-#' Options are 'n_pct' (count (percentage)), 'n' (count only), or 'pct' (percentage only). Defaults to 'n_pct'.
+#'     Defaults to 'n_percent'.
+#' Options are 'n_percent' (count (percentage)), 'n' (count only), or 'percent' (percentage only). Defaults to 'n_percent'.
 #' @param force_continuous Vector. A character vector of column names that should be treated as continuous, even if their data type suggests otherwise (e.g., numeric variables with few unique values that might be misclassified as categorical).
 #' @param force_categorical Vector. A character vector of column names that should be treated as categorical, even if their data type suggests otherwise (e.g., numeric variables that are truly categories, or binary variables that should be presented as full categories rather than dichotomous).
 #' @param n_digits_continuous Numeric Vector or String.
@@ -58,11 +58,11 @@
 #' @param missing_text String. The label to use for missing values in the output table. Defaults to 'No/Missing data'.
 #' @param missing_stat String. The format for reporting missing value statistics.
 #'   \itemize{
-#'     \item 'n_pct': Displays count and percentage of missing values (e.g., '10 (5.0%)').
+#'     \item 'n_percent': Displays count and percentage of missing values (e.g., '10 (5.0%)').
 #'     \item 'n': Displays only the count of missing values.
-#'     \item 'pct': Displays only the percentage of missing values.
+#'     \item 'percent': Displays only the percentage of missing values.
 #'   }
-#'   Defaults to 'n_pct'.
+#'   Defaults to 'n_percent'.
 #' @param include_missing_in_splits Boolean. If `TRUE` (default), includes the missing values (missing text specified in `missing_text`) in the column after specifying `split_by` and `strata_by`.
 #' @param sort_categorical_variables_by String. Determines the sorting order for levels within categorical variables.
 #'   \itemize{
@@ -84,15 +84,40 @@
 #'   }
 #'   Defaults to 'n_valid_in_column'.
 #'   Note: This only applies when 'calc_percent_by = "column"'.
-#' @param header String. The header name for the 'Variable' column in the output table. Defaults to 'Variable'.
-#' @param clean_table Boolean. If `TRUE` (default), cells with a count of 0 are removed (replaced with empty space) from the descriptive table, making it cleaner.
-#' @param bold_labels Boolean. If `TRUE` (default), variable labels in the table will be bolded.
-#' @param italicize_levels Boolean. If `TRUE` (default), categorical variable levels in the table will be italicized.
 #' @param add_inferential_pvalues Boolean. If `TRUE`, adds the common comparative statistical tests such as t-tests, chi-square test, ANOVA, and their nonparametric counterparts.
-#' @param n_digits_pvalues Numeric. Default is 3. The number of digits of p-values if `add_inferential_pvalues` is set to `TRUE`. This can be set to `NULL` which tells the code to automatically format the p-values. If the p-value < 0.10, there will be three decimal places, otherwise, there will only be one.
+#' @param force_statistical_test List. A list of the format `list("variable_name1" ~ "statistical_test1", ...)`, used to specify the test for the specific variable. Below are the list of tests. See type and enter ?gtsummary::tests for more details, and see `tbl_summary() %>% add_p()` section.
+#'   \itemize{
+#'     \item 't.test': Perform t-test.
+#'     \item 'paired.t.test': Perform Paired t-test.
+#'     \item 'wilcox.test': Perform Wilcoxon rank-sum test/Mann-Whitney U test.
+#'     \item 'paired.wilcox.test': Perform Paired Wilcoxon rank-sum test.
+#'     \item 'oneway.test': Perform One-way Analysis of Variance (ANOVA).
+#'     \item 'kruskal.test': Perform Kruskal-Wallis test.
+#'     \item 'chisq.test': Perform chi-square test of independence.
+#'     \item 'chisq.test.no.correct': Perform chi-square test of independence. This specifies 'correct = FALSE'.
+#'     \item 'fisher.test': Perform Fisher's exact test.
+#'     \item 'mcnemar.test': Perform McNemar's test.
+#'     \item 'mcnemar.test.wide': Perform McNemar's test.
+#'     \item 'prop.test': Perform Test for equality of proportions.
+#'     \item 'mood.test': Perform Mood two-sample test of scale.
+#'     \item 'lme4': Perform random intercept logistic regression.
+#'     \item 'ancova': Perform Analysis of Covariance (ANCOVA).
+#'     \item 'emmeans': Perform Estimated Marginal Means or LS-means.
+#'   }
+#' @param n_digits_pvalues Numeric. Default is 3. The number of digits of p-values if `add_inferential_pvalues` is set to `TRUE`. This can be set to `NULL` which tells the code to automatically format the p-values. If the p-value < 0.10, there will be a maximum of three decimal places, otherwise, there will only be one.
 #' @param bold_significant_pvalues Boolean. If `TRUE` (default), automatically detects if `add_inferential_pvalues = TRUE` then bolds the font of p-values under 0.05 (default) unless set in `bold_significant_pvalues_at`.
 #' @param bold_significant_pvalues_at Numeric. The threshold for `bold_significant_pvalues` to bold font if significant.
+#' @param header String. The header name for the 'Variable' column in the output table. Defaults to 'Variable'.
+#' @param bold_labels Boolean. If `TRUE` (default), variable labels in the table will be bolded.
+#' @param italicize_levels Boolean. If `TRUE` (default), categorical variable levels in the table will be italicized.
+#' @param clean_table Boolean. If `TRUE` (default), cells with a count of 0 are removed (replaced with empty space) from the descriptive table, making it cleaner.
 #' @param table_name String or NULL. The table name. Default is 'auto', where the table name depends if the table is descriptive or inferential in nature (has p-values), and automatically creates a table name. Set to `NULL` to have no table name. Can accept a string that will be used as the table name.
+#' @param export_to_excel Boolean. If TRUE, exports the results to an Excel file. Defaults to FALSE. This is currently not recommended as the output is not formatted good.
+#' @param export_to_html Boolean. If TRUE, exports the results to an HTML file. Defaults to FALSE.
+#' @param export_to_png Boolean. If TRUE, exports the results to a PNG file. Defaults to FALSE.
+#' @param export_to_pdf Boolean. If TRUE, exports the results to a PDF file. Defaults to FALSE.
+#' @param export_to_word Boolean. If TRUE, exports the results to a Word file. Defaults to FALSE.
+#' @param export_filename String. The file name of the exported file/s. Multiple exports can be done by setting each to TRUE. The default is "Summary Results" and will remain as it is if `export_filename = NULL` or `export_filename = ""`.
 #'
 #' @returns A `gtsummary` table object (inherits from `gt_tbl`), representing the simple descriptive statistics.
 #' @export
@@ -123,7 +148,7 @@
 #'   df = sample_df,
 #'   split_by = "Gender",
 #'   split_by_header = "Participant Gender",
-#'   label = list(Age ~ "Age (Years)", Income ~ "Annual Income", Smoker ~ "Smoking Status")
+#'   rename_variables = list(Age ~ "Age (Years)", Income ~ "Annual Income", Smoker ~ "Smoking Status")
 #' )
 #'
 #' # Descriptive statistics with median and IQR for continuous, and count only for categorical
@@ -169,29 +194,36 @@ performDescriptive <- function(
     split_by = NULL,
     split_by_header = NULL,
     strata_by = NULL,
-    label = NULL,
+    rename_variables = NULL,
     continuous_statistics = "meanSD",
-    categorical_statistics = "n_pct",
+    categorical_statistics = "n_percent",
     force_continuous = NULL,
     force_categorical = NULL,
     n_digits_continuous = c(2, 2),
     n_digits_categorical = c(0, 2),
     display_missing = "ifany",
     missing_text = "No data/missing",
-    missing_stat = "n_pct",
+    missing_stat = "n_percent",
     include_missing_in_splits = TRUE,
     sort_categorical_variables_by = "alphanumeric",
     calc_percent_by = "column",
-    calc_col_percent_using = "n_valid_in_column", # works only when 'split_by' is NOT NULL and 'calc_percent_by = "column"'
-    header = "Variable",
-    clean_table = TRUE,
-    bold_labels = TRUE,
-    italicize_levels = TRUE,
+    calc_col_percent_using = "n_valid_in_column",
     add_inferential_pvalues = FALSE,
+    force_statistical_test = NULL,
     n_digits_pvalues = 3,
     bold_significant_pvalues = TRUE,
     bold_significant_pvalues_at = 0.05,
-    table_name = "auto"
+    header = "Variable",
+    bold_labels = TRUE,
+    italicize_levels = TRUE,
+    clean_table = TRUE,
+    table_name = "auto",
+    export_to_excel = FALSE,
+    export_to_html = FALSE,
+    export_to_png = FALSE,
+    export_to_pdf = FALSE,
+    export_to_word = FALSE,
+    export_filename = "Summary Results"
 ) {
   # Load necessary packages
   if (!requireNamespace("gtsummary", quietly = TRUE)) {
@@ -229,6 +261,24 @@ performDescriptive <- function(
     library(forcats)
   } else {
     library(forcats)
+  }
+  if (!requireNamespace("openxlsx", quietly = TRUE)) {
+    warning("Package 'openxlsx' is required but not installed.")
+    message("Installing the package...")
+    install.packages('openxlsx')
+    message("Loading the package...")
+    library(openxlsx)
+  } else {
+    library(openxlsx)
+  }
+  if (!requireNamespace("webshot2", quietly = TRUE)) {
+    warning("Package 'webshot2' is required but not installed.")
+    message("Installing the package...")
+    install.packages('webshot2')
+    message("Loading the package...")
+    library(webshot2)
+  } else {
+    library(webshot2)
   }
 
   # Ensure df is a data frame
@@ -350,16 +400,16 @@ performDescriptive <- function(
   }
 
 
-  # 3. label
-  if (!is.null(label)) {
-    if (!is.list(label) || any(!sapply(label, inherits, "formula"))) {
-      stop("The 'label' parameter only accepts a list of formulas (e.g., list(original_variable_name ~ new_variable_name)).")
+  # 3. rename_variables
+  if (!is.null(rename_variables)) {
+    if (!is.list(rename_variables) || any(!sapply(rename_variables, inherits, "formula"))) {
+      stop("The 'rename_variables' parameter only accepts a list of formulas (e.g., list(original_variable_name ~ new_variable_name)).")
     }
-    # Check if original variable names in label exist in df
-    original_vars_in_label <- sapply(label, function(x) as.character(x)[[2]])
+    # Check if original variable names in rename_variables exist in df
+    original_vars_in_label <- sapply(rename_variables, function(x) as.character(x)[[2]])
     if (!all(original_vars_in_label %in% names(df))) {
       missing_vars <- original_vars_in_label[!(original_vars_in_label %in% names(df))]
-      stop(paste0("The following variables specified in 'label' do not exist in the dataframe: ", paste(missing_vars, collapse = ", "), "."))
+      stop(paste0("The following variables specified in 'rename_variables' do not exist in the dataframe: ", paste(missing_vars, collapse = ", "), "."))
     }
   }
 
@@ -397,15 +447,15 @@ performDescriptive <- function(
 
 
   # 5. categorical_statistics
-  valid_categorical_stats <- c("n_pct", "n", "pct")
+  valid_categorical_stats <- c("n_percent", "n", "percent")
   if (!(categorical_statistics %in% valid_categorical_stats)) {
     stop(paste0("The 'categorical_statistics' parameter only accepts: '", paste(valid_categorical_stats, collapse = "', '"), "'."))
   }
   # Map to gtsummary format
   gts_categorical_stat <- switch(categorical_statistics,
-                                 "n_pct" = "{n} ({p}%)",
+                                 "n_percent" = "{n} ({p}%)",
                                  "n"     = "{n}",
-                                 "pct"   = "{p}%")
+                                 "percent"   = "{p}%")
 
   # 6 and 7. force_continuous and force_categorical
   # Check if they are character vectors and if column names exist in df
@@ -486,15 +536,15 @@ performDescriptive <- function(
   # 11. missing_text is already a string, no specific check needed beyond default type.
 
   # 12. missing_stat (Updated for uniformity)
-  valid_missing_stat <- c("n_pct", "n", "pct")
+  valid_missing_stat <- c("n_percent", "n", "percent")
   if (!(missing_stat %in% valid_missing_stat)) {
     stop(paste0("The 'missing_stat' parameter only accepts: '", paste(valid_missing_stat, collapse = "', '"), "'."))
   }
   # Map to gtsummary format for missing_stat
   gts_missing_stat <- switch(missing_stat,
-                             "n_pct" = "{N_miss} ({p_miss}%)",
+                             "n_percent" = "{N_miss} ({p_miss}%)",
                              "n"     = "{N_miss}",
-                             "pct"   = "{p_miss}%")
+                             "percent"   = "{p_miss}%")
 
   # 13. sort_categorical_variables_by
   valid_sort_cat_by <- c("alphanumeric", "frequency")
@@ -530,6 +580,13 @@ performDescriptive <- function(
   if (add_inferential_pvalues) {
     if (!is.null(strata_by)) {
       stop("The 'add_inferential_pvalues' cannot be TRUE when 'strata_by' is present. Set 'strata_by = NULL' if p-values are still desired.")
+    }
+  }
+
+  # force_statistical_test
+  if (!is.null(force_statistical_test)) {
+    if (!is.list(force_statistical_test)) {
+      stop("The parameter 'force_statistical_test' must be a list of the format 'list(variable_name1 ~ statistical_test1, ...)'.")
     }
   }
 
@@ -598,7 +655,7 @@ performDescriptive <- function(
       data = data,
       include = summarize_what,
       by = split_by,
-      label = label,
+      label = rename_variables,
       type = type_list,
       statistic = list(
         all_continuous() ~ gts_continuous_stat,
@@ -655,10 +712,18 @@ performDescriptive <- function(
       gtsummary::italicize_levels()
   }
 
+  # For the force_statistical_test
+  if (!is.null(force_statistical_test)) {
+    force_statistical_test = force_statistical_test
+  }
+
   # Add common statistical test p-values (and whether to bold it, and where)
   if (add_inferential_pvalues) {
     result_table <- result_table %>%
-      gtsummary::add_p(pvalue_fun = label_style_pvalue(digits = n_digits_pvalues)) # Also adjust the no. of decimals of p-values
+      gtsummary::add_p(
+        test = force_statistical_test,
+        pvalue_fun = label_style_pvalue(digits = n_digits_pvalues
+        )) # Also adjust the no. of decimals of p-values
   }
   if (add_inferential_pvalues) {
     if (bold_significant_pvalues) { # Automatically bold p-values if less than 'bold_significant_pvalues_at' if either NULL or TRUE
@@ -671,28 +736,28 @@ performDescriptive <- function(
   if (clean_table) {
     # Dynamically generate the "zero" string based on n_digits_categorical for percentages
     # n_digits_categorical[1] is for count, n_digits_categorical[2] is for percentage
-    zero_pct_format <- paste0("0", ifelse(n_digits_categorical[2] > 0, paste0(".", paste(rep("0", n_digits_categorical[2]), collapse = "")), ""), "%")
+    zero_percent_format <- paste0("0", ifelse(n_digits_categorical[2] > 0, paste0(".", paste(rep("0", n_digits_categorical[2]), collapse = "")), ""), "%")
 
     # Possible zero strings depending on categorical_statistics and n_digits_categorical
     # These are the exact strings gtsummary will produce when count or percent is zero.
     zero_strings_to_replace <- c()
-    if (categorical_statistics == "n_pct") {
-      zero_strings_to_replace <- c(zero_strings_to_replace, paste0("0 (", zero_pct_format, ")"))
+    if (categorical_statistics == "n_percent") {
+      zero_strings_to_replace <- c(zero_strings_to_replace, paste0("0 (", zero_percent_format, ")"))
     } else if (categorical_statistics == "n") {
       zero_strings_to_replace <- c(zero_strings_to_replace, "0")
-    } else if (categorical_statistics == "pct") {
-      zero_strings_to_replace <- c(zero_strings_to_replace, zero_pct_format)
+    } else if (categorical_statistics == "percent") {
+      zero_strings_to_replace <- c(zero_strings_to_replace, zero_percent_format)
     }
 
-    # Also consider the missing_stat for consistency in cleaning "0" values if it's "n" or "pct"
-    if (missing_stat == "n_pct") {
+    # Also consider the missing_stat for consistency in cleaning "0" values if it's "n" or "percent"
+    if (missing_stat == "n_percent") {
       # Note: gtsummary's missing_stat uses {p_miss} which defaults to 1 decimal place.
       # This can be hardcoded or made dynamic if gtsummary allowed setting digits for missing_stat.
       # For now, we'll anticipate "0 (0.0%)" and "0 (0%)" and "0.0%"
       zero_strings_to_replace <- c(zero_strings_to_replace, "0 (0.0%)", "0 (0%)")
     } else if (missing_stat == "n") {
       zero_strings_to_replace <- c(zero_strings_to_replace, "0")
-    } else if (missing_stat == "pct") {
+    } else if (missing_stat == "percent") {
       zero_strings_to_replace <- c(zero_strings_to_replace, "0.0%", "0%") # Anticipate different formatting
     }
 
@@ -751,6 +816,83 @@ performDescriptive <- function(
     result_table <- result_table %>%
       gtsummary::as_gt() %>%
       gt::tab_header(title = gt::md(paste0("**", table_name, "**")))
+  }
+
+  # Export
+
+  # Fixing filename
+  if (is.null(export_filename) || export_filename == "") {
+    export_filename = "Summary Results"
+  }
+
+  # To Excel
+  if (export_to_excel) {
+    # Ensure 'openxlsx' package is installed
+    if (!requireNamespace("openxlsx", quietly = TRUE)) {
+      warning("Package 'openxlsx' is required but not installed. Installing now...")
+      install.packages("openxlsx")
+    }
+    library(openxlsx)
+
+    wb <- createWorkbook()
+    addWorksheet(wb = wb, sheetName = export_filename)
+    writeData(wb, export_filename, result_table)
+    saveWorkbook(wb, paste0(export_filename, ".xlsx"), overwrite = TRUE)
+
+    message(paste0("The results have been saved to: ", normalizePath(file.path(getwd(), paste0(export_filename, ".xlsx")))))
+  }
+
+  # To HTML
+  if (export_to_html) {
+    result_table %>%
+      gt::gtsave(paste0(export_filename, ".html"))
+
+    message(paste0("The results have been saved to: ", normalizePath(file.path(getwd(), paste0(export_filename, ".html")))))
+  }
+
+  # To PNG
+  if (export_to_png) {
+    # Ensure 'webshot2' package is installed
+    if (!requireNamespace("webshot2", quietly = TRUE)) {
+      warning("Package 'webshot2' is required but not installed. Installing now...")
+      install.packages("webshot2")
+    }
+    library(webshot2)
+
+    result_table %>%
+      gt::gtsave(paste0(export_filename, ".png"))
+
+    message(paste0("The results have been saved to: ", normalizePath(file.path(getwd(), paste0(export_filename, ".png")))))
+  }
+
+  # To PDF
+  if (export_to_pdf) {
+    result_table %>%
+      gt::gtsave(paste0(export_filename, ".pdf"))
+
+    message(paste0("The results have been saved to: ", normalizePath(file.path(getwd(), paste0(export_filename, ".pdf")))))
+  }
+
+  # To Word
+  if (export_to_word) {
+
+    # Delete the file if it already exists
+    # This is done since there's an error if the ".docx" file is already created
+    if (file.exists(paste0(export_filename, ".docx"))) {
+      file.remove(paste0(export_filename, ".docx"))
+    }
+
+    result_table %>%
+      gt::gtsave(paste0(export_filename, ".docx"))
+
+    message(paste0("The results have been saved to: ", normalizePath(file.path(getwd(), paste0(export_filename, ".docx")))))
+  }
+
+  # Final messages
+  message("\nThe analysis has been completed.")
+
+  if (export_to_excel | export_to_html | export_to_png | export_to_pdf | export_to_word) {
+    message("\nExport/s has/have been generated. Check your current working directory.")
   }
 
   return(result_table) # Always return the gtsummary/gt table object
