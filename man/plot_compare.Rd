@@ -6,16 +6,17 @@
 \usage{
 plot_compare(
   data,
-  group_var,
-  plot_vars,
+  outcome,
+  group,
+  plot_vars = NULL,
   plot_type = "boxplot",
-  test_method = NULL,
-  posthoc_test = NULL,
+  test_type = NULL,
+  posthoc = NULL,
   p_adjust_method = "BH",
   hide_ns = TRUE,
   show_p_numeric = FALSE,
   paired = FALSE,
-  alpha = 0.05,
+  test_alpha = 0.05,
   colors = NULL,
   plot_title = NULL,
   xlab = NULL,
@@ -31,69 +32,69 @@ plot_compare(
   label_points = NULL,
   sample_id = NULL,
   show_mean = FALSE,
+  show_agg_val = TRUE,
   horizontal = FALSE,
   bracket_spacing = 0.08,
   ...
 )
 }
 \arguments{
-\item{data}{A data frame containing the variables to plot}
+\item{data}{A data frame containing the variables to plot.}
 
-\item{group_var}{Character string specifying the column name for grouping variable}
+\item{outcome}{Character string specifying the column name for the numeric outcome variable. Used as the default for \code{plot_vars} if it is not specified.}
 
-\item{plot_vars}{Character vector specifying the column name(s) for numeric variables to plot}
+\item{group}{Character string specifying the column name for the grouping variable.}
 
-\item{plot_type}{Character string specifying plot type: "boxplot" or "violin". Default is "boxplot"}
+\item{plot_vars}{Character vector specifying column name(s) for numeric variables to plot. If \code{NULL} (default), uses the value of \code{outcome}.}
 
-\item{test_method}{Character string or NULL. Statistical test to use: "t.test", "wilcox.test",
-"anova", "kruskal.test", "paired.t.test", "paired.wilcox.test". If NULL (default),
-automatically selects based on number of groups and sample size}
+\item{plot_type}{Character string specifying plot type: "boxplot" or "violin". Default is "boxplot".}
 
-\item{posthoc_test}{Character string or NULL. Post-hoc test for multiple groups:
-"tukey", "dunn", "wilcox", "t.test". If NULL (default), automatically selects
-based on the main test used}
+\item{test_type}{Character string or NULL. Statistical test strategy to use: "auto", "parametric", "nonparametric". See \code{\link{auto_compare}} for details. If NULL (default), uses "auto".}
+
+\item{posthoc}{Character string or NULL. Post-hoc test for multiple groups:
+"auto", "none", "tukey", "games-howell", "dunn", "t_test", or "wilcox_test". See \code{\link{auto_compare}} for details. If NULL (default), uses "auto".}
 
 \item{p_adjust_method}{Character string. P-value adjustment method for multiple comparisons.
 Options include "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "none".
-Default is "BH"}
+Default is "BH".}
 
-\item{hide_ns}{Logical. If TRUE, hide non-significant p-values. Default is TRUE}
+\item{hide_ns}{Logical. If TRUE, hide non-significant p-values from plot brackets. Default is TRUE.}
 
 \item{show_p_numeric}{Logical. If TRUE, show exact p-values as numbers instead of
-significance symbols (*, **, ***). Default is FALSE}
+significance symbols (*, **, ***). Default is FALSE.}
 
-\item{paired}{Logical. If TRUE, use paired tests. Default is FALSE}
+\item{paired}{Logical. If TRUE, use paired tests. Default is FALSE.}
 
-\item{alpha}{Numeric. Significance level for determining significance. Default is 0.05}
+\item{test_alpha}{Numeric. Significance level for determining significance on the plot. Default is 0.05.}
 
 \item{colors}{Character vector of colors (names or HEX codes) or NULL for automatic soft colors.
-Can be a single color or a vector of colors. Default is NULL}
+Can be a single color or a vector of colors. Default is NULL.}
 
 \item{plot_title}{Character string or NULL. Custom title for the plot. If NULL, generates
-automatic title. Default is NULL}
+an automatic title. Default is NULL.}
 
-\item{xlab}{Character string or NULL. X-axis label. If NULL, uses group variable name. Default is NULL}
+\item{xlab}{Character string or NULL. X-axis label. If NULL, uses group variable name. Default is NULL.}
 
-\item{ylab}{Character string or NULL. Y-axis label. If NULL, uses plot variable name. Default is NULL}
+\item{ylab}{Character string or NULL. Y-axis label. If NULL, uses plot variable name. Default is NULL.}
 
-\item{global_p_position}{Numeric or NULL. Y-axis position for global p-value as data coordinates.
-If NULL (default), automatically positions at top-right of plot area.}
+\item{global_p_position}{Numeric or NULL. Y-axis position for the global p-value as data coordinates.
+If NULL (default), automatically positions at the top-right of the plot area.}
 
-\item{global_p_x}{Numeric or NULL. X-axis position for global p-value. If NULL (default),
-positions at 95\% of x-axis range (right side). Only used when n_groups > 2.}
+\item{global_p_x}{Numeric or NULL. X-axis position for the global p-value. If NULL (default),
+positions at 95\% of the x-axis range (right side). Only used when n_groups > 2.}
 
-\item{title_size}{Numeric. Font size for plot title. Default is 12}
+\item{title_size}{Numeric. Font size for the plot title. Default is 12.}
 
-\item{subtitle_size}{Numeric. Font size for plot subtitle. Default is 10}
+\item{subtitle_size}{Numeric. Font size for the plot subtitle. Default is 10.}
 
-\item{xlab_size}{Numeric. Font size for x-axis label. Default is 11}
+\item{xlab_size}{Numeric. Font size for the x-axis label. Default is 11.}
 
-\item{ylab_size}{Numeric. Font size for y-axis label. Default is 11}
+\item{ylab_size}{Numeric. Font size for the y-axis label. Default is 11.}
 
-\item{axis_text_size}{Numeric. Font size for axis text. Default is 10}
+\item{axis_text_size}{Numeric. Font size for axis text. Default is 10.}
 
 \item{group_order}{Character vector or NULL. Specifies the order of groups on the x-axis.
-If NULL (default), uses the factor levels or alphabetical order.}
+If NULL (default), uses factor levels or alphabetical order.}
 
 \item{label_points}{Character string or NULL. Specifies point labeling: "all" (label all jitter points),
 "outliers" (label only outliers), or NULL (default, no labels). Requires sample_id parameter.}
@@ -101,65 +102,55 @@ If NULL (default), uses the factor levels or alphabetical order.}
 \item{sample_id}{Character string or NULL. Column name in data containing sample identifiers
 for point labeling. Required when label_points is not NULL.}
 
-\item{show_mean}{Logical. If TRUE, add mean indicator to plots. Default is FALSE}
+\item{show_mean}{Logical. If TRUE, add a red dot (mean indicator) to plots. Default is FALSE.}
 
-\item{horizontal}{Logical. If TRUE, flip plot to horizontal orientation. Default is FALSE}
+\item{show_agg_val}{Logical. If TRUE (default), shows the numeric value of the mean
+(for parametric tests) or median (for non-parametric tests) on the plot.}
 
-\item{bracket_spacing}{Numeric. Multiplier for spacing between comparison brackets. Default is 0.08}
+\item{horizontal}{Logical. If TRUE, flip the plot to horizontal orientation. Default is FALSE.}
 
-\item{...}{Additional arguments passed to \code{ggboxplot} or \code{ggviolin}}
+\item{bracket_spacing}{Numeric. Multiplier for spacing between comparison brackets. Default is 0.08.}
+
+\item{...}{Additional arguments passed to ggboxplot or ggviolin from ggpubr.}
 }
 \value{
 A list containing:
-\item{plots}{List of all generated plots}
-\item{significant_plots}{List of plots with significant results only}
-\item{statistics}{List of statistical test results for each variable (output from compare_stats)}
+\item{plots}{List of all generated plots.}
+\item{significant_plots}{List of plots with significant results only.}
+\item{statistics}{List of statistical test results for each variable (output from \code{\link{auto_compare}}).}
 }
 \description{
 This function generates box plots or violin plots with statistical tests and
 pairwise comparisons. It automatically selects appropriate statistical tests
-based on sample size and number of groups, or allows manual specification.
-Statistical testing is performed using the companion function \code{compare_stats()}.
+based on assumptions, or allows manual specification. Statistical testing is
+performed using the companion function \code{\link{auto_compare}}.
 }
 \examples{
 \dontrun{
-# Example data
-set.seed(123)
-df <- data.frame(
-  SampleID = paste0("Sample", 1:60),
-  Group = rep(c("A", "B", "C"), each = 20),
-  ShannonDiversity = c(rnorm(20, 3, 0.5), rnorm(20, 3.5, 0.5), rnorm(20, 4, 0.5)),
-  SimpsonsIndex = c(rnorm(20, 0.7, 0.1), rnorm(20, 0.75, 0.1), rnorm(20, 0.8, 0.1))
-)
-
-# Basic usage
-results <- plot_compare(
-  data = df,
-  group_var = "Group",
-  plot_vars = c("ShannonDiversity", "SimpsonsIndex")
-)
-
-# With custom group order and labeled outliers
-results <- plot_compare(
-  data = df,
-  group_var = "Group",
-  plot_vars = c("ShannonDiversity", "SimpsonsIndex"),
-  plot_type = "violin",
-  group_order = c("C", "B", "A"),
-  label_points = "outliers",
-  sample_id = "SampleID",
+# Example 1: Show mean dot AND mean value
+results_anova <- plot_compare(
+  data = PlantGrowth,
+  outcome = "weight",
+  group = "group",
+  plot_type = "boxplot",
   show_mean = TRUE,
-  horizontal = TRUE
+  show_agg_val = TRUE
 )
+print(results_anova$plots$weight)
 
-# View all plots
-results$plots
+# Example 2: Paired t-test, show only mean dot
+sleep_data <- sleep
+sleep_data$ID <- rep(1:10, 2) # Create a patient ID column
 
-# View only significant plots
-results$significant_plots
-
-# Access statistical results
-results$statistics$ShannonDiversity$pairwise_results
+results_paired <- plot_compare(
+  data = sleep_data,
+  outcome = "extra",
+  group = "group",
+  paired = TRUE,
+  show_mean = TRUE,
+  show_agg_val = FALSE
+)
+print(results_paired$plots$extra)
 }
 
 }
