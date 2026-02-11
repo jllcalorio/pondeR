@@ -4,8 +4,29 @@ Version: 0.0.0.9000
 Authors@R: 
     person("John Lennon", "Calorio", , "jllcalorio@gmail.com", role = c("aut", "cre"))
 Description: Generate publication-ready statistical tables and figures using minimal coding.
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
+Imports:
+    car,
+    dplyr,
+    effectsize,
+    ggplot2,
+    ggpubr,
+    ggrepel,
+    moments,
+    nortest,
+    rstatix,
+    tibble,
+    forcats,
+    gt,
+    gtsummary,
+    magrittr,
+    openxlsx
+Depends:
+    webshot2
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr

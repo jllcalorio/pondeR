@@ -19,7 +19,8 @@ auto_compare(
   perform_posthoc = TRUE,
   p_adjust_method = "BH",
   group_order = NULL,
-  verbose = TRUE
+  verbose = TRUE,
+  num_cores = 1
 )
 }
 \arguments{
@@ -35,7 +36,7 @@ auto_compare(
 \code{"auto"} (default), \code{"parametric"}, or \code{"nonparametric"}.}
 
 \item{normality_method}{Method for assessing normality: "shapiro" (Shapiro-Wilk test),
-"lilliefors" (Lilliefors (K-S) test), or "auto" (uses Shapiro-Wilk for n < 50,
+"lilliefors" (Lilliefors (Kolmogorov-Smirnov) test), or "auto" (uses Shapiro-Wilk for n < 50,
 Lilliefors for n >= 50). Default is "auto".}
 
 \item{alpha_normality}{Significance level for normality tests. Default is 0.05.}
@@ -50,13 +51,17 @@ Lilliefors for n >= 50). Default is "auto".}
 
 \item{perform_posthoc}{Logical indicating whether to perform post-hoc tests for >2 groups. Default is TRUE.}
 
-\item{p_adjust_method}{P-value adjustment method for post-hoc comparisons: "holm", "hochberg",
+\item{p_adjust_method}{The p-value adjustment method for post-hoc comparisons: "holm", "hochberg",
 "hommel", "bonferroni", "BH", "BY", "fdr", "none". Default is "BH".}
 
 \item{group_order}{Character vector specifying the order of groups. If NULL, uses factor levels
-or alphabetical order.}
+in alphabetical order.}
 
 \item{verbose}{A logical indicating whether to print detailed messages. Default is TRUE.}
+
+\item{num_cores}{Integer specifying the number of cores to use for parallel processing, or the character string "max".
+If "max", the function uses the number of available cores minus 2 (to reserve system resources), with a minimum of 1.
+Default is 1. Supports both Windows and POSIX (Mac/Linux) systems.}
 }
 \value{
 An object of class "auto_compare" which is a list containing:
@@ -78,7 +83,7 @@ An object of class "auto_compare" which is a list containing:
 \description{
 This function performs an automatic comparison of a numeric outcome variable across
 two or more groups. It intelligently selects the appropriate statistical test
-(parametric or non-parametric) based on checks for normality and homogeneity of
+(parametric or non-parametric) based on checks for normality (of data or residuals) and homogeneity of
 variances, calculates effect sizes, and performs post-hoc tests when appropriate.
 }
 \details{
@@ -243,6 +248,8 @@ Algina, J., Keselman, H. J., & Penfield, R. D. (2006). \emph{Confidence interval
 
 Allen, R. (2017). \emph{Statistics and Experimental Design for Psychologists: A Model Comparison Approach}. World Scientific Publishing Company.
 
+Bache S, Wickham H (2022). \emph{\emph{magrittr: A Forward-Pipe Operator for R}}. doi:10.32614/CRAN.package.magrittr \url{https://doi.org/10.32614/CRAN.package.magrittr}, R package version 2.0.3, \url{https://CRAN.R-project.org/package=magrittr}.
+
 Bartlett, M. S. (1937). \emph{Properties of sufficiency and statistical tests}. Proceedings of the Royal Society of London Series A 160, 268–282. doi:10.1098/rspa.1937.0109.
 
 Becker, R. A., Chambers, J. M. and Wilks, A. R. (1988) \emph{The New S Language}. Wadsworth & Brooks/Cole.
@@ -250,6 +257,8 @@ Becker, R. A., Chambers, J. M. and Wilks, A. R. (1988) \emph{The New S Language}
 Benjamini, Y., and Hochberg, Y. (1995). \emph{Controlling the false discovery rate: a practical and powerful approach to multiple testing}. Journal of the Royal Statistical Society Series B, 57, 289–300. doi:10.1111/j.2517-6161.1995.tb02031.x.
 
 Benjamini, Y., and Yekutieli, D. (2001). \emph{The control of the false discovery rate in multiple testing under dependency}. Annals of Statistics, 29, 1165–1188. doi:10.1214/aos/1013699998.
+
+Ben-Shachar M, Lüdecke D, Makowski D (2020). \emph{effectsize: Estimation of Effect Size Indices and Standardized Parameters}. Journal of Open Source Software, 5(56), 2815. doi: 10.21105/joss.02815
 
 Chambers, J. M., Freeny, A and Heiberger, R. M. (1992) \emph{Analysis of variance; designed experiments}. Chapter 5 of Statistical Models in S eds J. M. Chambers and T. J. Hastie, Wadsworth & Brooks/Cole.
 
@@ -273,9 +282,11 @@ Eric Langford (2006) \emph{Quartiles in Elementary Statistics}, Journal of Stati
 
 Fox, J. (2016) \emph{Applied Regression Analysis and Generalized Linear Models}, Third Edition. Sage.
 
-Fox, J., & Weisberg, S. (2019). \emph{An R Companion to Applied Regression} (3rd ed.). Sage.
+Fox J, Weisberg S (2019). \emph{\emph{An R Companion to Applied Regression}}, Third edition. Sage, Thousand Oaks CA. \url{https://www.john-fox.ca/Companion/}.
 
 Glass, G. V. (1965). \emph{A ranking variable analogue of biserial correlation: Implications for short-cut item analysis}. Journal of Educational Measurement, 2(1), 91-95.
+
+Gross J, Ligges U (2015). \emph{\emph{nortest: Tests for Normality}}. doi:10.32614/CRAN.package.nortest \url{https://doi.org/10.32614/CRAN.package.nortest}, R package version 1.0-4, \url{https://CRAN.R-project.org/package=nortest}.
 
 Hedges, L. V. & Olkin, I. (1985). \emph{Statistical methods for meta-analysis}. Orlando, FL: Academic Press.
 
@@ -289,17 +300,23 @@ Hunter, J. E., & Schmidt, F. L. (2004). \emph{Methods of meta-analysis: Correcti
 
 Hyndman, R. J. and Fan, Y. (1996) \emph{Sample quantiles in statistical packages}, American Statistician 50, 361–365. doi:10.2307/2684934.
 
+Kassambara A (2023). \emph{\emph{rstatix: Pipe-Friendly Framework for Basic Statistical Tests}}. doi:10.32614/CRAN.package.rstatix \url{https://doi.org/10.32614/CRAN.package.rstatix}, R package version 0.7.2, \url{https://CRAN.R-project.org/package=rstatix}.
+
 Kelley, T. (1935) \emph{An unbiased correlation ratio measure}. Proceedings of the National Academy of Sciences. 21(9). 554-559.
 
 Kerby, D. S. (2014). \emph{The simple difference formula: An approach to teaching nonparametric correlation}. Comprehensive Psychology, 3, 11-IT.
 
 King, B. M., & Minium, E. W. (2008). \emph{Statistical reasoning in the behavioral sciences}. John Wiley & Sons Inc.
 
+Komsta L, Novomestky F (2022). \emph{\emph{moments: Moments, Cumulants, Skewness, Kurtosis and Related Tests}}. doi:10.32614/CRAN.package.moments \url{https://doi.org/10.32614/CRAN.package.moments}, R package version 0.14.1, \url{https://CRAN.R-project.org/package=moments}.
+
 Makkonen, L. and Pajari, M. (2014) \emph{Defining Sample Quantiles by the True Rank Probability}, Journal of Probability and Statistics; Hindawi Publ.Corp. doi:10.1155/2014/326579
 
 Myles Hollander and Douglas A. Wolfe (11973). \emph{Nonparametric Statistical Methods}. New York: John Wiley & Sons. Pages 27–33 (one-sample), 68–75 (two-sample). Or second edition (1999).
 
 Myles Hollander and Douglas A. Wolfe (1973), \emph{Nonparametric Statistical Methods}. New York: John Wiley & Sons. Pages 115–120.
+
+Müller K, Wickham H (2025). \emph{\emph{tibble: Simple Data Frames}}. doi:10.32614/CRAN.package.tibble \url{https://doi.org/10.32614/CRAN.package.tibble}, R package version 3.3.0, \url{https://CRAN.R-project.org/package=tibble}.
 
 Olejnik, S., & Algina, J. (2003). \emph{Generalized eta and omega squared statistics: measures of effect size for some common research designs}. Psychological methods, 8(4), 434.
 
@@ -327,9 +344,14 @@ Thode Jr., H.C. (2002): \emph{Testing for Normality}. Marcel Dekker, New York.
 
 Tomczak, M., & Tomczak, E. (2014). \emph{The need to report effect size estimates revisited}. An overview of some recommended measures of effect size.
 
+Wickham H, Averick M, Bryan J, Chang W, McGowan LD, François R, Grolemund G, Hayes A, Henry L, Hester J, Kuhn M, Pedersen TL, Miller E, Bache SM, Müller K, Ooms J, Robinson D, Seidel DP, Spinu V, Takahashi K, Vaughan D, Wilke C, Woo K, Yutani H (2019). \emph{“Welcome to the tidyverse.”} \emph{Journal of Open Source Software}, \emph{4}(43), 1686. doi:10.21105/joss.01686 \url{https://doi.org/10.21105/joss.01686}.
+
 Wicklin, R. (2017) \emph{Sample quantiles: A comparison of 9 definitions}; SAS Blog. https://blogs.sas.com/content/iml/2017/05/24/definitions-sample-quantiles.htm
 
 Wright, S. P. (1992). \emph{Adjusted P-values for simultaneous inference}. Biometrics, 48, 1005–1013. doi:10.2307/2532694. (Explains the adjusted P-value approach.)
 
-R Core Team (2023). \emph{R: A language and environment for statistical computing}. R Foundation for Statistical Computing, Vienna, Austria. URL \url{https://www.R-project.org/}.
+R Core Team (2025). \emph{\emph{R: A Language and Environment for Statistical Computing}}. R Foundation for Statistical Computing, Vienna, Austria. \url{https://www.R-project.org/}.
+}
+\author{
+John Lennon L. Calorio
 }
