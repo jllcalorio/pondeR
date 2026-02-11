@@ -209,59 +209,73 @@ library(magrittr)
 # Create a sample dataframe
 set.seed(123)
 sample_df <- data.frame(
-  Age = sample(c(18:65, NA), 100, replace = TRUE, prob = c(rep(1, 48), 5)),
-  Gender = sample(c("Male", "Female", NA), 100, replace = TRUE, prob = c(0.48, 0.48, 0.04)),
-  Education = sample(c("Elementary", "High School", "Bachelors", "Masters", NA), 100, replace = TRUE, prob = c(0.40, 0.30, 0.15, 0.10, 0.05)),
-  Income = sample(c(seq(5000, 40000, by = 5000), NA), 100, replace = TRUE, prob = c(rep(1, 8), 2)),
-  Smoker = sample(c(1, 0, NA), 100, replace = TRUE, prob = c(0.25, 0.65, 0.10)),
-  Region = sample(c("North", "South", "East", "West", NA), 100, replace = TRUE, prob = c(0.24, 0.24, 0.24, 0.24, .04))
+  Age = sample(c(18:65, NA), 100,
+               replace = TRUE, prob = c(rep(1, 48), 5)),
+  Gender = sample(c("Male", "Female", NA), 100,
+                  replace = TRUE, prob = c(0.48, 0.48, 0.04)),
+  Education = sample(c("Elementary", "High School", "Bachelors", "Masters", NA), 100,
+                     replace = TRUE, prob = c(0.40, 0.30, 0.15, 0.10, 0.05)),
+  Income = sample(c(seq(5000, 40000, by = 5000), NA), 100,
+                  replace = TRUE, prob = c(rep(1, 8), 2)),
+  Smoker = sample(c(1, 0, NA), 100,
+                  replace = TRUE, prob = c(0.25, 0.65, 0.10)),
+  Region = sample(c("North", "South", "East", "West", NA), 100,
+                  replace = TRUE, prob = c(0.24, 0.24, 0.24, 0.24, .04))
 )
 
 # Basic descriptive statistics
-performDescriptive(df = sample_df)
+# CORRECT: Piped data goes to 'df' argument automatically
+sample_df \%>\% performDescriptive()
+
+# INCORRECT: Causes an error because 'sample_df' is passed to 'summarize_what'
+# sample_df \%>\% performDescriptive(sample_df)
 
 # Descriptive statistics split by Gender, with custom header and labels
-performDescriptive(
-  df = sample_df,
-  split_by = "Gender",
-  split_by_header = "Participant Gender",
-  rename_variables = list(Age ~ "Age (Years)", Income ~ "Annual Income", Smoker ~ "Smoking Status")
-)
+sample_df \%>\%
+  performDescriptive(
+    split_by = "Gender",
+    split_by_header = "Participant Gender",
+    rename_variables = list(Age ~ "Age (Years)", Income ~ "Annual Income", Smoker ~ "Smoking Status")
+  )
 
 # Descriptive statistics with median and IQR for continuous, and count only for categorical
-performDescriptive(
-  df = sample_df,
-  continuous_statistics = "medianIQR",
-  categorical_statistics = "n",
-  n_digits_continuous = c(0, 0),
-  n_digits_categorical = c(0, 0)
-)
+sample_df \%>\%
+  performDescriptive(
+    continuous_statistics = "medianIQR",
+    categorical_statistics = "n",
+    n_digits_continuous = c(0, 0),
+    n_digits_categorical = c(0, 0)
+  )
 
 # Force 'Smoker' to be continuous (though conceptually it's not, for demonstration)
 # And display missing always (with custom text), with bold labels and italicized levels
-performDescriptive(
-  df = sample_df,
-  force_continuous = "Smoker",
-  display_missing = "always",
-  missing_text = "Data Unavailable",
-  missing_stat = "n",
-  bold_labels = TRUE,
-  italicize_levels = TRUE
-)
+sample_df \%>\%
+  performDescriptive(
+    force_continuous = "Smoker",
+    display_missing = "always",
+    missing_text = "Data Unavailable",
+    missing_stat = "n",
+    bold_labels = TRUE,
+    italicize_levels = TRUE
+  )
 
-# Sort categorical variables by frequency and calculate percentages by row (not ideal, but for demonstration only)
-performDescriptive(
-  df = sample_df,
-  sort_categorical_variables_by = "frequency",
-  calc_percent_by = "row"
-)
+# Sort categorical variables by frequency and calculate percentages by row
+# (not ideal, but for demonstration only)
+sample_df \%>\%
+  performDescriptive(
+    sort_categorical_variables_by = "frequency",
+    calc_percent_by = "row"
+  )
 
 # Perform common comparative statistical tests
-performDescriptive(
-  df = sample_df,
-  split_by = "Gender",
-  add_inferential_pvalues = TRUE
-)
+sample_df \%>\%
+  performDescriptive(
+    split_by = "Gender",
+    add_inferential_pvalues = TRUE
+  )
 }
 
+}
+\author{
+John Lennon L. Calorio
 }
