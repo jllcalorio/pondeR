@@ -40,18 +40,18 @@
 #' \strong{Measures of Association (Effect Sizes):}
 #' The function automatically calculates appropriate measures of association:
 #' \itemize{
-#'   \item \strong{Phi ($\phi$)} and \strong{Odds Ratio} for 2x2 independent tables.
-#'   \item \strong{Cramér's V} for RxC independent tables (larger than 2x2).
+#'   \item \strong{Phi (\eqn{\phi})} and \strong{Odds Ratio} for 2x2 independent tables.
+#'   \item \strong{Cramer's V} for RxC independent tables (larger than 2x2).
 #'   \item \strong{Odds Ratio (paired)} for 2x2 paired (McNemar's) tables.
 #' }
 #'
-#' @param data A data frame containing the variables for analysis.
+#' @param x A data frame containing the variables for analysis.
 #' @param var1 A character string specifying the name of the first categorical
 #'   variable (typically rows).
 #' @param var2 A character string specifying the name of the second categorical
 #'   variable (typically columns).
 #' @param weight An optional character string specifying the name of a weight
-#'   column. Use this if your `data` is in a "long" format (e.g., from
+#'   column. Use this if your `x` is in a "long" format (e.g., from
 #'   `as.data.frame.table()`).
 #' @param paired A logical indicating whether the observations are paired
 #'   (for McNemar's test). Default is `FALSE`.
@@ -67,14 +67,14 @@
 #'   (which can be computationally intensive). Default is `TRUE`.
 #' @param test_alpha Significance level for the final statistical test. Default is 0.05.
 #' @param calculate_association Logical indicating whether to calculate
-#'   measures of association (e.g., Cramér's V, Odds Ratio). Default is `TRUE`.
+#'   measures of association (e.g., Cramer's V, Odds Ratio). Default is `TRUE`.
 #' @param perform_posthoc Logical indicating whether to perform post-hoc tests
 #'   for significant RxC tables. Default is `TRUE`.
 #' @param p_adjust_method P-value adjustment method for post-hoc comparisons.
 #'   See `stats::p.adjust.methods`. Default is "BH".
 #' @param verbose A logical indicating whether to print detailed messages. Default is TRUE.
 #'
-#' @return An object of class "auto_compare_cat" which is a list containing:
+#' @return An object of class "run_assoc" which is a list containing:
 #'   \item{test_used}{Character string of the statistical test performed.}
 #'   \item{test_result}{List containing results of the statistical test (a 'htest' object).}
 #'   \item{contingency_table}{The observed contingency table (as a data.frame).}
@@ -96,11 +96,12 @@
 #' @importFrom rstatix pairwise_fisher_test
 #'
 #' @examples
+#' \dontrun{
 #' # --- Example 1: 2x2 Independent Test (Auto -> Chi-square) ---
 #' # Using 'mtcars' to compare transmission (am) vs. engine shape (vs)
 #' # This will use Chi-square as all expected counts are > 5.
 #' data(mtcars)
-#' res_mtcars <- auto_compare_cat(data = mtcars, var1 = "am", var2 = "vs")
+#' res_mtcars <- run_assoc(x = mtcars, var1 = "am", var2 = "vs")
 #' print(res_mtcars)
 #' summary(res_mtcars)
 #'
@@ -112,8 +113,8 @@
 #' # We'll just compare Hair vs. Eye
 #' he_data_sub <- he_data[he_data$Sex == "Male", ] # Subset to avoid 3D
 #'
-#' res_hair <- auto_compare_cat(
-#'   data = he_data_sub,
+#' res_hair <- run_assoc(
+#'   x = he_data_sub,
 #'   var1 = "Hair",
 #'   var2 = "Eye",
 #'   weight = "Freq"
@@ -139,8 +140,8 @@
 #'   after = after_vote
 #' )
 #'
-#' res_paired <- auto_compare_cat(
-#'   data = paired_data,
+#' res_paired <- run_assoc(
+#'   x = paired_data,
 #'   var1 = "before",
 #'   var2 = "after",
 #'   paired = TRUE
@@ -149,17 +150,18 @@
 #'
 #' # --- Example 4: Force a test_type ---
 #' # Force Chi-square on the mtcars data, with continuity correction
-#' res_mtcars_chisq <- auto_compare_cat(
-#'   data = mtcars,
+#' res_mtcars_chisq <- run_assoc(
+#'   x = mtcars,
 #'   var1 = "am",
 #'   var2 = "vs",
 #'   test_type = "chisq",
 #'   continuity_correction = TRUE
 #' )
 #' print(res_mtcars_chisq)
+#' }
 #'
 #' @export
-auto_compare_cat <- function(data,
+run_assoc <- function(x,
                              var1,
                              var2,
                              weight = NULL,
@@ -178,18 +180,18 @@ auto_compare_cat <- function(data,
   test_type <- match.arg(test_type)
   warnings_list <- character(0)
 
-  if (!is.data.frame(data)) {
-    stop("'data' must be a data frame.")
+  if (!is.data.frame(x)) {
+    stop("'x' must be a data frame.")
   }
   vars_to_check <- if (is.null(weight)) c(var1, var2) else c(var1, var2, weight)
-  if (!all(vars_to_check %in% names(data))) {
-    stop("One or more specified variables not found in data.")
+  if (!all(vars_to_check %in% names(x))) {
+    stop("One or more specified variables not found in x")
   }
 
   # Remove missing values
-  data_complete <- stats::na.omit(data[, vars_to_check, drop = FALSE])
-  if (nrow(data_complete) < nrow(data)) {
-    msg <- sprintf("Removing %d rows with missing values.", nrow(data) - nrow(data_complete))
+  data_complete <- stats::na.omit(x[, vars_to_check, drop = FALSE])
+  if (nrow(data_complete) < nrow(x)) {
+    msg <- sprintf("Removing %d rows with missing values.", nrow(daxta) - nrow(data_complete))
     warnings_list <- c(warnings_list, msg)
     if (verbose) message(msg)
   }
@@ -401,15 +403,24 @@ auto_compare_cat <- function(data,
         )
       } else {
         v_val <- effectsize::cramers_v(tbl, ci = 0.95)
-        mag <- effectsize::interpret_cramers_v(v_val$Cramers_V, nrow = n_rows, ncol = n_cols)
-        if (is.null(mag) || is.na(mag)) mag <- "unknown"
+
+        v_est <- v_val$Cramers_V
+
+        if (is.null(v_est) || is.na(v_est)) {
+          mag <- "unknown"
+        } else {
+          mag <- tryCatch(
+            effectsize::interpret_cramers_v(v_est, nrow = n_rows, ncol = n_cols),
+            error = function(e) "unknown"
+          )
+        }
         list(
-          metric = "Cramér's V",
+          metric = "Cramer's V",
           estimate = v_val$Cramers_V,
           ci_low = v_val$CI_low,
           ci_high = v_val$CI_high,
           magnitude = as.character(mag),
-          interpretation = sprintf("Cramér's V: %.3f (%s)",
+          interpretation = sprintf("Cramer's V: %.3f (%s)",
                                    v_val$Cramers_V, mag)
         )
       }
@@ -421,24 +432,71 @@ auto_compare_cat <- function(data,
   }
 
   # --- 5. Perform Post-Hoc Tests ---
+  # posthoc_result <- NULL
+  # if (perform_posthoc && !paired && (n_rows > 2 || n_cols > 2) &&
+  #     !is.null(test_result) && test_result$p.value < test_alpha) {
+
+  #   if (requireNamespace("rstatix", quietly = TRUE)) {
+  #     posthoc_result <- tryCatch({
+  #       if (verbose) message(sprintf("Performing post-hoc pairwise Fisher's tests (p-adjust: %s)...", p_adjust_method))
+  #       # Use pairwise_fisher_test as a robust post-hoc for contingency tables
+  #       rstatix::pairwise_fisher_test(tbl, p.adjust.method = p_adjust_method)
+  #     }, error = function(e) {
+  #       msg <- paste("Could not perform post-hoc test:", e$message)
+  #       warnings_list <<- c(warnings_list, msg)
+  #       NULL
+  #     })
+  #   } else {
+  #     msg <- "Package 'rstatix' not available. Skipping post-hoc tests."
+  #     warnings_list <- c(warnings_list, msg)
+  #   }
+  # }
   posthoc_result <- NULL
-  if (perform_posthoc && !paired && (n_rows > 2 || n_cols > 2) &&
-      !is.null(test_result) && test_result$p.value < test_alpha) {
+
+  # Post-hoc only appropriate when one variable is binary
+  posthoc_applicable <- (!paired) &&
+                        ((n_rows > 2 && n_cols == 2) ||
+                        (n_cols > 2 && n_rows == 2))
+
+  if (perform_posthoc &&
+      posthoc_applicable &&
+      !is.null(test_result) &&
+      test_result$p.value < test_alpha) {
 
     if (requireNamespace("rstatix", quietly = TRUE)) {
+
       posthoc_result <- tryCatch({
-        if (verbose) message(sprintf("Performing post-hoc pairwise Fisher's tests (p-adjust: %s)...", p_adjust_method))
-        # Use pairwise_fisher_test as a robust post-hoc for contingency tables
-        rstatix::pairwise_fisher_test(tbl, p.adjust.method = p_adjust_method)
+
+        if (verbose) {
+          message(sprintf(
+            "Performing post-hoc pairwise Fisher's tests (p-adjust: %s)...",
+            p_adjust_method
+          ))
+        }
+
+        # Convert table → long data frame for rstatix
+        long_tbl <- as.data.frame(tbl)
+        names(long_tbl) <- c("group1", "group2", "n")
+
+        rstatix::pairwise_fisher_test(
+          data = long_tbl,
+          formula = n ~ group1 + group2,
+          p.adjust.method = p_adjust_method
+        )
+
       }, error = function(e) {
         msg <- paste("Could not perform post-hoc test:", e$message)
         warnings_list <<- c(warnings_list, msg)
         NULL
       })
+
     } else {
       msg <- "Package 'rstatix' not available. Skipping post-hoc tests."
       warnings_list <- c(warnings_list, msg)
     }
+
+  } else if (perform_posthoc && verbose) {
+    message("Post-hoc tests skipped: not applicable for this table structure.")
   }
 
   # --- 6. Print Results ---
@@ -475,7 +533,15 @@ auto_compare_cat <- function(data,
     expected_table = if (!is.null(expected_table)) as.data.frame.matrix(expected_table) else NULL,
     residuals = if (!is.null(residuals)) as.data.frame.matrix(residuals) else NULL,
     stdres = if (!is.null(stdres)) as.data.frame.matrix(stdres) else NULL,
-    association = if (!is.null(association_result)) as.data.frame(association_result) else NULL,
+    # association = if (!is.null(association_result)) as.data.frame(association_result) else NULL,
+    association = if (!is.null(association_result)) {
+  as.data.frame(
+    lapply(association_result, function(x) {
+      if (length(x) == 0 || is.null(x)) NA else x
+    }),
+    stringsAsFactors = FALSE
+  )
+} else NULL,
     posthoc_result = posthoc_result,
     assumptions = assumptions,
     var1 = var1,
@@ -497,15 +563,15 @@ auto_compare_cat <- function(data,
     )
   )
 
-  class(result) <- "auto_compare_cat"
+  class(result) <- "run_assoc"
   return(result)
 }
 
-#' Print method for auto_compare_cat objects
-#' @param x An object of class "auto_compare_cat".
+#' Print method for run_assoc objects
+#' @param x An object of class "run_assoc".
 #' @param ... Further arguments passed to or from other methods.
 #' @export
-print.auto_compare_cat <- function(x, ...) {
+print.run_assoc <- function(x, ...) {
   cat("\n=== Automatic Categorical Comparison ===\n\n")
   cat(sprintf("Test Used: %s\n", x$test_used))
   cat(sprintf("Variables: %s vs. %s\n", x$var1, x$var2))
@@ -562,11 +628,11 @@ print.auto_compare_cat <- function(x, ...) {
   }
 }
 
-#' Summary method for auto_compare_cat objects
-#' @param object An object of class "auto_compare_cat".
+#' Summary method for run_assoc objects
+#' @param object An object of class "run_assoc".
 #' @param ... Further arguments passed to or from other methods.
 #' @export
-summary.auto_compare_cat <- function(object, ...) {
+summary.run_assoc <- function(object, ...) {
   cat("\n=== Detailed Categorical Comparison Summary ===\n\n")
   cat(sprintf("Row Variable: %s\n", object$var1))
   cat(sprintf("Col Variable: %s\n", object$var2))
