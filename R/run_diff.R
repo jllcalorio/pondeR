@@ -62,7 +62,7 @@
 #'   \item Epsilon-squared for Kruskal-Wallis
 #' }
 #'
-#' @param data A data frame containing the variables for analysis.
+#' @param x A data frame containing the variables for analysis.
 #' @param outcome A character string specifying the name of the numeric outcome variable.
 #' @param group A character string specifying the name of the grouping factor variable.
 #' @param paired A logical indicating whether the observations are paired. Default is FALSE.
@@ -86,7 +86,7 @@
 #'   If "max", the function uses the number of available cores minus 2 (to reserve system resources), with a minimum of 1.
 #'   Default is 1. Supports both Windows and POSIX (Mac/Linux) systems.
 #'
-#' @return An object of class "auto_compare" which is a list containing:
+#' @return An object of class "run_diff" which is a list containing:
 #'   \item{test_used}{Character string of the statistical test performed.}
 #'   \item{test_result}{List containing results of the statistical test.}
 #'   \item{effect_size}{List containing effect size estimate, confidence interval, magnitude, and interpretation.}
@@ -172,11 +172,12 @@
 #' @author John Lennon L. Calorio
 #'
 #' @examples
+#' \dontrun{
 #' # --- Basic Usage with 3+ Groups ---
 #' # Using the classic 'iris' dataset. Sepal.Length is numeric, Species is a factor.
 #' # This will likely trigger the One-way ANOVA -> Tukey HSD pathway.
 #' data(iris)
-#' res_iris <- auto_compare(data = iris, outcome = "Sepal.Length", group = "Species")
+#' res_iris <- run_diff(x = iris, outcome = "Sepal.Length", group = "Species")
 #' print(res_iris)
 #' summary(res_iris)
 #'
@@ -185,7 +186,7 @@
 #' # The variances are unequal, so this will trigger the Welch's t-test.
 #' data(mtcars)
 #' mtcars$am <- factor(mtcars$am, labels = c("automatic", "manual"))
-#' res_mtcars <- auto_compare(data = mtcars, outcome = "mpg", group = "am")
+#' res_mtcars <- run_diff(x = mtcars, outcome = "mpg", group = "am")
 #' print(res_mtcars)
 #'
 #' # --- Paired-Sample Comparison ---
@@ -193,14 +194,14 @@
 #' # It compares the extra hours of sleep for the same subjects under two drugs.
 #' data(sleep)
 #' # We specify the subject ID is implicit in the row order for a paired test.
-#' res_sleep <- auto_compare(data = sleep, outcome = "extra", group = "group", paired = TRUE)
+#' res_sleep <- run_diff(x = sleep, outcome = "extra", group = "group", paired = TRUE)
 #' summary(res_sleep)
 #'
 #' # --- Forcing a Non-Parametric Test ---
 #' # Use 'iris' data again, but force the non-parametric Kruskal-Wallis test.
 #' data(iris)
-#' res_iris_np <- auto_compare(
-#'   data = iris,
+#' res_iris_np <- run_diff(
+#'   x = iris,
 #'   outcome = "Sepal.Length",
 #'   group = "Species",
 #'   test_type = "nonparametric"
@@ -213,8 +214,8 @@
 #' data(ToothGrowth)
 #' # Convert dose to a factor to be treated as a group
 #' ToothGrowth$dose <- as.factor(ToothGrowth$dose)
-#' res_tooth <- auto_compare(
-#'   data = ToothGrowth,
+#' res_tooth <- run_diff(
+#'   x = ToothGrowth,
 #'   outcome = "len",
 #'   group = "dose",
 #'   test_type = "parametric",
@@ -227,8 +228,8 @@
 #' # Use 'PlantGrowth' and specify a non-alphabetical order for the groups.
 #' data(PlantGrowth)
 #' custom_order <- c("trt1", "ctrl", "trt2")
-#' res_plant <- auto_compare(
-#'   data = PlantGrowth,
+#' res_plant <- run_diff(
+#'   x = PlantGrowth,
 #'   outcome = "weight",
 #'   group = "group",
 #'   group_order = custom_order,
@@ -242,33 +243,19 @@
 #' # Using 'mtcars' again with the 'cyl' variable as a group.
 #' data(mtcars)
 #' mtcars$cyl <- as.factor(mtcars$cyl)
-#' res_mtcars_fast <- auto_compare(
-#'   data = mtcars,
+#' res_mtcars_fast <- run_diff(
+#'   x = mtcars,
 #'   outcome = "mpg",
 #'   group = "cyl",
 #'   calculate_effect_size = FALSE,
 #'   perform_posthoc = FALSE
 #' )
 #' print(res_mtcars_fast)
-#'
-#' # --- Generating Plots ---
-#' # The function includes a plot method to visualize the results.
-#' \dontrun{
-#' # Run an analysis first
-#' data(PlantGrowth)
-#' res_plot <- auto_compare(data = PlantGrowth, outcome = "weight", group = "group")
-#'
-#' # Generate the plots
-#' plot(res_plot)
-#' # The plot will show:
-#' # 1. A boxplot with means
-#' # 2. A Q-Q plot for checking normality
-#' # 3. A heatmap of post-hoc significant differences
 #' }
 #'
 #' @export
-auto_compare <- function(
-    data,
+run_diff <- function(
+    x,
     outcome,
     group,
     paired                = FALSE,
@@ -311,16 +298,16 @@ auto_compare <- function(
     stop("Invalid 'num_cores' argument. Must be an integer or 'max'.")
   }
 
-  # Validata data
-  if (!is.data.frame(data)) {
-    stop("'data' must be a data frame.")
+  # Validate data
+  if (!is.data.frame(x)) {
+    stop("'x' must be a data frame.")
   }
-  if (!all(c(outcome, group) %in% names(data))) {
+  if (!all(c(outcome, group) %in% names(x))) {
     stop(paste0("Outcome variable '", outcome, "' or group variable '", group, "' not found in data."))
   }
 
-  y   <- data[[outcome]]
-  grp <- as.factor(data[[group]])
+  y   <- x[[outcome]]
+  grp <- as.factor(x[[group]])
 
   if (!is.numeric(y)) {
     stop("Outcome variable must be numeric.")
@@ -1006,15 +993,15 @@ auto_compare <- function(
     raw_data       = tibble::tibble(outcome = y, group = grp)
   )
 
-  class(result) <- "auto_compare"
+  class(result) <- "run_diff"
   return(result)
 }
 
-#' Print method for auto_compare objects
-#' @param x An object of class "auto_compare".
+#' Print method for run_diff objects
+#' @param x An object of class "run_diff".
 #' @param ... Further arguments passed to or from other methods.
 #' @export
-print.auto_compare <- function(x, ...) {
+print.run_diff <- function(x, ...) {
   cat("\n=== Automatic Statistical Comparison ===\n\n")
   cat(sprintf("Test Used: %s\n", x$test_used))
   cat(sprintf("Parametric: %s\n\n", x$parametric))
@@ -1061,11 +1048,11 @@ print.auto_compare <- function(x, ...) {
   }
 }
 
-#' Summary method for auto_compare objects
-#' @param object An object of class "auto_compare".
+#' Summary method for run_diff objects
+#' @param object An object of class "run_diff".
 #' @param ... Further arguments passed to or from other methods.
 #' @export
-summary.auto_compare <- function(object, ...) {
+summary.run_diff <- function(object, ...) {
   cat("\n=== Detailed Statistical Comparison Summary ===\n\n")
   cat(sprintf("Outcome Variable: %s\n", object$outcome))
   cat(sprintf("Grouping Variable: %s\n", object$group_var))

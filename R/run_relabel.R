@@ -5,7 +5,7 @@
 #' The recoded values appear first in the factor levels, followed by any remaining
 #' unique values in alphabetical order.
 #'
-#' @param df A data frame containing the column to be recoded and factorized.
+#' @param x A data frame containing the column to be recoded and factorized.
 #' @param column A character string specifying the name of the column to recode.
 #'   The column must exist in the data frame.
 #' @param conversion_map A named list or vector where names are the original values
@@ -28,36 +28,36 @@
 #'
 #' @examples
 #' # Basic usage with character recoding
-#' df <- data.frame(
+#' x <- data.frame(
 #'   id = 1:5,
 #'   status = c("A", "B", "C", "A", "D")
 #' )
 #' map <- c("A" = "Active", "B" = "Inactive", "C" = "Pending")
-#' result <- recode_and_factorize(df, "status", map)
+#' result <- run_relabel(x, "status", map)
 #' levels(result$status)  # "Active" "Inactive" "Pending" "D"
 #'
 #' # Usage with numeric to character conversion
-#' df2 <- data.frame(
+#' x2 <- data.frame(
 #'   score = c(1, 2, 3, 1, 4),
 #'   grade = c(90, 85, 78, 92, 65)
 #' )
 #' grade_map <- c("1" = "Excellent", "2" = "Good", "3" = "Fair")
-#' result2 <- recode_and_factorize(df2, "score", grade_map)
+#' result2 <- run_relabel(x2, "score", grade_map)
 #'
 #' @export
-recode_and_factorize <- function(df, column, conversion_map) {
+run_relabel <- function(x, column, conversion_map) {
   # Input validation
-  if (!is.data.frame(df)) {
-    stop("Argument 'df' must be a data frame.")
+  if (!is.data.frame(x)) {
+    stop("Argument 'x' must be a data frame.")
   }
 
   if (!is.character(column) || length(column) != 1) {
     stop("Argument 'column' must be a single character string.")
   }
 
-  if (!column %in% names(df)) {
+  if (!column %in% names(x)) {
     stop("Column '", column, "' not found in the data frame. ",
-         "Available columns: ", paste(names(df), collapse = ", "))
+         "Available columns: ", paste(names(x), collapse = ", "))
   }
 
   if (is.null(conversion_map) || length(conversion_map) == 0) {
@@ -74,26 +74,26 @@ recode_and_factorize <- function(df, column, conversion_map) {
   }
 
   # Create a working copy to avoid modifying the original data frame
-  df_copy <- df
+  x_copy <- x
 
   # Handle empty data frame or column with all NA values
-  if (nrow(df_copy) == 0) {
+  if (nrow(x_copy) == 0) {
     warning("Data frame is empty. Returning original data frame.")
-    return(df_copy)
+    return(x_copy)
   }
 
-  if (all(is.na(df_copy[[column]]))) {
+  if (all(is.na(x_copy[[column]]))) {
     warning("Column '", column, "' contains only NA values. Converting to factor with NA level.")
-    df_copy[[column]] <- factor(df_copy[[column]])
-    return(df_copy)
+    x_copy[[column]] <- factor(x_copy[[column]])
+    return(x_copy)
   }
 
   # Convert the column to character to handle mixed data types
   # Store original column for potential error reporting
-  original_column <- df_copy[[column]]
+  original_column <- x_copy[[column]]
 
   tryCatch({
-    df_copy[[column]] <- as.character(df_copy[[column]])
+    x_copy[[column]] <- as.character(x_copy[[column]])
   }, error = function(e) {
     stop("Failed to convert column '", column, "' to character: ", e$message)
   })
@@ -109,8 +109,8 @@ recode_and_factorize <- function(df, column, conversion_map) {
       value <- conversion_values[i]
 
       # Handle potential NA values in the key matching
-      matches <- !is.na(df_copy[[column]]) & df_copy[[column]] == key
-      df_copy[[column]][matches] <- value
+      matches <- !is.na(x_copy[[column]]) & x_copy[[column]] == key
+      x_copy[[column]][matches] <- value
     }
   }, error = function(e) {
     stop("Error during recoding: ", e$message)
@@ -120,7 +120,7 @@ recode_and_factorize <- function(df, column, conversion_map) {
   ordered_levels <- conversion_values
 
   # Get all other unique values in the column (excluding NA values for sorting)
-  all_unique <- unique(df_copy[[column]])
+  all_unique <- unique(x_copy[[column]])
   other_levels <- all_unique[!all_unique %in% ordered_levels & !is.na(all_unique)]
 
   # Sort other levels alphabetically
@@ -131,21 +131,21 @@ recode_and_factorize <- function(df, column, conversion_map) {
   # Combine the ordered levels with the sorted other levels
   # Include NA if present in the data
   all_levels <- c(ordered_levels, other_levels)
-  if (any(is.na(df_copy[[column]]))) {
+  if (any(is.na(x_copy[[column]]))) {
     all_levels <- c(all_levels, NA)
   }
 
   # Convert the column to a factor with the defined levels
   tryCatch({
-    df_copy[[column]] <- factor(df_copy[[column]], levels = all_levels)
+    x_copy[[column]] <- factor(x_copy[[column]], levels = all_levels)
   }, error = function(e) {
     stop("Failed to convert column '", column, "' to factor: ", e$message)
   })
 
   # Verify that the factorization was successful
-  if (!is.factor(df_copy[[column]])) {
+  if (!is.factor(x_copy[[column]])) {
     stop("Failed to create factor for column '", column, "'.")
   }
 
-  return(df_copy)
+  return(x_copy)
 }

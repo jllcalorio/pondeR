@@ -3,16 +3,16 @@
 #' This function generates box plots or violin plots with statistical tests and
 #' pairwise comparisons. It automatically selects appropriate statistical tests
 #' based on assumptions, or allows manual specification. Statistical testing is
-#' performed using the companion function \code{\link{auto_compare}}.
+#' performed using the companion function \code{\link{run_diff}}.
 #'
-#' @param data A data frame containing the variables to plot.
+#' @param x A data frame containing the variables to plot.
 #' @param outcome Character string specifying the column name for the numeric outcome variable. Used as the default for \code{plot_vars} if it is not specified.
 #' @param group Character string specifying the column name for the grouping variable.
 #' @param plot_vars Character vector specifying column name(s) for numeric variables to plot. If \code{NULL} (default), uses the value of \code{outcome}.
 #' @param plot_type Character string specifying plot type: "boxplot" or "violin". Default is "boxplot".
-#' @param test_type Character string or NULL. Statistical test strategy to use: "auto", "parametric", "nonparametric". See \code{\link{auto_compare}} for details. If NULL (default), uses "auto".
+#' @param test_type Character string or NULL. Statistical test strategy to use: "auto", "parametric", "nonparametric". See \code{\link{run_diff}} for details. If NULL (default), uses "auto".
 #' @param posthoc Character string or NULL. Post-hoc test for multiple groups:
-#'   "auto", "none", "tukey", "games-howell", "dunn", "t_test", or "wilcox_test". See \code{\link{auto_compare}} for details. If NULL (default), uses "auto".
+#'   "auto", "none", "tukey", "games-howell", "dunn", "t_test", or "wilcox_test". See \code{\link{run_diff}} for details. If NULL (default), uses "auto".
 #' @param p_adjust_method Character string. P-value adjustment method for multiple comparisons.
 #'   Options include "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "none".
 #'   Default is "BH".
@@ -52,7 +52,7 @@
 #' @return A list containing:
 #'   \item{plots}{List of all generated plots.}
 #'   \item{significant_plots}{List of plots with significant results only.}
-#'   \item{statistics}{List of statistical test results for each variable (output from \code{\link{auto_compare}}).}
+#'   \item{statistics}{List of statistical test results for each variable (output from \code{\link{run_diff}}).}
 #'
 #' @import ggpubr
 #' @import dplyr
@@ -62,8 +62,8 @@
 #' @examples
 #' \dontrun{
 #' # Example 1: Show mean dot AND mean value
-#' results_anova <- plot_compare(
-#'   data = PlantGrowth,
+#' results_anova <- plot_diff(
+#'   x = PlantGrowth,
 #'   outcome = "weight",
 #'   group = "group",
 #'   plot_type = "boxplot",
@@ -76,8 +76,8 @@
 #' sleep_data <- sleep
 #' sleep_data$ID <- rep(1:10, 2) # Create a patient ID column
 #'
-#' results_paired <- plot_compare(
-#'   data = sleep_data,
+#' results_paired <- plot_diff(
+#'   x = sleep_data,
 #'   outcome = "extra",
 #'   group = "group",
 #'   paired = TRUE,
@@ -88,37 +88,37 @@
 #' }
 #'
 #' @export
-plot_compare <- function(data,
-                         outcome,
-                         group,
-                         plot_vars = NULL,
-                         plot_type = "boxplot",
-                         test_type = NULL,
-                         posthoc = NULL,
-                         p_adjust_method = "BH",
-                         hide_ns = TRUE,
-                         show_p_numeric = FALSE,
-                         paired = FALSE,
-                         test_alpha = 0.05,
-                         colors = NULL,
-                         plot_title = NULL,
-                         xlab = NULL,
-                         ylab = NULL,
-                         global_p_position = NULL,
-                         global_p_x = NULL,
-                         title_size = 12,
-                         subtitle_size = 10,
-                         xlab_size = 11,
-                         ylab_size = 11,
-                         axis_text_size = 10,
-                         group_order = NULL,
-                         label_points = NULL,
-                         sample_id = NULL,
-                         show_mean = FALSE,
-                         show_agg_val = TRUE,
-                         horizontal = FALSE,
-                         bracket_spacing = 0.08,
-                         ...) {
+plot_diff <- function(x,
+                      outcome,
+                      group,
+                      plot_vars = NULL,
+                      plot_type = "boxplot",
+                      test_type = NULL,
+                      posthoc = NULL,
+                      p_adjust_method = "BH",
+                      hide_ns = TRUE,
+                      show_p_numeric = FALSE,
+                      paired = FALSE,
+                      test_alpha = 0.05,
+                      colors = NULL,
+                      plot_title = NULL,
+                      xlab = NULL,
+                      ylab = NULL,
+                      global_p_position = NULL,
+                      global_p_x = NULL,
+                      title_size = 12,
+                      subtitle_size = 10,
+                      xlab_size = 11,
+                      ylab_size = 11,
+                      axis_text_size = 10,
+                      group_order = NULL,
+                      label_points = NULL,
+                      sample_id = NULL,
+                      show_mean = FALSE,
+                      show_agg_val = TRUE,
+                      horizontal = FALSE,
+                      bracket_spacing = 0.08,
+                      ...) {
 
   # --- Check for and Install Required Packages ---
   check_and_install_package <- function(pkg) {
@@ -159,13 +159,13 @@ plot_compare <- function(data,
   plot_colors <- if (!is.null(colors)) colors else default_colors
 
   # --- Input Validation ---
-  if (!all(c(outcome, group) %in% names(data))) stop(paste("Outcome or group variable not found in data."))
+  if (!all(c(outcome, group) %in% names(x))) stop(paste("Outcome or group variable not found in x"))
 
   # --- Set plot_vars if not provided ---
   if (is.null(plot_vars)) {
     plot_vars <- outcome
   }
-  if (!all(plot_vars %in% names(data))) stop(paste("Variable(s) to plot not found in data:", paste(setdiff(plot_vars, names(data)), collapse=", ")))
+  if (!all(plot_vars %in% names(x))) stop(paste("Variable(s) to plot not found in data:", paste(setdiff(plot_vars, names(x)), collapse=", ")))
 
   # --- Initialize Output Lists ---
   all_plots <- list()
@@ -174,14 +174,14 @@ plot_compare <- function(data,
 
   # --- Process Each Plot Variable ---
   for (var in plot_vars) {
-    if (!is.numeric(data[[var]])) { warning(paste("Variable", var, "is not numeric. Skipping.")); next }
+    if (!is.numeric(x[[var]])) { warning(paste("Variable", var, "is not numeric. Skipping.")); next }
 
     stat_results <- NULL
 
-    # --- FIX: Improve error handling for auto_compare ---
+    # --- FIX: Improve error handling for run_diff ---
     tryCatch({
-      stat_results <- auto_compare(
-        data = data,
+      stat_results <- run_diff(
+        x = x,
         outcome = var,
         group = group,
         test_type = if (is.null(test_type)) "auto" else test_type,
@@ -195,12 +195,12 @@ plot_compare <- function(data,
     }, error = function(e) {
       warning(paste("Statistical test failed for", var, ":", e$message), call. = FALSE)
     }, warning = function(w) {
-      warning(paste("Warning in auto_compare for", var, ":", w$message), call. = FALSE)
+      warning(paste("Warning in run_diff for", var, ":", w$message), call. = FALSE)
     })
 
     if (is.null(stat_results)) { next }
 
-    # --- Reuse results from auto_compare ---
+    # --- Reuse results from run_diff ---
     n_groups <- nlevels(stat_results$raw_data$group)
     main_test_p_val <- stat_results$test_result$p.value
     posthoc_data <- stat_results$posthoc_result
@@ -210,8 +210,8 @@ plot_compare <- function(data,
     colnames(plot_data) <- c(var, group) # Rename for ggpubr
 
     if (!is.null(sample_id)) {
-      if (!sample_id %in% names(data)) stop(paste("Sample ID variable", sample_id, "not found in data."))
-      original_ids <- data[[sample_id]][complete.cases(data[c(var, group)])]
+      if (!sample_id %in% names(x)) stop(paste("Sample ID variable", sample_id, "not found in data."))
+      original_ids <- x[[sample_id]][complete.cases(x[c(var, group)])]
       plot_data[[sample_id]] <- original_ids
     }
 

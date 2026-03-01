@@ -15,7 +15,7 @@
 #' @param rename_variables List. A list of the format `list("original_variable_name1" ~ "new_variable_name1", ...)`, used to rename variables in the output table.
 #' @param continuous_statistics String. The type of statistics to report for continuous variables. Options are:
 #'   \itemize{
-#'     \item 'meanSD': mean ± standard deviation
+#'     \item 'meanSD': mean +- standard deviation
 #'     \item 'meanSD2': mean (standard deviation), which is another format of meanSD
 #'     \item 'medianIQR': median (interquartile range) or equivalently median (p25, p75)
 #'     \item 'mean': mean (average)
@@ -154,22 +154,24 @@
 #'
 #' # Basic descriptive statistics
 #' # CORRECT: Piped data goes to 'df' argument automatically
-#' sample_df %>% performDescriptive()
+#' sample_df %>% run_summarytable()
 #'
 #' # INCORRECT: Causes an error because 'sample_df' is passed to 'summarize_what'
-#' # sample_df %>% performDescriptive(sample_df)
+#' # sample_df %>% run_summarytable(sample_df)
 #'
 #' # Descriptive statistics split by Gender, with custom header and labels
 #' sample_df %>%
-#'   performDescriptive(
+#'   run_summarytable(
 #'     split_by = "Gender",
 #'     split_by_header = "Participant Gender",
-#'     rename_variables = list(Age ~ "Age (Years)", Income ~ "Annual Income", Smoker ~ "Smoking Status")
+#'     rename_variables = list(Age ~ "Age (Years)", 
+#'                             Income ~ "Annual Income", 
+#'                             Smoker ~ "Smoking Status")
 #'   )
 #'
 #' # Descriptive statistics with median and IQR for continuous, and count only for categorical
 #' sample_df %>%
-#'   performDescriptive(
+#'   run_summarytable(
 #'     continuous_statistics = "medianIQR",
 #'     categorical_statistics = "n",
 #'     n_digits_continuous = c(0, 0),
@@ -179,7 +181,7 @@
 #' # Force 'Smoker' to be continuous (though conceptually it's not, for demonstration)
 #' # And display missing always (with custom text), with bold labels and italicized levels
 #' sample_df %>%
-#'   performDescriptive(
+#'   run_summarytable(
 #'     force_continuous = "Smoker",
 #'     display_missing = "always",
 #'     missing_text = "Data Unavailable",
@@ -191,21 +193,21 @@
 #' # Sort categorical variables by frequency and calculate percentages by row
 #' # (not ideal, but for demonstration only)
 #' sample_df %>%
-#'   performDescriptive(
+#'   run_summarytable(
 #'     sort_categorical_variables_by = "frequency",
 #'     calc_percent_by = "row"
 #'   )
 #'
 #' # Perform common comparative statistical tests
 #' sample_df %>%
-#'   performDescriptive(
+#'   run_summarytable(
 #'     split_by = "Gender",
 #'     add_inferential_pvalues = TRUE
 #'   )
 #'}
 #'
 
-performDescriptive <- function(
+run_summarytable <- function(
     df,
     summarize_what = everything(),
     split_by = NULL,
@@ -248,13 +250,13 @@ performDescriptive <- function(
   # --- Parameter checks and improvements ---
 
   # NEW: Check for common piping error that causes Errors 1 & 2.
-  # This happens when user calls `my_data %>% performDescriptive(my_data, ...)`
+  # This happens when user calls `my_data %>% run_summarytable(my_data, ...)`
   if (is.data.frame(summarize_what)) {
     stop(paste(
       "Argument 'summarize_what' cannot be a data frame.",
       "This error often happens when piping data and also passing the data frame as an argument.",
-      "Incorrect: my_data %>% performDescriptive(my_data, ...)",
-      "Correct:   my_data %>% performDescriptive(...)",
+      "Incorrect: my_data %>% run_summarytable(my_data, ...)",
+      "Correct:   my_data %>% run_summarytable(...)",
       sep = "\n"
     ))
   }
@@ -353,7 +355,7 @@ performDescriptive <- function(
     }
   } else {
     # Exclude split_by and strata_by columns from missing value replacement
-    exclude_cols <- unique(c(split_by, strata_by)) %>% .[!is.null(.)]
+    exclude_cols <- unique(c(split_by, strata_by)) |> purrr::compact()
 
     if (calc_percent_by == "column") {
       if (calc_col_percent_using == "n_in_column") {
@@ -399,7 +401,7 @@ performDescriptive <- function(
 
     # Construct gtsummary statistic string
     stat_exprs <- c(
-      meanSD    = "{mean} ± {sd}",
+      meanSD    = "{mean} +- {sd}",
       meanSD2   = "{mean} ({sd})",
       medianIQR = "{median} ({p25}, {p75})",
       mean      = "{mean}",
