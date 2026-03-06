@@ -15,7 +15,7 @@
 #' @param rename_variables List. A list of the format `list("original_variable_name1" ~ "new_variable_name1", ...)`, used to rename variables in the output table.
 #' @param continuous_statistics String. The type of statistics to report for continuous variables. Options are:
 #'   \itemize{
-#'     \item 'meanSD': mean +- standard deviation
+#'     \item 'meanSD': mean ± standard deviation
 #'     \item 'meanSD2': mean (standard deviation), which is another format of meanSD
 #'     \item 'medianIQR': median (interquartile range) or equivalently median (p25, p75)
 #'     \item 'mean': mean (average)
@@ -401,7 +401,7 @@ run_summarytable <- function(
 
     # Construct gtsummary statistic string
     stat_exprs <- c(
-      meanSD    = "{mean} +- {sd}",
+      meanSD    = "{mean} ± {sd}",
       meanSD2   = "{mean} ({sd})",
       medianIQR = "{median} ({p25}, {p75})",
       mean      = "{mean}",
@@ -730,8 +730,8 @@ run_summarytable <- function(
     if (missing_stat == "n_percent") {
       # Note: gtsummary's missing_stat uses {p_miss} which defaults to 1 decimal place.
       # This can be hardcoded or made dynamic if gtsummary allowed setting digits for missing_stat.
-      # For now, we'll anticipate "0 (0.0%)" and "0 (0%)" and "0.0%"
-      zero_strings_to_replace <- c(zero_strings_to_replace, "0 (0.0%)", "0 (0%)")
+      # For now, we'll anticipate "0 (0.0%)" and "0 (0%)", "0.0%" and "0 (NA%)"
+      zero_strings_to_replace <- c(zero_strings_to_replace, "0 (0.0%)", "0 (0%)", "0 (NA%)")
     } else if (missing_stat == "n") {
       zero_strings_to_replace <- c(zero_strings_to_replace, "0")
     } else if (missing_stat == "percent") {

@@ -34,6 +34,10 @@ May contain normalization factors, group labels, and QC sample identifiers.}
 \item \code{"pqn_reference"}: PQN using a specific reference sample (specify via \code{ref_sample})
 \item \code{"pqn_group"}: PQN using pooled QC samples as reference
 \item \code{"quantile"}: Quantile normalization
+\item \code{"col_rel_abundance"}: Relative abundance per column (feature); each value
+divided by its column sum so each feature sums to 1 across all samples
+\item \code{"row_rel_abundance"}: Relative abundance per row (sample); each value
+divided by its row sum so each sample sums to 1 across all features
 \item Numeric vector: Custom normalization factors (length must equal nrow(x) excluding QCs)
 }}
 
@@ -90,6 +94,15 @@ represents the "ideal" composition.
 metabolomics data with regular QC injections.
 \item \strong{quantile}: Forces all samples to have identical distributions. Very strong
 normalization that may remove biological variation - use with caution.
+\item \strong{col_rel_abundance}: Computes relative abundance per feature (column). Each value
+is divided by the sum of its column, so each feature's values sum to 1 across all
+samples. Useful for comparing the contribution of a feature across samples. Note
+that the normalization factors returned are the column sums.
+\item \strong{row_rel_abundance}: Computes relative abundance per sample (row). Each value is
+divided by the sum of its row, so each sample's values sum to 1 across all features.
+Equivalent to \code{"sum"} normalization but expressed as proportions. Useful for
+compositional data analysis. Note that the normalization factors returned are the
+row sums.
 }
 
 \strong{Custom Normalization Factors:}
@@ -121,6 +134,12 @@ result2 <- run_normalize(x, metadata, method = "pqn_group")
 # Specific factors from metadata
 result3 <- run_normalize(x, metadata, method = "specific_factor",
                          factor_col = "Normalization")
+
+# Relative abundance per feature (column)
+result4 <- run_normalize(x, metadata, method = "col_rel_abundance")
+
+# Relative abundance per sample (row)
+result5 <- run_normalize(x, metadata, method = "row_rel_abundance")
 }
 }
 \references{
