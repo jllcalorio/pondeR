@@ -35,6 +35,7 @@ plot_diff(
   show_agg_val = TRUE,
   horizontal = FALSE,
   bracket_spacing = 0.08,
+  subgroup = NULL,
   ...
 )
 }
@@ -110,6 +111,12 @@ for point labeling. Required when label_points is not NULL.}
 \item{horizontal}{Logical. If TRUE, flip the plot to horizontal orientation. Default is FALSE.}
 
 \item{bracket_spacing}{Numeric. Multiplier for spacing between comparison brackets. Default is 0.08.}
+
+\item{subgroup}{Character vector or NULL. Column name(s) in \code{x} to use for
+subgroup analysis. Each column must be categorical (factor or character). When
+specified, the full analysis (statistical tests and plots) is repeated
+independently for each level of each subgroup column. Default is NULL (no
+subgroup analysis performed).}
 
 \item{...}{Additional arguments passed to ggboxplot or ggviolin from ggpubr.}
 }

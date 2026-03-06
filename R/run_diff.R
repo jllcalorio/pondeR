@@ -63,7 +63,9 @@
 #' }
 #'
 #' @param x A data frame containing the variables for analysis.
-#' @param outcome A character string specifying the name of the numeric outcome variable.
+#' @param outcome A character string or character vector specifying the name(s) of the
+#'   numeric outcome variable(s). When a vector is supplied, the function loops over each
+#'   outcome and returns a named list of \code{"run_diff"} objects instead of a single object.
 #' @param group A character string specifying the name of the grouping factor variable.
 #' @param paired A logical indicating whether the observations are paired. Default is FALSE.
 #' @param test_type A character string specifying the test strategy. Must be one of
@@ -81,12 +83,18 @@
 #'   "hommel", "bonferroni", "BH", "BY", "fdr", "none". Default is "BH".
 #' @param group_order Character vector specifying the order of groups. If NULL, uses factor levels
 #'   in alphabetical order.
+#' @param subgroup Character vector or NULL. Column name(s) in \code{x} to use for
+#'   subgroup analysis. Each must be a categorical column (factor or character) in \code{x}.
+#'   When specified, the full analysis is repeated independently for each level of each
+#'   subgroup column. Results are returned under \code{$subgroup_analysis} in the output,
+#'   nested as \code{subgroup_var -> level -> run_diff result}. Default is NULL.
 #' @param verbose A logical indicating whether to print detailed messages. Default is TRUE.
 #' @param num_cores Integer specifying the number of cores to use for parallel processing, or the character string "max".
 #'   If "max", the function uses the number of available cores minus 2 (to reserve system resources), with a minimum of 1.
 #'   Default is 1. Supports both Windows and POSIX (Mac/Linux) systems.
 #'
-#' @return An object of class "run_diff" which is a list containing:
+#' @return When \code{outcome} is a single string, returns an object of class \code{"run_diff"}
+#'   (a list) containing:
 #'   \item{test_used}{Character string of the statistical test performed.}
 #'   \item{test_result}{List containing results of the statistical test.}
 #'   \item{effect_size}{List containing effect size estimate, confidence interval, magnitude, and interpretation.}
@@ -98,9 +106,13 @@
 #'   \item{paired}{The paired setting used.}
 #'   \item{test_type}{The test_type strategy used.}
 #'   \item{test_alpha}{The significance level used.}
+#'   \item{subgroup_analysis}{Named list of subgroup results, nested as
+#'     \code{subgroup_var -> level -> run_diff result}. NULL if no subgroup specified.}
 #'   \item{warnings}{Character vector of any warnings generated.}
 #'   \item{parameters}{List of all parameters used in the analysis.}
 #'   \item{raw_data}{Data frame containing the variables used.}
+#'   When \code{outcome} is a character vector of length > 1, returns a named list where
+#'   each element is a \code{"run_diff"} object for the corresponding outcome variable.
 #'
 #' @importFrom car leveneTest
 #' @importFrom effectsize cohens_d rank_biserial eta_squared epsilon_squared interpret
@@ -269,14 +281,58 @@ run_diff <- function(
     perform_posthoc       = TRUE,
     p_adjust_method       = "BH",
     group_order           = NULL,
+    subgroup              = NULL,
     verbose               = TRUE,
     num_cores             = 1
 ) {
+
+  # --- Multi-outcome dispatch ---
+  # If multiple outcomes are supplied, loop and return a named list.
+  if (length(outcome) > 1) {
+    results <- lapply(outcome, function(oc) {
+      tryCatch(
+        run_diff(
+          x                     = x,
+          outcome               = oc,
+          group                 = group,
+          paired                = paired,
+          test_type             = test_type,
+          normality_method      = normality_method,
+          alpha_normality       = alpha_normality,
+          alpha_variance        = alpha_variance,
+          test_alpha            = test_alpha,
+          min_n_threshold       = min_n_threshold,
+          calculate_effect_size = calculate_effect_size,
+          perform_posthoc       = perform_posthoc,
+          p_adjust_method       = p_adjust_method,
+          group_order           = group_order,
+          subgroup              = subgroup,
+          verbose               = verbose,
+          num_cores             = num_cores
+        ),
+        error = function(e) {
+          warning(paste0("run_diff failed for outcome '", oc, "': ", e$message), call. = FALSE)
+          NULL
+        }
+      )
+    })
+    names(results) <- outcome
+    return(results)
+  }
 
   # --- 1. Input Validation and Preparation ---
   test_type        <- match.arg(test_type)
   normality_method <- match.arg(normality_method)
   warnings_list    <- character(0)
+
+  # --- Subgroup Validation ---
+  if (!is.null(subgroup)) {
+    if (!is.character(subgroup)) stop("'subgroup' must be a character vector of column names.")
+    missing_sg <- setdiff(subgroup, names(x))
+    if (length(missing_sg) > 0) stop(paste("Subgroup column(s) not found in data:", paste(missing_sg, collapse = ", ")))
+    non_cat <- subgroup[sapply(subgroup, function(s) is.numeric(x[[s]]) && !is.factor(x[[s]]))]
+    if (length(non_cat) > 0) stop(paste("Subgroup column(s) must be categorical (factor or character):", paste(non_cat, collapse = ", ")))
+  }
 
   # Validate num_cores and check OS
   avail_cores                         <- parallel::detectCores()
@@ -912,24 +968,28 @@ run_diff <- function(
   }
 
   # --- 8. Comprehensive Data Summary ---
+  # Use only levels that actually appear in the (possibly subsetted) data
+  present_groups  <- levels(droplevels(grp))
+  present_ns      <- table(droplevels(grp))
+
   data_summary <- data.frame(
-    group     = groups,
-    n         = as.numeric(group_ns),
-    mean      = tapply(y, grp, mean),
-    sd        = tapply(y, grp, sd),
-    se        = tapply(y, grp, function(x) sd(x) / sqrt(length(x))),
-    median    = tapply(y, grp, median),
-    q25       = tapply(y, grp, function(x) quantile(x, 0.25)),
-    q75       = tapply(y, grp, function(x) quantile(x, 0.75)),
-    min       = tapply(y, grp, min),
-    max       = tapply(y, grp, max),
+    group  = present_groups,
+    n      = as.numeric(present_ns),
+    mean   = as.numeric(tapply(y, droplevels(grp), mean)),
+    sd     = as.numeric(tapply(y, droplevels(grp), sd)),
+    se     = as.numeric(tapply(y, droplevels(grp), function(v) sd(v) / sqrt(length(v)))),
+    median = as.numeric(tapply(y, droplevels(grp), median)),
+    q25    = as.numeric(tapply(y, droplevels(grp), function(v) quantile(v, 0.25))),
+    q75    = as.numeric(tapply(y, droplevels(grp), function(v) quantile(v, 0.75))),
+    min    = as.numeric(tapply(y, droplevels(grp), min)),
+    max    = as.numeric(tapply(y, droplevels(grp), max)),
     row.names = NULL
   )
 
   # Add skewness and kurtosis if moments package available
   if (requireNamespace("moments", quietly = TRUE)) {
-    data_summary$skewness <- tapply(y, grp, moments::skewness)
-    data_summary$kurtosis <- tapply(y, grp, moments::kurtosis)
+    data_summary$skewness <- as.numeric(tapply(y, droplevels(grp), moments::skewness))
+    data_summary$kurtosis <- as.numeric(tapply(y, droplevels(grp), moments::kurtosis))
   }
 
   # --- 9. Print Results ---
@@ -962,6 +1022,67 @@ run_diff <- function(
     }
   }
 
+  # --- 9b. Subgroup Analysis ---
+  subgroup_analysis <- NULL
+
+  if (!is.null(subgroup)) {
+    subgroup_analysis <- list()
+
+    for (sg_var in subgroup) {
+      sg_levels <- if (is.factor(x[[sg_var]])) {
+        levels(droplevels(as.factor(x[[sg_var]])))
+      } else {
+        sort(unique(na.omit(as.character(x[[sg_var]]))))
+      }
+
+      sg_var_results <- list()
+
+      for (lvl in sg_levels) {
+        x_sub <- x[as.character(x[[sg_var]]) == lvl, , drop = FALSE]
+
+        if (nrow(x_sub) == 0) {
+          warning(paste0("Subgroup '", sg_var, "' level '", lvl, "' has no observations. Skipping."))
+          next
+        }
+
+        grp_sub <- droplevels(as.factor(x_sub[[group]]))
+        if (nlevels(grp_sub) < 2) {
+          warning(paste0("Subgroup '", sg_var, "' = '", lvl, "': fewer than 2 group levels after subsetting. Skipping."))
+          next
+        }
+
+        sg_result <- tryCatch({
+          run_diff(
+            x                     = x_sub,
+            outcome               = outcome,
+            group                 = group,
+            paired                = paired,
+            test_type             = test_type,
+            normality_method      = normality_method,
+            alpha_normality       = alpha_normality,
+            alpha_variance        = alpha_variance,
+            test_alpha            = test_alpha,
+            min_n_threshold       = min_n_threshold,
+            calculate_effect_size = calculate_effect_size,
+            perform_posthoc       = perform_posthoc,
+            p_adjust_method       = p_adjust_method,
+            group_order           = group_order,
+            verbose               = verbose,
+            num_cores             = num_cores,
+            subgroup              = NULL  # prevent infinite recursion
+          )
+        }, error = function(e) {
+          warning(paste0("run_diff failed for subgroup '", sg_var, "' = '", lvl, "': ", e$message), call. = FALSE)
+          NULL
+        })
+
+        if (!is.null(sg_result)) sg_var_results[[lvl]] <- sg_result
+      }
+
+      subgroup_analysis[[sg_var]] <- sg_var_results
+    }
+  }
+
   # --- 10. Return Object ---
   result <- list(
     test_used      = test_used,
@@ -976,6 +1097,7 @@ run_diff <- function(
     paired         = paired,
     test_type      = test_type,
     test_alpha     = test_alpha,
+    subgroup_analysis  = subgroup_analysis,
     warnings       = warnings_list,
     parameters     = list(
       test_type             = test_type,
@@ -988,6 +1110,7 @@ run_diff <- function(
       perform_posthoc       = perform_posthoc,
       p_adjust_method       = p_adjust_method,
       group_order           = group_order,
+      subgroup              = subgroup,
       paired                = paired
     ),
     raw_data       = tibble::tibble(outcome = y, group = grp)
