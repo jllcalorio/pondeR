@@ -47,6 +47,11 @@
 #'   (for parametric tests) or median (for non-parametric tests) on the plot.
 #' @param horizontal Logical. If TRUE, flip the plot to horizontal orientation. Default is FALSE.
 #' @param bracket_spacing Numeric. Multiplier for spacing between comparison brackets. Default is 0.08.
+#' @param subgroup Character vector or NULL. Column name(s) in \code{x} to use for
+#'   subgroup analysis. Each column must be categorical (factor or character). When
+#'   specified, the full analysis (statistical tests and plots) is repeated
+#'   independently for each level of each subgroup column. Default is NULL (no
+#'   subgroup analysis performed).
 #' @param ... Additional arguments passed to ggboxplot or ggviolin from ggpubr.
 #'
 #' @return A list containing:
@@ -118,6 +123,7 @@ plot_diff <- function(x,
                       show_agg_val = TRUE,
                       horizontal = FALSE,
                       bracket_spacing = 0.08,
+                      subgroup = NULL,
                       ...) {
 
   # --- Check for and Install Required Packages ---
@@ -160,6 +166,15 @@ plot_diff <- function(x,
 
   # --- Input Validation ---
   if (!all(c(outcome, group) %in% names(x))) stop(paste("Outcome or group variable not found in x"))
+  
+  # --- Subgroup Validation ---
+  if (!is.null(subgroup)) {
+    if (!is.character(subgroup)) stop("'subgroup' must be a character vector of column names.")
+    missing_sg <- setdiff(subgroup, names(x))
+    if (length(missing_sg) > 0) stop(paste("Subgroup column(s) not found in data:", paste(missing_sg, collapse = ", ")))
+    non_cat <- subgroup[sapply(subgroup, function(s) is.numeric(x[[s]]) && !is.factor(x[[s]]))]
+    if (length(non_cat) > 0) stop(paste("Subgroup column(s) must be categorical (factor or character):", paste(non_cat, collapse = ", ")))
+  }
 
   # --- Set plot_vars if not provided ---
   if (is.null(plot_vars)) {
@@ -171,6 +186,7 @@ plot_diff <- function(x,
   all_plots <- list()
   significant_plots <- list()
   statistics <- list()
+  subgroup_analysis <- list()
 
   # --- Process Each Plot Variable ---
   for (var in plot_vars) {
@@ -180,17 +196,30 @@ plot_diff <- function(x,
 
     # --- FIX: Improve error handling for run_diff ---
     tryCatch({
+      # stat_results <- run_diff(
+      #   x = x,
+      #   outcome = var,
+      #   group = group,
+      #   test_type = if (is.null(test_type)) "auto" else test_type,
+      #   p_adjust_method = p_adjust_method,
+      #   paired = paired,
+      #   test_alpha = test_alpha,
+      #   calculate_effect_size = TRUE,
+      #   perform_posthoc = TRUE,
+      #   verbose = FALSE
+      # )
       stat_results <- run_diff(
-        x = x,
-        outcome = var,
-        group = group,
-        test_type = if (is.null(test_type)) "auto" else test_type,
-        p_adjust_method = p_adjust_method,
-        paired = paired,
-        test_alpha = test_alpha,
+        x                     = x,
+        outcome               = var,
+        group                 = group,
+        test_type             = if (is.null(test_type)) "auto" else test_type,
+        p_adjust_method       = p_adjust_method,
+        paired                = paired,
+        test_alpha            = test_alpha,
         calculate_effect_size = TRUE,
-        perform_posthoc = TRUE,
-        verbose = FALSE
+        perform_posthoc       = TRUE,
+        verbose               = FALSE,
+        subgroup              = NULL
       )
     }, error = function(e) {
       warning(paste("Statistical test failed for", var, ":", e$message), call. = FALSE)
@@ -397,5 +426,136 @@ plot_diff <- function(x,
     if (is_significant) significant_plots[[var]] <- p
   }
 
-  return(list(plots = all_plots, significant_plots = significant_plots, statistics = statistics))
+  # --- Subgroup Analysis ---
+  if (!is.null(subgroup)) {
+    for (sg_var in subgroup) {
+      sg_levels <- if (is.factor(x[[sg_var]])) levels(droplevels(as.factor(x[[sg_var]]))) else sort(unique(na.omit(as.character(x[[sg_var]]))))
+
+      sg_var_results <- list()
+
+      for (lvl in sg_levels) {
+        x_sub <- x[as.character(x[[sg_var]]) == lvl, , drop = FALSE]
+
+        if (nrow(x_sub) == 0) {
+          warning(paste0("Subgroup '", sg_var, "' level '", lvl, "' has no observations. Skipping."))
+          next
+        }
+
+        sg_all_plots        <- list()
+        sg_significant_plots <- list()
+        sg_statistics       <- list()
+
+        for (var in plot_vars) {
+          if (!is.numeric(x_sub[[var]])) next
+
+          # Check that group has at least 2 levels in this subset
+          grp_sub <- droplevels(as.factor(x_sub[[group]]))
+          if (nlevels(grp_sub) < 2) {
+            warning(paste0("Subgroup '", sg_var, "' = '", lvl, "': variable '", var,
+                           "' has fewer than 2 group levels after subsetting. Skipping."))
+            next
+          }
+
+          sg_stat <- NULL
+          tryCatch({
+            # sg_stat <- run_diff(
+            #   x               = x_sub,
+            #   outcome         = var,
+            #   group           = group,
+            #   test_type       = if (is.null(test_type)) "auto" else test_type,
+            #   p_adjust_method = p_adjust_method,
+            #   paired          = paired,
+            #   test_alpha      = test_alpha,
+            #   calculate_effect_size = TRUE,
+            #   perform_posthoc       = TRUE,
+            #   verbose               = FALSE
+            # )
+            sg_stat <- run_diff(
+            x                     = x_sub,
+            outcome               = var,
+            group                 = group,
+            test_type             = if (is.null(test_type)) "auto" else test_type,
+            p_adjust_method       = p_adjust_method,
+            paired                = paired,
+            test_alpha            = test_alpha,
+            calculate_effect_size = TRUE,
+            perform_posthoc       = TRUE,
+            group_order           = group_order,
+            verbose               = FALSE,
+            subgroup              = NULL
+          )
+          }, error = function(e) {
+            warning(paste0("run_diff failed for subgroup '", sg_var, "' = '", lvl, "', variable '", var, "': ", e$message), call. = FALSE)
+          })
+
+          if (is.null(sg_stat)) next
+
+          # Build plot using plot_diff on the subset (single var, no further subgroup)
+          sg_plot_result <- tryCatch({
+            plot_diff(
+              x               = x_sub,
+              outcome         = var,
+              group           = group,
+              plot_vars       = var,
+              plot_type       = plot_type,
+              test_type       = if (is.null(test_type)) "auto" else test_type,
+              posthoc         = posthoc,
+              p_adjust_method = p_adjust_method,
+              hide_ns         = hide_ns,
+              show_p_numeric  = show_p_numeric,
+              paired          = paired,
+              test_alpha      = test_alpha,
+              colors          = colors,
+              plot_title      = if (!is.null(plot_title)) plot_title else paste0(var, " by ", group, "\n[", sg_var, " = ", lvl, "]"),
+              xlab            = xlab,
+              ylab            = ylab,
+              global_p_position = global_p_position,
+              global_p_x      = global_p_x,
+              title_size      = title_size,
+              subtitle_size   = subtitle_size,
+              xlab_size       = xlab_size,
+              ylab_size       = ylab_size,
+              axis_text_size  = axis_text_size,
+              group_order     = group_order,
+              label_points    = label_points,
+              sample_id       = sample_id,
+              show_mean       = show_mean,
+              show_agg_val    = show_agg_val,
+              horizontal      = horizontal,
+              bracket_spacing = bracket_spacing,
+              subgroup        = NULL  # prevent infinite recursion
+            )
+          }, error = function(e) {
+            warning(paste0("plot_diff failed for subgroup '", sg_var, "' = '", lvl, "', variable '", var, "': ", e$message), call. = FALSE)
+            NULL
+          })
+
+          sg_statistics[[var]] <- sg_stat
+
+          if (!is.null(sg_plot_result)) {
+            sg_all_plots[[var]]         <- sg_plot_result$plots[[var]]
+            if (!is.null(sg_plot_result$significant_plots[[var]])) {
+              sg_significant_plots[[var]] <- sg_plot_result$significant_plots[[var]]
+            }
+          }
+        } # end var loop
+
+        sg_var_results[[lvl]] <- list(
+          plots             = sg_all_plots,
+          significant_plots = sg_significant_plots,
+          statistics        = sg_statistics
+        )
+      } # end lvl loop
+
+      subgroup_analysis[[sg_var]] <- sg_var_results
+    } # end sg_var loop
+  }
+
+  # return(list(plots = all_plots, significant_plots = significant_plots, statistics = statistics))
+  return(list(
+    plots             = all_plots,
+    significant_plots = significant_plots,
+    statistics        = statistics,
+    subgroup_analysis = if (length(subgroup_analysis) > 0) subgroup_analysis else NULL
+  ))
 }

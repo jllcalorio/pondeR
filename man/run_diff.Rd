@@ -19,6 +19,7 @@ run_diff(
   perform_posthoc = TRUE,
   p_adjust_method = "BH",
   group_order = NULL,
+  subgroup = NULL,
   verbose = TRUE,
   num_cores = 1
 )
@@ -26,7 +27,9 @@ run_diff(
 \arguments{
 \item{x}{A data frame containing the variables for analysis.}
 
-\item{outcome}{A character string specifying the name of the numeric outcome variable.}
+\item{outcome}{A character string or character vector specifying the name(s) of the
+numeric outcome variable(s). When a vector is supplied, the function loops over each
+outcome and returns a named list of \code{"run_diff"} objects instead of a single object.}
 
 \item{group}{A character string specifying the name of the grouping factor variable.}
 
@@ -57,6 +60,12 @@ Lilliefors for n >= 50). Default is "auto".}
 \item{group_order}{Character vector specifying the order of groups. If NULL, uses factor levels
 in alphabetical order.}
 
+\item{subgroup}{Character vector or NULL. Column name(s) in \code{x} to use for
+subgroup analysis. Each must be a categorical column (factor or character) in \code{x}.
+When specified, the full analysis is repeated independently for each level of each
+subgroup column. Results are returned under \code{$subgroup_analysis} in the output,
+nested as \code{subgroup_var -> level -> run_diff result}. Default is NULL.}
+
 \item{verbose}{A logical indicating whether to print detailed messages. Default is TRUE.}
 
 \item{num_cores}{Integer specifying the number of cores to use for parallel processing, or the character string "max".
@@ -64,7 +73,8 @@ If "max", the function uses the number of available cores minus 2 (to reserve sy
 Default is 1. Supports both Windows and POSIX (Mac/Linux) systems.}
 }
 \value{
-An object of class "run_diff" which is a list containing:
+When \code{outcome} is a single string, returns an object of class \code{"run_diff"}
+(a list) containing:
 \item{test_used}{Character string of the statistical test performed.}
 \item{test_result}{List containing results of the statistical test.}
 \item{effect_size}{List containing effect size estimate, confidence interval, magnitude, and interpretation.}
@@ -76,9 +86,13 @@ An object of class "run_diff" which is a list containing:
 \item{paired}{The paired setting used.}
 \item{test_type}{The test_type strategy used.}
 \item{test_alpha}{The significance level used.}
+\item{subgroup_analysis}{Named list of subgroup results, nested as
+\code{subgroup_var -> level -> run_diff result}. NULL if no subgroup specified.}
 \item{warnings}{Character vector of any warnings generated.}
 \item{parameters}{List of all parameters used in the analysis.}
 \item{raw_data}{Data frame containing the variables used.}
+When \code{outcome} is a character vector of length > 1, returns a named list where
+each element is a \code{"run_diff"} object for the corresponding outcome variable.
 }
 \description{
 This function performs an automatic comparison of a numeric outcome variable across
