@@ -57,7 +57,7 @@ run_summarytable(
 
 \item{continuous_statistics}{String. The type of statistics to report for continuous variables. Options are:
 \itemize{
-\item 'meanSD': mean +- standard deviation
+\item 'meanSD': mean ± standard deviation
 \item 'meanSD2': mean (standard deviation), which is another format of meanSD
 \item 'medianIQR': median (interquartile range) or equivalently median (p25, p75)
 \item 'mean': mean (average)
