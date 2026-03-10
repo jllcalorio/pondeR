@@ -11,6 +11,7 @@ run_logreg(
   indep = NULL,
   ref,
   ref_levels = NULL,
+  remove = NULL,
   exclude = NULL,
   iterate = FALSE,
   add_vif = TRUE
@@ -32,6 +33,12 @@ desired reference categories. The left-hand side must be a valid column name of 
 as a string), and the right-hand side must be a valid category of that column
 (e.g., \code{list("Sex" ~ "Female", "District" ~ "North")}). Default is \code{NULL}.}
 
+\item{remove}{A list of two-sided formulas specifying categories to drop from predictor variables
+before analysis. The left-hand side must be a valid column name of \code{x} (quoted as a string),
+and the right-hand side must be a valid category of that column to be removed. Multiple mappings
+may target the same column to remove multiple categories
+(e.g., \code{list("Sex" ~ "Unknown", "District" ~ "Other")}). Default is \code{NULL}.}
+
 \item{exclude}{A character vector of categories in \code{y} to drop before analysis. Default is \code{NULL}.}
 
 \item{iterate}{Logical; if \code{FALSE} (default), combines \code{confounders} and \code{indep} into a single model.
@@ -42,8 +49,8 @@ VIFs are computed via \code{car::vif()}, which returns GVIF for categorical pred
 VIF for continuous predictors, consistent with jamovi's output.}
 }
 \value{
-If \code{iterate = FALSE}, returns a data frame containing Log Odds, Std Error, p-value,
-Significance, OR, 95\\% CIs, and (optionally) VIF. Model metrics are attached as
+If \code{iterate = FALSE}, returns a data frame containing Predictor, Log Odds, Std Error,
+p-value, Significance, OR, 95\\% CIs, and (optionally) VIF. Model metrics are attached as
 \code{attr(result, "model_metrics")}.
 
 If \code{iterate = TRUE}, returns a named list containing:
@@ -57,19 +64,27 @@ non-intercept \code{95\% CI Low} values or \emph{all} non-intercept \code{95\% C
 values are \code{Inf}.}
 \item{p_filtered_Tables}{A subset of \code{filtered_Tables} retaining only models where at
 least one non-intercept \code{p-value} is less than .05.}
+\item{vif_filtered_Tables}{A subset of \code{p_filtered_Tables} retaining only models where
+all non-\code{NA} VIF values are less than 5, ensuring no violation of multicollinearity.}
 }
 }
 \description{
 A robust wrapper for \code{\link[stats]{glm}} that performs binary logistic regression.
 It automatically handles column names with spaces, computes advanced model fit metrics,
-maps specific reference categories, and optionally iterates through all possible
-combinations of independent variables. Output is formatted as a clean data frame.
+maps specific reference categories, removes specified categories from predictor variables,
+and optionally iterates through all possible combinations of independent variables.
+Output is formatted as a clean data frame.
 }
 \details{
 When \code{iterate = TRUE}, the function generates all possible combinations (the power set)
 of the \code{indep} vector. For example, if \code{indep = c("A", "B", "C")}, the combinations
 evaluated alongside \code{confounders} will be: \code{A}, \code{B}, \code{C}, \code{A+B},
 \code{A+C}, \code{B+C}, and \code{A+B+C}.
+
+\strong{Category removal (\code{remove}):} Rows where the specified predictor variable equals
+the given category are dropped from \code{x} before any model is fitted. This is applied after
+\code{exclude} but before factor releveling. Multiple formulas targeting the same column are
+each applied in sequence, allowing several categories to be removed from one variable.
 
 \strong{VIF computation:} This function uses \code{car::vif()} to match jamovi's output. For
 categorical predictors with more than one degree of freedom, \code{car::vif()} returns the

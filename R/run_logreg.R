@@ -3,8 +3,9 @@
 #' @description
 #' A robust wrapper for \code{\link[stats]{glm}} that performs binary logistic regression.
 #' It automatically handles column names with spaces, computes advanced model fit metrics,
-#' maps specific reference categories, and optionally iterates through all possible
-#' combinations of independent variables. Output is formatted as a clean data frame.
+#' maps specific reference categories, removes specified categories from predictor variables,
+#' and optionally iterates through all possible combinations of independent variables.
+#' Output is formatted as a clean data frame.
 #'
 #' @param x A data frame, matrix, or tibble containing the dataset.
 #' @param y A string specifying the valid, categorical column name in \code{x} to be used as the dependent variable.
@@ -15,6 +16,11 @@
 #'   desired reference categories. The left-hand side must be a valid column name of \code{x} (quoted
 #'   as a string), and the right-hand side must be a valid category of that column
 #'   (e.g., \code{list("Sex" ~ "Female", "District" ~ "North")}). Default is \code{NULL}.
+#' @param remove A list of two-sided formulas specifying categories to drop from predictor variables
+#'   before analysis. The left-hand side must be a valid column name of \code{x} (quoted as a string),
+#'   and the right-hand side must be a valid category of that column to be removed. Multiple mappings
+#'   may target the same column to remove multiple categories
+#'   (e.g., \code{list("Sex" ~ "Unknown", "District" ~ "Other")}). Default is \code{NULL}.
 #' @param exclude A character vector of categories in \code{y} to drop before analysis. Default is \code{NULL}.
 #' @param iterate Logical; if \code{FALSE} (default), combines \code{confounders} and \code{indep} into a single model.
 #'   If \code{TRUE}, fits separate models for all possible combinations of \code{indep} added to \code{confounders}.
@@ -28,6 +34,11 @@
 #' evaluated alongside \code{confounders} will be: \code{A}, \code{B}, \code{C}, \code{A+B},
 #' \code{A+C}, \code{B+C}, and \code{A+B+C}.
 #'
+#' \strong{Category removal (\code{remove}):} Rows where the specified predictor variable equals
+#' the given category are dropped from \code{x} before any model is fitted. This is applied after
+#' \code{exclude} but before factor releveling. Multiple formulas targeting the same column are
+#' each applied in sequence, allowing several categories to be removed from one variable.
+#'
 #' \strong{VIF computation:} This function uses \code{car::vif()} to match jamovi's output. For
 #' categorical predictors with more than one degree of freedom, \code{car::vif()} returns the
 #' Generalized VIF (GVIF) and its degree-freedom-adjusted form \eqn{GVIF^{1/(2\cdot df)}}. The
@@ -39,8 +50,8 @@
 #' and blank otherwise.
 #'
 #' @return
-#' If \code{iterate = FALSE}, returns a data frame containing Log Odds, Std Error, p-value,
-#' Significance, OR, 95\% CIs, and (optionally) VIF. Model metrics are attached as
+#' If \code{iterate = FALSE}, returns a data frame containing Predictor, Log Odds, Std Error,
+#' p-value, Significance, OR, 95\% CIs, and (optionally) VIF. Model metrics are attached as
 #' \code{attr(result, "model_metrics")}.
 #'
 #' If \code{iterate = TRUE}, returns a named list containing:
@@ -54,6 +65,8 @@
 #'     values are \code{Inf}.}
 #'   \item{p_filtered_Tables}{A subset of \code{filtered_Tables} retaining only models where at
 #'     least one non-intercept \code{p-value} is less than .05.}
+#'   \item{vif_filtered_Tables}{A subset of \code{p_filtered_Tables} retaining only models where
+#'     all non-\code{NA} VIF values are less than 5, ensuring no violation of multicollinearity.}
 #' }
 #'
 #' @author John Lennon L. Calorio
@@ -71,7 +84,7 @@
 #' @importFrom utils combn
 #' @export
 run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels = NULL,
-                       exclude = NULL, iterate = FALSE, add_vif = TRUE) {
+                       remove = NULL, exclude = NULL, iterate = FALSE, add_vif = TRUE) {
 
   # ---------------------------------------------------------------------------
   # 1. Error Handling & Input Validation
@@ -93,8 +106,40 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
   # ---------------------------------------------------------------------------
   # 2. Data Preparation
   # ---------------------------------------------------------------------------
+
+  # Drop specified categories from the dependent variable
   if (!is.null(exclude)) {
     x <- x[!x[[y]] %in% exclude, , drop = FALSE]
+  }
+
+  # Drop specified categories from predictor variables via 'remove'
+  if (!is.null(remove)) {
+    if (!is.list(remove)) {
+      stop("Error: 'remove' must be a list of formulas (e.g., list(\"Sex\" ~ \"Unknown\")).")
+    }
+
+    for (mapping in remove) {
+      if (!inherits(mapping, "formula") || length(mapping) != 3) {
+        stop("Error: Each element in 'remove' must be a two-sided formula.")
+      }
+
+      lhs      <- mapping[[2]]
+      col_name <- if (is.character(lhs)) lhs else as.character(lhs)
+
+      rhs     <- mapping[[3]]
+      cat_val <- if (is.character(rhs)) rhs else as.character(rhs)
+
+      if (!(col_name %in% names(x))) {
+        stop(sprintf("Error: Column '%s' from 'remove' not found in data.", col_name))
+      }
+
+      col_vals <- as.character(x[[col_name]])
+      if (!(cat_val %in% col_vals)) {
+        stop(sprintf("Error: Category '%s' not found in column '%s'.", cat_val, col_name))
+      }
+
+      x <- x[col_vals != cat_val, , drop = FALSE]
+    }
   }
 
   # Factorize and set reference level for dependent variable
@@ -124,7 +169,6 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
         stop("Error: Each element in 'ref_levels' must be a two-sided formula.")
       }
 
-      # LHS may arrive as a string literal or a symbol — handle both
       lhs      <- mapping[[2]]
       col_name <- if (is.character(lhs)) lhs else as.character(lhs)
 
@@ -337,8 +381,8 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
     metrics_df$`Has Significant Predictor` <- vapply(
       names(results_tables),
       function(nm) {
-        tbl      <- results_tables[[nm]]
-        non_int  <- tbl[tbl$Predictor != "(Intercept)", ]
+        tbl     <- results_tables[[nm]]
+        non_int <- tbl[tbl$Predictor != "(Intercept)", ]
         any(non_int$`p-value` < 0.05, na.rm = TRUE)
       },
       logical(1)
@@ -359,11 +403,20 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
       any(non_int$`p-value` < 0.05, na.rm = TRUE)
     }, filtered_tables)
 
+    # vif_filtered_Tables: from p_filtered_tables, keep only models where all
+    # non-NA VIF values are < 5 (no multicollinearity violation)
+    vif_filtered_tables <- Filter(function(tbl) {
+      non_int  <- tbl[tbl$Predictor != "(Intercept)", ]
+      vif_vals <- non_int$VIF[!is.na(non_int$VIF)]
+      length(vif_vals) > 0 && all(vif_vals < 5)
+    }, p_filtered_tables)
+
     return(list(
-      Tables            = results_tables,
-      Metrics           = metrics_df,
-      filtered_Tables   = filtered_tables,
-      p_filtered_Tables = p_filtered_tables
+      Tables              = results_tables,
+      Metrics             = metrics_df,
+      filtered_Tables     = filtered_tables,
+      p_filtered_Tables   = p_filtered_tables,
+      vif_filtered_Tables = vif_filtered_tables
     ))
   }
 }
