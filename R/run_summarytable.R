@@ -247,9 +247,20 @@ run_summarytable <- function(
   # Ensure df is a data frame
   df <- as.data.frame(df)
 
-  # --- Parameter checks and improvements ---
+  # --- Parameter checks ---
 
-  # NEW: Check for common piping error that causes Errors 1 & 2.
+  # Check gtsummary version for separate_p_footnotes support
+  if (add_inferential_pvalues) {
+    if (utils::packageVersion("gtsummary") < "1.7.0") {
+      warning(
+        "Per-variable p-value footnote superscripts require gtsummary >= 1.7.0. ",
+        "Currently installed: ", utils::packageVersion("gtsummary"), ". ",
+        "Superscripts will not be separated. Please update with: install.packages('gtsummary')"
+      )
+    }
+  }
+
+  # Check for common piping error
   # This happens when user calls `my_data %>% run_summarytable(my_data, ...)`
   if (is.data.frame(summarize_what)) {
     stop(paste(
@@ -695,12 +706,20 @@ run_summarytable <- function(
   # OPTIMIZED: Removed redundant line: 'if (!is.null(force_statistical_test)) { force_statistical_test = force_statistical_test }'
 
   # Add common statistical test p-values (and whether to bold it, and where)
+  #if (add_inferential_pvalues) {
+  #  result_table <- result_table %>%
+  #    gtsummary::add_p(
+  #      test = force_statistical_test,
+  #      pvalue_fun = label_style_pvalue(digits = n_digits_pvalues
+  #      )) # Also adjust the no. of decimals of p-values
+  #}
   if (add_inferential_pvalues) {
     result_table <- result_table %>%
       gtsummary::add_p(
         test = force_statistical_test,
-        pvalue_fun = label_style_pvalue(digits = n_digits_pvalues
-        )) # Also adjust the no. of decimals of p-values
+        pvalue_fun = label_style_pvalue(digits = n_digits_pvalues)
+      ) %>%
+      gtsummary::separate_p_footnotes()  # assigns per-variable superscripts when >1 test is used
   }
   if (add_inferential_pvalues) {
     if (bold_significant_pvalues) { # Automatically bold p-values if less than 'bold_significant_pvalues_at' if either NULL or TRUE
