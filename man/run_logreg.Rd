@@ -86,6 +86,13 @@ the given category are dropped from \code{x} before any model is fitted. This is
 \code{exclude} but before factor releveling. Multiple formulas targeting the same column are
 each applied in sequence, allowing several categories to be removed from one variable.
 
+\strong{Aliased coefficients:} When a factor level appears in only one outcome group (complete
+or quasi-complete separation), \code{glm()} cannot estimate a finite coefficient for that level
+and marks it \code{NA}. \code{summary()} silently omits these aliased rows while
+\code{confint.default()} retains them, causing a row-count mismatch. \code{run_logreg()}
+detects this automatically, aligns both objects to their shared row names, and emits a
+warning that names every dropped aliased term.
+
 \strong{VIF computation:} This function uses \code{car::vif()} to match jamovi's output. For
 categorical predictors with more than one degree of freedom, \code{car::vif()} returns the
 Generalized VIF (GVIF) and its degree-freedom-adjusted form \eqn{GVIF^{1/(2\cdot df)}}. The

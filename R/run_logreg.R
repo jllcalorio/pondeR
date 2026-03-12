@@ -39,6 +39,13 @@
 #' \code{exclude} but before factor releveling. Multiple formulas targeting the same column are
 #' each applied in sequence, allowing several categories to be removed from one variable.
 #'
+#' \strong{Aliased coefficients:} When a factor level appears in only one outcome group (complete
+#' or quasi-complete separation), \code{glm()} cannot estimate a finite coefficient for that level
+#' and marks it \code{NA}. \code{summary()} silently omits these aliased rows while
+#' \code{confint.default()} retains them, causing a row-count mismatch. \code{run_logreg()}
+#' detects this automatically, aligns both objects to their shared row names, and emits a
+#' warning that names every dropped aliased term.
+#'
 #' \strong{VIF computation:} This function uses \code{car::vif()} to match jamovi's output. For
 #' categorical predictors with more than one degree of freedom, \code{car::vif()} returns the
 #' Generalized VIF (GVIF) and its degree-freedom-adjusted form \eqn{GVIF^{1/(2\cdot df)}}. The
@@ -236,7 +243,14 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
   }
 
   # ---------------------------------------------------------------------------
-  # Helper: build the result table from a fitted glm object
+  # Helper: build the result table from a fitted glm object.
+  #
+  # Aliasing fix: when glm() cannot estimate a coefficient due to perfect or
+  # quasi-complete separation, it sets that coefficient to NA. summary() then
+  # silently drops the aliased row, but confint.default() keeps it, producing a
+  # row-count mismatch. We detect this by comparing row names and restrict both
+  # objects to their intersection before building the data frame. A warning is
+  # emitted that names every dropped term so the analyst is informed.
   #
   # VIF note: car::vif() is used because it:
   #   (a) does NOT emit spurious interaction-term warnings,
@@ -247,9 +261,29 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
   #   For df > 1 (polytomous factor), it returns a 3-column matrix:
   #     [GVIF, Df, GVIF^(1/(2*Df))]. We store the raw GVIF in both cases.
   # ---------------------------------------------------------------------------
-  build_table <- function(mod) {
+  build_table <- function(mod, combo_name = NULL) {
     coefs <- summary(mod)$coefficients
     ci    <- suppressMessages(stats::confint.default(mod))
+
+    # --- Aliasing fix ---------------------------------------------------------
+    shared_rows   <- intersect(rownames(coefs), rownames(ci))
+    aliased_terms <- setdiff(rownames(ci), rownames(coefs))
+
+    if (length(aliased_terms) > 0) {
+      model_label <- if (!is.null(combo_name)) sprintf(" [Model: %s]", combo_name) else ""
+      warning(
+        sprintf(
+          "Constructive Warning%s: %d aliased term(s) detected and excluded from output due to ",
+          model_label, length(aliased_terms)
+        ),
+        "perfect or quasi-complete separation. These levels appear in only one outcome group. ",
+        "Excluded term(s): ", paste(aliased_terms, collapse = ", "), ".",
+        call. = FALSE
+      )
+      coefs <- coefs[shared_rows, , drop = FALSE]
+      ci    <- ci[shared_rows, , drop = FALSE]
+    }
+    # --------------------------------------------------------------------------
 
     res_df <- data.frame(
       Predictor    = rownames(coefs),
@@ -329,7 +363,7 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
       stats::as.formula(form_str), data = x, family = stats::binomial(link = "logit")
     )
 
-    tbl_out     <- build_table(mod)
+    tbl_out     <- build_table(mod, combo_name = NULL)
     metrics_out <- get_metrics(mod, model_name = "Base Model")
 
     attr(tbl_out, "model_metrics") <- metrics_out
@@ -369,7 +403,7 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
       )
 
       if (!is.null(mod)) {
-        results_tables[[combo_name]] <- build_table(mod)
+        results_tables[[combo_name]] <- build_table(mod, combo_name = combo_name)
         metrics_list[[combo_name]]   <- get_metrics(mod, model_name = combo_name)
       }
     }
