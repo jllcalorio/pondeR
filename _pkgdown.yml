@@ -136,7 +136,7 @@ reference:
       Additional exported functions. New functions land here automatically
       until formally categorised.
     contents:
-      - everything()
+      - matches(".")
 
 # ── Articles (vignettes) ─────────────────────────────────────────────────────
 articles:
