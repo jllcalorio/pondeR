@@ -2,7 +2,7 @@
 % Please edit documentation in R/run_logreg.R
 \name{run_logreg}
 \alias{run_logreg}
-\title{Perform Binary Logistic Regression with Iterative Feature Combinations}
+\title{Perform Binary Logistic Regression (Standard or Firth-Corrected) with Iterative Feature Combinations}
 \usage{
 run_logreg(
   x,
@@ -14,7 +14,9 @@ run_logreg(
   remove = NULL,
   exclude = NULL,
   iterate = FALSE,
-  add_vif = TRUE
+  add_vif = TRUE,
+  apply_firth = TRUE,
+  force_apply_firth = FALSE
 )
 }
 \arguments{
@@ -41,24 +43,39 @@ may target the same column to remove multiple categories
 
 \item{exclude}{A character vector of categories in \code{y} to drop before analysis. Default is \code{NULL}.}
 
-\item{iterate}{Logical; if \code{FALSE} (default), combines \code{confounders} and \code{indep} into a single model.
-If \code{TRUE}, fits separate models for all possible combinations of \code{indep} added to \code{confounders}.}
+\item{iterate}{Logical; if \code{FALSE} (default), combines \code{confounders} and \code{indep}
+into a single model. If \code{TRUE}, fits separate models for all possible combinations of
+\code{indep} added to \code{confounders}.}
 
-\item{add_vif}{Logical; if \code{TRUE} (default), adds Variance Inflation Factor (VIF) values to the output.
-VIFs are computed via \code{car::vif()}, which returns GVIF for categorical predictors and standard
-VIF for continuous predictors, consistent with jamovi's output.}
+\item{add_vif}{Logical; if \code{TRUE} (default), adds Variance Inflation Factor (VIF) values
+to the output. VIFs are computed via \code{car::vif()}, which returns GVIF for categorical
+predictors and standard VIF for continuous predictors, consistent with jamovi's output.
+Note that VIF is computed from a standard \code{glm()} fit even when Firth's correction is
+applied, as \code{car::vif()} does not support \code{logistf} objects.}
+
+\item{apply_firth}{Logical; if \code{TRUE} (default), Firth's bias-reduced penalized-likelihood
+logistic regression (\code{logistf::logistf()}) is applied \emph{selectively} — only to models
+where at least one predictor variable has a zero cell count in its cross-tabulation with the
+outcome. Models with no zero cells are fitted using standard \code{glm()} regardless of this
+setting. A logical column \code{Firth Corrected} is added to the \code{Metrics} table
+(and attached metrics for \code{iterate = FALSE}) indicating whether Firth's correction was
+applied to each model.}
+
+\item{force_apply_firth}{Logical; if \code{TRUE} (default \code{FALSE}), overrides the dynamic
+zero-cell detection of \code{apply_firth} and applies Firth's correction to \emph{all} models
+regardless of whether zero cells are present. Ignored if \code{apply_firth = FALSE}.}
 }
 \value{
 If \code{iterate = FALSE}, returns a data frame containing Predictor, Log Odds, Std Error,
-p-value, Significance, OR, 95\\% CIs, and (optionally) VIF. Model metrics are attached as
-\code{attr(result, "model_metrics")}.
+p-value, Significance, OR, 95\\% CIs, and (optionally) VIF. Model metrics (including
+\code{Firth Corrected}) are attached as \code{attr(result, "model_metrics")}.
 
 If \code{iterate = TRUE}, returns a named list containing:
 \describe{
 \item{Tables}{A named list of result data frames for each model combination.}
 \item{Metrics}{A data frame comparing model metrics (N, Deviance, AIC, BIC, McFadden \eqn{R^2},
-Cox-Snell \eqn{R^2}, Nagelkerke \eqn{R^2}, Tjur \eqn{R^2}, and Has Significant Predictor)
-across all combinations.}
+Cox-Snell \eqn{R^2}, Nagelkerke \eqn{R^2}, Tjur \eqn{R^2}, Has Significant Predictor, and
+Firth Corrected) across all combinations.}
 \item{filtered_Tables}{A subset of \code{Tables} excluding only models where \emph{all}
 non-intercept \code{95\% CI Low} values or \emph{all} non-intercept \code{95\% CI High}
 values are \code{Inf}.}
@@ -69,11 +86,16 @@ all non-\code{NA} VIF values are less than 5, ensuring no violation of multicoll
 }
 }
 \description{
-A robust wrapper for \code{\link[stats]{glm}} that performs binary logistic regression.
-It automatically handles column names with spaces, computes advanced model fit metrics,
-maps specific reference categories, removes specified categories from predictor variables,
-and optionally iterates through all possible combinations of independent variables.
-Output is formatted as a clean data frame.
+A robust wrapper for \code{\link[stats]{glm}} (standard logistic regression) and
+\code{\link[logistf]{logistf}} (Firth's bias-reduced penalized-likelihood logistic regression)
+that performs binary logistic regression. It automatically handles column names with spaces,
+computes advanced model fit metrics, maps specific reference categories, removes specified
+categories from predictor variables, and optionally iterates through all possible combinations
+of independent variables. When \code{apply_firth = TRUE}, Firth's correction is applied
+selectively — only to models where at least one predictor-outcome cross-tabulation contains a
+zero cell, which is the primary condition warranting penalized likelihood. A column in the
+output indicates whether Firth's correction was applied to each model. Output is formatted as
+a clean data frame.
 }
 \details{
 When \code{iterate = TRUE}, the function generates all possible combinations (the power set)
@@ -81,30 +103,88 @@ of the \code{indep} vector. For example, if \code{indep = c("A", "B", "C")}, the
 evaluated alongside \code{confounders} will be: \code{A}, \code{B}, \code{C}, \code{A+B},
 \code{A+C}, \code{B+C}, and \code{A+B+C}.
 
+\strong{Firth's correction (\code{apply_firth}):} Firth's penalized-likelihood method
+(\code{logistf::logistf()}) addresses the monotone likelihood problem caused by complete or
+quasi-complete separation, which arises when a predictor level perfectly predicts one outcome
+group — typically evidenced by a zero cell in the cross-tabulation. When \code{apply_firth = TRUE},
+the function checks each model's predictors against the outcome for zero cells. If any are found,
+\code{logistf()} is used in place of \code{glm()} for that model. If \code{force_apply_firth = TRUE},
+this check is skipped and all models are fitted with \code{logistf()}. The \code{Firth Corrected}
+column in the output records which models received the correction. Note that Firth-corrected
+models report profile likelihood confidence intervals rather than Wald intervals, consistent with
+\code{logistf}'s default behavior.
+
 \strong{Category removal (\code{remove}):} Rows where the specified predictor variable equals
 the given category are dropped from \code{x} before any model is fitted. This is applied after
 \code{exclude} but before factor releveling. Multiple formulas targeting the same column are
 each applied in sequence, allowing several categories to be removed from one variable.
 
-\strong{Aliased coefficients:} When a factor level appears in only one outcome group (complete
-or quasi-complete separation), \code{glm()} cannot estimate a finite coefficient for that level
-and marks it \code{NA}. \code{summary()} silently omits these aliased rows while
-\code{confint.default()} retains them, causing a row-count mismatch. \code{run_logreg()}
-detects this automatically, aligns both objects to their shared row names, and emits a
-warning that names every dropped aliased term.
+\strong{Aliased coefficients:} When standard \code{glm()} cannot estimate a coefficient due to
+perfect or quasi-complete separation, it sets that coefficient to \code{NA}. \code{summary()}
+silently omits these aliased rows while \code{confint.default()} retains them, causing a
+row-count mismatch. \code{run_logreg()} detects this automatically, aligns both objects to
+their shared row names, and emits a warning naming every dropped aliased term. This situation
+is largely avoided when \code{apply_firth = TRUE} since such models will be routed to
+\code{logistf()} instead.
 
 \strong{VIF computation:} This function uses \code{car::vif()} to match jamovi's output. For
 categorical predictors with more than one degree of freedom, \code{car::vif()} returns the
 Generalized VIF (GVIF) and its degree-freedom-adjusted form \eqn{GVIF^{1/(2\cdot df)}}. The
 value stored in the \code{VIF} column is the raw GVIF (or standard VIF for continuous/binary
-predictors).
+predictors). Because \code{car::vif()} does not support \code{logistf} objects, VIF for
+Firth-corrected models is computed from a parallel standard \code{glm()} fit on the same
+formula and data.
 
 \strong{Significance codes:} The \code{Significance} column uses the conventional scheme:
 \code{***} if \eqn{p < .001}, \code{**} if \eqn{p < .01}, \code{*} if \eqn{p < .05},
 and blank otherwise.
 }
+\examples{
+\dontrun{
+# --- Example 1: Single model with Firth's correction applied dynamically ---
+# Firth's correction is applied automatically only if zero cells are detected.
+result <- run_logreg(
+  x          = my_data,
+  y          = "Outcome",
+  confounders = c("Age", "Sex"),
+  indep      = c("Biomarker_A", "Biomarker_B"),
+  ref        = "Control",
+  ref_levels = list("Sex" ~ "Female"),
+  apply_firth = TRUE
+)
+result
+attr(result, "model_metrics")  # includes Firth Corrected column
+
+# --- Example 2: Iterative models with forced Firth and VIF filtering -------
+# All models receive Firth's correction regardless of zero-cell status.
+results <- run_logreg(
+  x                = my_data,
+  y                = "Outcome",
+  confounders      = c("Age", "Sex", "Site"),
+  indep            = c("Biomarker_A", "Biomarker_B", "Biomarker_C"),
+  ref              = "Control",
+  ref_levels       = list("Sex" ~ "Female", "Site" ~ "Main"),
+  exclude          = "Indeterminate",
+  iterate          = TRUE,
+  apply_firth      = TRUE,
+  force_apply_firth = TRUE
+)
+results$Metrics
+results$vif_filtered_Tables  # models with p < .05 and all VIF < 5
+}
+
+}
 \references{
 Fox J, Weisberg S (2019). \emph{An R Companion to Applied Regression}, 3rd ed. Sage.
+
+Firth D (1993). "Bias reduction of maximum likelihood estimates." \emph{Biometrika}, 80(1),
+27–38. \doi{10.1093/biomet/80.1.27}
+
+Heinze G, Schemper M (2002). "A solution to the problem of separation in logistic regression."
+\emph{Statistics in Medicine}, 21(16), 2409–2419. \doi{10.1002/sim.1047}
+
+Heinze G, Ploner M, Jiricka L, Steuer A (2024). \emph{logistf: Firth's Bias-Reduced Logistic
+Regression}. R package. \url{https://CRAN.R-project.org/package=logistf}
 
 Lüdecke D, Ben-Shachar MS, Patil I, Waggoner P, Makowski D (2021). "performance: An R Package
 for Assessment, Comparison and Testing of Statistical Models." \emph{Journal of Open Source Software},
