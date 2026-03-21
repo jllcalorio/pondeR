@@ -571,10 +571,10 @@ run_diff <- function(
       variance_check_result <- tryCatch(
         {
           if (requireNamespace("car", quietly = TRUE)) {
-            car::leveneTest(y ~ grp)$`Pr(>F)`[1]
+            car::leveneTest(y, grp)$`Pr(>F)`[1]
           } else {
             if (verbose) message("Package 'car' not found. Using Bartlett's test for variance homogeneity.")
-            bartlett.test(y ~ grp)$p.value
+            bartlett.test(x = y, g = grp)$p.value
           }
         },
         error = function(e) {
@@ -611,14 +611,25 @@ run_diff <- function(
     if (test_family == "independent_two_sample") {
       if (normality_violated) {
         test_used   <- "Mann-Whitney U test (Wilcoxon rank-sum)"
-        test_result <- wilcox.test(y ~ grp)
+        test_result <- wilcox.test(
+          x = y[grp == groups[1]],
+          y = y[grp == groups[2]]
+        )
         parametric_used <- FALSE
       } else if (variance_violated) {
         test_used   <- "Welch's t-test"
-        test_result <- t.test(y ~ grp, var.equal = FALSE)
+        test_result <- t.test(
+          x = y[grp == groups[1]],
+          y = y[grp == groups[2]],
+          var.equal = FALSE
+        )
       } else {
         test_used   <- "Student's t-test"
-        test_result <- t.test(y ~ grp, var.equal = TRUE)
+        test_result <- t.test(
+          x = y[grp == groups[1]],
+          y = y[grp == groups[2]],
+          var.equal = TRUE
+        )
       }
     } else if (test_family == "paired_two_sample") {
       group1_data <- y[grp == groups[1]]
@@ -634,12 +645,11 @@ run_diff <- function(
     } else if (test_family == "independent_anova") {
       if (normality_violated) {
         test_used       <- "Kruskal-Wallis test"
-        test_result     <- kruskal.test(y ~ grp)
+        test_result     <- kruskal.test(x = y, g = grp)
         parametric_used <- FALSE
       } else if (variance_violated) {
         test_used   <- "Welch's ANOVA"
-        test_result <- oneway.test(y ~ grp, var.equal = FALSE)
-        # Note: fitted_model remains NULL for Welch's ANOVA
+        test_result <- oneway.test(formula(y ~ grp), var.equal = FALSE)
       } else {
         test_used    <- "One-way ANOVA"
         fitted_model <- aov(y ~ grp) # Store the model
@@ -656,7 +666,11 @@ run_diff <- function(
   } else if (test_type == "parametric") {
     if (test_family == "independent_two_sample") {
       test_used   <- "Student's t-test (forced)"
-      test_result <- t.test(y ~ grp, var.equal = TRUE)
+      test_result <- t.test(
+        x = y[grp == groups[1]],
+        y = y[grp == groups[2]],
+        var.equal = TRUE
+      )
     } else if (test_family == "paired_two_sample") {
       group1_data <- y[grp == groups[1]]
       group2_data <- y[grp == groups[2]]
@@ -678,7 +692,10 @@ run_diff <- function(
     parametric_used <- FALSE
     if (test_family == "independent_two_sample") {
       test_used   <- "Mann-Whitney U test (forced)"
-      test_result <- wilcox.test(y ~ grp)
+      test_result <- wilcox.test(
+        x = y[grp == groups[1]],
+        y = y[grp == groups[2]]
+      )
     } else if (test_family == "paired_two_sample") {
       group1_data <- y[grp == groups[1]]
       group2_data <- y[grp == groups[2]]
@@ -686,7 +703,7 @@ run_diff <- function(
       test_result <- wilcox.test(group1_data, group2_data, paired = TRUE)
     } else if (test_family == "independent_anova") {
       test_used   <- "Kruskal-Wallis test (forced)"
-      test_result <- kruskal.test(y ~ grp)
+      test_result <- kruskal.test(x = y, g = grp)
     }
   }
 
@@ -702,64 +719,72 @@ run_diff <- function(
       effect_size_result <- tryCatch({
         if (test_family == "independent_two_sample") {
           if (parametric_used) {
-            es <- effectsize::cohens_d(y ~ grp, pooled_sd = !variance_violated, verbose = FALSE)
+            es <- effectsize::cohens_d(
+                    x = y[grp == groups[1]],
+                    y = y[grp == groups[2]],
+                    pooled_sd = !variance_violated, verbose = FALSE
+                  )
             interp <- effectsize::interpret(es, rules = "cohen1988")
             list(
               estimate       = es$Cohens_d,
               ci_low         = es$CI_low,
               ci_high        = es$CI_high,
-              # magnitude      = effectsize::interpret(es, rules = "cohen1988")[[2]],
               magnitude      = as.character(interp$Interpretation),
               metric         = "Cohen's d",
               interpretation = sprintf("Effect size: %s (%.3f)",
-                                       # effectsize::interpret(es, rules = "cohen1988")[[2]],
                                        as.character(interp$Interpretation),
                                        es$Cohens_d)
             )
           } else {
-            es <- effectsize::rank_biserial(y ~ grp, verbose = FALSE)
+            es <- effectsize::rank_biserial(
+                    x = y[grp == groups[1]],
+                    y = y[grp == groups[2]],
+                    verbose = FALSE
+                  )
             interp <- effectsize::interpret(es, rules = "funder2019")
             list(
               estimate       = es$r_rank_biserial,
               ci_low         = es$CI_low,
               ci_high        = es$CI_high,
-              # magnitude      = effectsize::interpret(es, rules = "funder2019")[[2]],
               magnitude      = as.character(interp$Interpretation),
               metric         = "Rank-biserial correlation",
               interpretation = sprintf("Effect size: %s (%.3f)",
-                                       # effectsize::interpret(es, rules = "funder2019")[[2]],
                                        as.character(interp$Interpretation),
                                        es$r_rank_biserial)
             )
           }
         } else if (test_family == "paired_two_sample") {
           if (parametric_used) {
-            es <- effectsize::cohens_d(y[grp == groups[1]], y[grp == groups[2]], paired = TRUE, verbose = FALSE)
+            es <- effectsize::cohens_d(
+                    x = y[grp == groups[1]],
+                    y = y[grp == groups[2]],
+                    pooled_sd = !variance_violated, verbose = FALSE
+                  )
             interp <- effectsize::interpret(es, rules = "cohen1988")
             list(
               estimate       = es$Cohens_d,
               ci_low         = es$CI_low,
               ci_high        = es$CI_high,
-              # magnitude      = effectsize::interpret(es, rules = "cohen1988")[[2]],
               magnitude      = as.character(interp$Interpretation),
               metric         = "Cohen's d (paired)",
               interpretation = sprintf("Effect size: %s (%.3f)",
-                                       # effectsize::interpret(es, rules = "cohen1988")[[2]],
                                        as.character(interp$Interpretation),
                                        es$Cohens_d)
             )
           } else {
-            es <- effectsize::rank_biserial(y[grp == groups[1]], y[grp == groups[2]], paired = TRUE, verbose = FALSE)
+            es <- effectsize::rank_biserial(
+                  x = y[grp == groups[1]],
+                  y = y[grp == groups[2]],
+                  verbose = FALSE
+                )
             interp <- effectsize::interpret(es, rules = "funder2019")
             list(
               estimate       = es$r_rank_biserial,
               ci_low         = es$CI_low,
               ci_high        = es$CI_high,
-              # magnitude      = effectsize::interpret(es, rules = "funder2019")[[2]],
               magnitude      = as.character(interp$Interpretation),
               metric         = "Rank-biserial correlation (paired)",
               interpretation = sprintf("Effect size: %s (%.3f)",
-                                       # effectsize::interpret(es, rules = "funder2019")[[2]],
                                        as.character(interp$Interpretation),
                                        es$r_rank_biserial)
             )
@@ -779,11 +804,9 @@ run_diff <- function(
               estimate       = es$Eta2,
               ci_low         = es$CI_low,
               ci_high        = es$CI_high,
-              # magnitude      = effectsize::interpret(es, rules = "field2013")[[2]],
               magnitude      = as.character(interp$Interpretation),
               metric         = "Eta-squared",
               interpretation = sprintf("Effect size: %s (%.3f)",
-                                       # effectsize::interpret(es, rules = "field2013")[[2]],
                                        as.character(interp$Interpretation),
                                        es$Eta2)
             )
@@ -799,11 +822,9 @@ run_diff <- function(
               estimate       = es$rank_epsilon_squared,
               ci_low         = if(!is.null(es$CI_low)) es$CI_low else NA,
               ci_high        = if(!is.null(es$CI_high)) es$CI_high else NA,
-              # magnitude      = effectsize::interpret(es, rules = "field2013")[[2]],
               magnitude      = as.character(interp$Interpretation),
               metric         = "Rank epsilon-squared",
               interpretation = sprintf("Effect size: %s (%.3f)",
-                                       # effectsize::interpret(es, rules = "field2013")[[2]],
                                        as.character(interp$Interpretation),
                                        es$rank_epsilon_squared)
             )
@@ -840,7 +861,6 @@ run_diff <- function(
           ph$statistic    <- NA_real_
           ph$p            <- NA_real_
 
-          # === START FIX ===
           # Manually add n1 and n2 for Tukey using a robust lookup
 
           # Create a named vector for fast lookup
@@ -851,7 +871,6 @@ run_diff <- function(
           # This is more robust than merge()
           ph$n1 <- n_lookup[ph$group1]
           ph$n2 <- n_lookup[ph$group2]
-          # === END FIX ===
 
         } else if (test_used == "Welch's ANOVA") {
           # Games-Howell
