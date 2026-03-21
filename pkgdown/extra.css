@@ -1,0 +1,279 @@
+/* ============================================================
+   pondeR pkgdown — minimalist overrides
+   Place this file at: pkgdown/extra.css
+   ============================================================ */
+
+/* ── Global ─────────────────────────────────────────────────── */
+body {
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Tighten max content width for readability */
+.container {
+  max-width: 960px !important;
+}
+
+/* ── Navbar ──────────────────────────────────────────────────── */
+.navbar {
+  border-bottom: 1px solid #EAEAEA;
+  box-shadow: none !important;
+  padding: 0.6rem 0;
+}
+
+.navbar-brand {
+  font-weight: 700;
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+  color: #212529 !important;
+}
+
+.navbar-brand img {
+  height: 28px;
+  margin-right: 6px;
+}
+
+.nav-link {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #495057 !important;
+  padding: 0.45rem 0.85rem !important;
+  border-radius: 0.25rem;
+  transition: background 0.15s, color 0.15s;
+}
+
+.nav-link:hover,
+.nav-link:focus {
+  background: #F0F4F8;
+  color: #2C6E91 !important;
+}
+
+/* ── Home / hero ─────────────────────────────────────────────── */
+.jumbotron,
+.jumbotron-fluid {
+  background: #F8F9FA;
+  border-radius: 0.5rem;
+  border: 1px solid #EAEAEA;
+  padding: 2.5rem 2rem;
+  margin-bottom: 2.5rem;
+}
+
+.jumbotron h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #1A1A2E;
+}
+
+.jumbotron .lead {
+  color: #6C757D;
+  font-size: 1rem;
+}
+
+/* ── Reference index ─────────────────────────────────────────── */
+.section-header h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6C757D;
+  margin-top: 2rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid #EAEAEA;
+}
+
+.ref-index td {
+  vertical-align: top;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.9rem;
+}
+
+.ref-index td:first-child a {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2C6E91;
+}
+
+/* ── Function reference page ─────────────────────────────────── */
+.page-header h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #1A1A2E;
+}
+
+.page-header .badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: #EEF4FA !important;
+  color: #2C6E91 !important;
+  border: 1px solid #C8DFF0;
+  border-radius: 0.25rem;
+  padding: 0.2em 0.55em;
+}
+
+/* Argument table */
+.arguments dt {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: #2C6E91;
+}
+
+.arguments dd {
+  font-size: 0.9rem;
+  color: #343A40;
+  margin-bottom: 0.6rem;
+}
+
+/* Section headers inside ref pages */
+.ref-description h2,
+.ref-description h3 {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #6C757D;
+  margin-top: 1.6rem;
+  margin-bottom: 0.6rem;
+}
+
+/* ── Code blocks ─────────────────────────────────────────────── */
+pre, code {
+  font-family: "JetBrains Mono", "Fira Mono", monospace !important;
+  font-size: 0.83rem;
+}
+
+pre {
+  background: #F6F8FA;
+  border: 1px solid #E1E4E8;
+  border-radius: 0.375rem;
+  padding: 1rem 1.2rem;
+  margin-bottom: 1.25rem;
+}
+
+/* Inline code */
+p > code,
+li > code,
+td > code {
+  background: #EEF0F2;
+  border-radius: 0.25rem;
+  padding: 0.1em 0.35em;
+  font-size: 0.82em;
+  color: #C7254E;
+}
+
+/* ── Articles (vignettes) ────────────────────────────────────── */
+.article-header h1 {
+  font-size: 1.7rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: #1A1A2E;
+}
+
+.article-body h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid #EAEAEA;
+  color: #212529;
+}
+
+.article-body h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2C6E91;
+  margin-top: 1.4rem;
+}
+
+/* ── Sidebar (on ref pages) ──────────────────────────────────── */
+.sidebar {
+  font-size: 0.85rem;
+}
+
+.sidebar h2 {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #9EA7B0;
+  margin-bottom: 0.5rem;
+}
+
+.sidebar ul {
+  padding-left: 1rem;
+}
+
+.sidebar li a {
+  color: #495057;
+  text-decoration: none;
+}
+
+.sidebar li a:hover {
+  color: #2C6E91;
+}
+
+/* ── Footer ──────────────────────────────────────────────────── */
+footer {
+  border-top: 1px solid #EAEAEA;
+  margin-top: 4rem;
+  padding: 1.5rem 0;
+  font-size: 0.82rem;
+  color: #9EA7B0;
+}
+
+footer a {
+  color: #6C8EAD;
+}
+
+/* ── Search box ──────────────────────────────────────────────── */
+.algolia-autocomplete .ds-dropdown-menu {
+  border-radius: 0.375rem;
+  border: 1px solid #E1E4E8;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+/* ── Misc tweaks ─────────────────────────────────────────────── */
+/* Remove heavy drop shadows on cards */
+.card {
+  border: 1px solid #EAEAEA !important;
+  box-shadow: none !important;
+}
+
+/* Subtle horizontal rules */
+hr {
+  border-color: #EAEAEA;
+  opacity: 1;
+}
+
+/* Table */
+.table th {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6C757D;
+  border-bottom: 2px solid #DEE2E6;
+}
+
+.table td {
+  font-size: 0.88rem;
+  vertical-align: middle;
+}
+
+/* Scroll-to-top button (flatly adds one) */
+#back-to-top {
+  background: #2C6E91;
+  border-radius: 50%;
+  opacity: 0.7;
+}
+
+#back-to-top:hover {
+  opacity: 1;
+}
