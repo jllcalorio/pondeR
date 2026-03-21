@@ -750,7 +750,7 @@ run_summarytable <- function(
       # Note: gtsummary's missing_stat uses {p_miss} which defaults to 1 decimal place.
       # This can be hardcoded or made dynamic if gtsummary allowed setting digits for missing_stat.
       # For now, we'll anticipate "0 (0.0%)" and "0 (0%)", "0.0%" and "0 (NA%)"
-      zero_strings_to_replace <- c(zero_strings_to_replace, "0 (0.0%)", "0 (0%)", "0 (NA%)")
+      zero_strings_to_replace <- c(zero_strings_to_replace, "0 (0.0%)", "0 (0%)", "0 (NA%)", "NA ± NA")
     } else if (missing_stat == "n") {
       zero_strings_to_replace <- c(zero_strings_to_replace, "0")
     } else if (missing_stat == "percent") {
