@@ -35,10 +35,10 @@ Imports:
     sva,
     viridis,
     vsn,
-    purrr,
-    webshot2
+    purrr
 Suggests:
     knitr,
     rmarkdown,
-    quarto
+    quarto,
+    webshot2
 VignetteBuilder: knitr
