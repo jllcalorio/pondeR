@@ -19,15 +19,20 @@ plot_diff(
   test_alpha = 0.05,
   colors = NULL,
   plot_title = NULL,
+  plot_subtitle = NULL,
   xlab = NULL,
   ylab = NULL,
+  show_global_p = FALSE,
   global_p_position = NULL,
   global_p_x = NULL,
-  title_size = 12,
-  subtitle_size = 10,
-  xlab_size = 11,
-  ylab_size = 11,
-  axis_text_size = 10,
+  global_font_size = NULL,
+  title_size = NULL,
+  subtitle_size = NULL,
+  xlab_size = NULL,
+  ylab_size = NULL,
+  pvalue_size = NULL,
+  axis_text_size = NULL,
+  format_p_numeric = "auto",
   group_order = NULL,
   label_points = NULL,
   sample_id = NULL,
@@ -42,89 +47,135 @@ plot_diff(
 \arguments{
 \item{x}{A data frame containing the variables to plot.}
 
-\item{outcome}{Character string specifying the column name for the numeric outcome variable. Used as the default for \code{plot_vars} if it is not specified.}
+\item{outcome}{Character string specifying the column name for the numeric outcome variable.
+Used as the default for \code{plot_vars} if it is not specified.}
 
 \item{group}{Character string specifying the column name for the grouping variable.}
 
-\item{plot_vars}{Character vector specifying column name(s) for numeric variables to plot. If \code{NULL} (default), uses the value of \code{outcome}.}
+\item{plot_vars}{Character vector specifying column name(s) for numeric variables to plot.
+If \code{NULL} (default), uses the value of \code{outcome}.}
 
-\item{plot_type}{Character string specifying plot type: "boxplot" or "violin". Default is "boxplot".}
+\item{plot_type}{Character string specifying plot type: \code{"boxplot"} or \code{"violin"}.
+Default is \code{"boxplot"}.}
 
-\item{test_type}{Character string or NULL. Statistical test strategy to use: "auto", "parametric", "nonparametric". See \code{\link{run_diff}} for details. If NULL (default), uses "auto".}
+\item{test_type}{Character string or NULL. Statistical test strategy: \code{"auto"},
+\code{"parametric"}, or \code{"nonparametric"}. See \code{\link{run_diff}} for details.
+If NULL (default), uses \code{"auto"}.}
 
 \item{posthoc}{Character string or NULL. Post-hoc test for multiple groups:
-"auto", "none", "tukey", "games-howell", "dunn", "t_test", or "wilcox_test". See \code{\link{run_diff}} for details. If NULL (default), uses "auto".}
+\code{"auto"}, \code{"none"}, \code{"tukey"}, \code{"games-howell"}, \code{"dunn"},
+\code{"t_test"}, or \code{"wilcox_test"}. If NULL (default), uses \code{"auto"}.}
 
 \item{p_adjust_method}{Character string. P-value adjustment method for multiple comparisons.
-Options include "holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "none".
-Default is "BH".}
+Options: \code{"holm"}, \code{"hochberg"}, \code{"hommel"}, \code{"bonferroni"},
+\code{"BH"}, \code{"BY"}, \code{"fdr"}, \code{"none"}. Default is \code{"BH"}.}
 
-\item{hide_ns}{Logical. If TRUE, hide non-significant p-values from plot brackets. Default is TRUE.}
+\item{hide_ns}{Logical. If TRUE, hide non-significant p-values from plot brackets.
+Default is TRUE.}
 
 \item{show_p_numeric}{Logical. If TRUE, show exact p-values as numbers instead of
-significance symbols (*, **, ***). Default is FALSE.}
+significance symbols (\code{*}, \code{**}, \code{***}). Default is FALSE.}
 
 \item{paired}{Logical. If TRUE, use paired tests. Default is FALSE.}
 
-\item{test_alpha}{Numeric. Significance level for determining significance on the plot. Default is 0.05.}
+\item{test_alpha}{Numeric. Significance level for determining significance on the plot.
+Default is 0.05.}
 
-\item{colors}{Character vector of colors (names or HEX codes) or NULL for automatic soft colors.
-Can be a single color or a vector of colors. Default is NULL.}
+\item{colors}{Character vector of colors (names or HEX codes) or NULL for automatic
+soft colors. Default is NULL.}
 
 \item{plot_title}{Character string or NULL. Custom title for the plot. If NULL, generates
 an automatic title. Default is NULL.}
 
-\item{xlab}{Character string or NULL. X-axis label. If NULL, uses group variable name. Default is NULL.}
+\item{plot_subtitle}{Character string or NULL. Custom subtitle for the plot. If NULL,
+the name of the statistical test used is shown automatically. Default is NULL.}
 
-\item{ylab}{Character string or NULL. Y-axis label. If NULL, uses plot variable name. Default is NULL.}
+\item{xlab}{Character string or NULL. X-axis label. If NULL, uses the group variable name.
+Default is NULL.}
 
-\item{global_p_position}{Numeric or NULL. Y-axis position for the global p-value as data coordinates.
-If NULL (default), automatically positions at the top-right of the plot area.}
+\item{ylab}{Character string or NULL. Y-axis label. If NULL, uses the plot variable name.
+Default is NULL.}
 
-\item{global_p_x}{Numeric or NULL. X-axis position for the global p-value. If NULL (default),
-positions at 95\% of the x-axis range (right side). Only used when n_groups > 2.}
+\item{show_global_p}{Logical. If TRUE, annotates the plot with the global (omnibus)
+p-value from the main statistical test (e.g., Kruskal-Wallis, ANOVA). Shown for all
+group counts when TRUE. Default is FALSE.}
 
-\item{title_size}{Numeric. Font size for the plot title. Default is 12.}
+\item{global_p_position}{Numeric or NULL. Y-axis position (data coordinates) for the
+global p-value annotation. If NULL (default), positioned automatically near the top
+of the plot area.}
 
-\item{subtitle_size}{Numeric. Font size for the plot subtitle. Default is 10.}
+\item{global_p_x}{Numeric or NULL. X-axis position for the global p-value annotation.
+If NULL (default), positioned at 95\% of the x-axis range (right side).}
 
-\item{xlab_size}{Numeric. Font size for the x-axis label. Default is 11.}
+\item{global_font_size}{Numeric or NULL. Base font size used to derive all text sizes
+proportionally. When provided, \code{title_size}, \code{subtitle_size},
+\code{xlab_size}, \code{ylab_size}, \code{pvalue_size}, \code{axis_text_size}, and
+annotation text sizes (mean/median values, global p) are all scaled relative to this
+value. Individual size parameters override \code{global_font_size} only for their
+specific element when set to a non-NULL numeric. Default is NULL (each parameter uses
+its own explicit default).}
 
-\item{ylab_size}{Numeric. Font size for the y-axis label. Default is 11.}
+\item{title_size}{Numeric or NULL. Font size for the plot title. If NULL and
+\code{global_font_size} is set, derived proportionally (1.2x). Default is NULL.}
 
-\item{axis_text_size}{Numeric. Font size for axis text. Default is 10.}
+\item{subtitle_size}{Numeric or NULL. Font size for the plot subtitle. If NULL and
+\code{global_font_size} is set, derived proportionally (0.9x). Default is NULL.}
+
+\item{xlab_size}{Numeric or NULL. Font size for the x-axis label. If NULL and
+\code{global_font_size} is set, derived proportionally (1.0x). Default is NULL.}
+
+\item{ylab_size}{Numeric or NULL. Font size for the y-axis label. If NULL and
+\code{global_font_size} is set, derived proportionally (1.0x). Default is NULL.}
+
+\item{pvalue_size}{Numeric or NULL. Font size (in ggplot2 \code{size} units, i.e. mm)
+for p-value annotations on brackets and the global p-value. If NULL and
+\code{global_font_size} is set, derived proportionally (0.35x). Default is NULL.}
+
+\item{axis_text_size}{Numeric or NULL. Font size for axis tick labels (both x and y axes).
+If NULL and \code{global_font_size} is set, derived proportionally (0.85x).
+Default is NULL.}
+
+\item{format_p_numeric}{Character string or numeric. Controls how p-values are
+formatted when \code{show_p_numeric = TRUE}. \code{"auto"} (default) rounds to 3
+decimal places, showing \code{"<.001"} if below that threshold and \code{">.999"} if
+above. A numeric value specifies the exact number of decimal places to display.}
 
 \item{group_order}{Character vector or NULL. Specifies the order of groups on the x-axis.
 If NULL (default), uses factor levels or alphabetical order.}
 
-\item{label_points}{Character string or NULL. Specifies point labeling: "all" (label all jitter points),
-"outliers" (label only outliers), or NULL (default, no labels). Requires sample_id parameter.}
+\item{label_points}{Character string or NULL. Point labeling: \code{"all"} (label all
+jitter points), \code{"outliers"} (label only outliers), or NULL (no labels).
+Requires \code{sample_id}. Default is NULL.}
 
-\item{sample_id}{Character string or NULL. Column name in data containing sample identifiers
-for point labeling. Required when label_points is not NULL.}
+\item{sample_id}{Character string or NULL. Column name containing sample identifiers
+for point labeling. Required when \code{label_points} is not NULL.}
 
-\item{show_mean}{Logical. If TRUE, add a red dot (mean indicator) to plots. Default is FALSE.}
+\item{show_mean}{Logical. If TRUE, adds a red dot (mean indicator) to each group.
+Default is FALSE.}
 
-\item{show_agg_val}{Logical. If TRUE (default), shows the numeric value of the mean
-(for parametric tests) or median (for non-parametric tests) on the plot.}
+\item{show_agg_val}{Logical. If TRUE (default), shows the numeric mean (parametric) or
+median (non-parametric) value as text on the plot.}
 
-\item{horizontal}{Logical. If TRUE, flip the plot to horizontal orientation. Default is FALSE.}
+\item{horizontal}{Logical. If TRUE, flips the plot to horizontal orientation.
+Default is FALSE.}
 
-\item{bracket_spacing}{Numeric. Multiplier for spacing between comparison brackets. Default is 0.08.}
+\item{bracket_spacing}{Numeric. Multiplier controlling the vertical spacing between
+comparison brackets. Default is 0.08.}
 
-\item{subgroup}{Character vector or NULL. Column name(s) in \code{x} to use for
-subgroup analysis. Each column must be categorical (factor or character). When
-specified, the full analysis (statistical tests and plots) is repeated
-independently for each level of each subgroup column. Default is NULL (no
-subgroup analysis performed).}
+\item{subgroup}{Character vector or NULL. Column name(s) in \code{x} for subgroup
+analysis. Each must be categorical (factor or character). When specified, the full
+analysis is repeated for each level of each subgroup column. Default is NULL.}
 
-\item{...}{Additional arguments passed to ggboxplot or ggviolin from ggpubr.}
+\item{...}{Additional arguments passed to \code{ggboxplot} or \code{ggviolin} from
+\pkg{ggpubr}.}
 }
 \value{
 A list containing:
 \item{plots}{List of all generated plots.}
 \item{significant_plots}{List of plots with significant results only.}
-\item{statistics}{List of statistical test results for each variable (output from \code{\link{run_diff}}).}
+\item{statistics}{List of \code{\link{run_diff}} results for each variable.}
+\item{subgroup_analysis}{Nested list of results per subgroup variable and level,
+or NULL if no subgroup was specified.}
 }
 \description{
 This function generates box plots or violin plots with statistical tests and
@@ -136,26 +187,36 @@ performed using the companion function \code{\link{run_diff}}.
 \dontrun{
 # Example 1: Show mean dot AND mean value
 results_anova <- plot_diff(
-  x = PlantGrowth,
-  outcome = "weight",
-  group = "group",
-  plot_type = "boxplot",
-  show_mean = TRUE,
+  x            = PlantGrowth,
+  outcome      = "weight",
+  group        = "group",
+  plot_type    = "boxplot",
+  show_mean    = TRUE,
   show_agg_val = TRUE
 )
 print(results_anova$plots$weight)
 
-# Example 2: Paired t-test, show only mean dot
-sleep_data <- sleep
-sleep_data$ID <- rep(1:10, 2) # Create a patient ID column
+# Example 2: Global font size controls all text proportionally
+results_anova2 <- plot_diff(
+  x               = PlantGrowth,
+  outcome         = "weight",
+  group           = "group",
+  global_font_size = 16,
+  show_global_p   = TRUE  # show the Kruskal-Wallis / ANOVA p-value on the plot
+)
+print(results_anova2$plots$weight)
 
+# Example 3: Paired t-test with custom subtitle, formatted p-values
+sleep_data     <- sleep
+sleep_data$ID  <- rep(1:10, 2)
 results_paired <- plot_diff(
-  x = sleep_data,
-  outcome = "extra",
-  group = "group",
-  paired = TRUE,
-  show_mean = TRUE,
-  show_agg_val = FALSE
+  x              = sleep_data,
+  outcome        = "extra",
+  group          = "group",
+  paired         = TRUE,
+  plot_subtitle  = "Paired comparison: Drug 1 vs Drug 2",
+  show_p_numeric = TRUE,
+  format_p_numeric = 4  # 4 decimal places
 )
 print(results_paired$plots$extra)
 }
