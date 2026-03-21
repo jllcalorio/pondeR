@@ -2,16 +2,13 @@ url: https://jllcalorio.github.io/pondeR/
 
 template:
   bootstrap: 5
-  bootswatch: flatly          # clean, minimalist base theme
+  bootswatch: flatly
   bslib:
-    # --- Typography ---
     base_font:      {google: "Inter"}
     heading_font:   {google: "Inter"}
     code_font:      {google: "JetBrains Mono"}
     font-size-base: "0.95rem"
-
-    # --- Colour palette (neutral / muted) ---
-    primary:        "#2C6E91"   # muted teal-blue
+    primary:        "#2C6E91"
     secondary:      "#6C757D"
     success:        "#4B8B65"
     info:           "#5B8DB8"
@@ -19,20 +16,14 @@ template:
     danger:         "#B84A4A"
     light:          "#F8F9FA"
     dark:           "#212529"
-
-    # --- Navbar + sidebar ---
     navbar-bg:            "#FFFFFF"
     navbar-light-color:   "#343A40"
     pkgdown-navbar-bg:    "#FFFFFF"
-
-    # --- Body ---
     body-bg:              "#FFFFFF"
     body-color:           "#212529"
     border-radius:        "0.375rem"
     link-color:           "#2C6E91"
     link-hover-color:     "#1A4D6B"
-
-  # Point to custom CSS overrides
   includes:
     in_header: |
       <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -77,6 +68,8 @@ reference:
       - starts_with("run_desc")
       - starts_with("run_normality")
       - starts_with("run_skewkurt")
+      - starts_with("run_anthroindex")
+      - starts_with("run_summarytable")
 
   - title: "Group Comparisons"
     desc: >
@@ -85,6 +78,8 @@ reference:
     contents:
       - starts_with("run_diff")
       - starts_with("plot_diff")
+      - starts_with("run_foldchange")
+      - starts_with("run_assoc")
 
   - title: "Regression & Classification"
     desc: >
@@ -100,33 +95,48 @@ reference:
       multivariate data exploration.
     contents:
       - starts_with("run_pca")
+      - starts_with("run_reduce")
       - starts_with("plot_scree")
       - starts_with("plot_score")
+
+  - title: "Visualisation"
+    desc: >
+      Standalone plotting functions for volcano plots and other figures.
+    contents:
+      - starts_with("plot_volcano")
 
   - title: "Data Pre-processing"
     desc: >
       Metabolomics-focused data pre-processing utilities including imputation,
-      normalisation, and batch correction.
+      normalisation, filtering, scaling, and batch correction.
     contents:
+      - starts_with("run_mvimpute")
       - starts_with("run_impute")
       - starts_with("run_norm")
+      - starts_with("run_scale")
+      - starts_with("run_transform")
+      - starts_with("run_filterRSD")
+      - starts_with("run_filtermissing")
+      - starts_with("run_filtervariance")
+      - starts_with("run_driftBatchCorrect")
       - starts_with("run_batch")
-
-  - title: "Visualisation"
-    desc: >
-      Volcano plots and other standalone visualisation functions.
-    contents:
-      - starts_with("plot_volcano")
-      - starts_with("print.")
-      - starts_with("summary.")
 
   - title: "Utilities & Helpers"
     desc: >
-      Internal and exported helper functions used across the package.
+      Utility functions for data management, relabelling, and S3 methods.
     contents:
-      - starts_with("check_")
       - starts_with("run_relabel")
+      - starts_with("print.")
+      - starts_with("summary.")
+      - starts_with("check_")
       - has_keyword("internal")
+
+  - title: "Other"
+    desc: >
+      Additional exported functions. New functions land here automatically
+      until formally categorised.
+    contents:
+      - everything()
 
 # ── Articles (vignettes) ─────────────────────────────────────────────────────
 articles:
