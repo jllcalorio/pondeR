@@ -1,0 +1,151 @@
+url: https://jllcalorio.github.io/pondeR/
+
+template:
+  bootstrap: 5
+  bootswatch: flatly          # clean, minimalist base theme
+  bslib:
+    # --- Typography ---
+    base_font:      {google: "Inter"}
+    heading_font:   {google: "Inter"}
+    code_font:      {google: "JetBrains Mono"}
+    font-size-base: "0.95rem"
+
+    # --- Colour palette (neutral / muted) ---
+    primary:        "#2C6E91"   # muted teal-blue
+    secondary:      "#6C757D"
+    success:        "#4B8B65"
+    info:           "#5B8DB8"
+    warning:        "#C97A26"
+    danger:         "#B84A4A"
+    light:          "#F8F9FA"
+    dark:           "#212529"
+
+    # --- Navbar + sidebar ---
+    navbar-bg:            "#FFFFFF"
+    navbar-light-color:   "#343A40"
+    pkgdown-navbar-bg:    "#FFFFFF"
+
+    # --- Body ---
+    body-bg:              "#FFFFFF"
+    body-color:           "#212529"
+    border-radius:        "0.375rem"
+    link-color:           "#2C6E91"
+    link-hover-color:     "#1A4D6B"
+
+  # Point to custom CSS overrides
+  includes:
+    in_header: |
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+
+# ── Site metadata ────────────────────────────────────────────────────────────
+home:
+  title: "pondeR • Statistical Analysis Made Easier"
+  description: >
+    pondeR is an R package providing a curated collection of functions for
+    generating publication-ready descriptive and inferential statistics tables
+    and figures — with minimal coding overhead.
+  links:
+    - text: "Report a bug"
+      href: https://github.com/jllcalorio/pondeR/issues
+    - text: "Source on GitHub"
+      href: https://github.com/jllcalorio/pondeR
+
+# ── Navbar ───────────────────────────────────────────────────────────────────
+navbar:
+  structure:
+    left:  [intro, reference, articles, changelog]
+    right: [search, github]
+
+  components:
+    intro:
+      text: "Get Started"
+      href: articles/pondeR.html
+
+    github:
+      icon: fab fa-github
+      href: https://github.com/jllcalorio/pondeR
+      aria-label: "GitHub"
+
+# ── Reference (function index) ───────────────────────────────────────────────
+reference:
+
+  - title: "Descriptive Statistics"
+    desc: >
+      Functions for generating publication-ready summary and descriptive
+      statistics tables.
+    contents:
+      - starts_with("run_desc")
+      - starts_with("run_normality")
+      - starts_with("run_skewkurt")
+
+  - title: "Group Comparisons"
+    desc: >
+      Functions for comparing groups via parametric and non-parametric tests,
+      with automatic test selection and effect-size reporting.
+    contents:
+      - starts_with("run_diff")
+      - starts_with("plot_diff")
+
+  - title: "Regression & Classification"
+    desc: >
+      Logistic regression and AUC/AUROC analysis functions with
+      publication-ready outputs and optional Firth correction.
+    contents:
+      - starts_with("run_logreg")
+      - starts_with("run_auc")
+
+  - title: "Dimensionality Reduction"
+    desc: >
+      PCA-based dimensionality reduction, scree plots, and score plots for
+      multivariate data exploration.
+    contents:
+      - starts_with("run_pca")
+      - starts_with("plot_scree")
+      - starts_with("plot_score")
+
+  - title: "Data Pre-processing"
+    desc: >
+      Metabolomics-focused data pre-processing utilities including imputation,
+      normalisation, and batch correction.
+    contents:
+      - starts_with("run_impute")
+      - starts_with("run_norm")
+      - starts_with("run_batch")
+
+  - title: "Utilities & Helpers"
+    desc: >
+      Internal and exported helper functions used across the package.
+    contents:
+      - starts_with("check_")
+      - has_keyword("internal")
+
+# ── Articles (vignettes) ─────────────────────────────────────────────────────
+articles:
+  - title: "Introduction"
+    navbar: "Introduction"
+    contents:
+      - pondeR
+
+  - title: "Workflow Guides"
+    navbar: "Workflow Guides"
+    contents:
+      - starts_with("workflow_")
+      - starts_with("guide_")
+
+# ── Changelog ────────────────────────────────────────────────────────────────
+news:
+  releases:
+    - text: "Version 1.0"
+      href: https://github.com/jllcalorio/pondeR/releases/tag/v1.0
+
+# ── Footer ───────────────────────────────────────────────────────────────────
+footer:
+  structure:
+    left: developed_by
+    right: built_with
+
+  components:
+    developed_by: >
+      Developed by [John Lennon L. Calorio](https://github.com/jllcalorio).
+    built_with: >
+      Built with [pkgdown](https://pkgdown.r-lib.org/).
