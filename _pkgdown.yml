@@ -112,11 +112,20 @@ reference:
       - starts_with("run_norm")
       - starts_with("run_batch")
 
+  - title: "Visualisation"
+    desc: >
+      Volcano plots and other standalone visualisation functions.
+    contents:
+      - starts_with("plot_volcano")
+      - starts_with("print.")
+      - starts_with("summary.")
+
   - title: "Utilities & Helpers"
     desc: >
       Internal and exported helper functions used across the package.
     contents:
       - starts_with("check_")
+      - starts_with("run_relabel")
       - has_keyword("internal")
 
 # ── Articles (vignettes) ─────────────────────────────────────────────────────
@@ -124,13 +133,9 @@ articles:
   - title: "Introduction"
     navbar: "Introduction"
     contents:
-      - pondeR
-
-  - title: "Workflow Guides"
-    navbar: "Workflow Guides"
-    contents:
-      - starts_with("workflow_")
-      - starts_with("guide_")
+      - starts_with("pondeR")
+      - starts_with("intro")
+      - starts_with("getting-started")
 
 # ── Changelog ────────────────────────────────────────────────────────────────
 news:
