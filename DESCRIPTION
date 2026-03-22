@@ -3,42 +3,52 @@ Title: pondeR: Making Statistical Analysis A Little Bit Easier
 Version: 1.0
 Authors@R: 
     person("John Lennon", "Calorio", , "jllcalorio@gmail.com", role = c("aut", "cre"))
-Description: Generate publication-ready statistical tables and figures using minimal coding.
-URL: https://jllcalorio.github.io/pondeR
+Description: Generate publication-ready statistical tables and figures
+    using minimal coding.
 License: MIT + file LICENSE
-Encoding: UTF-8
-Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
+URL: https://jllcalorio.github.io/pondeR
 Depends:
     R (>= 4.1.0)
 Imports:
+    anthro,
+    anthroplus,
+    BiocManager,
+    BiocParallel,
     car,
     dplyr,
     effectsize,
+    forcats,
     ggplot2,
     ggpubr,
     ggrepel,
-    moments,
-    nortest,
-    rstatix,
-    tibble,
-    forcats,
     gt,
     gtsummary,
-    magrittr,
-    openxlsx,
-    BiocParallel,
     imputeLCMD,
+    logistf,
+    magrittr,
     matrixStats,
+    moments,
+    nortest,
+    openxlsx,
+    parallel,
     parallelly,
+    performance,
     pmp,
+    pROC,
+    purrr,
+    rstatix,
+    stats,
     sva,
+    tibble,
+    utils,
     viridis,
     vsn,
-    purrr
+    webshot2
 Suggests:
     knitr,
-    rmarkdown,
-    quarto,
-    webshot2
-VignetteBuilder: knitr
+    rmarkdown
+VignetteBuilder: 
+    knitr
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
