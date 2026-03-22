@@ -82,7 +82,11 @@ jobs:
             )
           "
 
-      # 7. Build the pkgdown site
+      # 7. Install pondeR itself
+      - name: Install pondeR
+        run: R CMD INSTALL .
+
+      # 8. Build the pkgdown site
       - name: Build site
         run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE)
         shell: Rscript {0}
