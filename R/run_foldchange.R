@@ -60,7 +60,7 @@
 #' \code{shifted_data} in a consistent format that \code{plot_volcano()} can
 #' consume directly.
 #'
-#' @return A named list of class \code{"run_foldchange"} containing:
+#' @return A named list containing:
 #' \describe{
 #'   \item{\code{fc_table}}{A \code{data.frame} of pairwise fold changes.
 #'     Rows are features; columns are labelled
@@ -419,8 +419,7 @@ run_foldchange <- function(
         n_feat   = n_feat,
         n_groups = n_lvl
       )
-    ),
-    class = "run_foldchange"
+    )
   )
 }
 
@@ -431,7 +430,7 @@ run_foldchange <- function(
 
 #' @title Print Method for \code{run_foldchange} Objects
 #' @description Compact console summary of a \code{run_foldchange} result.
-#' @param x An object of class \code{"run_foldchange"}.
+#' @param x An object from \code{"run_foldchange"}.
 #' @param ... Ignored.
 #' @return Invisibly returns \code{x}.
 #' @author John Lennon L. Calorio

@@ -69,7 +69,7 @@ Default: FALSE.}
 \item{verbose}{Logical. Print progress messages. Default: TRUE.}
 }
 \value{
-A list of class "run_driftBatchCorrect" containing:
+A list containing:
 \item{data}{Matrix or data frame of corrected data (same class as input \code{x})}
 \item{data_before_correction}{Original data before correction}
 \item{correction_applied}{Logical indicating if correction was performed}

@@ -88,17 +88,21 @@
 #' \code{***} if \eqn{p < .001}, \code{**} if \eqn{p < .01}, \code{*} if \eqn{p < .05},
 #' and blank otherwise.
 #'
+#' \strong{Inline model metrics:} Model-fit statistics (Deviance, AIC, BIC, McFadden R2,
+#' CoxSnell R2, Nagelkerke R2, Tjur R2, Firth Corrected) are appended as additional columns to
+#' the right of the \code{VIF} column. Values are placed only in the first row (aligned with the
+#' intercept); all subsequent rows contain \code{NA} for these columns.
+#'
 #' @return
 #' If \code{iterate = FALSE}, returns a data frame containing Predictor, Log Odds, Std Error,
-#' p-value, Significance, OR, 95\% CIs, and (optionally) VIF. Model metrics (including
-#' \code{Firth Corrected}) are attached as \code{attr(result, "model_metrics")}.
+#' p-value, Significance, OR, 95\% CIs, VIF, and inline model metrics (Deviance, AIC, BIC,
+#' McFadden R2, CoxSnell R2, Nagelkerke R2, Tjur R2, Firth Corrected) in the first row.
+#' Model metrics are also attached as \code{attr(result, "model_metrics")}.
 #'
 #' If \code{iterate = TRUE}, returns a named list containing:
 #' \describe{
-#'   \item{Tables}{A named list of result data frames for each model combination.}
-#'   \item{Metrics}{A data frame comparing model metrics (N, Deviance, AIC, BIC, McFadden \eqn{R^2},
-#'     Cox-Snell \eqn{R^2}, Nagelkerke \eqn{R^2}, Tjur \eqn{R^2}, Has Significant Predictor, and
-#'     Firth Corrected) across all combinations.}
+#'   \item{Tables}{A named list of result data frames, each with inline model metrics in row 1.}
+#'   \item{Metrics}{A data frame comparing model metrics across all combinations.}
 #'   \item{filtered_Tables}{A subset of \code{Tables} excluding only models where \emph{all}
 #'     non-intercept \code{95\% CI Low} values or \emph{all} non-intercept \code{95\% CI High}
 #'     values are \code{Inf}.}
@@ -111,7 +115,6 @@
 #' @examples
 #' \dontrun{
 #' # --- Example 1: Single model with Firth's correction applied dynamically ---
-#' # Firth's correction is applied automatically only if zero cells are detected.
 #' result <- run_logreg(
 #'   x          = my_data,
 #'   y          = "Outcome",
@@ -122,10 +125,9 @@
 #'   apply_firth = TRUE
 #' )
 #' result
-#' attr(result, "model_metrics")  # includes Firth Corrected column
+#' attr(result, "model_metrics")
 #'
 #' # --- Example 2: Iterative models with forced Firth and VIF filtering -------
-#' # All models receive Firth's correction regardless of zero-cell status.
 #' results <- run_logreg(
 #'   x                = my_data,
 #'   y                = "Outcome",
@@ -139,7 +141,7 @@
 #'   force_apply_firth = TRUE
 #' )
 #' results$Metrics
-#' results$vif_filtered_Tables  # models with p < .05 and all VIF < 5
+#' results$vif_filtered_Tables
 #' }
 #'
 #' @author John Lennon L. Calorio
@@ -288,8 +290,6 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
 
   # ---------------------------------------------------------------------------
   # Helper: detect zero cells between a set of predictors and the outcome.
-  # Checks all categorical predictors (factors/characters) in the current combo
-  # against y. Returns TRUE if any cross-tabulation cell is zero.
   # ---------------------------------------------------------------------------
   has_zero_cells <- function(pred_vars, data, y_var) {
     for (v in pred_vars) {
@@ -304,7 +304,6 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
 
   # ---------------------------------------------------------------------------
   # Helper: extract model-fit metrics into a one-row data frame.
-  # Accepts both glm and logistf objects; extracts what is available from each.
   # ---------------------------------------------------------------------------
   get_metrics <- function(model, model_name, firth_used) {
     suppressWarnings({
@@ -319,14 +318,11 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
       as.numeric(val[[1]])
     }
 
-    # nobs / deviance / AIC / BIC differ between glm and logistf
-    n_obs <- tryCatch(as.numeric(stats::nobs(model)), error = function(e) NA_real_)
-
-    deviance_val <- tryCatch(as.numeric(model$deviance), error = function(e) NA_real_)
+    n_obs        <- tryCatch(as.numeric(stats::nobs(model)), error = function(e) NA_real_)
+    deviance_val <- tryCatch(as.numeric(model$deviance),     error = function(e) NA_real_)
     if (is.null(deviance_val) || length(deviance_val) == 0) deviance_val <- NA_real_
-
-    aic_val <- tryCatch(as.numeric(stats::AIC(model)), error = function(e) NA_real_)
-    bic_val <- tryCatch(as.numeric(stats::BIC(model)), error = function(e) NA_real_)
+    aic_val      <- tryCatch(as.numeric(stats::AIC(model)),  error = function(e) NA_real_)
+    bic_val      <- tryCatch(as.numeric(stats::BIC(model)),  error = function(e) NA_real_)
 
     data.frame(
       Model              = model_name,
@@ -345,30 +341,49 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
   }
 
   # ---------------------------------------------------------------------------
+  # Helper: append inline metric columns to a result table.
+  # Metric values are placed only in row 1 (intercept row); all other rows
+  # receive NA. The Model and N columns from the metrics row are intentionally
+  # excluded — only the fit statistics are appended.
+  # ---------------------------------------------------------------------------
+  append_metrics <- function(tbl, metrics_row) {
+    metric_cols <- c("Deviance", "AIC", "BIC",
+                     "McFadden R2", "CoxSnell R2", "Nagelkerke R2",
+                     "Tjur R2", "Firth Corrected")
+
+    n_rows <- nrow(tbl)
+
+    for (col in metric_cols) {
+      val <- metrics_row[[col]]
+
+      # Pre-fill entire column with NA of the appropriate type
+      if (is.logical(val)) {
+        tbl[[col]] <- NA
+        tbl[[col]] <- as.logical(tbl[[col]])
+      } else {
+        tbl[[col]] <- NA_real_
+      }
+
+      # Place the metric value only in row 1
+      tbl[[col]][1] <- val
+    }
+
+    tbl
+  }
+
+  # ---------------------------------------------------------------------------
   # Helper: build the result table from a fitted model (glm or logistf).
-  #
-  # Aliasing fix (glm only): summary() drops NA coefficients; confint.default()
-  # keeps them, causing a row-count mismatch. We align to shared row names and
-  # warn about dropped aliased terms. logistf() does not produce aliased NAs,
-  # so this check is bypassed for Firth-corrected models.
-  #
-  # VIF: car::vif() does not support logistf objects. For Firth-corrected models,
-  # VIF is computed from a parallel glm() fit on the same formula and data.
   # ---------------------------------------------------------------------------
   build_table <- function(mod, combo_name = NULL, pred_vars, data, firth_used) {
 
     is_firth <- inherits(mod, "logistf")
 
     if (is_firth) {
-      # logistf stores coefficients and CIs directly
       coef_est <- mod$coefficients
-      ci_mat   <- mod$ci.lower  # will be combined below
       ci_low   <- exp(mod$ci.lower)
       ci_high  <- exp(mod$ci.upper)
       p_vals   <- mod$prob
       std_err  <- sqrt(diag(mod$var))
-
-      # Align all vectors to the same term names (logistf includes intercept)
       terms_used <- names(coef_est)
 
       res_df <- data.frame(
@@ -385,7 +400,6 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
       )
 
     } else {
-      # Standard glm path
       coefs <- summary(mod)$coefficients
       ci    <- suppressMessages(stats::confint.default(mod))
 
@@ -427,7 +441,6 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
     if (add_vif) {
       res_df$VIF <- NA_real_
 
-      # For logistf models, fit a parallel glm for VIF computation only
       vif_mod <- if (is_firth) {
         tryCatch(
           stats::glm(mod$formula, data = data, family = stats::binomial(link = "logit")),
@@ -485,59 +498,82 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
   }
 
   # ---------------------------------------------------------------------------
-  # Helper: fit a single model (glm or logistf) given a formula string,
-  # the prepared data, and the current predictor variable names.
-  # Returns a list: mod (the fitted model) and firth_used (logical).
+  # Helper: fit a single model (glm or logistf).
   # ---------------------------------------------------------------------------
-  fit_model <- function(form_str, pred_vars, data, combo_name) {
-    use_firth <- FALSE
+fit_model <- function(form_str, pred_vars, data, combo_name) {
+  use_firth <- FALSE
 
-    if (apply_firth) {
-      use_firth <- force_apply_firth || has_zero_cells(pred_vars, data, y)
-    }
-
-    if (use_firth) {
-      mod <- tryCatch(
-        logistf::logistf(stats::as.formula(form_str), data = data, plconf = NULL),
-        error = function(e) {
-          warning(sprintf(
-            "Constructive Warning: Firth model failed for '%s'. Falling back to glm(). Error: %s",
-            combo_name, e$message
-          ), call. = FALSE)
-          NULL
-        }
-      )
-      # Fallback to glm if logistf fails
-      if (is.null(mod)) {
-        mod <- tryCatch(
-          stats::glm(stats::as.formula(form_str), data = data,
-                     family = stats::binomial(link = "logit")),
-          error = function(e) {
-            warning(sprintf(
-              "Constructive Warning: glm fallback also failed for '%s'. Error: %s",
-              combo_name, e$message
-            ), call. = FALSE)
-            NULL
-          }
-        )
-        use_firth <- FALSE
-      }
+  # Guard: skip any combo where a predictor has fewer than 2 levels in the
+  # working data. This prevents the "contrasts can be applied only to factors
+  # with 2 or more levels" crash in both glm() and logistf().
+  degenerate <- vapply(pred_vars, function(v) {
+    col <- data[[v]]
+    if (is.factor(col) || is.character(col) || is.numeric(col)) {
+      length(unique(col[!is.na(col)])) < 2L
     } else {
+      FALSE
+    }
+  }, logical(1))
+
+  if (any(degenerate)) {
+    bad <- pred_vars[degenerate]
+    warning(
+      sprintf(
+        "Constructive Warning: Model '%s' skipped. The following predictor(s) have fewer than ",
+        combo_name
+      ),
+      "2 unique levels in the working data and cannot be used in regression: ",
+      paste(bad, collapse = ", "), ".",
+      call. = FALSE
+    )
+    return(list(mod = NULL, firth_used = FALSE))
+  }
+
+  if (apply_firth) {
+    use_firth <- force_apply_firth || has_zero_cells(pred_vars, data, y)
+  }
+
+  if (use_firth) {
+    mod <- tryCatch(
+      logistf::logistf(stats::as.formula(form_str), data = data, plconf = NULL),
+      error = function(e) {
+        warning(sprintf(
+          "Constructive Warning: Firth model failed for '%s'. Falling back to glm(). Error: %s",
+          combo_name, e$message
+        ), call. = FALSE)
+        NULL
+      }
+    )
+    if (is.null(mod)) {
       mod <- tryCatch(
         stats::glm(stats::as.formula(form_str), data = data,
                    family = stats::binomial(link = "logit")),
         error = function(e) {
           warning(sprintf(
-            "Constructive Warning: Model failed for combination '%s'. Error: %s",
+            "Constructive Warning: glm fallback also failed for '%s'. Error: %s",
             combo_name, e$message
           ), call. = FALSE)
           NULL
         }
       )
+      use_firth <- FALSE
     }
-
-    list(mod = mod, firth_used = use_firth)
+  } else {
+    mod <- tryCatch(
+      stats::glm(stats::as.formula(form_str), data = data,
+                 family = stats::binomial(link = "logit")),
+      error = function(e) {
+        warning(sprintf(
+          "Constructive Warning: Model failed for combination '%s'. Error: %s",
+          combo_name, e$message
+        ), call. = FALSE)
+        NULL
+      }
+    )
   }
+
+  list(mod = mod, firth_used = use_firth)
+}
 
   # ---------------------------------------------------------------------------
   # 3. Model Execution
@@ -556,6 +592,9 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
                                data = x, firth_used = firth_used)
     metrics_out <- get_metrics(mod, model_name = "Base Model", firth_used = firth_used)
 
+    # Append inline metric columns — values in row 1 only, NA elsewhere
+    tbl_out <- append_metrics(tbl_out, metrics_out)
+
     attr(tbl_out, "model_metrics") <- metrics_out
     return(tbl_out)
 
@@ -565,7 +604,6 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
       stop("Error: 'iterate = TRUE' requires 'indep' variables to be specified.")
     }
 
-    # Generate the power set (all non-empty subsets) of indep
     combo_list <- unlist(
       lapply(seq_along(indep), function(i) utils::combn(indep, i, simplify = FALSE)),
       recursive = FALSE
@@ -585,13 +623,18 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
       firth_used <- fit$firth_used
 
       if (!is.null(mod)) {
-        results_tables[[combo_name]] <- build_table(
+        metrics_row <- get_metrics(mod, model_name = combo_name, firth_used = firth_used)
+        metrics_list[[combo_name]] <- metrics_row
+
+        tbl <- build_table(
           mod, combo_name = combo_name, pred_vars = pred_vars,
           data = x, firth_used = firth_used
         )
-        metrics_list[[combo_name]] <- get_metrics(
-          mod, model_name = combo_name, firth_used = firth_used
-        )
+
+        # Append inline metric columns — values in row 1 only, NA elsewhere
+        tbl <- append_metrics(tbl, metrics_row)
+
+        results_tables[[combo_name]] <- tbl
       }
     }
 
@@ -609,22 +652,23 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
       logical(1)
     )
 
-    # filtered_Tables: exclude only models where ALL non-intercept values in
-    # "95% CI Low" are Inf, OR ALL non-intercept values in "95% CI High" are Inf.
+    # filtered_Tables: exclude models where ALL non-intercept "95% CI Low" values
+    # are Inf or 0, OR ALL non-intercept "95% CI High" values are Inf or 0.
     filtered_tables <- Filter(function(tbl) {
       non_int <- tbl[tbl$Predictor != "(Intercept)", ]
-      !(all(is.infinite(non_int$`95% CI Low`)) | all(is.infinite(non_int$`95% CI High`)))
+      low     <- non_int$`95% CI Low`
+      high    <- non_int$`95% CI High`
+      !(all(is.infinite(low)  | low  == 0) |
+        all(is.infinite(high) | high == 0))
     }, results_tables)
 
-    # p_filtered_Tables: from filtered_tables, keep only models with at least
-    # one non-intercept p-value < .05
+    # p_filtered_Tables
     p_filtered_tables <- Filter(function(tbl) {
       non_int <- tbl[tbl$Predictor != "(Intercept)", ]
       any(non_int$`p-value` < 0.05, na.rm = TRUE)
     }, filtered_tables)
 
-    # vif_filtered_Tables: from p_filtered_tables, keep only models where all
-    # non-NA VIF values are < 5 (no multicollinearity violation)
+    # vif_filtered_Tables
     vif_filtered_tables <- Filter(function(tbl) {
       non_int  <- tbl[tbl$Predictor != "(Intercept)", ]
       vif_vals <- non_int$VIF[!is.na(non_int$VIF)]

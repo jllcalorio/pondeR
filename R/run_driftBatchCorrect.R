@@ -33,7 +33,7 @@
 #'   Default: FALSE.
 #' @param verbose Logical. Print progress messages. Default: TRUE.
 #'
-#' @return A list of class "run_driftBatchCorrect" containing:
+#' @return A list containing:
 #'   \item{data}{Matrix or data frame of corrected data (same class as input `x`)}
 #'   \item{data_before_correction}{Original data before correction}
 #'   \item{correction_applied}{Logical indicating if correction was performed}
@@ -170,7 +170,6 @@ run_driftBatchCorrect <- function(
       n_uncorrected = 0,
       parameters = list(perform_correction = FALSE)
     )
-    class(result) <- c("run_driftBatchCorrect", "list")
     return(result)
   }
   
@@ -338,7 +337,6 @@ run_driftBatchCorrect <- function(
     )
   )
   
-  class(result) <- c("run_driftBatchCorrect", "list")
   return(result)
 }
 

@@ -39,7 +39,7 @@
 #'   for matching `ref_sample`. Default: "Sample".
 #' @param verbose Logical. Print progress messages. Default: TRUE.
 #'
-#' @return A list of class "run_normalize" containing:
+#' @return A list containing:
 #'   \item{data}{Matrix or data frame of normalized data (same class as input `x`)}
 #'   \item{normalization_factors}{Numeric vector of factors used for normalization}
 #'   \item{method_used}{Character describing normalization method applied}
@@ -405,7 +405,6 @@ run_normalize <- function(
     )
   )
   
-  class(result) <- c("run_normalize", "list")
   return(result)
 }
 

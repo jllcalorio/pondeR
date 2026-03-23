@@ -67,7 +67,7 @@ for matching \code{ref_sample}. Default: "Sample".}
 \item{verbose}{Logical. Print progress messages. Default: TRUE.}
 }
 \value{
-A list of class "run_normalize" containing:
+A list containing:
 \item{data}{Matrix or data frame of normalized data (same class as input \code{x})}
 \item{normalization_factors}{Numeric vector of factors used for normalization}
 \item{method_used}{Character describing normalization method applied}

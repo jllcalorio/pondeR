@@ -74,7 +74,7 @@
 #'   See `stats::p.adjust.methods`. Default is "BH".
 #' @param verbose A logical indicating whether to print detailed messages. Default is TRUE.
 #'
-#' @return An object of class "run_assoc" which is a list containing:
+#' @return An object which is a list containing:
 #'   \item{test_used}{Character string of the statistical test performed.}
 #'   \item{test_result}{List containing results of the statistical test (a 'htest' object).}
 #'   \item{contingency_table}{The observed contingency table (as a data.frame).}
@@ -563,12 +563,11 @@ run_assoc <- function(x,
     )
   )
 
-  class(result) <- "run_assoc"
   return(result)
 }
 
 #' Print method for run_assoc objects
-#' @param x An object of class "run_assoc".
+#' @param x An object from \code{run_assoc}.
 #' @param ... Further arguments passed to or from other methods.
 #' @export
 print.run_assoc <- function(x, ...) {
@@ -629,7 +628,7 @@ print.run_assoc <- function(x, ...) {
 }
 
 #' Summary method for run_assoc objects
-#' @param object An object of class "run_assoc".
+#' @param object An object from \code{run_assoc}.
 #' @param ... Further arguments passed to or from other methods.
 #' @export
 summary.run_assoc <- function(object, ...) {

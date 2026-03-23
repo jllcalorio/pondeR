@@ -7,7 +7,7 @@
 \method{print}{run_auc}(x, ...)
 }
 \arguments{
-\item{x}{An object of class \code{"run_auc"}.}
+\item{x}{An object from \code{"run_auc"}.}
 
 \item{...}{Ignored.}
 }

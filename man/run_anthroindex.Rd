@@ -111,7 +111,7 @@ indices to compute. One or more of: \code{"wfa"}, \code{"hfa"},
 \code{"tsfa"}, \code{"ssfa"}. Defaults to all eight.}
 }
 \value{
-Each result is an object of class \code{"run_anthroindex"} and
+Each result is an object from \code{"run_anthroindex"} and is a
 \code{"data.frame"}.
 
 The columns are ordered as follows:

@@ -67,15 +67,14 @@ regardless of whether zero cells are present. Ignored if \code{apply_firth = FAL
 }
 \value{
 If \code{iterate = FALSE}, returns a data frame containing Predictor, Log Odds, Std Error,
-p-value, Significance, OR, 95\\% CIs, and (optionally) VIF. Model metrics (including
-\code{Firth Corrected}) are attached as \code{attr(result, "model_metrics")}.
+p-value, Significance, OR, 95\\% CIs, VIF, and inline model metrics (Deviance, AIC, BIC,
+McFadden R2, CoxSnell R2, Nagelkerke R2, Tjur R2, Firth Corrected) in the first row.
+Model metrics are also attached as \code{attr(result, "model_metrics")}.
 
 If \code{iterate = TRUE}, returns a named list containing:
 \describe{
-\item{Tables}{A named list of result data frames for each model combination.}
-\item{Metrics}{A data frame comparing model metrics (N, Deviance, AIC, BIC, McFadden \eqn{R^2},
-Cox-Snell \eqn{R^2}, Nagelkerke \eqn{R^2}, Tjur \eqn{R^2}, Has Significant Predictor, and
-Firth Corrected) across all combinations.}
+\item{Tables}{A named list of result data frames, each with inline model metrics in row 1.}
+\item{Metrics}{A data frame comparing model metrics across all combinations.}
 \item{filtered_Tables}{A subset of \code{Tables} excluding only models where \emph{all}
 non-intercept \code{95\% CI Low} values or \emph{all} non-intercept \code{95\% CI High}
 values are \code{Inf}.}
@@ -138,11 +137,15 @@ formula and data.
 \strong{Significance codes:} The \code{Significance} column uses the conventional scheme:
 \code{***} if \eqn{p < .001}, \code{**} if \eqn{p < .01}, \code{*} if \eqn{p < .05},
 and blank otherwise.
+
+\strong{Inline model metrics:} Model-fit statistics (Deviance, AIC, BIC, McFadden R2,
+CoxSnell R2, Nagelkerke R2, Tjur R2, Firth Corrected) are appended as additional columns to
+the right of the \code{VIF} column. Values are placed only in the first row (aligned with the
+intercept); all subsequent rows contain \code{NA} for these columns.
 }
 \examples{
 \dontrun{
 # --- Example 1: Single model with Firth's correction applied dynamically ---
-# Firth's correction is applied automatically only if zero cells are detected.
 result <- run_logreg(
   x          = my_data,
   y          = "Outcome",
@@ -153,10 +156,9 @@ result <- run_logreg(
   apply_firth = TRUE
 )
 result
-attr(result, "model_metrics")  # includes Firth Corrected column
+attr(result, "model_metrics")
 
 # --- Example 2: Iterative models with forced Firth and VIF filtering -------
-# All models receive Firth's correction regardless of zero-cell status.
 results <- run_logreg(
   x                = my_data,
   y                = "Outcome",
@@ -170,7 +172,7 @@ results <- run_logreg(
   force_apply_firth = TRUE
 )
 results$Metrics
-results$vif_filtered_Tables  # models with p < .05 and all VIF < 5
+results$vif_filtered_Tables
 }
 
 }

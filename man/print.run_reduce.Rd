@@ -7,7 +7,7 @@
 \method{print}{run_reduce}(x, ...)
 }
 \arguments{
-\item{x}{An object of class \code{"run_reduce"}.}
+\item{x}{An object from \code{run_reduce}.}
 
 \item{...}{Further arguments passed to or from other methods (currently
 unused).}

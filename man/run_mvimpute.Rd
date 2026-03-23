@@ -23,7 +23,7 @@ allow more spread. Default: 1.}
 \item{verbose}{Logical. Print progress messages. Default: TRUE.}
 }
 \value{
-A list of class "run_mvimpute" containing:
+A list containing:
 \item{data}{Matrix or data frame with imputed values (same class as input \code{x})}
 \item{n_missing_before}{Integer. Number of missing values before imputation}
 \item{n_missing_after}{Integer. Number of missing values after imputation (should be 0)}

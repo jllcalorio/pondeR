@@ -55,7 +55,7 @@ shifted so that the global minimum of \code{x} (after filtering and
 selection) becomes \code{eps}. Default \code{1e-8}.}
 }
 \value{
-A named list of class \code{"run_foldchange"} containing:
+A named list containing:
 \describe{
 \item{\code{fc_table}}{A \code{data.frame} of pairwise fold changes.
 Rows are features; columns are labelled

@@ -16,7 +16,7 @@
 #'   allow more spread. Default: 1.
 #' @param verbose Logical. Print progress messages. Default: TRUE.
 #'
-#' @return A list of class "run_mvimpute" containing:
+#' @return A list containing:
 #'   \item{data}{Matrix or data frame with imputed values (same class as input `x`)}
 #'   \item{n_missing_before}{Integer. Number of missing values before imputation}
 #'   \item{n_missing_after}{Integer. Number of missing values after imputation (should be 0)}
@@ -110,7 +110,6 @@ run_mvimpute <- function(
       parameters = list(method = method, tune_sigma = tune_sigma),
       method_used = "None (no missing values)"
     )
-    class(result) <- c("run_mvimpute", "list")
     return(result)
   }
   
@@ -240,7 +239,6 @@ run_mvimpute <- function(
     method_used = method_description
   )
   
-  class(result) <- c("run_mvimpute", "list")
   return(result)
 }
 

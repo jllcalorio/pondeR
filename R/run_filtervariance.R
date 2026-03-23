@@ -11,7 +11,7 @@
 #'   10 removes the 10% of features with lowest variance. Default: 10.
 #' @param verbose Logical. Print progress messages. Default: TRUE.
 #'
-#' @return A list of class "run_filtervariance" containing:
+#' @return A list containing:
 #'   \item{data}{Matrix or data frame of filtered data (same class as input `x`)}
 #'   \item{features_removed}{Character vector of removed feature names}
 #'   \item{features_kept}{Character vector of retained feature names}
@@ -132,7 +132,6 @@ run_filtervariance <- function(
       n_features_removed = 0,
       parameters = list(percentile = percentile)
     )
-    class(result) <- c("run_filtervariance", "list")
     return(result)
   }
   
@@ -169,7 +168,6 @@ run_filtervariance <- function(
     parameters = list(percentile = percentile)
   )
   
-  class(result) <- c("run_filtervariance", "list")
   return(result)
 }
 

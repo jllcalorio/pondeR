@@ -53,7 +53,7 @@
 #'   repeated pairwise comparisons and scales well with the number of inputs.
 #' }
 #'
-#' @return A named list of class \code{"run_reduce"} with the following
+#' @return A named list with the following
 #'   elements:
 #'   \describe{
 #'     \item{\code{data}}{A \code{data.frame} containing the reduced result.}
@@ -192,8 +192,7 @@ run_reduce <- function(..., check_cols = TRUE, return_common = TRUE) {
           return_common = return_common,
           n_inputs     = 1L,
           target_names = if (check_cols) colnames(dfs[[1L]]) else rownames(dfs[[1L]])
-        ),
-        class = "run_reduce"
+        )
       )
     )
   }
@@ -359,8 +358,7 @@ run_reduce <- function(..., check_cols = TRUE, return_common = TRUE) {
       return_common = return_common,
       n_inputs      = n,
       target_names  = target_names
-    ),
-    class = "run_reduce"
+    )
   )
 }
 
@@ -374,7 +372,7 @@ run_reduce <- function(..., check_cols = TRUE, return_common = TRUE) {
 #' @description Provides a concise, informative summary when a
 #'   \code{run_reduce} object is printed to the console.
 #'
-#' @param x An object of class \code{"run_reduce"}.
+#' @param x An object from \code{run_reduce}.
 #' @param ... Further arguments passed to or from other methods (currently
 #'   unused).
 #'

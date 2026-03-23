@@ -42,7 +42,7 @@ Use "max" for automatic detection (uses all available - 2). Default: 1.}
 \item{verbose}{Logical. Print progress messages. Default: TRUE.}
 }
 \value{
-A list of class "run_transform" containing:
+A list containing:
 \item{data}{Matrix or data frame of transformed data (same class as input \code{x})}
 \item{method_used}{Character describing transformation method applied}
 \item{shift_applied}{Numeric value added to data before transformation (if applicable)}

@@ -93,8 +93,7 @@
 #'   If "max", the function uses the number of available cores minus 2 (to reserve system resources), with a minimum of 1.
 #'   Default is 1. Supports both Windows and POSIX (Mac/Linux) systems.
 #'
-#' @return When \code{outcome} is a single string, returns an object of class \code{"run_diff"}
-#'   (a list) containing:
+#' @return When \code{outcome} is a single string, returns a list containing:
 #'   \item{test_used}{Character string of the statistical test performed.}
 #'   \item{test_result}{List containing results of the statistical test.}
 #'   \item{effect_size}{List containing effect size estimate, confidence interval, magnitude, and interpretation.}
@@ -1135,12 +1134,11 @@ run_diff <- function(
     raw_data       = tibble::tibble(outcome = y, group = grp)
   )
 
-  class(result) <- "run_diff"
   return(result)
 }
 
 #' Print method for run_diff objects
-#' @param x An object of class "run_diff".
+#' @param x An object from \code{run_diff}.
 #' @param ... Further arguments passed to or from other methods.
 #' @export
 print.run_diff <- function(x, ...) {
@@ -1191,7 +1189,7 @@ print.run_diff <- function(x, ...) {
 }
 
 #' Summary method for run_diff objects
-#' @param object An object of class "run_diff".
+#' @param object An object from \code{run_diff}.
 #' @param ... Further arguments passed to or from other methods.
 #' @export
 summary.run_diff <- function(object, ...) {

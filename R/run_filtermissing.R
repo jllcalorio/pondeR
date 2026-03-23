@@ -25,7 +25,7 @@
 #'   values below detection limit rather than true zeros. Default: TRUE.
 #' @param verbose Logical. Print progress messages. Default: TRUE.
 #'
-#' @return A list of class "run_filtermissing" containing:
+#' @return A list containing:
 #'   \item{data}{Matrix or data frame of filtered data (same class as input `x`)}
 #'   \item{features_removed}{Character vector of removed feature names}
 #'   \item{features_kept}{Character vector of retained feature names}
@@ -259,7 +259,6 @@ run_filtermissing <- function(
     missingness_summary = missingness_summary
   )
   
-  class(result) <- c("run_filtermissing", "list")
   return(result)
 }
 

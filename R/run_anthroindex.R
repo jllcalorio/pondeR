@@ -570,7 +570,7 @@
 #' | Stage 3 Obesity | \eqn{\geq} 40.0 kg/m\eqn{^2} |
 #'
 #' @return
-#' Each result is an object of class \code{"run_anthroindex"} and
+#' Each result is an object from \code{"run_anthroindex"} and is a
 #' \code{"data.frame"}.
 #'
 #' The columns are ordered as follows:
@@ -998,7 +998,6 @@ run_anthroindex <- function(
       height_cm  = if (!is.null(height_cm)) height_cm else rep(NA_real_, n)
     )
 
-    class(df_idx) <- c("run_anthroindex", "data.frame")
     results[[idx]] <- df_idx
   }
 

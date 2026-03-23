@@ -16,7 +16,7 @@ Features in the bottom X percentile of variance are removed. For example,
 \item{verbose}{Logical. Print progress messages. Default: TRUE.}
 }
 \value{
-A list of class "run_filtervariance" containing:
+A list containing:
 \item{data}{Matrix or data frame of filtered data (same class as input \code{x})}
 \item{features_removed}{Character vector of removed feature names}
 \item{features_kept}{Character vector of retained feature names}

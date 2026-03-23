@@ -73,8 +73,7 @@ If "max", the function uses the number of available cores minus 2 (to reserve sy
 Default is 1. Supports both Windows and POSIX (Mac/Linux) systems.}
 }
 \value{
-When \code{outcome} is a single string, returns an object of class \code{"run_diff"}
-(a list) containing:
+When \code{outcome} is a single string, returns a list containing:
 \item{test_used}{Character string of the statistical test performed.}
 \item{test_result}{List containing results of the statistical test.}
 \item{effect_size}{List containing effect size estimate, confidence interval, magnitude, and interpretation.}

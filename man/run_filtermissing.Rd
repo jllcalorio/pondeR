@@ -46,7 +46,7 @@ values below detection limit rather than true zeros. Default: TRUE.}
 \item{verbose}{Logical. Print progress messages. Default: TRUE.}
 }
 \value{
-A list of class "run_filtermissing" containing:
+A list containing:
 \item{data}{Matrix or data frame of filtered data (same class as input \code{x})}
 \item{features_removed}{Character vector of removed feature names}
 \item{features_kept}{Character vector of retained feature names}

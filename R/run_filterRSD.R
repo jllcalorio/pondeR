@@ -23,7 +23,7 @@
 #'   Default: c("QC", "SQC", "EQC").
 #' @param verbose Logical. Print progress messages. Default: TRUE.
 #'
-#' @return A list of class "run_filterRSD" containing:
+#' @return A list containing:
 #'   \item{data}{Matrix or data frame of filtered data (same class as input `x`)}
 #'   \item{features_removed}{Character vector of removed feature names}
 #'   \item{features_kept}{Character vector of retained feature names}
@@ -172,7 +172,6 @@ run_filterRSD <- function(
       n_features_removed = 0,
       parameters = list(max_rsd = max_rsd, groups = groups, qc_type = qc_type)
     )
-    class(result) <- c("run_filterRSD", "list")
     return(result)
   }
   
@@ -245,7 +244,6 @@ run_filterRSD <- function(
     )
   )
   
-  class(result) <- c("run_filterRSD", "list")
   return(result)
 }
 

@@ -13,7 +13,7 @@
 #'   }
 #' @param verbose Logical. Print progress messages. Default: TRUE.
 #'
-#' @return A list of class "run_scale" containing:
+#' @return A list containing:
 #'   \item{data}{Matrix or data frame of scaled data (same class as input `x`)}
 #'   \item{scaling_factors}{Numeric vector of scaling factors applied to each feature}
 #'   \item{center_values}{Numeric vector of centering values (means) for each feature}
@@ -164,7 +164,6 @@ run_scale <- function(
     parameters = list(method = method)
   )
   
-  class(result) <- c("run_scale", "list")
   return(result)
 }
 

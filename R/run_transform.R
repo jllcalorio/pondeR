@@ -24,7 +24,7 @@
 #'   Use "max" for automatic detection (uses all available - 2). Default: 1.
 #' @param verbose Logical. Print progress messages. Default: TRUE.
 #'
-#' @return A list of class "run_transform" containing:
+#' @return A list containing:
 #'   \item{data}{Matrix or data frame of transformed data (same class as input `x`)}
 #'   \item{method_used}{Character describing transformation method applied}
 #'   \item{shift_applied}{Numeric value added to data before transformation (if applicable)}
@@ -298,7 +298,6 @@ run_transform <- function(
     )
   )
   
-  class(result) <- c("run_transform", "list")
   return(result)
 }
 
