@@ -7,7 +7,7 @@
 \method{print}{run_assoc}(x, ...)
 }
 \arguments{
-\item{x}{An object of class "run_assoc".}
+\item{x}{An object from \code{run_assoc}.}
 
 \item{...}{Further arguments passed to or from other methods.}
 }

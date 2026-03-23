@@ -161,7 +161,7 @@ in the bottom legend. Default \code{NULL} (automatic).}
 \code{ggrepel::geom_text_repel()} or \code{ggplot2::geom_text()}.}
 }
 \value{
-A named list of class \code{"plot_volcano"} with elements:
+A named list with elements:
 \describe{
 \item{\code{plots}}{A named list of \code{ggplot} objects.}
 \item{\code{classified}}{A \code{data.frame} identical to \code{x} with

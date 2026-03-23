@@ -22,7 +22,7 @@
 #'   labels. Default: NULL (include all samples).
 #' @param verbose Logical. Print progress messages. Default: TRUE.
 #'
-#' @return A list of class "run_pca" containing:
+#' @return A list containing:
 #'   \item{scores}{Matrix of PC scores (samples × PCs)}
 #'   \item{loadings}{Matrix of PC loadings (features × PCs)}
 #'   \item{variance_explained}{Numeric vector of variance explained (%) per PC}
@@ -361,7 +361,6 @@ run_pca <- function(
     )
   )
   
-  class(result) <- c("run_pca", "list")
   return(result)
 }
 
@@ -416,7 +415,6 @@ summary.run_pca <- function(object, ...) {
     preprocessing = object$preprocessing
   )
   
-  class(ans) <- "summary.run_pca"
   return(ans)
 }
 

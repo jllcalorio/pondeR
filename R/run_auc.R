@@ -131,7 +131,7 @@
 #' (\eqn{\ge} 3.4). Both are listed as \code{Imports} in the package
 #' \code{DESCRIPTION} file.
 #'
-#' @return A named list of class \code{"run_auc"} with the following elements:
+#' @return A named list with the following elements:
 #' \describe{
 #'   \item{\code{roc_list}}{Named list of \code{pROC::roc} objects, one per
 #'     analysed predictor.}
@@ -1050,8 +1050,7 @@ run_auc <- function(
         n_controls  = n_controls,
         call        = match.call()
       )
-    ),
-    class = "run_auc"
+    )
   )
 
   result
@@ -1066,7 +1065,7 @@ run_auc <- function(
 #'
 #' @description Compact summary of a \code{run_auc} result.
 #'
-#' @param x An object of class \code{"run_auc"}.
+#' @param x An object from \code{"run_auc"}.
 #' @param ... Ignored.
 #'
 #' @return Invisibly returns \code{x}.

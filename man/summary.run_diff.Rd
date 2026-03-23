@@ -7,7 +7,7 @@
 \method{summary}{run_diff}(object, ...)
 }
 \arguments{
-\item{object}{An object of class "run_diff".}
+\item{object}{An object from \code{run_diff}.}
 
 \item{...}{Further arguments passed to or from other methods.}
 }

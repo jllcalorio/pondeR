@@ -65,7 +65,7 @@ See \code{stats::p.adjust.methods}. Default is "BH".}
 \item{verbose}{A logical indicating whether to print detailed messages. Default is TRUE.}
 }
 \value{
-An object of class "run_assoc" which is a list containing:
+An object which is a list containing:
 \item{test_used}{Character string of the statistical test performed.}
 \item{test_result}{List containing results of the statistical test (a 'htest' object).}
 \item{contingency_table}{The observed contingency table (as a data.frame).}

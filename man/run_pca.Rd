@@ -39,7 +39,7 @@ labels. Default: NULL (include all samples).}
 \item{verbose}{Logical. Print progress messages. Default: TRUE.}
 }
 \value{
-A list of class "run_pca" containing:
+A list containing:
 \item{scores}{Matrix of PC scores (samples × PCs)}
 \item{loadings}{Matrix of PC loadings (features × PCs)}
 \item{variance_explained}{Numeric vector of variance explained (\%) per PC}

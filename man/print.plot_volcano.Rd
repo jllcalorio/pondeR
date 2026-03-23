@@ -7,7 +7,7 @@
 \method{print}{plot_volcano}(x, ...)
 }
 \arguments{
-\item{x}{An object of class \code{"plot_volcano"}.}
+\item{x}{An object as ouput of \code{"plot_volcano"}.}
 
 \item{...}{Ignored.}
 }

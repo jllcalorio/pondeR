@@ -98,7 +98,7 @@
 #' @param ... Additional arguments forwarded to
 #'   \code{ggrepel::geom_text_repel()} or \code{ggplot2::geom_text()}.
 #'
-#' @return A named list of class \code{"plot_volcano"} with elements:
+#' @return A named list with elements:
 #' \describe{
 #'   \item{\code{plots}}{A named list of \code{ggplot} objects.}
 #'   \item{\code{classified}}{A \code{data.frame} identical to \code{x} with
@@ -656,8 +656,7 @@ plot_volcano <- function(
         legend_title = legend_title,
         legend_nrow  = legend_nrow
       )
-    ),
-    class = "plot_volcano"
+    )
   )
 }
 
@@ -668,7 +667,7 @@ plot_volcano <- function(
 
 #' @title Print Method for \code{plot_volcano} Objects
 #' @description Compact console summary of a \code{plot_volcano} result.
-#' @param x An object of class \code{"plot_volcano"}.
+#' @param x An object as ouput of \code{"plot_volcano"}.
 #' @param ... Ignored.
 #' @return Invisibly returns \code{x}.
 #' @author John Lennon L. Calorio

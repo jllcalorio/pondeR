@@ -7,7 +7,7 @@
 \method{print}{run_foldchange}(x, ...)
 }
 \arguments{
-\item{x}{An object of class \code{"run_foldchange"}.}
+\item{x}{An object from \code{"run_foldchange"}.}
 
 \item{...}{Ignored.}
 }

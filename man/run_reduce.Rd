@@ -23,7 +23,7 @@ only names present in \strong{all} data frames are retained
 frame are retained (union); missing entries are filled with \code{NA}.}
 }
 \value{
-A named list of class \code{"run_reduce"} with the following
+A named list with the following
 elements:
 \describe{
 \item{\code{data}}{A \code{data.frame} containing the reduced result.}

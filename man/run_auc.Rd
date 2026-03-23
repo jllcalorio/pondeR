@@ -155,7 +155,7 @@ labels in combined plots). Default \code{NULL} (derived from
 \code{pROC::auc()}, or \code{pROC::ci()}.}
 }
 \value{
-A named list of class \code{"run_auc"} with the following elements:
+A named list with the following elements:
 \describe{
 \item{\code{roc_list}}{Named list of \code{pROC::roc} objects, one per
 analysed predictor.}
