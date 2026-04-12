@@ -361,6 +361,7 @@ run_pca <- function(
     )
   )
   
+  class(result) <- c("run_pca", "list")
   return(result)
 }
 
