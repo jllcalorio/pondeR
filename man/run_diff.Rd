@@ -20,6 +20,7 @@ run_diff(
   p_adjust_method = "BH",
   group_order = NULL,
   subgroup = NULL,
+  summary_table = FALSE,
   verbose = TRUE,
   num_cores = 1
 )
@@ -29,55 +30,85 @@ run_diff(
 
 \item{outcome}{A character string or character vector specifying the name(s) of the
 numeric outcome variable(s). When a vector is supplied, the function loops over each
-outcome and returns a named list of \code{"run_diff"} objects instead of a single object.}
+outcome and returns a named list of \code{"run_diff"} objects. If
+\code{summary_table = TRUE}, an additional \code{$summary_table} element is appended
+to the returned list (see \code{summary_table}).}
 
 \item{group}{A character string specifying the name of the grouping factor variable.}
 
-\item{paired}{A logical indicating whether the observations are paired. Default is FALSE.}
+\item{paired}{A logical indicating whether the observations are paired. Default is
+\code{FALSE}.}
 
 \item{test_type}{A character string specifying the test strategy. Must be one of
 \code{"auto"} (default), \code{"parametric"}, or \code{"nonparametric"}.}
 
-\item{normality_method}{Method for assessing normality: "shapiro" (Shapiro-Wilk test),
-"lilliefors" (Lilliefors (Kolmogorov-Smirnov) test), or "auto" (uses Shapiro-Wilk for n < 50,
-Lilliefors for n >= 50). Default is "auto".}
+\item{normality_method}{Method for assessing normality: \code{"shapiro"}
+(Shapiro-Wilk test), \code{"lilliefors"} (Lilliefors (Kolmogorov-Smirnov) test),
+or \code{"auto"} (uses Shapiro-Wilk for n < 50, Lilliefors for n >= 50).
+Default is \code{"auto"}.}
 
 \item{alpha_normality}{Significance level for normality tests. Default is 0.05.}
 
-\item{alpha_variance}{Significance level for variance homogeneity tests. Default is 0.05.}
+\item{alpha_variance}{Significance level for variance homogeneity tests. Default is
+0.05.}
 
 \item{test_alpha}{Significance level for the final statistical test. Default is 0.05.}
 
 \item{min_n_threshold}{Minimum sample size required per group. Default is 3.}
 
-\item{calculate_effect_size}{Logical indicating whether to calculate effect sizes. Default is TRUE.}
+\item{calculate_effect_size}{Logical indicating whether to calculate effect sizes.
+Default is \code{TRUE}.}
 
-\item{perform_posthoc}{Logical indicating whether to perform post-hoc tests for >2 groups. Default is TRUE.}
+\item{perform_posthoc}{Logical indicating whether to perform post-hoc tests for >2
+groups. Default is \code{TRUE}.}
 
-\item{p_adjust_method}{The p-value adjustment method for post-hoc comparisons: "holm", "hochberg",
-"hommel", "bonferroni", "BH", "BY", "fdr", "none". Default is "BH".}
+\item{p_adjust_method}{The p-value adjustment method for post-hoc comparisons:
+\code{"holm"}, \code{"hochberg"}, \code{"hommel"}, \code{"bonferroni"},
+\code{"BH"}, \code{"BY"}, \code{"fdr"}, \code{"none"}. Default is \code{"BH"}.}
 
-\item{group_order}{Character vector specifying the order of groups. If NULL, uses factor levels
-in alphabetical order.}
+\item{group_order}{Character vector specifying the order of groups. If \code{NULL},
+uses factor levels in alphabetical order.}
 
-\item{subgroup}{Character vector or NULL. Column name(s) in \code{x} to use for
-subgroup analysis. Each must be a categorical column (factor or character) in \code{x}.
-When specified, the full analysis is repeated independently for each level of each
-subgroup column. Results are returned under \code{$subgroup_analysis} in the output,
-nested as \code{subgroup_var -> level -> run_diff result}. Default is NULL.}
+\item{subgroup}{Character vector or \code{NULL}. Column name(s) in \code{x} to use for
+subgroup analysis. Each must be a categorical column (factor or character) in
+\code{x}. When specified, the full analysis is repeated independently for each level
+of each subgroup column. Results are returned under \code{$subgroup_analysis} in
+the output, nested as \code{subgroup_var -> level -> run_diff result}.
+Default is \code{NULL}.}
 
-\item{verbose}{A logical indicating whether to print detailed messages. Default is TRUE.}
+\item{summary_table}{Logical. Only relevant when \code{outcome} is a character vector
+of length > 1. If \code{TRUE}, a tidy summary data frame is constructed across all
+outcomes and appended to the returned list as \code{$summary_table}. When
+\code{subgroup} is also specified, additional per-subgroup summary table lists are
+appended as \code{$summary_table_<subgroup_var>}, each containing one data frame per
+level (e.g., \code{$summary_table_Gender$Male}). The data frame contains one row per
+outcome with the following columns:
+\code{outcome}, \code{test_used}, \code{statistic}, \code{df}, \code{p_value},
+\code{effect_size_metric}, \code{effect_size_estimate}, \code{effect_size_ci_low},
+\code{effect_size_ci_high}, \code{effect_size_magnitude}, \code{significant},
+\code{n_significant_posthoc} (number of significant post-hoc pairs; \code{NA} for
+2-group comparisons), and \code{posthoc_pairs} (total post-hoc pairs tested;
+\code{NA} for 2-group comparisons). Default is \code{FALSE}.}
 
-\item{num_cores}{Integer specifying the number of cores to use for parallel processing, or the character string "max".
-If "max", the function uses the number of available cores minus 2 (to reserve system resources), with a minimum of 1.
-Default is 1. Supports both Windows and POSIX (Mac/Linux) systems.}
+\item{verbose}{A logical indicating whether to print detailed messages. Default is
+\code{TRUE}.}
+
+\item{num_cores}{Integer specifying the number of cores to use for parallel
+processing, or the character string \code{"max"}. If \code{"max"}, the function
+uses the number of available cores minus 2 (to reserve system resources), with a
+minimum of 1. Default is 1. Supports both Windows and POSIX (Mac/Linux) systems.}
 }
 \value{
-When \code{outcome} is a single string, returns a list containing:
+When \code{outcome} is a single string, returns a list of class
+\code{"run_diff"} containing:
 \item{test_used}{Character string of the statistical test performed.}
 \item{test_result}{List containing results of the statistical test.}
-\item{effect_size}{List containing effect size estimate, confidence interval, magnitude, and interpretation.}
-\item{posthoc_result}{Data frame of post-hoc pairwise comparisons (NULL if not applicable).}
+\item{effect_size}{List containing effect size estimate, confidence interval,
+magnitude, and interpretation.}
+\item{posthoc_result}{Data frame of post-hoc pairwise comparisons (\code{NULL} if
+not applicable). The \code{interpretation} column uses stochastic dominance
+framing for non-parametric tests ("X tends to have larger/smaller values than Y")
+and mean-based framing for parametric tests.}
 \item{assumptions}{Data frame summarizing assumption check results.}
 \item{data_summary}{Data frame with comprehensive descriptive statistics per group.}
 \item{outcome}{Name of the outcome variable.}
@@ -86,20 +117,42 @@ When \code{outcome} is a single string, returns a list containing:
 \item{test_type}{The test_type strategy used.}
 \item{test_alpha}{The significance level used.}
 \item{subgroup_analysis}{Named list of subgroup results, nested as
-\code{subgroup_var -> level -> run_diff result}. NULL if no subgroup specified.}
+\code{subgroup_var -> level -> run_diff result}. \code{NULL} if no subgroup
+specified.}
 \item{warnings}{Character vector of any warnings generated.}
 \item{parameters}{List of all parameters used in the analysis.}
 \item{raw_data}{Data frame containing the variables used.}
+
 When \code{outcome} is a character vector of length > 1, returns a named list where
 each element is a \code{"run_diff"} object for the corresponding outcome variable.
+If \code{summary_table = TRUE}, the list also contains:
+\itemize{
+\item \code{$summary_table} — overall tidy summary across all outcomes.
+\item \code{$summary_table_<sg>} (one per subgroup variable \code{sg}) — a named
+list of per-level summary tables, e.g.
+\code{$summary_table_Gender$Male}, \code{$summary_table_Gender$Female}.
+}
 }
 \description{
-This function performs an automatic comparison of a numeric outcome variable across
-two or more groups. It intelligently selects the appropriate statistical test
-(parametric or non-parametric) based on checks for normality (of data or residuals) and homogeneity of
-variances, calculates effect sizes, and performs post-hoc tests when appropriate.
+Performs an automatic comparison of a numeric outcome variable across two or more
+groups. Intelligently selects the appropriate statistical test (parametric or
+non-parametric) based on checks for normality (of data or residuals) and homogeneity
+of variances, calculates effect sizes, and performs post-hoc tests when appropriate.
+
+When \code{outcome} is a character vector of length > 1 and \code{summary_table = TRUE},
+an additional \code{$summary_table} element is returned alongside the per-outcome list,
+providing a single tidy data frame that consolidates key results across all outcomes —
+useful for high-throughput screening (e.g., metabolomics, proteomics).
+
+When \code{subgroup} is also specified and \code{summary_table = TRUE}, additional
+named elements are appended to the returned list, one per subgroup variable, each
+containing a named list of per-level summary tables. For example, with
+\code{subgroup = "Gender"}, the result will include \code{$summary_table_Gender},
+and inside it \code{$summary_table_Gender$Male} and \code{$summary_table_Gender$Female}.
 }
 \details{
+Automatic Statistical Comparison with Comprehensive Analysis
+
 The function follows a decision-making process to determine the most appropriate test:
 
 \strong{Test Family Selection:}
@@ -140,7 +193,8 @@ falls back to Bartlett's test.
 }
 
 \strong{Post-Hoc Tests:}
-For significant results with >2 groups, appropriate post-hoc tests are automatically performed:
+For significant results with >2 groups, appropriate post-hoc tests are automatically
+performed:
 \itemize{
 \item Tukey HSD for one-way ANOVA
 \item Games-Howell for Welch's ANOVA
@@ -155,87 +209,97 @@ The function automatically calculates appropriate effect sizes:
 \item Eta-squared for ANOVA
 \item Epsilon-squared for Kruskal-Wallis
 }
+
+\strong{Non-Parametric Interpretation (Stochastic Dominance):}
+For non-parametric tests, group comparisons are interpreted using stochastic
+dominance rather than median comparisons. The \code{interpretation} column in
+\code{posthoc_result} (and the 2-group case) reads "X tends to have larger/smaller
+values than Y", reflecting that the Wilcoxon / Mann-Whitney family tests whether
+one group's values tend to be systematically higher or lower than another's.
 }
 \examples{
 \dontrun{
 # --- Basic Usage with 3+ Groups ---
-# Using the classic 'iris' dataset. Sepal.Length is numeric, Species is a factor.
-# This will likely trigger the One-way ANOVA -> Tukey HSD pathway.
 data(iris)
 res_iris <- run_diff(x = iris, outcome = "Sepal.Length", group = "Species")
 print(res_iris)
 summary(res_iris)
 
 # --- Two-Sample Independent Comparison ---
-# Using 'mtcars' to compare miles per gallon (mpg) between automatic (0) and manual (1) cars.
-# The variances are unequal, so this will trigger the Welch's t-test.
 data(mtcars)
 mtcars$am <- factor(mtcars$am, labels = c("automatic", "manual"))
 res_mtcars <- run_diff(x = mtcars, outcome = "mpg", group = "am")
 print(res_mtcars)
 
 # --- Paired-Sample Comparison ---
-# Using the 'sleep' dataset, which is designed for a paired t-test.
-# It compares the extra hours of sleep for the same subjects under two drugs.
 data(sleep)
-# We specify the subject ID is implicit in the row order for a paired test.
 res_sleep <- run_diff(x = sleep, outcome = "extra", group = "group", paired = TRUE)
 summary(res_sleep)
 
+# --- Multi-outcome with summary table (e.g., metabolomics screening) ---
+data(iris)
+outcomes <- c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width")
+res_multi <- run_diff(
+  x             = iris,
+  outcome       = outcomes,
+  group         = "Species",
+  summary_table = TRUE,
+  verbose       = FALSE
+)
+# Access per-outcome results as usual
+print(res_multi$Sepal.Length)
+# Filter features with significant omnibus p-value
+sig_features <- res_multi$summary_table[res_multi$summary_table$significant, ]
+print(sig_features)
+
+# --- Multi-outcome + subgroup summary tables ---
+# Suppose df has columns: metabolites..., "Disease", "Gender"
+res_sg <- run_diff(
+  x             = df,
+  outcome       = metabolite_cols,
+  group         = "Disease",
+  subgroup      = "Gender",
+  summary_table = TRUE,
+  verbose       = FALSE
+)
+# Overall summary table
+res_sg$summary_table
+# Per-subgroup summary tables
+res_sg$summary_table_Gender$Male
+res_sg$summary_table_Gender$Female
+
 # --- Forcing a Non-Parametric Test ---
-# Use 'iris' data again, but force the non-parametric Kruskal-Wallis test.
 data(iris)
 res_iris_np <- run_diff(
-  x = iris,
-  outcome = "Sepal.Length",
-  group = "Species",
+  x         = iris,
+  outcome   = "Sepal.Length",
+  group     = "Species",
   test_type = "nonparametric"
 )
 print(res_iris_np)
 
 # --- Forcing a Parametric Test & Custom P-Value Adjustment ---
-# Use the 'ToothGrowth' data with 'dose' as the grouping factor.
-# We force an ANOVA (even if normality is slightly off) and use Bonferroni correction for post-hocs.
 data(ToothGrowth)
-# Convert dose to a factor to be treated as a group
 ToothGrowth$dose <- as.factor(ToothGrowth$dose)
 res_tooth <- run_diff(
-  x = ToothGrowth,
-  outcome = "len",
-  group = "dose",
-  test_type = "parametric",
+  x               = ToothGrowth,
+  outcome         = "len",
+  group           = "dose",
+  test_type       = "parametric",
   p_adjust_method = "bonferroni"
 )
-# Look at the post-hoc results and the adjusted p-values
 print(res_tooth$posthoc_result)
 
-# --- Demonstrating Custom Group Ordering ---
-# Use 'PlantGrowth' and specify a non-alphabetical order for the groups.
+# --- Custom Group Ordering ---
 data(PlantGrowth)
-custom_order <- c("trt1", "ctrl", "trt2")
 res_plant <- run_diff(
-  x = PlantGrowth,
-  outcome = "weight",
-  group = "group",
-  group_order = custom_order,
-  verbose = FALSE # Suppress messages for cleaner output
+  x           = PlantGrowth,
+  outcome     = "weight",
+  group       = "group",
+  group_order = c("trt1", "ctrl", "trt2"),
+  verbose     = FALSE
 )
-# The summary and plots will respect the custom order
 print(res_plant$data_summary)
-
-# --- Disabling Features for Quicker Analysis ---
-# If you only need the main test result, you can disable effect sizes and post-hoc tests.
-# Using 'mtcars' again with the 'cyl' variable as a group.
-data(mtcars)
-mtcars$cyl <- as.factor(mtcars$cyl)
-res_mtcars_fast <- run_diff(
-  x = mtcars,
-  outcome = "mpg",
-  group = "cyl",
-  calculate_effect_size = FALSE,
-  perform_posthoc = FALSE
-)
-print(res_mtcars_fast)
 }
 
 }
@@ -250,15 +314,15 @@ Allen, R. (2017). \emph{Statistics and Experimental Design for Psychologists: A 
 
 Bache S, Wickham H (2022). \emph{\emph{magrittr: A Forward-Pipe Operator for R}}. doi:10.32614/CRAN.package.magrittr \url{https://doi.org/10.32614/CRAN.package.magrittr}, R package version 2.0.3, \url{https://CRAN.R-project.org/package=magrittr}.
 
-Bartlett, M. S. (1937). \emph{Properties of sufficiency and statistical tests}. Proceedings of the Royal Society of London Series A 160, 268–282. doi:10.1098/rspa.1937.0109.
+Bartlett, M. S. (1937). \emph{Properties of sufficiency and statistical tests}. Proceedings of the Royal Society of London Series A 160, 268-282. doi:10.1098/rspa.1937.0109.
 
 Becker, R. A., Chambers, J. M. and Wilks, A. R. (1988) \emph{The New S Language}. Wadsworth & Brooks/Cole.
 
-Benjamini, Y., and Hochberg, Y. (1995). \emph{Controlling the false discovery rate: a practical and powerful approach to multiple testing}. Journal of the Royal Statistical Society Series B, 57, 289–300. doi:10.1111/j.2517-6161.1995.tb02031.x.
+Benjamini, Y., and Hochberg, Y. (1995). \emph{Controlling the false discovery rate: a practical and powerful approach to multiple testing}. Journal of the Royal Statistical Society Series B, 57, 289-300. doi:10.1111/j.2517-6161.1995.tb02031.x.
 
-Benjamini, Y., and Yekutieli, D. (2001). \emph{The control of the false discovery rate in multiple testing under dependency}. Annals of Statistics, 29, 1165–1188. doi:10.1214/aos/1013699998.
+Benjamini, Y., and Yekutieli, D. (2001). \emph{The control of the false discovery rate in multiple testing under dependency}. Annals of Statistics, 29, 1165-1188. doi:10.1214/aos/1013699998.
 
-Ben-Shachar M, Lüdecke D, Makowski D (2020). \emph{effectsize: Estimation of Effect Size Indices and Standardized Parameters}. Journal of Open Source Software, 5(56), 2815. doi: 10.21105/joss.02815
+Ben-Shachar M, Ludecke D, Makowski D (2020). \emph{effectsize: Estimation of Effect Size Indices and Standardized Parameters}. Journal of Open Source Software, 5(56), 2815. doi: 10.21105/joss.02815
 
 Chambers, J. M., Freeny, A and Heiberger, R. M. (1992) \emph{Analysis of variance; designed experiments}. Chapter 5 of Statistical Models in S eds J. M. Chambers and T. J. Hastie, Wadsworth & Brooks/Cole.
 
@@ -270,11 +334,11 @@ Cohen, J. (1988). \emph{Statistical power analysis for the behavioral sciences (
 
 Cureton, E. E. (1956). \emph{Rank-biserial correlation}. Psychometrika, 21(3), 287-290.
 
-Dallal, G.E. and Wilkinson, L. (1986): \emph{An analytic approximation to the distribution of Lilliefors' test for normality}. The American Statistician, 40, 294–296.
+Dallal, G.E. and Wilkinson, L. (1986): \emph{An analytic approximation to the distribution of Lilliefors' test for normality}. The American Statistician, 40, 294-296.
 
-David F. Bauer (1972). \emph{Constructing confidence sets using rank statistics}. Journal of the American Statistical Association 67, 687–690. doi:10.1080/01621459.1972.10481279.
+David F. Bauer (1972). \emph{Constructing confidence sets using rank statistics}. Journal of the American Statistical Association 67, 687-690. doi:10.1080/01621459.1972.10481279.
 
-Delacre, M., Lakens, D., Ley, C., Liu, L., & Leys, C. (2021, May 7). \emph{Why Hedges’ g*s based on the non-pooled standard deviation should be reported with Welch's t-test}. doi:10.31234/osf.io/tu6mp
+Delacre, M., Lakens, D., Ley, C., Liu, L., & Leys, C. (2021, May 7). \emph{Why Hedges' g*s based on the non-pooled standard deviation should be reported with Welch's t-test}. doi:10.31234/osf.io/tu6mp
 
 Dunn, O. J. (1964) \emph{Multiple comparisons using rank sums Technometrics}, 6(3):241-252.
 
@@ -290,15 +354,15 @@ Gross J, Ligges U (2015). \emph{\emph{nortest: Tests for Normality}}. doi:10.326
 
 Hedges, L. V. & Olkin, I. (1985). \emph{Statistical methods for meta-analysis}. Orlando, FL: Academic Press.
 
-Hochberg, Y. (1988). \emph{A sharper Bonferroni procedure for multiple tests of significance}. Biometrika, 75, 800–803. doi:10.2307/2336325
+Hochberg, Y. (1988). \emph{A sharper Bonferroni procedure for multiple tests of significance}. Biometrika, 75, 800-803. doi:10.2307/2336325
 
-Holm, S. (1979). \emph{A simple sequentially rejective multiple test procedure. Scandinavian Journal of Statistics}, 6, 65–70. \url{https://www.jstor.org/stable/4615733}.
+Holm, S. (1979). \emph{A simple sequentially rejective multiple test procedure. Scandinavian Journal of Statistics}, 6, 65-70. \url{https://www.jstor.org/stable/4615733}.
 
-Hommel, G. (1988). \emph{A stagewise rejective multiple test procedure based on a modified Bonferroni test}. Biometrika, 75, 383–386. doi:10.2307/2336190.
+Hommel, G. (1988). \emph{A stagewise rejective multiple test procedure based on a modified Bonferroni test}. Biometrika, 75, 383-386. doi:10.2307/2336190.
 
 Hunter, J. E., & Schmidt, F. L. (2004). \emph{Methods of meta-analysis: Correcting error and bias in research findings}. Sage.
 
-Hyndman, R. J. and Fan, Y. (1996) \emph{Sample quantiles in statistical packages}, American Statistician 50, 361–365. doi:10.2307/2684934.
+Hyndman, R. J. and Fan, Y. (1996) \emph{Sample quantiles in statistical packages}, American Statistician 50, 361-365. doi:10.2307/2684934.
 
 Kassambara A (2023). \emph{\emph{rstatix: Pipe-Friendly Framework for Basic Statistical Tests}}. doi:10.32614/CRAN.package.rstatix \url{https://doi.org/10.32614/CRAN.package.rstatix}, R package version 0.7.2, \url{https://CRAN.R-project.org/package=rstatix}.
 
@@ -312,43 +376,43 @@ Komsta L, Novomestky F (2022). \emph{\emph{moments: Moments, Cumulants, Skewness
 
 Makkonen, L. and Pajari, M. (2014) \emph{Defining Sample Quantiles by the True Rank Probability}, Journal of Probability and Statistics; Hindawi Publ.Corp. doi:10.1155/2014/326579
 
-Myles Hollander and Douglas A. Wolfe (11973). \emph{Nonparametric Statistical Methods}. New York: John Wiley & Sons. Pages 27–33 (one-sample), 68–75 (two-sample). Or second edition (1999).
+Myles Hollander and Douglas A. Wolfe (1973). \emph{Nonparametric Statistical Methods}. New York: John Wiley & Sons. Pages 27-33 (one-sample), 68-75 (two-sample). Or second edition (1999).
 
-Myles Hollander and Douglas A. Wolfe (1973), \emph{Nonparametric Statistical Methods}. New York: John Wiley & Sons. Pages 115–120.
+Myles Hollander and Douglas A. Wolfe (1973), \emph{Nonparametric Statistical Methods}. New York: John Wiley & Sons. Pages 115-120.
 
-Müller K, Wickham H (2025). \emph{\emph{tibble: Simple Data Frames}}. doi:10.32614/CRAN.package.tibble \url{https://doi.org/10.32614/CRAN.package.tibble}, R package version 3.3.0, \url{https://CRAN.R-project.org/package=tibble}.
+Muller K, Wickham H (2025). \emph{\emph{tibble: Simple Data Frames}}. doi:10.32614/CRAN.package.tibble \url{https://doi.org/10.32614/CRAN.package.tibble}, R package version 3.3.0, \url{https://CRAN.R-project.org/package=tibble}.
 
 Olejnik, S., & Algina, J. (2003). \emph{Generalized eta and omega squared statistics: measures of effect size for some common research designs}. Psychological methods, 8(4), 434.
 
-Patrick Royston (1982). \emph{Algorithm AS 181: The W test for Normality}. Applied Statistics, 31, 176–180. doi:10.2307/2347986.
+Patrick Royston (1982). \emph{Algorithm AS 181: The W test for Normality}. Applied Statistics, 31, 176-180. doi:10.2307/2347986.
 
-Patrick Royston (1982). \emph{An extension of Shapiro and Wilk's W test for normality to large samples}. Applied Statistics, 31, 115–124. doi:10.2307/2347973.
+Patrick Royston (1982). \emph{An extension of Shapiro and Wilk's W test for normality to large samples}. Applied Statistics, 31, 115-124. doi:10.2307/2347973.
 
-Patrick Royston (1995). \emph{Remark AS R94: A remark on Algorithm AS 181: The W test for normality}. Applied Statistics, 44, 547–551. doi:10.2307/2986146.
+Patrick Royston (1995). \emph{Remark AS R94: A remark on Algorithm AS 181: The W test for normality}. Applied Statistics, 44, 547-551. doi:10.2307/2986146.
 
-Ruxton, G.D., and Beauchamp, G. (2008) \emph{‘Time for some a priori thinking about post hoc testing’}, Behavioral Ecology, 19(3), pp. 690-693. doi: 10.1093/beheco/arn020. In-text citations: (Ruxton and Beauchamp, 2008)
+Ruxton, G.D., and Beauchamp, G. (2008) \emph{'Time for some a priori thinking about post hoc testing'}, Behavioral Ecology, 19(3), pp. 690-693. doi: 10.1093/beheco/arn020.
 
 Sangseok Lee, Dong Kyu Lee. \emph{What is the proper way to apply the multiple comparison test?}. Korean J Anesthesiol. 2018;71(5):353-360.
 
-Sarkar, S. (1998). \emph{Some probability inequalities for ordered MTP2 random variables: a proof of Simes conjecture}. Annals of Statistics, 26, 494–504. doi:10.1214/aos/1028144846.
+Sarkar, S. (1998). \emph{Some probability inequalities for ordered MTP2 random variables: a proof of Simes conjecture}. Annals of Statistics, 26, 494-504. doi:10.1214/aos/1013699998.
 
-Sarkar, S., and Chang, C. K. (1997). \emph{The Simes method for multiple hypothesis testing with positively dependent test statistics}. Journal of the American Statistical Association, 92, 1601–1608. doi:10.2307/2965431.
+Sarkar, S., and Chang, C. K. (1997). \emph{The Simes method for multiple hypothesis testing with positively dependent test statistics}. Journal of the American Statistical Association, 92, 1601-1608. doi:10.2307/2965431.
 
-Shaffer, J. P. (1995). \emph{Multiple hypothesis testing. Annual Review of Psychology}, 46, 561–584. doi:10.1146/annurev.ps.46.020195.003021. (An excellent review of the area.)
+Shaffer, J. P. (1995). \emph{Multiple hypothesis testing. Annual Review of Psychology}, 46, 561-584. doi:10.1146/annurev.ps.46.020195.003021.
 
 Steiger, J. H. (2004). \emph{Beyond the F test: Effect size confidence intervals and tests of close fit in the analysis of variance and contrast analysis}. Psychological Methods, 9, 164-182.
 
-Stephens, M.A. (1974): \emph{EDF statistics for goodness of fit and some comparisons}. Journal of the American Statistical Association, 69, 730–737.
+Stephens, M.A. (1974): \emph{EDF statistics for goodness of fit and some comparisons}. Journal of the American Statistical Association, 69, 730-737.
 
 Thode Jr., H.C. (2002): \emph{Testing for Normality}. Marcel Dekker, New York.
 
 Tomczak, M., & Tomczak, E. (2014). \emph{The need to report effect size estimates revisited}. An overview of some recommended measures of effect size.
 
-Wickham H, Averick M, Bryan J, Chang W, McGowan LD, François R, Grolemund G, Hayes A, Henry L, Hester J, Kuhn M, Pedersen TL, Miller E, Bache SM, Müller K, Ooms J, Robinson D, Seidel DP, Spinu V, Takahashi K, Vaughan D, Wilke C, Woo K, Yutani H (2019). \emph{“Welcome to the tidyverse.”} \emph{Journal of Open Source Software}, \emph{4}(43), 1686. doi:10.21105/joss.01686 \url{https://doi.org/10.21105/joss.01686}.
+Wickham H, Averick M, Bryan J, Chang W, McGowan LD, Francois R, Grolemund G, Hayes A, Henry L, Hester J, Kuhn M, Pedersen TL, Miller E, Bache SM, Muller K, Ooms J, Robinson D, Seidel DP, Spinu V, Takahashi K, Vaughan D, Wilke C, Woo K, Yutani H (2019). \emph{"Welcome to the tidyverse."} \emph{Journal of Open Source Software}, \emph{4}(43), 1686. doi:10.21105/joss.01686 \url{https://doi.org/10.21105/joss.01686}.
 
 Wicklin, R. (2017) \emph{Sample quantiles: A comparison of 9 definitions}; SAS Blog. https://blogs.sas.com/content/iml/2017/05/24/definitions-sample-quantiles.htm
 
-Wright, S. P. (1992). \emph{Adjusted P-values for simultaneous inference}. Biometrics, 48, 1005–1013. doi:10.2307/2532694. (Explains the adjusted P-value approach.)
+Wright, S. P. (1992). \emph{Adjusted P-values for simultaneous inference}. Biometrics, 48, 1005-1013. doi:10.2307/2532694.
 
 R Core Team (2025). \emph{\emph{R: A Language and Environment for Statistical Computing}}. R Foundation for Statistical Computing, Vienna, Austria. \url{https://www.R-project.org/}.
 }
