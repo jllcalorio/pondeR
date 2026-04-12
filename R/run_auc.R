@@ -740,18 +740,17 @@ run_auc <- function(
   # ---------------------------------------------------------------------------
   .fmt_auc_val <- function(val) {
     if (is.na(val)) return(NA_character_)
+    if (val == 1)   return("1.00")          # exact 1 → always "1.00"
     for (dp in 2L:5L) {
       fmt_val <- formatC(val, digits = dp, format = "f")
-      ## Does it round to exactly 1.000...?
       if (as.numeric(fmt_val) < 1) return(fmt_val)
     }
-    ## Fall back to scientific notation
     formatC(val, digits = 2L, format = "e")
   }
 
   .fmt_auc_label <- function(auc_v, lo_v, hi_v, ci_lv) {
     pct <- round(ci_lv * 100)
-    paste0(
+    paste0(": ",
       .fmt_auc_val(auc_v),
       " (", pct, "% CI: ",
       .fmt_auc_val(lo_v), "\u2013", .fmt_auc_val(hi_v), ")"
@@ -815,15 +814,17 @@ run_auc <- function(
     ## Complete-case AUC table for plotting decisions
     valid_auc <- auc_table[!is.na(auc_table$auc), ]
 
-    ## Apply filters
+    ## Round AUC to 2 d.p. for ranking/filtering, then sort descending
+    valid_auc$auc_rounded <- round(valid_auc$auc, 2L)
+    valid_auc <- valid_auc[order(valid_auc$auc_rounded, decreasing = TRUE), ]
+
+    ## Apply filters (operate on the already-sorted table)
     plot_pred_cols <- if (plot_spec$filter_type == "top_n") {
-      ord  <- order(valid_auc$auc, decreasing = TRUE)
-      top  <- head(ord, plot_spec$filter_val)
-      valid_auc$predictor[top]
+      utils::head(valid_auc$predictor, plot_spec$filter_val)
     } else if (plot_spec$filter_type == "auc_thresh") {
-      valid_auc$predictor[valid_auc$auc >= plot_spec$filter_val]
+      valid_auc$predictor[valid_auc$auc_rounded >= plot_spec$filter_val]
     } else {
-      valid_auc$predictor
+      valid_auc$predictor        # already sorted descending
     }
 
     if (length(plot_pred_cols) == 0L) {
@@ -840,8 +841,7 @@ run_auc <- function(
     x_lbl <- if (!is.null(xlab)) xlab else "1 - Specificity (False Positive Rate)"
     y_lbl <- if (!is.null(ylab)) ylab else "Sensitivity (True Positive Rate)"
 
-    ## Gather per-predictor curve data (unsorted here; sorting happens inside
-    ## .make_roc_plot so both "all" and "separate" modes benefit).
+    ## Gather per-predictor curve data in the sorted order established above.
     curve_data_list <- lapply(plot_pred_cols, function(col_nm) {
       roc_obj <- roc_list[[col_nm]]
       if (is.null(roc_obj)) return(NULL)
@@ -853,6 +853,10 @@ run_auc <- function(
     })
     names(curve_data_list) <- plot_pred_cols
     curve_data_list        <- Filter(Negate(is.null), curve_data_list)
+    # Re-apply sorted order after NULL removal (Filter does not guarantee order)
+    curve_data_list <- curve_data_list[
+      intersect(plot_pred_cols, names(curve_data_list))
+    ]
 
     ## Validate plot_title length for separate mode
     if (plot_spec$mode == "separate" && !is.null(plot_title)) {
