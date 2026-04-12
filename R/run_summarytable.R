@@ -70,6 +70,19 @@
 #'     \item 'frequency': Sorts levels by their frequency (from highest to lowest).
 #'   }
 #'   Defaults to 'alphanumeric'.
+#' @param zero_as_exp Logical. If `TRUE` (default), applies only to continuous variables: when a
+#'   numeric component (e.g., mean, SD, median, IQR values) rounds to `0` at the precision
+#'   specified in `n_digits_continuous` but its true value is non-zero, that component is
+#'   displayed in scientific notation (e.g., `1.00e-3`) using the same number of decimal places
+#'   as `n_digits_continuous`. Values that are genuinely `0` are displayed as-is. This prevents
+#'   misleading `0 ± 0` or `0 (0, 0)` displays for near-zero but non-zero quantities.
+#'   Examples with `n_digits_continuous = c(2, 2)` and `continuous_statistics = "meanSD"`:
+#'   \itemize{
+#'     \item `0 ± 0` (true zeros) → `0 ± 0`
+#'     \item `0.01 ± 0.2` → `0.01 ± 0.2`
+#'     \item `0.001 ± 0.00001` → `1.00e-3 ± 1.00e-5`
+#'     \item `0.02 ± 0.0001576` → `0.02 ± 1.58e-4`
+#'   }
 #' @param calc_percent_by String. Specifies how percentages are calculated for categorical variables.
 #'   \itemize{
 #'     \item 'column': Percentages are calculated down columns (sum to 100% per column).
@@ -209,7 +222,7 @@
 
 run_summarytable <- function(
     df,
-    summarize_what = everything(),
+    summarize_what = NULL,
     split_by = NULL,
     split_by_header = NULL,
     strata_by = NULL,
@@ -220,6 +233,7 @@ run_summarytable <- function(
     force_categorical = NULL,
     n_digits_continuous = c(2, 2),
     n_digits_categorical = c(0, 2),
+    zero_as_exp = TRUE,
     display_missing = "ifany",
     missing_text = "No data/missing",
     missing_stat = "n_percent",
@@ -335,6 +349,23 @@ run_summarytable <- function(
     }
   }
 
+  # --- Resolve summarize_what -------------------------------------------------
+  # Must happen AFTER split_by / strata_by validation so grouping axes are known.
+  # When NULL, include every column except the grouping axes.
+  if (is.null(summarize_what)) {
+    summarize_what <- setdiff(names(df), c(split_by, strata_by))
+  } else {
+    if (!is.character(summarize_what))
+      stop("'summarize_what' must be a character vector of column names or NULL.")
+    missing_cols <- setdiff(summarize_what, names(df))
+    if (length(missing_cols) > 0L)
+      stop(paste0("Columns in 'summarize_what' not found in data: ",
+                  paste(missing_cols, collapse = ", "), "."))
+  }
+
+  if (length(summarize_what) == 0L)
+    stop("No columns remain to summarise. Check 'summarize_what', 'split_by', and 'strata_by'.")
+  
   # include_missing_in_splits
   if (!is.logical(include_missing_in_splits)) {
     stop("The 'include_missing_in_splits' parameter must be a single logical value (TRUE or FALSE).")
@@ -504,6 +535,11 @@ run_summarytable <- function(
     stop("The 'n_digits_categorical' parameter must be a numeric vector of two non-negative integers (e.g., c(0, 1)), representing the number of decimal places of frequencies or counts and percentages, respectively.  The other option is 'dynamic' which selects the number of decimal places dynamically.")
   }
 
+  # zero_as_exp
+  if (!is.logical(zero_as_exp) || length(zero_as_exp) != 1) {
+    stop("The 'zero_as_exp' parameter must be a single logical value (TRUE or FALSE).")
+  }
+
   # Set to NULL if "dynamic" is chosen
   if (isTRUE(identical(n_digits_continuous, "dynamic"))) {
     n_digits_continuous <- NULL
@@ -636,10 +672,133 @@ run_summarytable <- function(
 
   }
 
+  # --- zero_as_exp helper ---
+  # Converts a single numeric-string token to scientific notation when it rounds
+  # to "0" (or "-0") at the requested precision but its true value is non-zero.
+  # dig: number of decimal places to use in formatC(..., format = "e").
+  .maybe_exp <- function(token, dig) {
+    x <- suppressWarnings(as.numeric(token))
+    if (is.na(x)) return(token)                       # non-numeric token (e.g. separator)
+    if (x == 0)   return(token)                       # genuinely zero → keep as-is
+    rounded_str <- formatC(round(x, dig), digits = dig, format = "f")
+    # Check whether rounding to 'dig' places produces a bare zero string
+    rounded_val <- as.numeric(rounded_str)
+    if (rounded_val == 0) {
+      # Switch to scientific notation with same number of decimal places
+      sci <- formatC(x, digits = dig, format = "e")
+      # Tidy exponent: e+00 → e0, e-03 → e-3, e+02 → e2  (compact form)
+      sci <- gsub("e\\+0*(\\d+)", "e\\1", sci)
+      sci <- gsub("e-0*(\\d+)",  "e-\\1", sci)
+      return(sci)
+    }
+    return(token)
+  }
+
+  # Applies .maybe_exp to every numeric-looking token inside a formatted stat
+  # cell string, e.g. "0.00 ± 0.00" or "0.00 (0.00, 0.00)".
+  # dig1: precision for the first number, dig2: for subsequent numbers.
+  .apply_exp_to_cell <- function(cell_str, dig1, dig2) {
+    if (is.na(cell_str) || !nzchar(cell_str)) return(cell_str)
+    # Split on non-numeric separators, preserving the separators
+    tokens  <- strsplit(cell_str, "(?<=\\d)(?=[^0-9eE.\\-+])|(?<=[^0-9eE.\\-+])(?=[0-9\\-])",
+                        perl = TRUE)[[1]]
+    numeric_idx <- which(!is.na(suppressWarnings(as.numeric(tokens))))
+    for (i in seq_along(numeric_idx)) {
+      dig <- if (i == 1L) dig1 else dig2
+      tokens[numeric_idx[i]] <- .maybe_exp(tokens[numeric_idx[i]], dig)
+    }
+    paste(tokens, collapse = "")
+  }
+
+  # --- Resolve continuous formatting and zero_as_exp ---
+  
+  # Determine the number of statistics required for the chosen continuous_statistics
+  # gtsummary expects the digits argument length to match the number of statistics outputted
+  n_stats_required <- switch(continuous_statistics,
+    "meanSD" = 2,
+    "meanSD2" = 2,
+    "medianIQR" = 3,
+    "mean" = 1,
+    "sd" = 1,
+    "median" = 1,
+    "p0" = 1, "p25" = 1, "p50" = 1, "p75" = 1, "p100" = 1,
+    "IQR" = 2,
+    1 # default fallback
+  )
+  
+  if (is.null(n_digits_continuous)) {
+    # "dynamic" was chosen
+    continuous_digits_arg <- NULL 
+  } else {
+    # Ensure the digits vector matches the number of statistics required
+    # E.g., if c(2,2) is provided but 3 stats are needed (medianIQR), recycle the values
+    actual_digits <- rep(n_digits_continuous, length.out = n_stats_required)
+    
+    if (zero_as_exp) {
+      # Factory function to create a custom formatting function
+      make_exp_formatter <- function(dig) {
+        function(x) {
+          purrr::map_chr(x, function(val) {
+            if (is.na(val)) return(NA_character_)
+            if (val == 0) return(formatC(0, format = "f", digits = dig))
+            
+            # Check if the value rounds to exactly zero at 'dig' decimal places
+            rounded_val <- round(val, dig)
+            if (rounded_val == 0 && val != 0) {
+              # Value is near-zero but non-zero: format as scientific notation
+              sci <- formatC(val, digits = dig, format = "e")
+              sci <- sub("e\\+0*", "e", sci) # clean up e+0X to eX
+              sci <- sub("e-0*", "e-", sci)  # clean up e-0X to e-X
+              return(sci)
+            } else {
+              # Format normally
+              return(formatC(val, format = "f", digits = dig))
+            }
+          })
+        }
+      }
+      
+      # Create a list of custom formatting functions for gtsummary
+      continuous_digits_arg <- lapply(actual_digits, make_exp_formatter)
+      
+      # If only 1 stat is needed, gtsummary expects the function directly, not a list
+      if (length(continuous_digits_arg) == 1) {
+        continuous_digits_arg <- continuous_digits_arg[[1]]
+      }
+      
+    } else {
+      # Pass the raw digits if zero_as_exp is FALSE
+      continuous_digits_arg <- actual_digits
+    }
+  }
+
   # Helper function to create summary table
   # NOTE: This internal function is required for the 'tbl_strata' .tbl_fun argument
   # and to avoid duplicating the large 'tbl_summary' call, per user request to avoid subfunctions.
   # This is a case where it is necessary for functionality.
+  # create_summary <- function(data) {
+  #   gtsummary::tbl_summary(
+  #     data = data,
+  #     include = summarize_what,
+  #     by = split_by,
+  #     label = rename_variables,
+  #     type = type_list,
+  #     statistic = list(
+  #       all_continuous() ~ gts_continuous_stat,
+  #       all_categorical() ~ gts_categorical_stat
+  #     ),
+  #     digits = list(
+  #       all_categorical() ~ n_digits_categorical,
+  #       all_continuous() ~ n_digits_continuous
+  #     ),
+  #     missing = display_missing,
+  #     missing_text = missing_text,
+  #     missing_stat = gts_missing_stat,
+  #     sort = list(all_categorical() ~ sort_categorical_variables_by),
+  #     percent = calc_percent_by
+  #   ) %>%
+  #     gtsummary::modify_header(label = paste0("**", header, "**"))
+  # }
   create_summary <- function(data) {
     gtsummary::tbl_summary(
       data = data,
@@ -653,7 +812,7 @@ run_summarytable <- function(
       ),
       digits = list(
         all_categorical() ~ n_digits_categorical,
-        all_continuous() ~ n_digits_continuous
+        all_continuous() ~ continuous_digits_arg
       ),
       missing = display_missing,
       missing_text = missing_text,
@@ -773,6 +932,51 @@ run_summarytable <- function(
             )
           )
       )
+  }
+
+  # Apply zero_as_exp: replace near-zero rounded-to-0 tokens with scientific notation.
+  # Applies to:
+  #   - Rows where gtsummary classified the variable as continuous (row_type == "label"
+  #     with a continuous parent, identified via var_type == "continuous"), AND
+  #   - Variables explicitly supplied in force_continuous (which gtsummary may have
+  #     originally classified as categorical but are treated as continuous here).
+  # Categorical variable rows (levels, missing counts) are always left untouched.
+  if (zero_as_exp && !is.null(n_digits_continuous)) {
+
+    dig1 <- n_digits_continuous[1]  # precision for 1st token (mean / median / p0 / etc.)
+    dig2 <- n_digits_continuous[2]  # precision for 2nd+ tokens (SD / IQR bounds / etc.)
+
+    forced_cont_vars <- if (!is.null(force_continuous)) force_continuous else character(0)
+
+    result_table <- result_table %>%
+      gtsummary::modify_table_body(function(tb) {
+        # Make sure required columns exist in the table body to avoid errors
+        if (!all(c("var_type", "variable", "row_type") %in% names(tb))) {
+          return(tb)
+        }
+
+        tb %>%
+          dplyr::mutate(
+            dplyr::across(
+              dplyr::starts_with("stat_"),
+              ~ purrr::imap_chr(.x, function(cell, i) {
+                # Skip NA / empty cells
+                if (is.na(cell) || !nzchar(trimws(cell))) return(cell)
+
+                # Access metadata using the row index 'i' from the dataframe 'tb'
+                is_cont_var <- isTRUE(tb$var_type[i] == "continuous") ||
+                               isTRUE(tb$variable[i] %in% forced_cont_vars)
+
+                # Apply exponent formatting only to the label row of continuous variables
+                if (is_cont_var && isTRUE(tb$row_type[i] == "label")) {
+                  .apply_exp_to_cell(cell, dig1, dig2)
+                } else {
+                  cell
+                }
+              })
+            )
+          )
+      })
   }
 
   # Add table name header
