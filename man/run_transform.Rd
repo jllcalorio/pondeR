@@ -23,6 +23,9 @@ run_transform(
 \item \code{"log10"}: Log base 10 transformation
 \item \code{"sqrt"}: Square root transformation
 \item \code{"cbrt"}: Cube root transformation
+\item \code{"clr"}: Centered log-ratio transformation (computed per sample)
+\item \code{"arcsin_sqrt"}: Arcsine square root transformation (data must be in {[0, 1]} or
+proportion-scale after optional shift)
 \item \code{"vsn"}: Variance Stabilizing Normalization (requires 'vsn' package)
 \item \code{"glog"}: Generalized logarithm transformation (requires 'pmp' package)
 }}
@@ -60,10 +63,23 @@ small values. Useful for data spanning multiple orders of magnitude. If data
 contains zeros or negative values, a shift is applied first.
 \item \strong{sqrt}: Square root transformation. Moderate variance stabilization. Works
 with zero values but requires non-negative data.
-\item \strong{cbrt}: Cube root transformation. Similar to sqrt but can handle negative
-values. Provides gentler compression than log.
+\item \strong{cbrt}: Cube root transformation. Can handle negative values natively;
+a shift is applied only when needed to ensure consistency with the input range.
+Provides gentler compression than log.
+\item \strong{clr}: Centered log-ratio transformation. Maps compositional data from the
+simplex to real space by dividing each value by the geometric mean of its row
+and then taking the logarithm. Computed natively in Base R for efficiency.
+Suitable for compositional or relative-abundance data. If data contains zeros
+or negative values, a shift is applied first.
+\item \strong{arcsin_sqrt}: Arcsine square root transformation. Variance-stabilizing
+transformation for proportion data. Values must lie in [0, 1] (or be
+non-negative and rescalable to [0, 1]). A shift is applied for negative
+values; if the shifted data still contains values greater than 1 the function
+stops with an informative error, because \code{asin(sqrt(x > 1))} is undefined
+over the reals.
 \item \strong{vsn}: Variance Stabilizing Normalization. Model-based method from microarray
 analysis that calibrates variance across intensity range. Requires 'vsn' package.
+Data is internally transposed for calculation as vsn expects features in rows.
 Can be computationally intensive; use \code{num_cores} for parallel processing.
 \item \strong{glog}: Generalized logarithm transformation. Hybrid log transformation that
 handles low values better than standard log. Requires 'pmp' package and metadata
@@ -75,6 +91,10 @@ with QC sample labels.
 \item \strong{log2/log10}: Most common for metabolomics. Use when variance increases
 with mean (heteroscedasticity).
 \item \strong{sqrt}: When variance is proportional to mean.
+\item \strong{clr}: When data are compositional or represent relative abundances.
+Preferred over log-ratio methods that require a reference feature.
+\item \strong{arcsin_sqrt}: When data are proportions or bounded in [0, 1].
+Common for relative abundance data in ecology and microbiomics.
 \item \strong{vsn}: When you need sophisticated variance modeling. Recommended for
 large datasets with clear intensity-dependent variance.
 \item \strong{glog}: Alternative to log when you have many low-intensity values.
@@ -92,27 +112,37 @@ colnames(x) <- paste0("Feature", 1:50)
 # Log transformation
 result1 <- run_transform(x, method = "log2")
 
+# CLR transformation (compositional data)
+result2 <- run_transform(x, method = "clr")
+
+# Arcsine square root (proportion data in [0, 1])
+x_prop <- x / rowSums(x)
+result3 <- run_transform(x_prop, method = "arcsin_sqrt")
+
 # VSN with parallel processing
-result2 <- run_transform(x, method = "vsn", num_cores = 4)
+result4 <- run_transform(x, method = "vsn", num_cores = 4)
 
 # Glog transformation (requires metadata)
 metadata <- data.frame(
   Sample = paste0("S", 1:100),
   Group = rep(c("Control", "Treatment", "QC"), c(40, 40, 20))
 )
-result3 <- run_transform(x, method = "glog", metadata = metadata)
+result5 <- run_transform(x, method = "glog", metadata = metadata)
 }
 }
 \references{
+Aitchison, J. (1986). \emph{The Statistical Analysis of Compositional Data},
+Monographs on Statistics and Applied Probability. Chapman & Hall Ltd., London (UK). 416p.
+
 Huber, W., von Heydebreck, A., Sueltmann, H., Poustka, A., & Vingron, M. (2002).
 Variance stabilization applied to microarray data calibration and to the
-quantification of differential expression. Bioinformatics, 18(Suppl 1), S96-S104.
+quantification of differential expression. \emph{Bioinformatics}, 18(Suppl 1), S96-S104.
 \doi{10.1093/bioinformatics/18.suppl_1.s96}
 
 Parsons, H.M., Ludwig, C., Günther, U.L., & Viant, M.R. (2007).
 Improved classification accuracy in 1- and 2-dimensional NMR metabolomics data
 using the variance stabilising generalised logarithm transformation.
-BMC Bioinformatics, 8, 234. \doi{10.1186/1471-2105-8-234}
+\emph{BMC Bioinformatics}, 8, 234. \doi{10.1186/1471-2105-8-234}
 }
 \author{
 John Lennon L. Calorio
