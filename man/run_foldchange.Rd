@@ -31,8 +31,9 @@ non-\code{NA} levels after optional filtering via \code{filter}.}
 
 \item{arrange}{An optional character vector listing \emph{all} levels of
 \code{group} (after filtering) in the desired comparison order. Fold
-changes are computed as consecutive ratios:
-\code{arrange[1] / arrange[2]}, \code{arrange[2] / arrange[3]}, etc.
+changes are computed for all pairwise combinations taken left-to-right:
+\code{arrange[i] / arrange[j]} for all \eqn{i < j}. For example,
+\code{c("A", "B", "C")} yields A_vs_B, A_vs_C, and B_vs_C.
 If \code{NULL} (default), levels are sorted alphanumerically.}
 
 \item{filter}{An optional character vector of group levels to \emph{exclude}
@@ -89,9 +90,10 @@ The function is designed to integrate seamlessly with \code{run_diff()} and
 \details{
 \strong{Fold change computation}\cr
 Group means are computed per feature. For \eqn{k} ordered levels
-\eqn{g_1, g_2, \ldots, g_k}, the fold change for comparison
-\eqn{i} is \eqn{\bar{x}_{g_i} / \bar{x}_{g_{i+1}}}, yielding
-\eqn{k - 1} pairwise comparisons.
+\eqn{g_1, g_2, \ldots, g_k}, fold changes are computed for \strong{all}
+pairwise combinations taken left-to-right from \code{arrange}:
+\eqn{\bar{x}_{g_i} / \bar{x}_{g_j}} for all \eqn{i < j}, yielding
+\eqn{k(k-1)/2} comparisons (e.g., A_vs_B, A_vs_C, B_vs_C for 3 groups).
 
 \strong{Log2 shifting}\cr
 When \code{log2 = TRUE}, let \eqn{m} be the global minimum of the

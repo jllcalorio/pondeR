@@ -23,8 +23,9 @@
 #'   non-\code{NA} levels after optional filtering via \code{filter}.
 #' @param arrange An optional character vector listing \emph{all} levels of
 #'   \code{group} (after filtering) in the desired comparison order. Fold
-#'   changes are computed as consecutive ratios:
-#'   \code{arrange[1] / arrange[2]}, \code{arrange[2] / arrange[3]}, etc.
+#'   changes are computed for all pairwise combinations taken left-to-right:
+#'   \code{arrange[i] / arrange[j]} for all \eqn{i < j}. For example,
+#'   \code{c("A", "B", "C")} yields A_vs_B, A_vs_C, and B_vs_C.
 #'   If \code{NULL} (default), levels are sorted alphanumerically.
 #' @param filter An optional character vector of group levels to \emph{exclude}
 #'   before analysis. Rows whose \code{group} value appears in \code{filter}
@@ -44,9 +45,10 @@
 #' @details
 #' \strong{Fold change computation}\cr
 #' Group means are computed per feature. For \eqn{k} ordered levels
-#' \eqn{g_1, g_2, \ldots, g_k}, the fold change for comparison
-#' \eqn{i} is \eqn{\bar{x}_{g_i} / \bar{x}_{g_{i+1}}}, yielding
-#' \eqn{k - 1} pairwise comparisons.
+#' \eqn{g_1, g_2, \ldots, g_k}, fold changes are computed for \strong{all}
+#' pairwise combinations taken left-to-right from \code{arrange}:
+#' \eqn{\bar{x}_{g_i} / \bar{x}_{g_j}} for all \eqn{i < j}, yielding
+#' \eqn{k(k-1)/2} comparisons (e.g., A_vs_B, A_vs_C, B_vs_C for 3 groups).
 #'
 #' \strong{Log2 shifting}\cr
 #' When \code{log2 = TRUE}, let \eqn{m} be the global minimum of the
@@ -289,76 +291,70 @@ run_foldchange <- function(
   grp_factor <- factor(grp_raw, levels = lvl_order)
 
   # ---------------------------------------------------------------------------
-  # 7.  Compute per-group column means (unshifted)
+  # 7.  Compute shift (if needed), then per-group column means
   # ---------------------------------------------------------------------------
   feat_cols <- colnames(x)
   n_feat    <- length(feat_cols)
   n_lvl     <- length(lvl_order)
 
-  # Pre-allocate: rows = levels, cols = features
+  min_val     <- min(as.matrix(x), na.rm = TRUE)
+  shift_delta <- 0
+
+  if (log2 && min_val <= 0) {
+    shift_delta  <- eps - min_val
+    x_shifted    <- x + shift_delta
+  } else {
+    x_shifted    <- x
+  }
+
+  shifted_data <- if (log2) x_shifted else NULL
+
+  # Unshifted means (for group_means output only)
   means_mat <- matrix(NA_real_, nrow = n_lvl, ncol = n_feat,
                       dimnames = list(lvl_order, feat_cols))
-
   for (lvl in lvl_order) {
     idx <- which(grp_factor == lvl)
     if (length(idx) == 0L) next
     means_mat[lvl, ] <- colMeans(x[idx, , drop = FALSE], na.rm = TRUE)
   }
 
-  group_means_df           <- as.data.frame(means_mat)
-  group_means_df[[group]]  <- lvl_order
-  group_means_df           <- group_means_df[, c(group, feat_cols), drop = FALSE]
+  # Shifted means (used for both FC and log2 FC computation)
+  means_shift <- matrix(NA_real_, nrow = n_lvl, ncol = n_feat,
+                        dimnames = list(lvl_order, feat_cols))
+  for (lvl in lvl_order) {
+    idx <- which(grp_factor == lvl)
+    if (length(idx) == 0L) next
+    means_shift[lvl, ] <- colMeans(x_shifted[idx, , drop = FALSE], na.rm = TRUE)
+  }
+
+  group_means_df          <- as.data.frame(means_mat)
+  group_means_df[[group]] <- lvl_order
+  group_means_df          <- group_means_df[, c(group, feat_cols), drop = FALSE]
 
   # ---------------------------------------------------------------------------
-  # 8.  Compute fold changes (consecutive ratios of means)
+  # 8.  Compute fold changes from SHIFTED means (all pairwise, left-to-right)
   # ---------------------------------------------------------------------------
-  n_comp       <- n_lvl - 1L
-  comp_labels  <- paste0(lvl_order[seq_len(n_comp)], "_vs_",
-                         lvl_order[seq_len(n_comp) + 1L])
+  pairs       <- combn(seq_len(n_lvl), 2L)
+  n_comp      <- ncol(pairs)
+  comp_labels <- paste0(lvl_order[pairs[1L, ]], "_vs_",
+                        lvl_order[pairs[2L, ]])
 
-  # FC matrix: rows = features, cols = comparisons
   fc_mat <- matrix(NA_real_, nrow = n_feat, ncol = n_comp,
                    dimnames = list(feat_cols, comp_labels))
 
   for (i in seq_len(n_comp)) {
-    num <- means_mat[lvl_order[i],     ]
-    den <- means_mat[lvl_order[i + 1L], ]
+    num <- means_shift[lvl_order[pairs[1L, i]], ]
+    den <- means_shift[lvl_order[pairs[2L, i]], ]
     fc_mat[, i] <- num / den
   }
 
   # ---------------------------------------------------------------------------
-  # 9.  Log2 fold change (with shifting)
+  # 9.  Log2 fold change — log2 of the SAME fc_mat ratios
   # ---------------------------------------------------------------------------
-  log2fc_df    <- NULL
-  shifted_data <- NULL
-  min_val      <- min(as.matrix(x), na.rm = TRUE)
-  shift_delta  <- 0
+  log2fc_mat <- NULL
 
   if (log2) {
-    if (min_val <= 0) {
-      shift_delta  <- eps - min_val        # ensures min becomes eps
-      x_shifted    <- x + shift_delta
-    } else {
-      x_shifted    <- x
-    }
-    shifted_data <- x_shifted
-
-    # Shifted group means
-    means_shift <- matrix(NA_real_, nrow = n_lvl, ncol = n_feat,
-                          dimnames = list(lvl_order, feat_cols))
-    for (lvl in lvl_order) {
-      idx <- which(grp_factor == lvl)
-      if (length(idx) == 0L) next
-      means_shift[lvl, ] <- colMeans(x_shifted[idx, , drop = FALSE], na.rm = TRUE)
-    }
-
-    log2fc_mat <- matrix(NA_real_, nrow = n_feat, ncol = n_comp,
-                         dimnames = list(feat_cols, comp_labels))
-    for (i in seq_len(n_comp)) {
-      num <- means_shift[lvl_order[i],     ]
-      den <- means_shift[lvl_order[i + 1L], ]
-      log2fc_mat[, i] <- base::log2(num / den)
-    }
+    log2fc_mat <- base::log2(fc_mat)
   }
 
   # ---------------------------------------------------------------------------
@@ -417,7 +413,8 @@ run_foldchange <- function(
         log2     = log2,
         eps      = eps,
         n_feat   = n_feat,
-        n_groups = n_lvl
+        n_groups = n_lvl,
+        n_comp   = n_comp
       )
     )
   )
