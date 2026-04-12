@@ -6,7 +6,7 @@
 \usage{
 run_summarytable(
   df,
-  summarize_what = everything(),
+  summarize_what = NULL,
   split_by = NULL,
   split_by_header = NULL,
   strata_by = NULL,
@@ -17,6 +17,7 @@ run_summarytable(
   force_categorical = NULL,
   n_digits_continuous = c(2, 2),
   n_digits_categorical = c(0, 2),
+  zero_as_exp = TRUE,
   display_missing = "ifany",
   missing_text = "No data/missing",
   missing_stat = "n_percent",
@@ -94,6 +95,20 @@ Options are 'n_percent' (count (percentage)), 'n' (count only), or 'percent' (pe
 \itemize{
 \item c(0, 2): A vector of two integers specifying the number of digits to round for counts and percentages respectively, for categorical variables. For example, \code{c(0, 2)} means 0 decimal places for counts and 2 for percentages (default).
 \item "dynamic": Same as in \code{n_digits_continuous}.
+}}
+
+\item{zero_as_exp}{Logical. If \code{TRUE} (default), applies only to continuous variables: when a
+numeric component (e.g., mean, SD, median, IQR values) rounds to \code{0} at the precision
+specified in \code{n_digits_continuous} but its true value is non-zero, that component is
+displayed in scientific notation (e.g., \code{1.00e-3}) using the same number of decimal places
+as \code{n_digits_continuous}. Values that are genuinely \code{0} are displayed as-is. This prevents
+misleading \verb{0 ± 0} or \code{0 (0, 0)} displays for near-zero but non-zero quantities.
+Examples with \code{n_digits_continuous = c(2, 2)} and \code{continuous_statistics = "meanSD"}:
+\itemize{
+\item \verb{0 ± 0} (true zeros) → \verb{0 ± 0}
+\item \verb{0.01 ± 0.2} → \verb{0.01 ± 0.2}
+\item \verb{0.001 ± 0.00001} → \verb{1.00e-3 ± 1.00e-5}
+\item \verb{0.02 ± 0.0001576} → \verb{0.02 ± 1.58e-4}
 }}
 
 \item{display_missing}{String. Controls how missing values are reported.
