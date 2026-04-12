@@ -51,26 +51,76 @@ ellipses, and outlier detection.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">plot_score</span><span class="op">(</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">plot_score</span><span class="op">(</span><span class="va">pca_result</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># S3 method for class 'run_pca'</span></span>
+<span><span class="fu">plot_score</span><span class="op">(</span></span>
 <span>  <span class="va">pca_result</span>,</span>
 <span>  pc <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span>,</span>
 <span>  <span class="va">color_by</span>,</span>
 <span>  <span class="va">points_from</span>,</span>
 <span>  title <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  subtitle <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  caption <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  position <span class="op">=</span> <span class="st">"center"</span>,</span>
 <span>  arrange_levels <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  ellipse <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  ellipse_type <span class="op">=</span> <span class="st">"t"</span>,</span>
 <span>  ellipse_level <span class="op">=</span> <span class="fl">0.95</span>,</span>
 <span>  legend <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  legend_position <span class="op">=</span> <span class="st">"bottom"</span>,</span>
 <span>  show_outliers <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  label_outliers <span class="op">=</span> <span class="st">"all"</span>,</span>
+<span>  colors <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  point_size <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>  point_alpha <span class="op">=</span> <span class="fl">0.8</span>,</span>
-<span>  theme_base_size <span class="op">=</span> <span class="fl">11</span>,</span>
+<span>  theme <span class="op">=</span> <span class="st">"nature"</span>,</span>
+<span>  base_size <span class="op">=</span> <span class="fl">11</span>,</span>
+<span>  font_family <span class="op">=</span> <span class="st">"sans"</span>,</span>
+<span>  axis_title_size <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  axis_text_size <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  plot_title_size <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  legend_title_size <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  legend_text_size <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  zoom <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># S3 method for class 'run_pls'</span></span>
+<span><span class="fu">plot_score</span><span class="op">(</span></span>
+<span>  <span class="va">pca_result</span>,</span>
+<span>  pc <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span>,</span>
+<span>  <span class="va">color_by</span>,</span>
+<span>  <span class="va">points_from</span>,</span>
+<span>  title <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  subtitle <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  caption <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  position <span class="op">=</span> <span class="st">"center"</span>,</span>
+<span>  arrange_levels <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  ellipse <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  ellipse_type <span class="op">=</span> <span class="st">"t"</span>,</span>
+<span>  ellipse_level <span class="op">=</span> <span class="fl">0.95</span>,</span>
+<span>  legend <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  legend_position <span class="op">=</span> <span class="st">"bottom"</span>,</span>
+<span>  show_outliers <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  label_outliers <span class="op">=</span> <span class="st">"all"</span>,</span>
+<span>  colors <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  point_size <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>  point_alpha <span class="op">=</span> <span class="fl">0.8</span>,</span>
+<span>  theme <span class="op">=</span> <span class="st">"nature"</span>,</span>
+<span>  base_size <span class="op">=</span> <span class="fl">11</span>,</span>
+<span>  font_family <span class="op">=</span> <span class="st">"sans"</span>,</span>
+<span>  axis_title_size <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  axis_text_size <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  plot_title_size <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  legend_title_size <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  legend_text_size <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  zoom <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Default S3 method</span></span>
+<span><span class="fu">plot_score</span><span class="op">(</span><span class="va">pca_result</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -82,8 +132,8 @@ ellipses, and outlier detection.</p>
 
 
 <dt id="arg-pc">pc<a class="anchor" aria-label="anchor" href="#arg-pc"></a></dt>
-<dd><p>Character vector of length 2. Principal components to plot, e.g., c("PC1", "PC2").
-Can also be numeric, e.g., c(1, 2). Default: c(1, 2).</p></dd>
+<dd><p>Character vector of length 2. Principal components to plot, e.g., <code>c("PC1", "PC2")</code>.
+Can also be numeric, e.g., <code>c(1, 2)</code>. Default: <code>c(1, 2)</code>.</p></dd>
 
 
 <dt id="arg-color-by">color_by<a class="anchor" aria-label="anchor" href="#arg-color-by"></a></dt>
@@ -105,107 +155,170 @@ labels will be used instead. Required parameter with no default.</p></dd>
 
 
 <dt id="arg-subtitle">subtitle<a class="anchor" aria-label="anchor" href="#arg-subtitle"></a></dt>
-<dd><p>Character. Plot subtitle. Default: NULL (no subtitle).</p></dd>
+<dd><p>Character. Plot subtitle. Default: <code>NULL</code> (no subtitle).</p></dd>
+
+
+<dt id="arg-caption">caption<a class="anchor" aria-label="anchor" href="#arg-caption"></a></dt>
+<dd><p>Character. Plot caption (bottom-right). Default: <code>NULL</code> (no caption).</p></dd>
 
 
 <dt id="arg-position">position<a class="anchor" aria-label="anchor" href="#arg-position"></a></dt>
-<dd><p>Character. Position of title and subtitle. Options: "left", "center", "right".
-Default: "center".</p></dd>
+<dd><p>Character. Horizontal alignment of title, subtitle, and caption.
+Options: <code>"left"</code>, <code>"center"</code>, <code>"right"</code>. Default: <code>"center"</code>.</p></dd>
 
 
 <dt id="arg-arrange-levels">arrange_levels<a class="anchor" aria-label="anchor" href="#arg-arrange-levels"></a></dt>
 <dd><p>Character vector. Custom order for group levels in legend (only applies
-to categorical <code>color_by</code>). Default: NULL (alphabetical order).</p></dd>
+to categorical <code>color_by</code>). Default: <code>NULL</code> (alphabetical order).</p></dd>
 
 
 <dt id="arg-ellipse">ellipse<a class="anchor" aria-label="anchor" href="#arg-ellipse"></a></dt>
 <dd><p>Logical. Draw confidence ellipses around groups. Only applies when <code>color_by</code>
-is categorical. Requires at least 3 samples per group. Default: TRUE.</p></dd>
+is categorical. Requires at least 3 samples per group. Default: <code>TRUE</code>.</p></dd>
 
 
 <dt id="arg-ellipse-type">ellipse_type<a class="anchor" aria-label="anchor" href="#arg-ellipse-type"></a></dt>
-<dd><p>Character. Type of ellipse: "t" (t-distribution, default) or
-"norm" (normal distribution). Default: "t".</p></dd>
+<dd><p>Character. Type of ellipse: <code>"t"</code> (t-distribution, default) or
+<code>"norm"</code> (normal distribution). Default: <code>"t"</code>.</p></dd>
 
 
 <dt id="arg-ellipse-level">ellipse_level<a class="anchor" aria-label="anchor" href="#arg-ellipse-level"></a></dt>
-<dd><p>Numeric. Confidence level for ellipses (0-1). Default: 0.95 (95% confidence).</p></dd>
+<dd><p>Numeric. Confidence level for ellipses (0–1). Default: <code>0.95</code>.</p></dd>
 
 
 <dt id="arg-legend">legend<a class="anchor" aria-label="anchor" href="#arg-legend"></a></dt>
-<dd><p>Character or NULL. Custom legend title. Default: NULL (uses <code>color_by</code> column name).</p></dd>
+<dd><p>Character or <code>NULL</code>. Custom legend title. Default: <code>NULL</code> (uses <code>color_by</code>
+column name).</p></dd>
+
+
+<dt id="arg-legend-position">legend_position<a class="anchor" aria-label="anchor" href="#arg-legend-position"></a></dt>
+<dd><p>Character. Position of the legend. Options: <code>"bottom"</code>, <code>"top"</code>,
+<code>"left"</code>, <code>"right"</code>, <code>"none"</code>. Default: <code>"bottom"</code>.</p></dd>
 
 
 <dt id="arg-show-outliers">show_outliers<a class="anchor" aria-label="anchor" href="#arg-show-outliers"></a></dt>
 <dd><p>Logical. Label samples outside the confidence ellipse defined by
-<code>ellipse_level</code>. Only works when ellipses are drawn (categorical coloring). Default: FALSE.</p></dd>
+<code>ellipse_level</code>. Only works when ellipses are drawn (categorical coloring). Default: <code>FALSE</code>.</p></dd>
 
 
 <dt id="arg-label-outliers">label_outliers<a class="anchor" aria-label="anchor" href="#arg-label-outliers"></a></dt>
-<dd><p>Character. Which groups to check for outliers. Options: "all"
-(default) or specific group names from the <code>color_by</code> variable. Can be a vector.</p></dd>
+<dd><p>Character. Which groups to check for outliers. Use <code>"all"</code> (default)
+or a character vector of specific group names from the <code>color_by</code> variable.</p></dd>
+
+
+<dt id="arg-colors">colors<a class="anchor" aria-label="anchor" href="#arg-colors"></a></dt>
+<dd><p>Character vector. Custom color palette for discrete groups. If <code>NULL</code>
+(default), the Okabe-Ito colorblind-friendly palette is used. Ignored when <code>color_by</code>
+is numeric (continuous scale is always used for numeric variables).</p></dd>
 
 
 <dt id="arg-point-size">point_size<a class="anchor" aria-label="anchor" href="#arg-point-size"></a></dt>
-<dd><p>Numeric. Size of points. Default: 3.</p></dd>
+<dd><p>Numeric. Size of points. Default: <code>3</code>.</p></dd>
 
 
 <dt id="arg-point-alpha">point_alpha<a class="anchor" aria-label="anchor" href="#arg-point-alpha"></a></dt>
-<dd><p>Numeric. Transparency of points (0-1). Default: 0.8.</p></dd>
+<dd><p>Numeric. Transparency of points (0–1). Default: <code>0.8</code>.</p></dd>
 
 
-<dt id="arg-theme-base-size">theme_base_size<a class="anchor" aria-label="anchor" href="#arg-theme-base-size"></a></dt>
-<dd><p>Numeric. Base font size for theme. Default: 11.</p></dd>
+<dt id="arg-theme">theme<a class="anchor" aria-label="anchor" href="#arg-theme"></a></dt>
+<dd><p>Character. ggplot2 theme to apply. Options: <code>"nature"</code>, <code>"minimal"</code>,
+<code>"classic"</code>, <code>"bw"</code>, <code>"light"</code>, <code>"dark"</code>. Default: <code>"nature"</code> (a clean, publication-ready
+style based on <code>theme_bw()</code>).</p></dd>
+
+
+<dt id="arg-base-size">base_size<a class="anchor" aria-label="anchor" href="#arg-base-size"></a></dt>
+<dd><p>Numeric. Base font size for the theme (pts). Default: <code>11</code>.</p></dd>
+
+
+<dt id="arg-font-family">font_family<a class="anchor" aria-label="anchor" href="#arg-font-family"></a></dt>
+<dd><p>Character. Font family for all text elements. Default: <code>"sans"</code>.</p></dd>
+
+
+<dt id="arg-axis-title-size">axis_title_size<a class="anchor" aria-label="anchor" href="#arg-axis-title-size"></a></dt>
+<dd><p>Numeric. Font size for axis titles. Default: <code>base_size + 1</code>.</p></dd>
+
+
+<dt id="arg-axis-text-size">axis_text_size<a class="anchor" aria-label="anchor" href="#arg-axis-text-size"></a></dt>
+<dd><p>Numeric. Font size for axis tick labels. Default: <code>base_size - 1</code>.</p></dd>
+
+
+<dt id="arg-plot-title-size">plot_title_size<a class="anchor" aria-label="anchor" href="#arg-plot-title-size"></a></dt>
+<dd><p>Numeric. Font size for the plot title. Default: <code>base_size + 3</code>.</p></dd>
+
+
+<dt id="arg-legend-title-size">legend_title_size<a class="anchor" aria-label="anchor" href="#arg-legend-title-size"></a></dt>
+<dd><p>Numeric. Font size for the legend title. Default: <code>base_size</code>.</p></dd>
+
+
+<dt id="arg-legend-text-size">legend_text_size<a class="anchor" aria-label="anchor" href="#arg-legend-text-size"></a></dt>
+<dd><p>Numeric. Font size for legend text. Default: <code>base_size - 1</code>.</p></dd>
+
+
+<dt id="arg-zoom">zoom<a class="anchor" aria-label="anchor" href="#arg-zoom"></a></dt>
+<dd><p>Numeric. Scaling factor applied uniformly to all text and point size elements.
+Values &gt; 1 enlarge, values &lt; 1 shrink. Default: <code>1</code>.</p></dd>
 
 
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
-<dd><p>Logical. Print messages. Default: TRUE.</p></dd>
+<dd><p>Logical. Print progress messages. Default: <code>TRUE</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A ggplot2 object.</p>
+    <p>A <code>ggplot2</code> object.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p><strong>Scores Plot Interpretation:</strong></p><ul><li><p><strong>Clustering</strong>: Samples that cluster together have similar metabolic profiles</p></li>
-<li><p><strong>Separation</strong>: Distance between groups indicates metabolic differences</p></li>
-<li><p><strong>Outliers</strong>: Samples far from their group may represent:</p><ul><li><p>Biological outliers (interesting phenotypes)</p></li>
-<li><p>Technical issues (sample prep, analysis)</p></li>
-<li><p>Mislabeled samples</p></li>
-</ul></li>
+    <p><strong>Scores Plot Interpretation:</strong></p><ul><li><p><strong>Clustering</strong>: Samples that cluster together have similar metabolic profiles.</p></li>
+<li><p><strong>Separation</strong>: Distance between groups indicates metabolic differences.</p></li>
+<li><p><strong>Outliers</strong>: Samples far from their group may represent biological outliers,
+technical issues, or mislabeled samples.</p></li>
 </ul><p><strong>Coloring Options:</strong></p>
-<p>The <code>color_by</code> parameter determines how points are colored:</p><ol><li><p><strong>Categorical column</strong>: Colors by discrete groups (e.g., Treatment, Genotype)</p><ul><li><p>Points are both colored and shaped by this variable</p></li>
-<li><p>Confidence ellipses can be drawn with <code>ellipse = TRUE</code></p></li>
-<li><p>Outliers can be detected and labeled</p></li>
+<p>The <code>color_by</code> parameter determines how points are colored:</p><ol><li><p><strong>Categorical column</strong>: Colors by discrete groups (e.g., Treatment, Genotype).</p><ul><li><p>Points are both colored and shaped by this variable.</p></li>
+<li><p>Confidence ellipses can be drawn with <code>ellipse = TRUE</code>.</p></li>
+<li><p>Outliers can be detected and labeled.</p></li>
+<li><p>Colors default to the Okabe-Ito colorblind-safe palette; override with <code>colors</code>.</p></li>
 </ul></li>
-<li><p><strong>Numeric column</strong>: Gradient coloring by continuous variable (e.g., Time, Dose, Age)</p><ul><li><p>Uses viridis color scale</p></li>
-<li><p>Points are shaped by the same variable (binned into quartiles)</p></li>
-<li><p>No ellipses or outlier detection available</p></li>
+<li><p><strong>Numeric column</strong>: Gradient coloring by continuous variable (e.g., Time, Dose, Age).</p><ul><li><p>Uses the viridis "plasma" color scale.</p></li>
+<li><p>Points are shaped by the same variable (binned into quartiles).</p></li>
+<li><p>No ellipses or outlier detection available.</p></li>
 </ul></li>
-</ol><p><strong>Point Labeling:</strong></p>
-<p>The <code>points_from</code> parameter controls how samples are labeled:</p><ul><li><p>If the specified column exists in metadata, those values are used as labels</p></li>
-<li><p>If the column doesn't exist, sequential labels (Sample_1, Sample_2, ...) are used</p></li>
-<li><p>Labels are shown when <code>show_outliers = TRUE</code> for outlier samples</p></li>
-<li><p>Common choices: "Sample", "SampleID", "SubjectID"</p></li>
+</ol><p><strong>Color Defaults:</strong></p>
+<p>By default, discrete groups use the Okabe-Ito palette, which is perceptually
+distinct and safe for the most common forms of color vision deficiency (deuteranopia,
+protanopia, tritanopia). The palette supports up to 8 groups. For more than 8 groups,
+supply a custom <code>colors</code> vector.</p>
+<p><strong>Point Labeling:</strong></p>
+<p>The <code>points_from</code> parameter controls how samples are labeled:</p><ul><li><p>If the specified column exists in metadata, those values are used as labels.</p></li>
+<li><p>If the column doesn't exist, sequential labels (<code>Sample_1</code>, <code>Sample_2</code>, ...) are used.</p></li>
+<li><p>Labels are shown when <code>show_outliers = TRUE</code> for outlier samples only.</p></li>
+<li><p>Common choices: <code>"Sample"</code>, <code>"SampleID"</code>, <code>"SubjectID"</code>.</p></li>
 </ul><p><strong>Outlier Detection:</strong></p>
 <p>Outliers are identified using Mahalanobis distance from the group centroid.
-A sample is flagged as an outlier if it falls outside the confidence
-ellipse defined by <code>ellipse_level</code>. The default (0.95) identifies samples
-outside the 95% confidence region. This exactly mirrors <code><a href="https://ggplot2.tidyverse.org/reference/stat_ellipse.html" class="external-link">ggplot2::stat_ellipse()</a></code> behavior.</p>
-<p><strong>When Outlier Detection Works:</strong></p><ul><li><p>Only with categorical <code>color_by</code></p></li>
-<li><p>When <code>ellipse = TRUE</code></p></li>
-<li><p>When groups have at least 3 samples</p></li>
+A sample is flagged as an outlier if it falls outside the confidence region defined
+by <code>ellipse_level</code>. The default (<code>0.95</code>) identifies samples outside the 95% confidence
+region. This exactly mirrors <code><a href="https://ggplot2.tidyverse.org/reference/stat_ellipse.html" class="external-link">ggplot2::stat_ellipse()</a></code> behaviour.</p>
+<p>Outlier detection requires:</p><ul><li><p>Categorical <code>color_by</code></p></li>
+<li><p><code>ellipse = TRUE</code></p></li>
+<li><p>At least 3 samples per group</p></li>
 </ul><p><strong>Sample Exclusion:</strong></p>
 <p>To exclude samples (e.g., QC samples) from the plot, exclude them during PCA
-computation using <code>run_pca(exclude = ...)</code> rather than filtering in the plot.</p>
+computation using <code>run_pca(exclude = ...)</code> rather than filtering at the plot stage.</p>
+<p><strong>Themes:</strong></p>
+<p>The <code>"nature"</code> theme (default) is a clean, publication-ready style with a white
+background, minimal gridlines, and no top/right panel border — suitable for
+journal figures. Other options map directly to their ggplot2 equivalents.</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
-    <p>Mardia, K.V., Kent, J.T., &amp; Bibby, J.M. (1979). Multivariate Analysis.
+    <p>Mardia, K.V., Kent, J.T., &amp; Bibby, J.M. (1979). <em>Multivariate Analysis</em>.
 London: Academic Press.</p>
 <p>Brereton, R.G., &amp; Lloyd, G.R. (2014). Partial least squares discriminant analysis:
-taking the magic away. Journal of Chemometrics, 28(4), 213-225. <a href="https://doi.org/10.1002/cem.2609" class="external-link">doi:10.1002/cem.2609</a></p>
+taking the magic away. <em>Journal of Chemometrics</em>, 28(4), 213–225.
+<a href="https://doi.org/10.1002/cem.2609" class="external-link">doi:10.1002/cem.2609</a></p>
+<p>Okabe, M., &amp; Ito, K. (2002). <em>Color Universal Design (CUD): How to make figures
+and presentations that are friendly to colorblind people</em>.
+<a href="https://jfly.uni-koeln.de/color/" class="external-link">https://jfly.uni-koeln.de/color/</a></p>
     </div>
     <div class="section level2">
     <h2 id="author">Author<a class="anchor" aria-label="anchor" href="#author"></a></h2>
@@ -224,56 +337,62 @@ taking the magic away. Journal of Chemometrics, 28(4), 213-225. <a href="https:/
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">metadata</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>  Sample <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Sample"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">100</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  Group <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Control"</span>, <span class="st">"Treatment"</span>, <span class="st">"QC"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">40</span>, <span class="fl">40</span>, <span class="fl">20</span><span class="op">)</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  Batch <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">4</span>, each <span class="op">=</span> <span class="fl">25</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  Time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">6</span>, <span class="fl">12</span>, <span class="fl">24</span><span class="op">)</span>, <span class="fl">25</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  Group  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Control"</span>, <span class="st">"Treatment"</span>, <span class="st">"QC"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">40</span>, <span class="fl">40</span>, <span class="fl">20</span><span class="op">)</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  Batch  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">4</span>, each <span class="op">=</span> <span class="fl">25</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  Time   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">6</span>, <span class="fl">12</span>, <span class="fl">24</span><span class="op">)</span>, <span class="fl">25</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Run PCA (excluding QC samples)</span></span></span>
 <span class="r-in"><span><span class="va">scaled_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="run_scale.html">run_scale</a></span><span class="op">(</span><span class="va">x</span>, method <span class="op">=</span> <span class="st">"auto"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">pca_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="run_pca.html">run_pca</a></span><span class="op">(</span><span class="va">scaled_result</span><span class="op">$</span><span class="va">data</span>, <span class="va">metadata</span>, </span></span>
-<span class="r-in"><span>                      group <span class="op">=</span> <span class="st">"Group"</span>,</span></span>
-<span class="r-in"><span>                      exclude <span class="op">=</span> <span class="st">"QC"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">pca_result</span>    <span class="op">&lt;-</span> <span class="fu"><a href="run_pca.html">run_pca</a></span><span class="op">(</span><span class="va">scaled_result</span><span class="op">$</span><span class="va">data</span>, <span class="va">metadata</span>,</span></span>
+<span class="r-in"><span>                         group   <span class="op">=</span> <span class="st">"Group"</span>,</span></span>
+<span class="r-in"><span>                         exclude <span class="op">=</span> <span class="st">"QC"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Basic scores plot (colored by Group, labeled by Sample)</span></span></span>
-<span class="r-in"><span><span class="fu">plot_score</span><span class="op">(</span><span class="va">pca_result</span>, </span></span>
-<span class="r-in"><span>           color_by <span class="op">=</span> <span class="st">"Group"</span>,</span></span>
+<span class="r-in"><span><span class="co"># Basic scores plot — nature theme, Okabe-Ito colors (defaults)</span></span></span>
+<span class="r-in"><span><span class="fu">plot_score</span><span class="op">(</span><span class="va">pca_result</span>,</span></span>
+<span class="r-in"><span>           color_by    <span class="op">=</span> <span class="st">"Group"</span>,</span></span>
 <span class="r-in"><span>           points_from <span class="op">=</span> <span class="st">"Sample"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># PC2 vs PC3 with custom title</span></span></span>
-<span class="r-in"><span><span class="fu">plot_score</span><span class="op">(</span><span class="va">pca_result</span>, </span></span>
-<span class="r-in"><span>           pc <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">3</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>           color_by <span class="op">=</span> <span class="st">"Group"</span>,</span></span>
-<span class="r-in"><span>           points_from <span class="op">=</span> <span class="st">"Sample"</span>,</span></span>
-<span class="r-in"><span>           title <span class="op">=</span> <span class="st">"PCA: PC2 vs PC3"</span>,</span></span>
-<span class="r-in"><span>           position <span class="op">=</span> <span class="st">"left"</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Color by batch</span></span></span>
+<span class="r-in"><span><span class="co"># PC2 vs PC3 with left-aligned title</span></span></span>
 <span class="r-in"><span><span class="fu">plot_score</span><span class="op">(</span><span class="va">pca_result</span>,</span></span>
-<span class="r-in"><span>           color_by <span class="op">=</span> <span class="st">"Batch"</span>,</span></span>
-<span class="r-in"><span>           points_from <span class="op">=</span> <span class="st">"Sample"</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Continuous coloring by time with custom legend</span></span></span>
-<span class="r-in"><span><span class="fu">plot_score</span><span class="op">(</span><span class="va">pca_result</span>,</span></span>
-<span class="r-in"><span>           color_by <span class="op">=</span> <span class="st">"Time"</span>,</span></span>
+<span class="r-in"><span>           pc          <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">3</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>           color_by    <span class="op">=</span> <span class="st">"Group"</span>,</span></span>
 <span class="r-in"><span>           points_from <span class="op">=</span> <span class="st">"Sample"</span>,</span></span>
-<span class="r-in"><span>           legend <span class="op">=</span> <span class="st">"Collection Time (h)"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>           title       <span class="op">=</span> <span class="st">"PCA: PC2 vs PC3"</span>,</span></span>
+<span class="r-in"><span>           position    <span class="op">=</span> <span class="st">"left"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Show outliers in specific groups</span></span></span>
+<span class="r-in"><span><span class="co"># Color by batch with custom palette</span></span></span>
 <span class="r-in"><span><span class="fu">plot_score</span><span class="op">(</span><span class="va">pca_result</span>,</span></span>
-<span class="r-in"><span>           color_by <span class="op">=</span> <span class="st">"Group"</span>,</span></span>
+<span class="r-in"><span>           color_by    <span class="op">=</span> <span class="st">"Batch"</span>,</span></span>
 <span class="r-in"><span>           points_from <span class="op">=</span> <span class="st">"Sample"</span>,</span></span>
-<span class="r-in"><span>           show_outliers <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
+<span class="r-in"><span>           colors      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"#E41A1C"</span>, <span class="st">"#377EB8"</span>, <span class="st">"#4DAF4A"</span>, <span class="st">"#984EA3"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Continuous coloring by time</span></span></span>
+<span class="r-in"><span><span class="fu">plot_score</span><span class="op">(</span><span class="va">pca_result</span>,</span></span>
+<span class="r-in"><span>           color_by    <span class="op">=</span> <span class="st">"Time"</span>,</span></span>
+<span class="r-in"><span>           points_from <span class="op">=</span> <span class="st">"Sample"</span>,</span></span>
+<span class="r-in"><span>           legend      <span class="op">=</span> <span class="st">"Collection Time (h)"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Show outliers in specific groups, classic theme, larger zoom</span></span></span>
+<span class="r-in"><span><span class="fu">plot_score</span><span class="op">(</span><span class="va">pca_result</span>,</span></span>
+<span class="r-in"><span>           color_by       <span class="op">=</span> <span class="st">"Group"</span>,</span></span>
+<span class="r-in"><span>           points_from    <span class="op">=</span> <span class="st">"Sample"</span>,</span></span>
+<span class="r-in"><span>           show_outliers  <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
 <span class="r-in"><span>           label_outliers <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Control"</span>, <span class="st">"Treatment"</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>           ellipse_level <span class="op">=</span> <span class="fl">0.95</span><span class="op">)</span></span></span>
+<span class="r-in"><span>           ellipse_level  <span class="op">=</span> <span class="fl">0.95</span>,</span></span>
+<span class="r-in"><span>           theme          <span class="op">=</span> <span class="st">"classic"</span>,</span></span>
+<span class="r-in"><span>           zoom           <span class="op">=</span> <span class="fl">1.2</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Stricter outlier detection (99% confidence)</span></span></span>
+<span class="r-in"><span><span class="co"># Stricter outlier detection with serif font</span></span></span>
 <span class="r-in"><span><span class="fu">plot_score</span><span class="op">(</span><span class="va">pca_result</span>,</span></span>
-<span class="r-in"><span>           color_by <span class="op">=</span> <span class="st">"Group"</span>,</span></span>
-<span class="r-in"><span>           points_from <span class="op">=</span> <span class="st">"Sample"</span>,</span></span>
+<span class="r-in"><span>           color_by      <span class="op">=</span> <span class="st">"Group"</span>,</span></span>
+<span class="r-in"><span>           points_from   <span class="op">=</span> <span class="st">"Sample"</span>,</span></span>
 <span class="r-in"><span>           show_outliers <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
-<span class="r-in"><span>           ellipse_level <span class="op">=</span> <span class="fl">0.99</span><span class="op">)</span></span></span>
+<span class="r-in"><span>           ellipse_level <span class="op">=</span> <span class="fl">0.99</span>,</span></span>
+<span class="r-in"><span>           font_family   <span class="op">=</span> <span class="st">"serif"</span>,</span></span>
+<span class="r-in"><span>           base_size     <span class="op">=</span> <span class="fl">13</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
+<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

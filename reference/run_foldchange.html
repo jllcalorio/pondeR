@@ -98,8 +98,9 @@ non-<code>NA</code> levels after optional filtering via <code>filter</code>.</p>
 <dt id="arg-arrange">arrange<a class="anchor" aria-label="anchor" href="#arg-arrange"></a></dt>
 <dd><p>An optional character vector listing <em>all</em> levels of
 <code>group</code> (after filtering) in the desired comparison order. Fold
-changes are computed as consecutive ratios:
-<code>arrange[1] / arrange[2]</code>, <code>arrange[2] / arrange[3]</code>, etc.
+changes are computed for all pairwise combinations taken left-to-right:
+<code>arrange[i] / arrange[j]</code> for all \(i &lt; j\). For example,
+<code>c("A", "B", "C")</code> yields A_vs_B, A_vs_C, and B_vs_C.
 If <code>NULL</code> (default), levels are sorted alphanumerically.</p></dd>
 
 
@@ -134,7 +135,7 @@ selection) becomes <code>eps</code>. Default <code>1e-8</code>.</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A named list of class <code>"run_foldchange"</code> containing:</p><dl><dt><code>fc_table</code></dt>
+    <p>A named list containing:</p><dl><dt><code>fc_table</code></dt>
 <dd><p>A <code>data.frame</code> of pairwise fold changes.
 Rows are features; columns are labelled
 <code>"&lt;level_i&gt;_vs_&lt;level_{i+1}&gt;"</code>. When <code>sort = TRUE</code> each
@@ -175,9 +176,10 @@ reproducibility.</p></dd>
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p><strong>Fold change computation</strong><br>
 Group means are computed per feature. For \(k\) ordered levels
-\(g_1, g_2, \ldots, g_k\), the fold change for comparison
-\(i\) is \(\bar{x}_{g_i} / \bar{x}_{g_{i+1}}\), yielding
-\(k - 1\) pairwise comparisons.</p>
+\(g_1, g_2, \ldots, g_k\), fold changes are computed for <strong>all</strong>
+pairwise combinations taken left-to-right from <code>arrange</code>:
+\(\bar{x}_{g_i} / \bar{x}_{g_j}\) for all \(i &lt; j\), yielding
+\(k(k-1)/2\) comparisons (e.g., A_vs_B, A_vs_C, B_vs_C for 3 groups).</p>
 <p><strong>Log2 shifting</strong><br>
 When <code>log2 = TRUE</code>, let \(m\) be the global minimum of the
 (filtered, selected) data matrix. A shift of \(\delta = \text{eps} - m\)
@@ -209,17 +211,17 @@ consume directly.</p>
 <span class="r-in"><span>  group    <span class="op">=</span> <span class="st">"Species"</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">fc_table</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>        feature setosa_vs_versicolor versicolor_vs_virginica</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1  Sepal.Width            1.2375451               0.9314055</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 Sepal.Length            0.8433288               0.9010322</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 Petal.Length            0.3431925               0.7672911</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4  Petal.Width            0.1855204               0.6544916</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>        feature setosa_vs_versicolor setosa_vs_virginica versicolor_vs_virginica</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1  Sepal.Width            1.2375451           1.1526564               0.9314055</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 Sepal.Length            0.8433288           0.7598664               0.9010322</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 Petal.Length            0.3431925           0.2633285               0.7672911</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4  Petal.Width            0.1855204           0.1214215               0.6544916</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">log2fc_table</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>        feature setosa_vs_versicolor versicolor_vs_virginica</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1  Sepal.Width            0.3074811              -0.1025187</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 Sepal.Length           -0.2458328              -0.1503495</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 Petal.Length           -1.5429101              -0.3821541</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4  Petal.Width           -2.4303506              -0.6115534</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>        feature setosa_vs_versicolor setosa_vs_virginica versicolor_vs_virginica</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1  Sepal.Width            0.3074811           0.2049625              -0.1025187</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 Sepal.Length           -0.2458328          -0.3961823              -0.1503495</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 Petal.Length           -1.5429101          -1.9250643              -0.3821541</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4  Petal.Width           -2.4303506          -3.0419040              -0.6115534</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## -----------------------------------------------------------------------</span></span></span>
 <span class="r-in"><span><span class="co">## Example 2 — custom order, filter one level, select two features</span></span></span>
@@ -233,11 +235,12 @@ consume directly.</p>
 <span class="r-in"><span>  select   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Sepal.Length"</span>, <span class="st">"Petal.Length"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">res2</span><span class="op">$</span><span class="va">comparisons</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "virginica_vs_versicolor" "versicolor_vs_setosa"   </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "virginica_vs_versicolor" "virginica_vs_setosa"    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [3] "versicolor_vs_setosa"   </span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">res2</span><span class="op">$</span><span class="va">fc_table</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>        feature virginica_vs_versicolor versicolor_vs_setosa</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 Petal.Length                1.303286             2.913817</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 Sepal.Length                1.109838             1.185777</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>        feature virginica_vs_versicolor virginica_vs_setosa versicolor_vs_setosa</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 Petal.Length                1.303286            3.797538             2.913817</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 Sepal.Length                1.109838            1.316021             1.185777</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## -----------------------------------------------------------------------</span></span></span>
 <span class="r-in"><span><span class="co">## Example 3 — data with special characters in column names</span></span></span>

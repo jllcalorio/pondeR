@@ -1,9 +1,10 @@
 # Create Box or Violin Plots with Statistical Comparisons
 
-This function generates box plots or violin plots with statistical tests
-and pairwise comparisons. It automatically selects appropriate
-statistical tests based on assumptions, or allows manual specification.
-Statistical testing is performed using the companion function
+Generates box plots or violin plots with statistical tests and pairwise
+comparisons. Automatically selects appropriate statistical tests based
+on assumptions, or allows manual specification. Statistical testing is
+performed internally via `.run_diff_single`, the unexported
+single-outcome engine that powers
 [`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md).
 
 ## Usage
@@ -77,36 +78,36 @@ plot_diff(
 
 - test_type:
 
-  Character string or NULL. Statistical test strategy: `"auto"`,
+  Character string or `NULL`. Statistical test strategy: `"auto"`,
   `"parametric"`, or `"nonparametric"`. See
   [`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md)
-  for details. If NULL (default), uses `"auto"`.
+  for details. If `NULL` (default), uses `"auto"`.
 
 - posthoc:
 
-  Character string or NULL. Post-hoc test for multiple groups: `"auto"`,
-  `"none"`, `"tukey"`, `"games-howell"`, `"dunn"`, `"t_test"`, or
-  `"wilcox_test"`. If NULL (default), uses `"auto"`.
+  Character string or `NULL`. Retained for API compatibility; post-hoc
+  selection is handled automatically by the internal engine. Default is
+  `NULL`.
 
 - p_adjust_method:
 
-  Character string. P-value adjustment method for multiple comparisons.
-  Options: `"holm"`, `"hochberg"`, `"hommel"`, `"bonferroni"`, `"BH"`,
-  `"BY"`, `"fdr"`, `"none"`. Default is `"BH"`.
+  Character string. P-value adjustment method for post-hoc comparisons:
+  `"holm"`, `"hochberg"`, `"hommel"`, `"bonferroni"`, `"BH"`, `"BY"`,
+  `"fdr"`, `"none"`. Default is `"BH"`.
 
 - hide_ns:
 
-  Logical. If TRUE, hide non-significant p-values from plot brackets.
-  Default is TRUE.
+  Logical. If `TRUE`, hide non-significant p-values from plot brackets.
+  Default is `TRUE`.
 
 - show_p_numeric:
 
-  Logical. If TRUE, show exact p-values as numbers instead of
-  significance symbols (`*`, `**`, `***`). Default is FALSE.
+  Logical. If `TRUE`, show exact p-values instead of significance
+  symbols. Default is `FALSE`.
 
 - paired:
 
-  Logical. If TRUE, use paired tests. Default is FALSE.
+  Logical. If `TRUE`, use paired tests. Default is `FALSE`.
 
 - test_alpha:
 
@@ -115,145 +116,115 @@ plot_diff(
 
 - colors:
 
-  Character vector of colors (names or HEX codes) or NULL for automatic
-  soft colors. Default is NULL.
+  Character vector of colors or `NULL` for automatic soft colors.
+  Default is `NULL`.
 
 - plot_title:
 
-  Character string or NULL. Custom title for the plot. If NULL,
-  generates an automatic title. Default is NULL.
+  Character string or `NULL`. Custom plot title. Default is `NULL`.
 
 - plot_subtitle:
 
-  Character string or NULL. Custom subtitle for the plot. If NULL, the
-  name of the statistical test used is shown automatically. Default is
-  NULL.
+  Character string or `NULL`. Custom subtitle. If `NULL`, the test name
+  is shown. Default is `NULL`.
 
 - xlab:
 
-  Character string or NULL. X-axis label. If NULL, uses the group
-  variable name. Default is NULL.
+  Character string or `NULL`. X-axis label. Default is `NULL`.
 
 - ylab:
 
-  Character string or NULL. Y-axis label. If NULL, uses the plot
-  variable name. Default is NULL.
+  Character string or `NULL`. Y-axis label. Default is `NULL`.
 
 - show_global_p:
 
-  Logical. If TRUE, annotates the plot with the global (omnibus) p-value
-  from the main statistical test (e.g., Kruskal-Wallis, ANOVA). Shown
-  for all group counts when TRUE. Default is FALSE.
+  Logical. If `TRUE`, annotates the plot with the omnibus p-value.
+  Default is `FALSE`.
 
 - global_p_position:
 
-  Numeric or NULL. Y-axis position (data coordinates) for the global
-  p-value annotation. If NULL (default), positioned automatically near
-  the top of the plot area.
+  Numeric or `NULL`. Y-axis position for the global p-value annotation.
+  Default is `NULL` (automatic).
 
 - global_p_x:
 
-  Numeric or NULL. X-axis position for the global p-value annotation. If
-  NULL (default), positioned at 95% of the x-axis range (right side).
+  Numeric or `NULL`. X-axis position for the global p-value annotation.
+  Default is `NULL` (automatic).
 
 - global_font_size:
 
-  Numeric or NULL. Base font size used to derive all text sizes
-  proportionally. When provided, `title_size`, `subtitle_size`,
-  `xlab_size`, `ylab_size`, `pvalue_size`, `axis_text_size`, and
-  annotation text sizes (mean/median values, global p) are all scaled
-  relative to this value. Individual size parameters override
-  `global_font_size` only for their specific element when set to a
-  non-NULL numeric. Default is NULL (each parameter uses its own
-  explicit default).
+  Numeric or `NULL`. Base font size for proportional scaling of all text
+  elements. Default is `NULL`.
 
 - title_size:
 
-  Numeric or NULL. Font size for the plot title. If NULL and
-  `global_font_size` is set, derived proportionally (1.2x). Default is
-  NULL.
+  Numeric or `NULL`. Title font size. Default is `NULL`.
 
 - subtitle_size:
 
-  Numeric or NULL. Font size for the plot subtitle. If NULL and
-  `global_font_size` is set, derived proportionally (0.9x). Default is
-  NULL.
+  Numeric or `NULL`. Subtitle font size. Default is `NULL`.
 
 - xlab_size:
 
-  Numeric or NULL. Font size for the x-axis label. If NULL and
-  `global_font_size` is set, derived proportionally (1.0x). Default is
-  NULL.
+  Numeric or `NULL`. X-axis label font size. Default is `NULL`.
 
 - ylab_size:
 
-  Numeric or NULL. Font size for the y-axis label. If NULL and
-  `global_font_size` is set, derived proportionally (1.0x). Default is
-  NULL.
+  Numeric or `NULL`. Y-axis label font size. Default is `NULL`.
 
 - pvalue_size:
 
-  Numeric or NULL. Font size (in ggplot2 `size` units, i.e. mm) for
-  p-value annotations on brackets and the global p-value. If NULL and
-  `global_font_size` is set, derived proportionally (0.35x). Default is
-  NULL.
+  Numeric or `NULL`. Font size for p-value annotations (ggplot2 `size`
+  units). Default is `NULL`.
 
 - axis_text_size:
 
-  Numeric or NULL. Font size for axis tick labels (both x and y axes).
-  If NULL and `global_font_size` is set, derived proportionally (0.85x).
-  Default is NULL.
+  Numeric or `NULL`. Axis tick label font size. Default is `NULL`.
 
 - format_p_numeric:
 
-  Character string or numeric. Controls how p-values are formatted when
-  `show_p_numeric = TRUE`. `"auto"` (default) rounds to 3 decimal
-  places, showing `"<.001"` if below that threshold and `">.999"` if
-  above. A numeric value specifies the exact number of decimal places to
-  display.
+  Character string or numeric. Controls p-value formatting when
+  `show_p_numeric = TRUE`. `"auto"` (default) uses 3 decimal places.
 
 - group_order:
 
-  Character vector or NULL. Specifies the order of groups on the x-axis.
-  If NULL (default), uses factor levels or alphabetical order.
+  Character vector or `NULL`. Group order on x-axis. Default is `NULL`.
 
 - label_points:
 
-  Character string or NULL. Point labeling: `"all"` (label all jitter
-  points), `"outliers"` (label only outliers), or NULL (no labels).
-  Requires `sample_id`. Default is NULL.
+  Character string or `NULL`. `"all"` labels all jitter points;
+  `"outliers"` labels only outliers. Requires `sample_id`. Default is
+  `NULL`.
 
 - sample_id:
 
-  Character string or NULL. Column name containing sample identifiers
-  for point labeling. Required when `label_points` is not NULL.
+  Character string or `NULL`. Column name for sample identifiers used in
+  point labeling. Default is `NULL`.
 
 - show_mean:
 
-  Logical. If TRUE, adds a red dot (mean indicator) to each group.
-  Default is FALSE.
+  Logical. If `TRUE`, adds a red dot (mean indicator) to each group.
+  Default is `FALSE`.
 
 - show_agg_val:
 
-  Logical. If TRUE (default), shows the numeric mean (parametric) or
+  Logical. If `TRUE` (default), shows the numeric mean (parametric) or
   median (non-parametric) value as text on the plot.
 
 - horizontal:
 
-  Logical. If TRUE, flips the plot to horizontal orientation. Default is
-  FALSE.
+  Logical. If `TRUE`, flips to horizontal orientation. Default is
+  `FALSE`.
 
 - bracket_spacing:
 
-  Numeric. Multiplier controlling the vertical spacing between
-  comparison brackets. Default is 0.08.
+  Numeric. Multiplier for vertical spacing between comparison brackets.
+  Default is 0.08.
 
 - subgroup:
 
-  Character vector or NULL. Column name(s) in `x` for subgroup analysis.
-  Each must be categorical (factor or character). When specified, the
-  full analysis is repeated for each level of each subgroup column.
-  Default is NULL.
+  Character vector or `NULL`. Column name(s) for subgroup analysis.
+  Default is `NULL`.
 
 - ...:
 
@@ -265,60 +236,66 @@ A list containing:
 
 - plots:
 
-  List of all generated plots.
+  Named list of all generated `ggplot` objects.
 
 - significant_plots:
 
-  List of plots with significant results only.
+  Named list of plots for variables with significant results only.
 
 - statistics:
 
-  List of
-  [`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md)
-  results for each variable.
+  Named list of internal `.run_diff_single` result objects for each
+  variable, providing access to raw test objects, descriptive
+  statistics, and post-hoc tables.
 
 - subgroup_analysis:
 
-  Nested list of results per subgroup variable and level, or NULL if no
-  subgroup was specified.
+  Nested list of results per subgroup variable and level, or `NULL` if
+  no subgroup was specified.
+
+## Details
+
+Create Box or Violin Plots with Statistical Comparisons
+
+## Author
+
+John Lennon L. Calorio
 
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
-# Example 1: Show mean dot AND mean value
-results_anova <- plot_diff(
+# Example 1: Box plot with mean dot and mean value annotation
+results <- plot_diff(
   x            = PlantGrowth,
   outcome      = "weight",
   group        = "group",
-  plot_type    = "boxplot",
   show_mean    = TRUE,
   show_agg_val = TRUE
 )
-print(results_anova$plots$weight)
+print(results$plots$weight)
 
-# Example 2: Global font size controls all text proportionally
-results_anova2 <- plot_diff(
-  x               = PlantGrowth,
-  outcome         = "weight",
-  group           = "group",
+# Example 2: Global font size scaling and omnibus p-value annotation
+results2 <- plot_diff(
+  x                = PlantGrowth,
+  outcome          = "weight",
+  group            = "group",
   global_font_size = 16,
-  show_global_p   = TRUE  # show the Kruskal-Wallis / ANOVA p-value on the plot
+  show_global_p    = TRUE
 )
-print(results_anova2$plots$weight)
+print(results2$plots$weight)
 
-# Example 3: Paired t-test with custom subtitle, formatted p-values
-sleep_data     <- sleep
-sleep_data$ID  <- rep(1:10, 2)
-results_paired <- plot_diff(
-  x              = sleep_data,
-  outcome        = "extra",
-  group          = "group",
-  paired         = TRUE,
-  plot_subtitle  = "Paired comparison: Drug 1 vs Drug 2",
-  show_p_numeric = TRUE,
-  format_p_numeric = 4  # 4 decimal places
+# Example 3: Paired comparison with numeric p-values
+sleep_data    <- sleep
+sleep_data$ID <- rep(1:10, 2)
+results3 <- plot_diff(
+  x                = sleep_data,
+  outcome          = "extra",
+  group            = "group",
+  paired           = TRUE,
+  show_p_numeric   = TRUE,
+  format_p_numeric = 4
 )
-print(results_paired$plots$extra)
+print(results3$plots$extra)
 } # }
 ```

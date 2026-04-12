@@ -7,6 +7,9 @@ confidence ellipses, and outlier detection.
 ## Usage
 
 ``` r
+plot_score(pca_result, ...)
+
+# S3 method for class 'run_pca'
 plot_score(
   pca_result,
   pc = c(1, 2),
@@ -14,19 +17,66 @@ plot_score(
   points_from,
   title = NULL,
   subtitle = NULL,
+  caption = NULL,
   position = "center",
   arrange_levels = NULL,
   ellipse = TRUE,
   ellipse_type = "t",
   ellipse_level = 0.95,
   legend = NULL,
+  legend_position = "bottom",
   show_outliers = FALSE,
   label_outliers = "all",
+  colors = NULL,
   point_size = 3,
   point_alpha = 0.8,
-  theme_base_size = 11,
+  theme = "nature",
+  base_size = 11,
+  font_family = "sans",
+  axis_title_size = NULL,
+  axis_text_size = NULL,
+  plot_title_size = NULL,
+  legend_title_size = NULL,
+  legend_text_size = NULL,
+  zoom = 1,
   verbose = TRUE
 )
+
+# S3 method for class 'run_pls'
+plot_score(
+  pca_result,
+  pc = c(1, 2),
+  color_by,
+  points_from,
+  title = NULL,
+  subtitle = NULL,
+  caption = NULL,
+  position = "center",
+  arrange_levels = NULL,
+  ellipse = TRUE,
+  ellipse_type = "t",
+  ellipse_level = 0.95,
+  legend = NULL,
+  legend_position = "bottom",
+  show_outliers = FALSE,
+  label_outliers = "all",
+  colors = NULL,
+  point_size = 3,
+  point_alpha = 0.8,
+  theme = "nature",
+  base_size = 11,
+  font_family = "sans",
+  axis_title_size = NULL,
+  axis_text_size = NULL,
+  plot_title_size = NULL,
+  legend_title_size = NULL,
+  legend_text_size = NULL,
+  zoom = 1,
+  verbose = TRUE
+)
+
+# Default S3 method
+plot_score(pca_result, ...)
 ```
 
 ## Arguments
@@ -39,7 +89,8 @@ plot_score(
 - pc:
 
   Character vector of length 2. Principal components to plot, e.g.,
-  c("PC1", "PC2"). Can also be numeric, e.g., c(1, 2). Default: c(1, 2).
+  `c("PC1", "PC2")`. Can also be numeric, e.g., `c(1, 2)`. Default:
+  `c(1, 2)`.
 
 - color_by:
 
@@ -63,158 +114,224 @@ plot_score(
 
 - subtitle:
 
-  Character. Plot subtitle. Default: NULL (no subtitle).
+  Character. Plot subtitle. Default: `NULL` (no subtitle).
+
+- caption:
+
+  Character. Plot caption (bottom-right). Default: `NULL` (no caption).
 
 - position:
 
-  Character. Position of title and subtitle. Options: "left", "center",
-  "right". Default: "center".
+  Character. Horizontal alignment of title, subtitle, and caption.
+  Options: `"left"`, `"center"`, `"right"`. Default: `"center"`.
 
 - arrange_levels:
 
   Character vector. Custom order for group levels in legend (only
-  applies to categorical `color_by`). Default: NULL (alphabetical
+  applies to categorical `color_by`). Default: `NULL` (alphabetical
   order).
 
 - ellipse:
 
   Logical. Draw confidence ellipses around groups. Only applies when
   `color_by` is categorical. Requires at least 3 samples per group.
-  Default: TRUE.
+  Default: `TRUE`.
 
 - ellipse_type:
 
-  Character. Type of ellipse: "t" (t-distribution, default) or "norm"
-  (normal distribution). Default: "t".
+  Character. Type of ellipse: `"t"` (t-distribution, default) or
+  `"norm"` (normal distribution). Default: `"t"`.
 
 - ellipse_level:
 
-  Numeric. Confidence level for ellipses (0-1). Default: 0.95 (95%
-  confidence).
+  Numeric. Confidence level for ellipses (0–1). Default: `0.95`.
 
 - legend:
 
-  Character or NULL. Custom legend title. Default: NULL (uses `color_by`
-  column name).
+  Character or `NULL`. Custom legend title. Default: `NULL` (uses
+  `color_by` column name).
+
+- legend_position:
+
+  Character. Position of the legend. Options: `"bottom"`, `"top"`,
+  `"left"`, `"right"`, `"none"`. Default: `"bottom"`.
 
 - show_outliers:
 
   Logical. Label samples outside the confidence ellipse defined by
   `ellipse_level`. Only works when ellipses are drawn (categorical
-  coloring). Default: FALSE.
+  coloring). Default: `FALSE`.
 
 - label_outliers:
 
-  Character. Which groups to check for outliers. Options: "all"
-  (default) or specific group names from the `color_by` variable. Can be
-  a vector.
+  Character. Which groups to check for outliers. Use `"all"` (default)
+  or a character vector of specific group names from the `color_by`
+  variable.
+
+- colors:
+
+  Character vector. Custom color palette for discrete groups. If `NULL`
+  (default), the Okabe-Ito colorblind-friendly palette is used. Ignored
+  when `color_by` is numeric (continuous scale is always used for
+  numeric variables).
 
 - point_size:
 
-  Numeric. Size of points. Default: 3.
+  Numeric. Size of points. Default: `3`.
 
 - point_alpha:
 
-  Numeric. Transparency of points (0-1). Default: 0.8.
+  Numeric. Transparency of points (0–1). Default: `0.8`.
 
-- theme_base_size:
+- theme:
 
-  Numeric. Base font size for theme. Default: 11.
+  Character. ggplot2 theme to apply. Options: `"nature"`, `"minimal"`,
+  `"classic"`, `"bw"`, `"light"`, `"dark"`. Default: `"nature"` (a
+  clean, publication-ready style based on `theme_bw()`).
+
+- base_size:
+
+  Numeric. Base font size for the theme (pts). Default: `11`.
+
+- font_family:
+
+  Character. Font family for all text elements. Default: `"sans"`.
+
+- axis_title_size:
+
+  Numeric. Font size for axis titles. Default: `base_size + 1`.
+
+- axis_text_size:
+
+  Numeric. Font size for axis tick labels. Default: `base_size - 1`.
+
+- plot_title_size:
+
+  Numeric. Font size for the plot title. Default: `base_size + 3`.
+
+- legend_title_size:
+
+  Numeric. Font size for the legend title. Default: `base_size`.
+
+- legend_text_size:
+
+  Numeric. Font size for legend text. Default: `base_size - 1`.
+
+- zoom:
+
+  Numeric. Scaling factor applied uniformly to all text and point size
+  elements. Values \> 1 enlarge, values \< 1 shrink. Default: `1`.
 
 - verbose:
 
-  Logical. Print messages. Default: TRUE.
+  Logical. Print progress messages. Default: `TRUE`.
 
 ## Value
 
-A ggplot2 object.
+A `ggplot2` object.
 
 ## Details
 
 **Scores Plot Interpretation:**
 
 - **Clustering**: Samples that cluster together have similar metabolic
-  profiles
+  profiles.
 
 - **Separation**: Distance between groups indicates metabolic
-  differences
+  differences.
 
-- **Outliers**: Samples far from their group may represent:
-
-  - Biological outliers (interesting phenotypes)
-
-  - Technical issues (sample prep, analysis)
-
-  - Mislabeled samples
+- **Outliers**: Samples far from their group may represent biological
+  outliers, technical issues, or mislabeled samples.
 
 **Coloring Options:**
 
 The `color_by` parameter determines how points are colored:
 
 1.  **Categorical column**: Colors by discrete groups (e.g., Treatment,
-    Genotype)
+    Genotype).
 
-    - Points are both colored and shaped by this variable
+    - Points are both colored and shaped by this variable.
 
-    - Confidence ellipses can be drawn with `ellipse = TRUE`
+    - Confidence ellipses can be drawn with `ellipse = TRUE`.
 
-    - Outliers can be detected and labeled
+    - Outliers can be detected and labeled.
+
+    - Colors default to the Okabe-Ito colorblind-safe palette; override
+      with `colors`.
 
 2.  **Numeric column**: Gradient coloring by continuous variable (e.g.,
-    Time, Dose, Age)
+    Time, Dose, Age).
 
-    - Uses viridis color scale
+    - Uses the viridis "plasma" color scale.
 
-    - Points are shaped by the same variable (binned into quartiles)
+    - Points are shaped by the same variable (binned into quartiles).
 
-    - No ellipses or outlier detection available
+    - No ellipses or outlier detection available.
+
+**Color Defaults:**
+
+By default, discrete groups use the Okabe-Ito palette, which is
+perceptually distinct and safe for the most common forms of color vision
+deficiency (deuteranopia, protanopia, tritanopia). The palette supports
+up to 8 groups. For more than 8 groups, supply a custom `colors` vector.
 
 **Point Labeling:**
 
 The `points_from` parameter controls how samples are labeled:
 
 - If the specified column exists in metadata, those values are used as
-  labels
+  labels.
 
-- If the column doesn't exist, sequential labels (Sample_1, Sample_2,
-  ...) are used
+- If the column doesn't exist, sequential labels (`Sample_1`,
+  `Sample_2`, ...) are used.
 
-- Labels are shown when `show_outliers = TRUE` for outlier samples
+- Labels are shown when `show_outliers = TRUE` for outlier samples only.
 
-- Common choices: "Sample", "SampleID", "SubjectID"
+- Common choices: `"Sample"`, `"SampleID"`, `"SubjectID"`.
 
 **Outlier Detection:**
 
 Outliers are identified using Mahalanobis distance from the group
 centroid. A sample is flagged as an outlier if it falls outside the
-confidence ellipse defined by `ellipse_level`. The default (0.95)
+confidence region defined by `ellipse_level`. The default (`0.95`)
 identifies samples outside the 95% confidence region. This exactly
 mirrors
 [`ggplot2::stat_ellipse()`](https://ggplot2.tidyverse.org/reference/stat_ellipse.html)
-behavior.
+behaviour.
 
-**When Outlier Detection Works:**
+Outlier detection requires:
 
-- Only with categorical `color_by`
+- Categorical `color_by`
 
-- When `ellipse = TRUE`
+- `ellipse = TRUE`
 
-- When groups have at least 3 samples
+- At least 3 samples per group
 
 **Sample Exclusion:**
 
 To exclude samples (e.g., QC samples) from the plot, exclude them during
-PCA computation using `run_pca(exclude = ...)` rather than filtering in
-the plot.
+PCA computation using `run_pca(exclude = ...)` rather than filtering at
+the plot stage.
+
+**Themes:**
+
+The `"nature"` theme (default) is a clean, publication-ready style with
+a white background, minimal gridlines, and no top/right panel border —
+suitable for journal figures. Other options map directly to their
+ggplot2 equivalents.
 
 ## References
 
-Mardia, K.V., Kent, J.T., & Bibby, J.M. (1979). Multivariate Analysis.
+Mardia, K.V., Kent, J.T., & Bibby, J.M. (1979). *Multivariate Analysis*.
 London: Academic Press.
 
 Brereton, R.G., & Lloyd, G.R. (2014). Partial least squares discriminant
-analysis: taking the magic away. Journal of Chemometrics, 28(4),
-213-225. [doi:10.1002/cem.2609](https://doi.org/10.1002/cem.2609)
+analysis: taking the magic away. *Journal of Chemometrics*, 28(4),
+213–225. [doi:10.1002/cem.2609](https://doi.org/10.1002/cem.2609)
+
+Okabe, M., & Ito, K. (2002). *Color Universal Design (CUD): How to make
+figures and presentations that are friendly to colorblind people*.
+<https://jfly.uni-koeln.de/color/>
 
 ## Author
 
@@ -233,54 +350,59 @@ rownames(x) <- paste0("Sample", 1:100)
 
 metadata <- data.frame(
   Sample = paste0("Sample", 1:100),
-  Group = rep(c("Control", "Treatment", "QC"), c(40, 40, 20)),
-  Batch = rep(1:4, each = 25),
-  Time = rep(c(0, 6, 12, 24), 25)
+  Group  = rep(c("Control", "Treatment", "QC"), c(40, 40, 20)),
+  Batch  = rep(1:4, each = 25),
+  Time   = rep(c(0, 6, 12, 24), 25)
 )
 
 # Run PCA (excluding QC samples)
 scaled_result <- run_scale(x, method = "auto")
-pca_result <- run_pca(scaled_result$data, metadata, 
-                      group = "Group",
-                      exclude = "QC")
+pca_result    <- run_pca(scaled_result$data, metadata,
+                         group   = "Group",
+                         exclude = "QC")
 
-# Basic scores plot (colored by Group, labeled by Sample)
-plot_score(pca_result, 
-           color_by = "Group",
+# Basic scores plot — nature theme, Okabe-Ito colors (defaults)
+plot_score(pca_result,
+           color_by    = "Group",
            points_from = "Sample")
 
-# PC2 vs PC3 with custom title
-plot_score(pca_result, 
-           pc = c(2, 3),
-           color_by = "Group",
-           points_from = "Sample",
-           title = "PCA: PC2 vs PC3",
-           position = "left")
-
-# Color by batch
+# PC2 vs PC3 with left-aligned title
 plot_score(pca_result,
-           color_by = "Batch",
-           points_from = "Sample")
-
-# Continuous coloring by time with custom legend
-plot_score(pca_result,
-           color_by = "Time",
+           pc          = c(2, 3),
+           color_by    = "Group",
            points_from = "Sample",
-           legend = "Collection Time (h)")
+           title       = "PCA: PC2 vs PC3",
+           position    = "left")
 
-# Show outliers in specific groups
+# Color by batch with custom palette
 plot_score(pca_result,
-           color_by = "Group",
+           color_by    = "Batch",
            points_from = "Sample",
-           show_outliers = TRUE,
+           colors      = c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3"))
+
+# Continuous coloring by time
+plot_score(pca_result,
+           color_by    = "Time",
+           points_from = "Sample",
+           legend      = "Collection Time (h)")
+
+# Show outliers in specific groups, classic theme, larger zoom
+plot_score(pca_result,
+           color_by       = "Group",
+           points_from    = "Sample",
+           show_outliers  = TRUE,
            label_outliers = c("Control", "Treatment"),
-           ellipse_level = 0.95)
+           ellipse_level  = 0.95,
+           theme          = "classic",
+           zoom           = 1.2)
 
-# Stricter outlier detection (99% confidence)
+# Stricter outlier detection with serif font
 plot_score(pca_result,
-           color_by = "Group",
-           points_from = "Sample",
+           color_by      = "Group",
+           points_from   = "Sample",
            show_outliers = TRUE,
-           ellipse_level = 0.99)
+           ellipse_level = 0.99,
+           font_family   = "serif",
+           base_size     = 13)
 } # }
 ```

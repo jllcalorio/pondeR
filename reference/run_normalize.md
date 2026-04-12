@@ -114,7 +114,7 @@ run_normalize(
 
 ## Value
 
-A list of class "run_normalize" containing:
+A list containing:
 
 - data:
 

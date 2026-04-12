@@ -13,7 +13,7 @@ print(x, ...)
 
 - x:
 
-  An object of class "run_assoc".
+  An object from `run_assoc`.
 
 - ...:
 

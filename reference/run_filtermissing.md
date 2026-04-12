@@ -75,7 +75,7 @@ run_filtermissing(
 
 ## Value
 
-A list of class "run_filtermissing" containing:
+A list containing:
 
 - data:
 

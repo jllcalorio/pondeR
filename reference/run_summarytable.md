@@ -14,7 +14,7 @@ use.
 ``` r
 run_summarytable(
   df,
-  summarize_what = everything(),
+  summarize_what = NULL,
   split_by = NULL,
   split_by_header = NULL,
   strata_by = NULL,
@@ -25,6 +25,7 @@ run_summarytable(
   force_categorical = NULL,
   n_digits_continuous = c(2, 2),
   n_digits_categorical = c(0, 2),
+  zero_as_exp = TRUE,
   display_missing = "ifany",
   missing_text = "No data/missing",
   missing_stat = "n_percent",
@@ -171,6 +172,27 @@ run_summarytable(
     and 2 for percentages (default).
 
   - "dynamic": Same as in `n_digits_continuous`.
+
+- zero_as_exp:
+
+  Logical. If `TRUE` (default), applies only to continuous variables:
+  when a numeric component (e.g., mean, SD, median, IQR values) rounds
+  to `0` at the precision specified in `n_digits_continuous` but its
+  true value is non-zero, that component is displayed in scientific
+  notation (e.g., `1.00e-3`) using the same number of decimal places as
+  `n_digits_continuous`. Values that are genuinely `0` are displayed
+  as-is. This prevents misleading `0 ± 0` or `0 (0, 0)` displays for
+  near-zero but non-zero quantities. Examples with
+  `n_digits_continuous = c(2, 2)` and
+  `continuous_statistics = "meanSD"`:
+
+  - `0 ± 0` (true zeros) → `0 ± 0`
+
+  - `0.01 ± 0.2` → `0.01 ± 0.2`
+
+  - `0.001 ± 0.00001` → `1.00e-3 ± 1.00e-5`
+
+  - `0.02 ± 0.0001576` → `0.02 ± 1.58e-4`
 
 - display_missing:
 

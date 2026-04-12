@@ -230,7 +230,7 @@ run_auc(
 
 ## Value
 
-A named list of class `"run_auc"` with the following elements:
+A named list with the following elements:
 
 - `roc_list`:
 

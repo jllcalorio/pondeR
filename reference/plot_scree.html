@@ -52,13 +52,23 @@ Helps determine the number of meaningful PCs to retain.</p>
 <span>  <span class="va">pca_result</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"Scree Plot"</span>,</span>
 <span>  subtitle <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  caption <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  position <span class="op">=</span> <span class="st">"center"</span>,</span>
 <span>  what <span class="op">=</span> <span class="st">"variance"</span>,</span>
 <span>  type <span class="op">=</span> <span class="st">"line"</span>,</span>
 <span>  max_pc <span class="op">=</span> <span class="fl">15</span>,</span>
 <span>  show_cumulative <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  show_values <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  theme_base_size <span class="op">=</span> <span class="fl">11</span>,</span>
+<span>  bar_color <span class="op">=</span> <span class="st">"#0072B2"</span>,</span>
+<span>  line_color <span class="op">=</span> <span class="st">"#0072B2"</span>,</span>
+<span>  cumulative_color <span class="op">=</span> <span class="st">"#D55E00"</span>,</span>
+<span>  theme <span class="op">=</span> <span class="st">"nature"</span>,</span>
+<span>  base_size <span class="op">=</span> <span class="fl">11</span>,</span>
+<span>  font_family <span class="op">=</span> <span class="st">"sans"</span>,</span>
+<span>  axis_title_size <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  axis_text_size <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  plot_title_size <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  zoom <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -72,77 +82,129 @@ Helps determine the number of meaningful PCs to retain.</p>
 
 
 <dt id="arg-title">title<a class="anchor" aria-label="anchor" href="#arg-title"></a></dt>
-<dd><p>Character. Main plot title. Default: "Scree Plot".</p></dd>
+<dd><p>Character. Main plot title. Default: <code>"Scree Plot"</code>.</p></dd>
 
 
 <dt id="arg-subtitle">subtitle<a class="anchor" aria-label="anchor" href="#arg-subtitle"></a></dt>
-<dd><p>Character. Plot subtitle. Default: NULL (no subtitle).</p></dd>
+<dd><p>Character. Plot subtitle. Default: <code>NULL</code> (no subtitle).</p></dd>
+
+
+<dt id="arg-caption">caption<a class="anchor" aria-label="anchor" href="#arg-caption"></a></dt>
+<dd><p>Character. Plot caption (bottom-right). Default: <code>NULL</code> (no caption).</p></dd>
 
 
 <dt id="arg-position">position<a class="anchor" aria-label="anchor" href="#arg-position"></a></dt>
-<dd><p>Character. Position of title and subtitle. Options: "left", "center", "right".
-Default: "center".</p></dd>
+<dd><p>Character. Horizontal alignment of title, subtitle, and caption.
+Options: <code>"left"</code>, <code>"center"</code>, <code>"right"</code>. Default: <code>"center"</code>.</p></dd>
 
 
 <dt id="arg-what">what<a class="anchor" aria-label="anchor" href="#arg-what"></a></dt>
-<dd><p>Character. What to plot: "variance" (variance explained %) or "eigen" (eigenvalues).
-Default: "variance".</p></dd>
+<dd><p>Character. What to plot: <code>"variance"</code> (variance explained %) or
+<code>"eigen"</code> (eigenvalues). Default: <code>"variance"</code>.</p></dd>
 
 
 <dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
-<dd><p>Character. Plot type: "bar", "line", or "both". Default: "line".</p></dd>
+<dd><p>Character. Plot geometry: <code>"bar"</code>, <code>"line"</code>, or <code>"both"</code>. Default: <code>"line"</code>.</p></dd>
 
 
 <dt id="arg-max-pc">max_pc<a class="anchor" aria-label="anchor" href="#arg-max-pc"></a></dt>
-<dd><p>Integer. Maximum number of PCs to display. Default: 15.</p></dd>
+<dd><p>Integer. Maximum number of PCs to display. Default: <code>15</code>.</p></dd>
 
 
 <dt id="arg-show-cumulative">show_cumulative<a class="anchor" aria-label="anchor" href="#arg-show-cumulative"></a></dt>
-<dd><p>Logical. Show cumulative variance explained as a line on secondary axis.
-Only works when <code>what = "variance"</code>. Default: TRUE.</p></dd>
+<dd><p>Logical. Show cumulative variance explained as a dashed line
+with a secondary y-axis. Only available when <code>what = "variance"</code>. Default: <code>TRUE</code>.</p></dd>
 
 
 <dt id="arg-show-values">show_values<a class="anchor" aria-label="anchor" href="#arg-show-values"></a></dt>
-<dd><p>Logical. Display values on plot using ggrepel to avoid overlap. Default: TRUE.</p></dd>
+<dd><p>Logical. Display value labels on the plot using <code>ggrepel</code> to avoid
+overlap. Falls back to <code>geom_text</code> if <code>ggrepel</code> is not installed. Default: <code>TRUE</code>.</p></dd>
 
 
-<dt id="arg-theme-base-size">theme_base_size<a class="anchor" aria-label="anchor" href="#arg-theme-base-size"></a></dt>
-<dd><p>Numeric. Base font size for theme. Default: 11.</p></dd>
+<dt id="arg-bar-color">bar_color<a class="anchor" aria-label="anchor" href="#arg-bar-color"></a></dt>
+<dd><p>Character. Fill color for bars (when <code>type = "bar"</code> or <code>"both"</code>).
+Default: <code>"#0072B2"</code> (Okabe-Ito blue).</p></dd>
+
+
+<dt id="arg-line-color">line_color<a class="anchor" aria-label="anchor" href="#arg-line-color"></a></dt>
+<dd><p>Character. Color for the primary line and points (when <code>type = "line"</code>
+or <code>"both"</code>). Default: <code>"#0072B2"</code> (Okabe-Ito blue).</p></dd>
+
+
+<dt id="arg-cumulative-color">cumulative_color<a class="anchor" aria-label="anchor" href="#arg-cumulative-color"></a></dt>
+<dd><p>Character. Color for the cumulative variance line, points, and
+labels. Default: <code>"#D55E00"</code> (Okabe-Ito vermillion).</p></dd>
+
+
+<dt id="arg-theme">theme<a class="anchor" aria-label="anchor" href="#arg-theme"></a></dt>
+<dd><p>Character. ggplot2 theme to apply. Options: <code>"nature"</code>, <code>"minimal"</code>,
+<code>"classic"</code>, <code>"bw"</code>, <code>"light"</code>, <code>"dark"</code>. Default: <code>"nature"</code> (a clean,
+publication-ready style based on <code>theme_bw()</code> with no gridlines).</p></dd>
+
+
+<dt id="arg-base-size">base_size<a class="anchor" aria-label="anchor" href="#arg-base-size"></a></dt>
+<dd><p>Numeric. Base font size for the theme (pts). Default: <code>11</code>.</p></dd>
+
+
+<dt id="arg-font-family">font_family<a class="anchor" aria-label="anchor" href="#arg-font-family"></a></dt>
+<dd><p>Character. Font family for all text elements. Default: <code>"sans"</code>.</p></dd>
+
+
+<dt id="arg-axis-title-size">axis_title_size<a class="anchor" aria-label="anchor" href="#arg-axis-title-size"></a></dt>
+<dd><p>Numeric. Font size for axis titles. Default: <code>base_size + 1</code>.</p></dd>
+
+
+<dt id="arg-axis-text-size">axis_text_size<a class="anchor" aria-label="anchor" href="#arg-axis-text-size"></a></dt>
+<dd><p>Numeric. Font size for axis tick labels. Default: <code>base_size - 1</code>.</p></dd>
+
+
+<dt id="arg-plot-title-size">plot_title_size<a class="anchor" aria-label="anchor" href="#arg-plot-title-size"></a></dt>
+<dd><p>Numeric. Font size for the plot title. Default: <code>base_size + 3</code>.</p></dd>
+
+
+<dt id="arg-zoom">zoom<a class="anchor" aria-label="anchor" href="#arg-zoom"></a></dt>
+<dd><p>Numeric. Uniform scaling factor applied to all text sizes and point/line
+sizes. Values &gt; 1 enlarge, values &lt; 1 shrink. Default: <code>1</code>.</p></dd>
 
 
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
-<dd><p>Logical. Print messages. Default: TRUE.</p></dd>
+<dd><p>Logical. Print progress messages. Default: <code>TRUE</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A ggplot2 object.</p>
+    <p>A <code>ggplot2</code> object.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p><strong>Scree Plot Interpretation:</strong></p>
-<p>The scree plot helps determine how many principal components to retain:</p><ul><li><p><strong>Elbow Method</strong>: Look for an "elbow" where the curve flattens. PCs before
-the elbow capture meaningful variance; those after capture mostly noise.</p></li>
+<p>The scree plot helps determine how many principal components to retain:</p><ul><li><p><strong>Elbow Method</strong>: Look for an "elbow" where the curve flattens. PCs before the
+elbow capture meaningful variance; those after capture mostly noise.</p></li>
 <li><p><strong>Kaiser Criterion</strong>: Retain PCs with eigenvalues &gt; 1 (when <code>what = "eigen"</code>).
 These PCs explain more variance than a single original variable.</p></li>
-<li><p><strong>Cumulative Variance</strong>: Retain enough PCs to explain 70-90% of total variance
+<li><p><strong>Cumulative Variance</strong>: Retain enough PCs to explain 70–90% of total variance
 (shown when <code>show_cumulative = TRUE</code>).</p></li>
-</ul><p><strong>Plot Types:</strong></p><ul><li><p><strong>bar</strong>: Traditional bar chart, good for discrete comparison</p></li>
-<li><p><strong>line</strong>: Line plot, better for seeing trends</p></li>
-<li><p><strong>both</strong>: Combines bars and line for comprehensive view</p></li>
+</ul><p><strong>Plot Types:</strong></p><ul><li><p><code>"bar"</code>: Traditional bar chart; good for discrete comparison.</p></li>
+<li><p><code>"line"</code>: Line plot; better for visualising trends and the elbow.</p></li>
+<li><p><code>"both"</code>: Combines bars and a line for a comprehensive view.</p></li>
 </ul><p><strong>Cumulative Variance Line:</strong></p>
-<p>When <code>show_cumulative = TRUE</code>, a line showing cumulative variance is added
-to the plot on a secondary y-axis at the top. This helps visualize how
-many PCs are needed to explain a target percentage of variance (e.g., 80%).</p>
+<p>When <code>show_cumulative = TRUE</code>, a dashed line showing cumulative variance is
+overlaid on a shared y-axis scale. A secondary axis on the right is labelled
+accordingly. Only available when <code>what = "variance"</code>.</p>
 <p><strong>When to Use Each Metric:</strong></p><ul><li><p><strong>Variance explained</strong>: More intuitive (percentages). Recommended for most users.</p></li>
-<li><p><strong>Eigenvalues</strong>: Useful for Kaiser criterion and advanced analysis.</p></li>
-</ul></div>
+<li><p><strong>Eigenvalues</strong>: Useful for the Kaiser criterion and advanced analysis.</p></li>
+</ul><p><strong>Themes:</strong></p>
+<p>The <code>"nature"</code> theme (default) applies <code>theme_bw()</code> with all gridlines removed —
+suitable for journal figures. Other options map directly to their ggplot2 equivalents,
+also with gridlines suppressed.</p>
+    </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
     <p>Cattell, R.B. (1966). The scree test for the number of factors.
-Multivariate Behavioral Research, 1(2), 245-276. <a href="https://doi.org/10.1207/s15327906mbr0102_10" class="external-link">doi:10.1207/s15327906mbr0102_10</a></p>
+<em>Multivariate Behavioral Research</em>, 1(2), 245–276.
+<a href="https://doi.org/10.1207/s15327906mbr0102_10" class="external-link">doi:10.1207/s15327906mbr0102_10</a></p>
 <p>Kaiser, H.F. (1960). The application of electronic computers to factor analysis.
-Educational and Psychological Measurement, 20(1), 141-151.
+<em>Educational and Psychological Measurement</em>, 20(1), 141–151.
 <a href="https://doi.org/10.1177/001316446002000116" class="external-link">doi:10.1177/001316446002000116</a></p>
     </div>
     <div class="section level2">
@@ -156,20 +218,27 @@ Educational and Psychological Measurement, 20(1), 141-151.
 <span class="r-in"><span><span class="co"># Run PCA first</span></span></span>
 <span class="r-in"><span><span class="va">pca_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="run_pca.html">run_pca</a></span><span class="op">(</span><span class="va">scaled_data</span>, <span class="va">metadata</span>, scale_method <span class="op">=</span> <span class="st">"auto"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Basic scree plot</span></span></span>
+<span class="r-in"><span><span class="co"># Basic scree plot (nature theme, Okabe-Ito colors, defaults)</span></span></span>
 <span class="r-in"><span><span class="fu">plot_scree</span><span class="op">(</span><span class="va">pca_result</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Eigenvalue plot with custom styling</span></span></span>
-<span class="r-in"><span><span class="fu">plot_scree</span><span class="op">(</span><span class="va">pca_result</span>, </span></span>
-<span class="r-in"><span>          what <span class="op">=</span> <span class="st">"eigen"</span>,</span></span>
-<span class="r-in"><span>          type <span class="op">=</span> <span class="st">"both"</span>,</span></span>
-<span class="r-in"><span>          title <span class="op">=</span> <span class="st">"PCA Eigenvalues"</span>,</span></span>
-<span class="r-in"><span>          position <span class="op">=</span> <span class="st">"left"</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Variance plot without cumulative line</span></span></span>
+<span class="r-in"><span><span class="co"># Eigenvalue plot, bar + line geometry</span></span></span>
 <span class="r-in"><span><span class="fu">plot_scree</span><span class="op">(</span><span class="va">pca_result</span>,</span></span>
-<span class="r-in"><span>          show_cumulative <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
-<span class="r-in"><span>          max_pc <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span></span>
+<span class="r-in"><span>           what     <span class="op">=</span> <span class="st">"eigen"</span>,</span></span>
+<span class="r-in"><span>           type     <span class="op">=</span> <span class="st">"both"</span>,</span></span>
+<span class="r-in"><span>           title    <span class="op">=</span> <span class="st">"PCA Eigenvalues"</span>,</span></span>
+<span class="r-in"><span>           position <span class="op">=</span> <span class="st">"left"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Variance plot without cumulative line, classic theme</span></span></span>
+<span class="r-in"><span><span class="fu">plot_scree</span><span class="op">(</span><span class="va">pca_result</span>,</span></span>
+<span class="r-in"><span>           show_cumulative <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
+<span class="r-in"><span>           max_pc          <span class="op">=</span> <span class="fl">10</span>,</span></span>
+<span class="r-in"><span>           theme           <span class="op">=</span> <span class="st">"classic"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Larger font, serif family, custom zoom</span></span></span>
+<span class="r-in"><span><span class="fu">plot_scree</span><span class="op">(</span><span class="va">pca_result</span>,</span></span>
+<span class="r-in"><span>           base_size   <span class="op">=</span> <span class="fl">13</span>,</span></span>
+<span class="r-in"><span>           font_family <span class="op">=</span> <span class="st">"serif"</span>,</span></span>
+<span class="r-in"><span>           zoom        <span class="op">=</span> <span class="fl">1.2</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 </code></pre></div>
     </div>

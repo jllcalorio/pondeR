@@ -124,20 +124,20 @@ run_logreg(
 ## Value
 
 If `iterate = FALSE`, returns a data frame containing Predictor, Log
-Odds, Std Error, p-value, Significance, OR, 95\\ `Firth Corrected`) are
-attached as `attr(result, "model_metrics")`.
+Odds, Std Error, p-value, Significance, OR, 95\\ McFadden R2, CoxSnell
+R2, Nagelkerke R2, Tjur R2, Firth Corrected) in the first row. Model
+metrics are also attached as `attr(result, "model_metrics")`.
 
 If `iterate = TRUE`, returns a named list containing:
 
 - Tables:
 
-  A named list of result data frames for each model combination.
+  A named list of result data frames, each with inline model metrics in
+  row 1.
 
 - Metrics:
 
-  A data frame comparing model metrics (N, Deviance, AIC, BIC, McFadden
-  \\R^2\\, Cox-Snell \\R^2\\, Nagelkerke \\R^2\\, Tjur \\R^2\\, Has
-  Significant Predictor, and Firth Corrected) across all combinations.
+  A data frame comparing model metrics across all combinations.
 
 - filtered_Tables:
 
@@ -213,6 +213,12 @@ same formula and data.
 scheme: `***` if \\p \< .001\\, `**` if \\p \< .01\\, `*` if \\p \<
 .05\\, and blank otherwise.
 
+**Inline model metrics:** Model-fit statistics (Deviance, AIC, BIC,
+McFadden R2, CoxSnell R2, Nagelkerke R2, Tjur R2, Firth Corrected) are
+appended as additional columns to the right of the `VIF` column. Values
+are placed only in the first row (aligned with the intercept); all
+subsequent rows contain `NA` for these columns.
+
 ## References
 
 Fox J, Weisberg S (2019). *An R Companion to Applied Regression*, 3rd
@@ -244,7 +250,6 @@ John Lennon L. Calorio
 ``` r
 if (FALSE) { # \dontrun{
 # --- Example 1: Single model with Firth's correction applied dynamically ---
-# Firth's correction is applied automatically only if zero cells are detected.
 result <- run_logreg(
   x          = my_data,
   y          = "Outcome",
@@ -255,10 +260,9 @@ result <- run_logreg(
   apply_firth = TRUE
 )
 result
-attr(result, "model_metrics")  # includes Firth Corrected column
+attr(result, "model_metrics")
 
 # --- Example 2: Iterative models with forced Firth and VIF filtering -------
-# All models receive Firth's correction regardless of zero-cell status.
 results <- run_logreg(
   x                = my_data,
   y                = "Outcome",
@@ -272,6 +276,6 @@ results <- run_logreg(
   force_apply_firth = TRUE
 )
 results$Metrics
-results$vif_filtered_Tables  # models with p < .05 and all VIF < 5
+results$vif_filtered_Tables
 } # }
 ```

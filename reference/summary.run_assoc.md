@@ -13,7 +13,7 @@ summary(object, ...)
 
 - object:
 
-  An object of class "run_assoc".
+  An object from `run_assoc`.
 
 - ...:
 

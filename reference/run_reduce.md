@@ -37,7 +37,7 @@ run_reduce(..., check_cols = TRUE, return_common = TRUE)
 
 ## Value
 
-A named list of class `"run_reduce"` with the following elements:
+A named list with the following elements:
 
 - `data`:
 

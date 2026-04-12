@@ -29,7 +29,7 @@ run_filtervariance(x, percentile = 10, verbose = TRUE)
 
 ## Value
 
-A list of class "run_filtervariance" containing:
+A list containing:
 
 - data:
 

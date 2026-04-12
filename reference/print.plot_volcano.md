@@ -13,7 +13,7 @@ print(x, ...)
 
 - x:
 
-  An object of class `"plot_volcano"`.
+  An object as ouput of `"plot_volcano"`.
 
 - ...:
 

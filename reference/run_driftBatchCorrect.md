@@ -113,7 +113,7 @@ run_driftBatchCorrect(
 
 ## Value
 
-A list of class "run_driftBatchCorrect" containing:
+A list containing:
 
 - data:
 

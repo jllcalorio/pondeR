@@ -149,8 +149,54 @@ Utility functions for data management, relabelling, and S3 methods.
 Additional exported functions. New functions land here automatically
 until formally categorised.
 
+- [`get_sigfeatures()`](https://jllcalorio.github.io/pondeR/reference/get_sigfeatures.md)
+  : Get Features with Non-Zero Coefficients from a Regularized
+  Regression Result
+
+- [`has_inf()`](https://jllcalorio.github.io/pondeR/reference/has_inf.md)
+  : Check if an Object Contains Infinite Values
+
+- [`has_na()`](https://jllcalorio.github.io/pondeR/reference/has_na.md)
+  : Check if an Object Contains Missing Values
+
+- [`has_names()`](https://jllcalorio.github.io/pondeR/reference/has_names.md)
+  : Check if an Object has Names
+
+- [`has_negative()`](https://jllcalorio.github.io/pondeR/reference/has_negative.md)
+  : Check if an Object Contains Negative Values
+
+- [`has_zero()`](https://jllcalorio.github.io/pondeR/reference/has_zero.md)
+  : Check if an Object Contains Zero Values
+
+- [`is_list()`](https://jllcalorio.github.io/pondeR/reference/is_list.md)
+  : Check if an Object is a Plain List
+
+- [`is_tabular()`](https://jllcalorio.github.io/pondeR/reference/is_tabular.md)
+  : Check if an Object is a Tabular Data Structure
+
+- [`plot_beforeafter()`](https://jllcalorio.github.io/pondeR/reference/plot_beforeafter.md)
+  : Plot Pairwise Before-and-After Comparison for Selected Features
+
+- [`plot_dend()`](https://jllcalorio.github.io/pondeR/reference/plot_dend.md)
+  : Plot a Hierarchical Clustering Dendrogram
+
 - [`plot_diff()`](https://jllcalorio.github.io/pondeR/reference/plot_diff.md)
   : Create Box or Violin Plots with Statistical Comparisons
+
+- [`plot_dist_beforeafter()`](https://jllcalorio.github.io/pondeR/reference/plot_dist_beforeafter.md)
+  : Plot Distribution Comparison Before and After Data Transformation
+
+- [`plot_heatmap()`](https://jllcalorio.github.io/pondeR/reference/plot_heatmap.md)
+  : Plot a Correlation Heatmap
+
+- [`plot_meanmap()`](https://jllcalorio.github.io/pondeR/reference/plot_meanmap.md)
+  : Mean Intensity Heatmap with Hierarchical Clustering Dendrogram
+
+- [`plot_multi_y()`](https://jllcalorio.github.io/pondeR/reference/plot_multi_y.md)
+  : Plot Multiple Variables on Primary and Secondary Y Axes
+
+- [`plot_relabund()`](https://jllcalorio.github.io/pondeR/reference/plot_relabund.md)
+  : Plot Relative Abundance as Stacked Bar Chart
 
 - [`plot_score()`](https://jllcalorio.github.io/pondeR/reference/plot_score.md)
   : Plot PCA Scores Plot
@@ -196,6 +242,9 @@ until formally categorised.
 - [`run_auc()`](https://jllcalorio.github.io/pondeR/reference/run_auc.md)
   : Comprehensive Area Under the ROC Curve (AUROC) Analysis
 
+- [`run_correl()`](https://jllcalorio.github.io/pondeR/reference/run_correl.md)
+  : Perform Correlation Analysis
+
 - [`run_diff()`](https://jllcalorio.github.io/pondeR/reference/run_diff.md)
   : Automatic Statistical Comparison with Comprehensive Analysis
 
@@ -227,8 +276,15 @@ until formally categorised.
 - [`run_pca()`](https://jllcalorio.github.io/pondeR/reference/run_pca.md)
   : Perform Principal Component Analysis
 
+- [`run_pls()`](https://jllcalorio.github.io/pondeR/reference/run_pls.md)
+  : Perform Partial Least Squares (PLS) Analysis
+
 - [`run_reduce()`](https://jllcalorio.github.io/pondeR/reference/run_reduce.md)
   : Reduce Multiple Data Frames by Common or Unique Column/Row Names
+
+- [`run_regreg()`](https://jllcalorio.github.io/pondeR/reference/run_regreg.md)
+  : Regularized Regression with Cross-Validation (Ridge, Elastic Net,
+  LASSO)
 
 - [`run_relabel()`](https://jllcalorio.github.io/pondeR/reference/run_relabel.md)
   : Recode and Factorize a Column
@@ -241,6 +297,12 @@ until formally categorised.
 
 - [`run_transform()`](https://jllcalorio.github.io/pondeR/reference/run_transform.md)
   : Transform Metabolomics Data
+
+- [`save_excel()`](https://jllcalorio.github.io/pondeR/reference/save_excel.md)
+  : Save Data Frames, Tibbles, or Matrices to an Excel File
+
+- [`save_plots()`](https://jllcalorio.github.io/pondeR/reference/save_plots.md)
+  : Save Plots to Image or Vector Files
 
 - [`summary(`*`<run_assoc>`*`)`](https://jllcalorio.github.io/pondeR/reference/summary.run_assoc.md)
   : Summary method for run_assoc objects

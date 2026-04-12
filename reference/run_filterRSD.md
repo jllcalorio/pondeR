@@ -64,7 +64,7 @@ run_filterRSD(
 
 ## Value
 
-A list of class "run_filterRSD" containing:
+A list containing:
 
 - data:
 

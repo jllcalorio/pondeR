@@ -65,7 +65,7 @@ run_pca(
 
 ## Value
 
-A list of class "run_pca" containing:
+A list containing:
 
 - scores:
 

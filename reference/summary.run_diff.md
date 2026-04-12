@@ -13,7 +13,7 @@ summary(object, ...)
 
 - object:
 
-  An object of class "run_diff".
+  An object from `run_diff`.
 
 - ...:
 

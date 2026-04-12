@@ -50,9 +50,10 @@ run_foldchange(
 
   An optional character vector listing *all* levels of `group` (after
   filtering) in the desired comparison order. Fold changes are computed
-  as consecutive ratios: `arrange[1] / arrange[2]`,
-  `arrange[2] / arrange[3]`, etc. If `NULL` (default), levels are sorted
-  alphanumerically.
+  for all pairwise combinations taken left-to-right:
+  `arrange[i] / arrange[j]` for all \\i \< j\\. For example,
+  `c("A", "B", "C")` yields A_vs_B, A_vs_C, and B_vs_C. If `NULL`
+  (default), levels are sorted alphanumerically.
 
 - filter:
 
@@ -85,7 +86,7 @@ run_foldchange(
 
 ## Value
 
-A named list of class `"run_foldchange"` containing:
+A named list containing:
 
 - `fc_table`:
 
@@ -130,9 +131,10 @@ A named list of class `"run_foldchange"` containing:
 
 **Fold change computation**  
 Group means are computed per feature. For \\k\\ ordered levels \\g_1,
-g_2, \ldots, g_k\\, the fold change for comparison \\i\\ is
-\\\bar{x}\_{g_i} / \bar{x}\_{g\_{i+1}}\\, yielding \\k - 1\\ pairwise
-comparisons.
+g_2, \ldots, g_k\\, fold changes are computed for **all** pairwise
+combinations taken left-to-right from `arrange`: \\\bar{x}\_{g_i} /
+\bar{x}\_{g_j}\\ for all \\i \< j\\, yielding \\k(k-1)/2\\ comparisons
+(e.g., A_vs_B, A_vs_C, B_vs_C for 3 groups).
 
 **Log2 shifting**  
 When `log2 = TRUE`, let \\m\\ be the global minimum of the (filtered,
@@ -170,17 +172,17 @@ res <- run_foldchange(
   group    = "Species"
 )
 print(res$fc_table)
-#>        feature setosa_vs_versicolor versicolor_vs_virginica
-#> 1  Sepal.Width            1.2375451               0.9314055
-#> 2 Sepal.Length            0.8433288               0.9010322
-#> 3 Petal.Length            0.3431925               0.7672911
-#> 4  Petal.Width            0.1855204               0.6544916
+#>        feature setosa_vs_versicolor setosa_vs_virginica versicolor_vs_virginica
+#> 1  Sepal.Width            1.2375451           1.1526564               0.9314055
+#> 2 Sepal.Length            0.8433288           0.7598664               0.9010322
+#> 3 Petal.Length            0.3431925           0.2633285               0.7672911
+#> 4  Petal.Width            0.1855204           0.1214215               0.6544916
 print(res$log2fc_table)
-#>        feature setosa_vs_versicolor versicolor_vs_virginica
-#> 1  Sepal.Width            0.3074811              -0.1025187
-#> 2 Sepal.Length           -0.2458328              -0.1503495
-#> 3 Petal.Length           -1.5429101              -0.3821541
-#> 4  Petal.Width           -2.4303506              -0.6115534
+#>        feature setosa_vs_versicolor setosa_vs_virginica versicolor_vs_virginica
+#> 1  Sepal.Width            0.3074811           0.2049625              -0.1025187
+#> 2 Sepal.Length           -0.2458328          -0.3961823              -0.1503495
+#> 3 Petal.Length           -1.5429101          -1.9250643              -0.3821541
+#> 4  Petal.Width           -2.4303506          -3.0419040              -0.6115534
 
 ## -----------------------------------------------------------------------
 ## Example 2 — custom order, filter one level, select two features
@@ -194,11 +196,12 @@ res2 <- run_foldchange(
   select   = c("Sepal.Length", "Petal.Length")
 )
 print(res2$comparisons)
-#> [1] "virginica_vs_versicolor" "versicolor_vs_setosa"   
+#> [1] "virginica_vs_versicolor" "virginica_vs_setosa"    
+#> [3] "versicolor_vs_setosa"   
 print(res2$fc_table)
-#>        feature virginica_vs_versicolor versicolor_vs_setosa
-#> 1 Petal.Length                1.303286             2.913817
-#> 2 Sepal.Length                1.109838             1.185777
+#>        feature virginica_vs_versicolor virginica_vs_setosa versicolor_vs_setosa
+#> 1 Petal.Length                1.303286            3.797538             2.913817
+#> 2 Sepal.Length                1.109838            1.316021             1.185777
 
 ## -----------------------------------------------------------------------
 ## Example 3 — data with special characters in column names

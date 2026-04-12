@@ -59,7 +59,7 @@ that can be easily integrated into reports, manuscripts, or exported (via copy-p
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">run_summarytable</span><span class="op">(</span></span>
 <span>  <span class="va">df</span>,</span>
-<span>  summarize_what <span class="op">=</span> <span class="fu">everything</span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  summarize_what <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  split_by <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  split_by_header <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  strata_by <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -70,6 +70,7 @@ that can be easily integrated into reports, manuscripts, or exported (via copy-p
 <span>  force_categorical <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  n_digits_continuous <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span>,</span>
 <span>  n_digits_categorical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">2</span><span class="op">)</span>,</span>
+<span>  zero_as_exp <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  display_missing <span class="op">=</span> <span class="st">"ifany"</span>,</span>
 <span>  missing_text <span class="op">=</span> <span class="st">"No data/missing"</span>,</span>
 <span>  missing_stat <span class="op">=</span> <span class="st">"n_percent"</span>,</span>
@@ -164,6 +165,20 @@ Options are 'n_percent' (count (percentage)), 'n' (count only), or 'percent' (pe
 <dt id="arg-n-digits-categorical">n_digits_categorical<a class="anchor" aria-label="anchor" href="#arg-n-digits-categorical"></a></dt>
 <dd><p>Numeric Vector or String.</p><ul><li><p>c(0, 2): A vector of two integers specifying the number of digits to round for counts and percentages respectively, for categorical variables. For example, <code>c(0, 2)</code> means 0 decimal places for counts and 2 for percentages (default).</p></li>
 <li><p>"dynamic": Same as in <code>n_digits_continuous</code>.</p></li>
+</ul></dd>
+
+
+<dt id="arg-zero-as-exp">zero_as_exp<a class="anchor" aria-label="anchor" href="#arg-zero-as-exp"></a></dt>
+<dd><p>Logical. If <code>TRUE</code> (default), applies only to continuous variables: when a
+numeric component (e.g., mean, SD, median, IQR values) rounds to <code>0</code> at the precision
+specified in <code>n_digits_continuous</code> but its true value is non-zero, that component is
+displayed in scientific notation (e.g., <code>1.00e-3</code>) using the same number of decimal places
+as <code>n_digits_continuous</code>. Values that are genuinely <code>0</code> are displayed as-is. This prevents
+misleading <code>0 ± 0</code> or <code>0 (0, 0)</code> displays for near-zero but non-zero quantities.
+Examples with <code>n_digits_continuous = c(2, 2)</code> and <code>continuous_statistics = "meanSD"</code>:</p><ul><li><p><code>0 ± 0</code> (true zeros) → <code>0 ± 0</code></p></li>
+<li><p><code>0.01 ± 0.2</code> → <code>0.01 ± 0.2</code></p></li>
+<li><p><code>0.001 ± 0.00001</code> → <code>1.00e-3 ± 1.00e-5</code></p></li>
+<li><p><code>0.02 ± 0.0001576</code> → <code>0.02 ± 1.58e-4</code></p></li>
 </ul></dd>
 
 

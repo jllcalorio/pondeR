@@ -32,7 +32,7 @@ run_scale(x, method = "auto", verbose = TRUE)
 
 ## Value
 
-A list of class "run_scale" containing:
+A list containing:
 
 - data:
 

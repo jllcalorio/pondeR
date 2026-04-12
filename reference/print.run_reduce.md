@@ -14,7 +14,7 @@ print(x, ...)
 
 - x:
 
-  An object of class `"run_reduce"`.
+  An object from `run_reduce`.
 
 - ...:
 

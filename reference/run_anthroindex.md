@@ -171,7 +171,7 @@ run_anthroindex(
 
 ## Value
 
-Each result is an object of class `"run_anthroindex"` and
+Each result is an object from `"run_anthroindex"` and is a
 `"data.frame"`.
 
 The columns are ordered as follows:

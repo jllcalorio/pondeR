@@ -164,15 +164,14 @@ regardless of whether zero cells are present. Ignored if <code>apply_firth = FAL
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>If <code>iterate = FALSE</code>, returns a data frame containing Predictor, Log Odds, Std Error,
-p-value, Significance, OR, 95\<!-- % CIs, and (optionally) VIF. Model metrics (including -->
-<code>Firth Corrected</code>) are attached as <code>attr(result, "model_metrics")</code>.</p>
+p-value, Significance, OR, 95\<!-- % CIs, VIF, and inline model metrics (Deviance, AIC, BIC, -->
+McFadden R2, CoxSnell R2, Nagelkerke R2, Tjur R2, Firth Corrected) in the first row.
+Model metrics are also attached as <code>attr(result, "model_metrics")</code>.</p>
 <p>If <code>iterate = TRUE</code>, returns a named list containing:</p><dl><dt>Tables</dt>
-<dd><p>A named list of result data frames for each model combination.</p></dd>
+<dd><p>A named list of result data frames, each with inline model metrics in row 1.</p></dd>
 
 <dt>Metrics</dt>
-<dd><p>A data frame comparing model metrics (N, Deviance, AIC, BIC, McFadden \(R^2\),
-Cox-Snell \(R^2\), Nagelkerke \(R^2\), Tjur \(R^2\), Has Significant Predictor, and
-Firth Corrected) across all combinations.</p></dd>
+<dd><p>A data frame comparing model metrics across all combinations.</p></dd>
 
 <dt>filtered_Tables</dt>
 <dd><p>A subset of <code>Tables</code> excluding only models where <em>all</em>
@@ -226,6 +225,10 @@ formula and data.</p>
 <p><strong>Significance codes:</strong> The <code>Significance</code> column uses the conventional scheme:
 <code>***</code> if \(p &lt; .001\), <code>**</code> if \(p &lt; .01\), <code>*</code> if \(p &lt; .05\),
 and blank otherwise.</p>
+<p><strong>Inline model metrics:</strong> Model-fit statistics (Deviance, AIC, BIC, McFadden R2,
+CoxSnell R2, Nagelkerke R2, Tjur R2, Firth Corrected) are appended as additional columns to
+the right of the <code>VIF</code> column. Values are placed only in the first row (aligned with the
+intercept); all subsequent rows contain <code>NA</code> for these columns.</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
@@ -249,7 +252,6 @@ for Assessment, Comparison and Testing of Statistical Models." <em>Journal of Op
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
 <span class="r-in"><span><span class="co"># --- Example 1: Single model with Firth's correction applied dynamically ---</span></span></span>
-<span class="r-in"><span><span class="co"># Firth's correction is applied automatically only if zero cells are detected.</span></span></span>
 <span class="r-in"><span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">run_logreg</span><span class="op">(</span></span></span>
 <span class="r-in"><span>  x          <span class="op">=</span> <span class="va">my_data</span>,</span></span>
 <span class="r-in"><span>  y          <span class="op">=</span> <span class="st">"Outcome"</span>,</span></span>
@@ -260,10 +262,9 @@ for Assessment, Comparison and Testing of Statistical Models." <em>Journal of Op
 <span class="r-in"><span>  apply_firth <span class="op">=</span> <span class="cn">TRUE</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">result</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">result</span>, <span class="st">"model_metrics"</span><span class="op">)</span>  <span class="co"># includes Firth Corrected column</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">result</span>, <span class="st">"model_metrics"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># --- Example 2: Iterative models with forced Firth and VIF filtering -------</span></span></span>
-<span class="r-in"><span><span class="co"># All models receive Firth's correction regardless of zero-cell status.</span></span></span>
 <span class="r-in"><span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu">run_logreg</span><span class="op">(</span></span></span>
 <span class="r-in"><span>  x                <span class="op">=</span> <span class="va">my_data</span>,</span></span>
 <span class="r-in"><span>  y                <span class="op">=</span> <span class="st">"Outcome"</span>,</span></span>
@@ -277,7 +278,7 @@ for Assessment, Comparison and Testing of Statistical Models." <em>Journal of Op
 <span class="r-in"><span>  force_apply_firth <span class="op">=</span> <span class="cn">TRUE</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">results</span><span class="op">$</span><span class="va">Metrics</span></span></span>
-<span class="r-in"><span><span class="va">results</span><span class="op">$</span><span class="va">vif_filtered_Tables</span>  <span class="co"># models with p &lt; .05 and all VIF &lt; 5</span></span></span>
+<span class="r-in"><span><span class="va">results</span><span class="op">$</span><span class="va">vif_filtered_Tables</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>

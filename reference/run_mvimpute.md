@@ -38,7 +38,7 @@ run_mvimpute(x, method = 0.2, tune_sigma = 1, verbose = TRUE)
 
 ## Value
 
-A list of class "run_mvimpute" containing:
+A list containing:
 
 - data:
 

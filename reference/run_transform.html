@@ -72,6 +72,9 @@ heteroscedasticity in metabolomics data.</p>
 <li><p><code>"log10"</code>: Log base 10 transformation</p></li>
 <li><p><code>"sqrt"</code>: Square root transformation</p></li>
 <li><p><code>"cbrt"</code>: Cube root transformation</p></li>
+<li><p><code>"clr"</code>: Centered log-ratio transformation (computed per sample)</p></li>
+<li><p><code>"arcsin_sqrt"</code>: Arcsine square root transformation (data must be in [0, 1] or
+proportion-scale after optional shift)</p></li>
 <li><p><code>"vsn"</code>: Variance Stabilizing Normalization (requires 'vsn' package)</p></li>
 <li><p><code>"glog"</code>: Generalized logarithm transformation (requires 'pmp' package)</p></li>
 </ul></dd>
@@ -103,7 +106,7 @@ Use "max" for automatic detection (uses all available - 2). Default: 1.</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A list of class "run_transform" containing:</p>
+    <p>A list containing:</p>
 <dl><dt>data</dt>
 <dd><p>Matrix or data frame of transformed data (same class as input <code>x</code>)</p></dd>
 
@@ -124,10 +127,23 @@ small values. Useful for data spanning multiple orders of magnitude. If data
 contains zeros or negative values, a shift is applied first.</p></li>
 <li><p><strong>sqrt</strong>: Square root transformation. Moderate variance stabilization. Works
 with zero values but requires non-negative data.</p></li>
-<li><p><strong>cbrt</strong>: Cube root transformation. Similar to sqrt but can handle negative
-values. Provides gentler compression than log.</p></li>
+<li><p><strong>cbrt</strong>: Cube root transformation. Can handle negative values natively;
+a shift is applied only when needed to ensure consistency with the input range.
+Provides gentler compression than log.</p></li>
+<li><p><strong>clr</strong>: Centered log-ratio transformation. Maps compositional data from the
+simplex to real space by dividing each value by the geometric mean of its row
+and then taking the logarithm. Computed natively in Base R for efficiency.
+Suitable for compositional or relative-abundance data. If data contains zeros
+or negative values, a shift is applied first.</p></li>
+<li><p><strong>arcsin_sqrt</strong>: Arcsine square root transformation. Variance-stabilizing
+transformation for proportion data. Values must lie in [0, 1] (or be
+non-negative and rescalable to [0, 1]). A shift is applied for negative
+values; if the shifted data still contains values greater than 1 the function
+stops with an informative error, because <code>asin(sqrt(x &gt; 1))</code> is undefined
+over the reals.</p></li>
 <li><p><strong>vsn</strong>: Variance Stabilizing Normalization. Model-based method from microarray
 analysis that calibrates variance across intensity range. Requires 'vsn' package.
+Data is internally transposed for calculation as vsn expects features in rows.
 Can be computationally intensive; use <code>num_cores</code> for parallel processing.</p></li>
 <li><p><strong>glog</strong>: Generalized logarithm transformation. Hybrid log transformation that
 handles low values better than standard log. Requires 'pmp' package and metadata
@@ -135,6 +151,10 @@ with QC sample labels.</p></li>
 </ul><p><strong>When to Use Each Method:</strong></p><ul><li><p><strong>log2/log10</strong>: Most common for metabolomics. Use when variance increases
 with mean (heteroscedasticity).</p></li>
 <li><p><strong>sqrt</strong>: When variance is proportional to mean.</p></li>
+<li><p><strong>clr</strong>: When data are compositional or represent relative abundances.
+Preferred over log-ratio methods that require a reference feature.</p></li>
+<li><p><strong>arcsin_sqrt</strong>: When data are proportions or bounded in [0, 1].
+Common for relative abundance data in ecology and microbiomics.</p></li>
 <li><p><strong>vsn</strong>: When you need sophisticated variance modeling. Recommended for
 large datasets with clear intensity-dependent variance.</p></li>
 <li><p><strong>glog</strong>: Alternative to log when you have many low-intensity values.
@@ -142,14 +162,16 @@ Good for LC-MS data with detection limits.</p></li>
 </ul></div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
-    <p>Huber, W., von Heydebreck, A., Sueltmann, H., Poustka, A., &amp; Vingron, M. (2002).
+    <p>Aitchison, J. (1986). <em>The Statistical Analysis of Compositional Data</em>,
+Monographs on Statistics and Applied Probability. Chapman &amp; Hall Ltd., London (UK). 416p.</p>
+<p>Huber, W., von Heydebreck, A., Sueltmann, H., Poustka, A., &amp; Vingron, M. (2002).
 Variance stabilization applied to microarray data calibration and to the
-quantification of differential expression. Bioinformatics, 18(Suppl 1), S96-S104.
+quantification of differential expression. <em>Bioinformatics</em>, 18(Suppl 1), S96-S104.
 <a href="https://doi.org/10.1093/bioinformatics/18.suppl_1.s96" class="external-link">doi:10.1093/bioinformatics/18.suppl_1.s96</a></p>
 <p>Parsons, H.M., Ludwig, C., Günther, U.L., &amp; Viant, M.R. (2007).
 Improved classification accuracy in 1- and 2-dimensional NMR metabolomics data
 using the variance stabilising generalised logarithm transformation.
-BMC Bioinformatics, 8, 234. <a href="https://doi.org/10.1186/1471-2105-8-234" class="external-link">doi:10.1186/1471-2105-8-234</a></p>
+<em>BMC Bioinformatics</em>, 8, 234. <a href="https://doi.org/10.1186/1471-2105-8-234" class="external-link">doi:10.1186/1471-2105-8-234</a></p>
     </div>
     <div class="section level2">
     <h2 id="author">Author<a class="anchor" aria-label="anchor" href="#author"></a></h2>
@@ -168,15 +190,22 @@ BMC Bioinformatics, 8, 234. <a href="https://doi.org/10.1186/1471-2105-8-234" cl
 <span class="r-in"><span><span class="co"># Log transformation</span></span></span>
 <span class="r-in"><span><span class="va">result1</span> <span class="op">&lt;-</span> <span class="fu">run_transform</span><span class="op">(</span><span class="va">x</span>, method <span class="op">=</span> <span class="st">"log2"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># CLR transformation (compositional data)</span></span></span>
+<span class="r-in"><span><span class="va">result2</span> <span class="op">&lt;-</span> <span class="fu">run_transform</span><span class="op">(</span><span class="va">x</span>, method <span class="op">=</span> <span class="st">"clr"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Arcsine square root (proportion data in [0, 1])</span></span></span>
+<span class="r-in"><span><span class="va">x_prop</span> <span class="op">&lt;-</span> <span class="va">x</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">rowSums</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">result3</span> <span class="op">&lt;-</span> <span class="fu">run_transform</span><span class="op">(</span><span class="va">x_prop</span>, method <span class="op">=</span> <span class="st">"arcsin_sqrt"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># VSN with parallel processing</span></span></span>
-<span class="r-in"><span><span class="va">result2</span> <span class="op">&lt;-</span> <span class="fu">run_transform</span><span class="op">(</span><span class="va">x</span>, method <span class="op">=</span> <span class="st">"vsn"</span>, num_cores <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">result4</span> <span class="op">&lt;-</span> <span class="fu">run_transform</span><span class="op">(</span><span class="va">x</span>, method <span class="op">=</span> <span class="st">"vsn"</span>, num_cores <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Glog transformation (requires metadata)</span></span></span>
 <span class="r-in"><span><span class="va">metadata</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>  Sample <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"S"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">100</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  Group <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Control"</span>, <span class="st">"Treatment"</span>, <span class="st">"QC"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">40</span>, <span class="fl">40</span>, <span class="fl">20</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">result3</span> <span class="op">&lt;-</span> <span class="fu">run_transform</span><span class="op">(</span><span class="va">x</span>, method <span class="op">=</span> <span class="st">"glog"</span>, metadata <span class="op">=</span> <span class="va">metadata</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">result5</span> <span class="op">&lt;-</span> <span class="fu">run_transform</span><span class="op">(</span><span class="va">x</span>, method <span class="op">=</span> <span class="st">"glog"</span>, metadata <span class="op">=</span> <span class="va">metadata</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 </code></pre></div>
     </div>

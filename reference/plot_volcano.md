@@ -235,7 +235,7 @@ plot_volcano(
 
 ## Value
 
-A named list of class `"plot_volcano"` with elements:
+A named list with elements:
 
 - `plots`:
 
