@@ -2,34 +2,84 @@
 % Please edit documentation in R/plot_score.R
 \name{plot_score}
 \alias{plot_score}
+\alias{plot_score.run_pca}
+\alias{plot_score.run_pls}
+\alias{plot_score.default}
 \title{Plot PCA Scores Plot}
 \usage{
-plot_score(
+plot_score(pca_result, ...)
+
+\method{plot_score}{run_pca}(
   pca_result,
   pc = c(1, 2),
   color_by,
   points_from,
   title = NULL,
   subtitle = NULL,
+  caption = NULL,
   position = "center",
   arrange_levels = NULL,
   ellipse = TRUE,
   ellipse_type = "t",
   ellipse_level = 0.95,
   legend = NULL,
+  legend_position = "bottom",
   show_outliers = FALSE,
   label_outliers = "all",
+  colors = NULL,
   point_size = 3,
   point_alpha = 0.8,
-  theme_base_size = 11,
+  theme = "nature",
+  base_size = 11,
+  font_family = "sans",
+  axis_title_size = NULL,
+  axis_text_size = NULL,
+  plot_title_size = NULL,
+  legend_title_size = NULL,
+  legend_text_size = NULL,
+  zoom = 1,
   verbose = TRUE
 )
+
+\method{plot_score}{run_pls}(
+  pca_result,
+  pc = c(1, 2),
+  color_by,
+  points_from,
+  title = NULL,
+  subtitle = NULL,
+  caption = NULL,
+  position = "center",
+  arrange_levels = NULL,
+  ellipse = TRUE,
+  ellipse_type = "t",
+  ellipse_level = 0.95,
+  legend = NULL,
+  legend_position = "bottom",
+  show_outliers = FALSE,
+  label_outliers = "all",
+  colors = NULL,
+  point_size = 3,
+  point_alpha = 0.8,
+  theme = "nature",
+  base_size = 11,
+  font_family = "sans",
+  axis_title_size = NULL,
+  axis_text_size = NULL,
+  plot_title_size = NULL,
+  legend_title_size = NULL,
+  legend_text_size = NULL,
+  zoom = 1,
+  verbose = TRUE
+)
+
+\method{plot_score}{default}(pca_result, ...)
 }
 \arguments{
 \item{pca_result}{List. Output from \code{run_pca()}.}
 
-\item{pc}{Character vector of length 2. Principal components to plot, e.g., c("PC1", "PC2").
-Can also be numeric, e.g., c(1, 2). Default: c(1, 2).}
+\item{pc}{Character vector of length 2. Principal components to plot, e.g., \code{c("PC1", "PC2")}.
+Can also be numeric, e.g., \code{c(1, 2)}. Default: \code{c(1, 2)}.}
 
 \item{color_by}{Character. Name of column in \code{metadata} to use for coloring points.
 If the column contains categorical data, points are colored by discrete groups with optional
@@ -43,40 +93,69 @@ labels will be used instead. Required parameter with no default.}
 
 \item{title}{Character. Main plot title. Default: auto-generated based on PCs.}
 
-\item{subtitle}{Character. Plot subtitle. Default: NULL (no subtitle).}
+\item{subtitle}{Character. Plot subtitle. Default: \code{NULL} (no subtitle).}
 
-\item{position}{Character. Position of title and subtitle. Options: "left", "center", "right".
-Default: "center".}
+\item{caption}{Character. Plot caption (bottom-right). Default: \code{NULL} (no caption).}
+
+\item{position}{Character. Horizontal alignment of title, subtitle, and caption.
+Options: \code{"left"}, \code{"center"}, \code{"right"}. Default: \code{"center"}.}
 
 \item{arrange_levels}{Character vector. Custom order for group levels in legend (only applies
-to categorical \code{color_by}). Default: NULL (alphabetical order).}
+to categorical \code{color_by}). Default: \code{NULL} (alphabetical order).}
 
 \item{ellipse}{Logical. Draw confidence ellipses around groups. Only applies when \code{color_by}
-is categorical. Requires at least 3 samples per group. Default: TRUE.}
+is categorical. Requires at least 3 samples per group. Default: \code{TRUE}.}
 
-\item{ellipse_type}{Character. Type of ellipse: "t" (t-distribution, default) or
-"norm" (normal distribution). Default: "t".}
+\item{ellipse_type}{Character. Type of ellipse: \code{"t"} (t-distribution, default) or
+\code{"norm"} (normal distribution). Default: \code{"t"}.}
 
-\item{ellipse_level}{Numeric. Confidence level for ellipses (0-1). Default: 0.95 (95\% confidence).}
+\item{ellipse_level}{Numeric. Confidence level for ellipses (0–1). Default: \code{0.95}.}
 
-\item{legend}{Character or NULL. Custom legend title. Default: NULL (uses \code{color_by} column name).}
+\item{legend}{Character or \code{NULL}. Custom legend title. Default: \code{NULL} (uses \code{color_by}
+column name).}
+
+\item{legend_position}{Character. Position of the legend. Options: \code{"bottom"}, \code{"top"},
+\code{"left"}, \code{"right"}, \code{"none"}. Default: \code{"bottom"}.}
 
 \item{show_outliers}{Logical. Label samples outside the confidence ellipse defined by
-\code{ellipse_level}. Only works when ellipses are drawn (categorical coloring). Default: FALSE.}
+\code{ellipse_level}. Only works when ellipses are drawn (categorical coloring). Default: \code{FALSE}.}
 
-\item{label_outliers}{Character. Which groups to check for outliers. Options: "all"
-(default) or specific group names from the \code{color_by} variable. Can be a vector.}
+\item{label_outliers}{Character. Which groups to check for outliers. Use \code{"all"} (default)
+or a character vector of specific group names from the \code{color_by} variable.}
 
-\item{point_size}{Numeric. Size of points. Default: 3.}
+\item{colors}{Character vector. Custom color palette for discrete groups. If \code{NULL}
+(default), the Okabe-Ito colorblind-friendly palette is used. Ignored when \code{color_by}
+is numeric (continuous scale is always used for numeric variables).}
 
-\item{point_alpha}{Numeric. Transparency of points (0-1). Default: 0.8.}
+\item{point_size}{Numeric. Size of points. Default: \code{3}.}
 
-\item{theme_base_size}{Numeric. Base font size for theme. Default: 11.}
+\item{point_alpha}{Numeric. Transparency of points (0–1). Default: \code{0.8}.}
 
-\item{verbose}{Logical. Print messages. Default: TRUE.}
+\item{theme}{Character. ggplot2 theme to apply. Options: \code{"nature"}, \code{"minimal"},
+\code{"classic"}, \code{"bw"}, \code{"light"}, \code{"dark"}. Default: \code{"nature"} (a clean, publication-ready
+style based on \code{theme_bw()}).}
+
+\item{base_size}{Numeric. Base font size for the theme (pts). Default: \code{11}.}
+
+\item{font_family}{Character. Font family for all text elements. Default: \code{"sans"}.}
+
+\item{axis_title_size}{Numeric. Font size for axis titles. Default: \code{base_size + 1}.}
+
+\item{axis_text_size}{Numeric. Font size for axis tick labels. Default: \code{base_size - 1}.}
+
+\item{plot_title_size}{Numeric. Font size for the plot title. Default: \code{base_size + 3}.}
+
+\item{legend_title_size}{Numeric. Font size for the legend title. Default: \code{base_size}.}
+
+\item{legend_text_size}{Numeric. Font size for legend text. Default: \code{base_size - 1}.}
+
+\item{zoom}{Numeric. Scaling factor applied uniformly to all text and point size elements.
+Values > 1 enlarge, values < 1 shrink. Default: \code{1}.}
+
+\item{verbose}{Logical. Print progress messages. Default: \code{TRUE}.}
 }
 \value{
-A ggplot2 object.
+A \code{ggplot2} object.
 }
 \description{
 Creates a scores plot showing sample positions in principal component space.
@@ -86,62 +165,72 @@ ellipses, and outlier detection.
 \details{
 \strong{Scores Plot Interpretation:}
 \itemize{
-\item \strong{Clustering}: Samples that cluster together have similar metabolic profiles
-\item \strong{Separation}: Distance between groups indicates metabolic differences
-\item \strong{Outliers}: Samples far from their group may represent:
-\itemize{
-\item Biological outliers (interesting phenotypes)
-\item Technical issues (sample prep, analysis)
-\item Mislabeled samples
-}
+\item \strong{Clustering}: Samples that cluster together have similar metabolic profiles.
+\item \strong{Separation}: Distance between groups indicates metabolic differences.
+\item \strong{Outliers}: Samples far from their group may represent biological outliers,
+technical issues, or mislabeled samples.
 }
 
 \strong{Coloring Options:}
 
 The \code{color_by} parameter determines how points are colored:
 \enumerate{
-\item \strong{Categorical column}: Colors by discrete groups (e.g., Treatment, Genotype)
+\item \strong{Categorical column}: Colors by discrete groups (e.g., Treatment, Genotype).
 \itemize{
-\item Points are both colored and shaped by this variable
-\item Confidence ellipses can be drawn with \code{ellipse = TRUE}
-\item Outliers can be detected and labeled
+\item Points are both colored and shaped by this variable.
+\item Confidence ellipses can be drawn with \code{ellipse = TRUE}.
+\item Outliers can be detected and labeled.
+\item Colors default to the Okabe-Ito colorblind-safe palette; override with \code{colors}.
 }
-\item \strong{Numeric column}: Gradient coloring by continuous variable (e.g., Time, Dose, Age)
+\item \strong{Numeric column}: Gradient coloring by continuous variable (e.g., Time, Dose, Age).
 \itemize{
-\item Uses viridis color scale
-\item Points are shaped by the same variable (binned into quartiles)
-\item No ellipses or outlier detection available
+\item Uses the viridis "plasma" color scale.
+\item Points are shaped by the same variable (binned into quartiles).
+\item No ellipses or outlier detection available.
 }
 }
+
+\strong{Color Defaults:}
+
+By default, discrete groups use the Okabe-Ito palette, which is perceptually
+distinct and safe for the most common forms of color vision deficiency (deuteranopia,
+protanopia, tritanopia). The palette supports up to 8 groups. For more than 8 groups,
+supply a custom \code{colors} vector.
 
 \strong{Point Labeling:}
 
 The \code{points_from} parameter controls how samples are labeled:
 \itemize{
-\item If the specified column exists in metadata, those values are used as labels
-\item If the column doesn't exist, sequential labels (Sample_1, Sample_2, ...) are used
-\item Labels are shown when \code{show_outliers = TRUE} for outlier samples
-\item Common choices: "Sample", "SampleID", "SubjectID"
+\item If the specified column exists in metadata, those values are used as labels.
+\item If the column doesn't exist, sequential labels (\code{Sample_1}, \code{Sample_2}, ...) are used.
+\item Labels are shown when \code{show_outliers = TRUE} for outlier samples only.
+\item Common choices: \code{"Sample"}, \code{"SampleID"}, \code{"SubjectID"}.
 }
 
 \strong{Outlier Detection:}
 
 Outliers are identified using Mahalanobis distance from the group centroid.
-A sample is flagged as an outlier if it falls outside the confidence
-ellipse defined by \code{ellipse_level}. The default (0.95) identifies samples
-outside the 95\% confidence region. This exactly mirrors \code{ggplot2::stat_ellipse()} behavior.
+A sample is flagged as an outlier if it falls outside the confidence region defined
+by \code{ellipse_level}. The default (\code{0.95}) identifies samples outside the 95\% confidence
+region. This exactly mirrors \code{ggplot2::stat_ellipse()} behaviour.
 
-\strong{When Outlier Detection Works:}
+Outlier detection requires:
 \itemize{
-\item Only with categorical \code{color_by}
-\item When \code{ellipse = TRUE}
-\item When groups have at least 3 samples
+\item Categorical \code{color_by}
+\item \code{ellipse = TRUE}
+\item At least 3 samples per group
 }
 
 \strong{Sample Exclusion:}
 
 To exclude samples (e.g., QC samples) from the plot, exclude them during PCA
-computation using \code{run_pca(exclude = ...)} rather than filtering in the plot.
+computation using \code{run_pca(exclude = ...)} rather than filtering at the plot stage.
+
+\strong{Themes:}
+
+The \code{"nature"} theme (default) is a clean, publication-ready style with a white
+background, minimal gridlines, and no top/right panel border — suitable for
+journal figures. Other options map directly to their ggplot2 equivalents.
 }
 \examples{
 \dontrun{
@@ -154,63 +243,74 @@ rownames(x) <- paste0("Sample", 1:100)
 
 metadata <- data.frame(
   Sample = paste0("Sample", 1:100),
-  Group = rep(c("Control", "Treatment", "QC"), c(40, 40, 20)),
-  Batch = rep(1:4, each = 25),
-  Time = rep(c(0, 6, 12, 24), 25)
+  Group  = rep(c("Control", "Treatment", "QC"), c(40, 40, 20)),
+  Batch  = rep(1:4, each = 25),
+  Time   = rep(c(0, 6, 12, 24), 25)
 )
 
 # Run PCA (excluding QC samples)
 scaled_result <- run_scale(x, method = "auto")
-pca_result <- run_pca(scaled_result$data, metadata, 
-                      group = "Group",
-                      exclude = "QC")
+pca_result    <- run_pca(scaled_result$data, metadata,
+                         group   = "Group",
+                         exclude = "QC")
 
-# Basic scores plot (colored by Group, labeled by Sample)
-plot_score(pca_result, 
-           color_by = "Group",
+# Basic scores plot — nature theme, Okabe-Ito colors (defaults)
+plot_score(pca_result,
+           color_by    = "Group",
            points_from = "Sample")
 
-# PC2 vs PC3 with custom title
-plot_score(pca_result, 
-           pc = c(2, 3),
-           color_by = "Group",
-           points_from = "Sample",
-           title = "PCA: PC2 vs PC3",
-           position = "left")
-
-# Color by batch
+# PC2 vs PC3 with left-aligned title
 plot_score(pca_result,
-           color_by = "Batch",
-           points_from = "Sample")
-
-# Continuous coloring by time with custom legend
-plot_score(pca_result,
-           color_by = "Time",
+           pc          = c(2, 3),
+           color_by    = "Group",
            points_from = "Sample",
-           legend = "Collection Time (h)")
+           title       = "PCA: PC2 vs PC3",
+           position    = "left")
 
-# Show outliers in specific groups
+# Color by batch with custom palette
 plot_score(pca_result,
-           color_by = "Group",
+           color_by    = "Batch",
            points_from = "Sample",
-           show_outliers = TRUE,
+           colors      = c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3"))
+
+# Continuous coloring by time
+plot_score(pca_result,
+           color_by    = "Time",
+           points_from = "Sample",
+           legend      = "Collection Time (h)")
+
+# Show outliers in specific groups, classic theme, larger zoom
+plot_score(pca_result,
+           color_by       = "Group",
+           points_from    = "Sample",
+           show_outliers  = TRUE,
            label_outliers = c("Control", "Treatment"),
-           ellipse_level = 0.95)
+           ellipse_level  = 0.95,
+           theme          = "classic",
+           zoom           = 1.2)
 
-# Stricter outlier detection (99\% confidence)
+# Stricter outlier detection with serif font
 plot_score(pca_result,
-           color_by = "Group",
-           points_from = "Sample",
+           color_by      = "Group",
+           points_from   = "Sample",
            show_outliers = TRUE,
-           ellipse_level = 0.99)
+           ellipse_level = 0.99,
+           font_family   = "serif",
+           base_size     = 13)
 }
+
 }
 \references{
-Mardia, K.V., Kent, J.T., & Bibby, J.M. (1979). Multivariate Analysis.
+Mardia, K.V., Kent, J.T., & Bibby, J.M. (1979). \emph{Multivariate Analysis}.
 London: Academic Press.
 
 Brereton, R.G., & Lloyd, G.R. (2014). Partial least squares discriminant analysis:
-taking the magic away. Journal of Chemometrics, 28(4), 213-225. \doi{10.1002/cem.2609}
+taking the magic away. \emph{Journal of Chemometrics}, 28(4), 213–225.
+\doi{10.1002/cem.2609}
+
+Okabe, M., & Ito, K. (2002). \emph{Color Universal Design (CUD): How to make figures
+and presentations that are friendly to colorblind people}.
+\url{https://jfly.uni-koeln.de/color/}
 }
 \author{
 John Lennon L. Calorio
