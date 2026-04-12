@@ -8,44 +8,81 @@ plot_scree(
   pca_result,
   title = "Scree Plot",
   subtitle = NULL,
+  caption = NULL,
   position = "center",
   what = "variance",
   type = "line",
   max_pc = 15,
   show_cumulative = TRUE,
   show_values = TRUE,
-  theme_base_size = 11,
+  bar_color = "#0072B2",
+  line_color = "#0072B2",
+  cumulative_color = "#D55E00",
+  theme = "nature",
+  base_size = 11,
+  font_family = "sans",
+  axis_title_size = NULL,
+  axis_text_size = NULL,
+  plot_title_size = NULL,
+  zoom = 1,
   verbose = TRUE
 )
 }
 \arguments{
 \item{pca_result}{List. Output from \code{run_pca()}.}
 
-\item{title}{Character. Main plot title. Default: "Scree Plot".}
+\item{title}{Character. Main plot title. Default: \code{"Scree Plot"}.}
 
-\item{subtitle}{Character. Plot subtitle. Default: NULL (no subtitle).}
+\item{subtitle}{Character. Plot subtitle. Default: \code{NULL} (no subtitle).}
 
-\item{position}{Character. Position of title and subtitle. Options: "left", "center", "right".
-Default: "center".}
+\item{caption}{Character. Plot caption (bottom-right). Default: \code{NULL} (no caption).}
 
-\item{what}{Character. What to plot: "variance" (variance explained \%) or "eigen" (eigenvalues).
-Default: "variance".}
+\item{position}{Character. Horizontal alignment of title, subtitle, and caption.
+Options: \code{"left"}, \code{"center"}, \code{"right"}. Default: \code{"center"}.}
 
-\item{type}{Character. Plot type: "bar", "line", or "both". Default: "line".}
+\item{what}{Character. What to plot: \code{"variance"} (variance explained \%) or
+\code{"eigen"} (eigenvalues). Default: \code{"variance"}.}
 
-\item{max_pc}{Integer. Maximum number of PCs to display. Default: 15.}
+\item{type}{Character. Plot geometry: \code{"bar"}, \code{"line"}, or \code{"both"}. Default: \code{"line"}.}
 
-\item{show_cumulative}{Logical. Show cumulative variance explained as a line on secondary axis.
-Only works when \code{what = "variance"}. Default: TRUE.}
+\item{max_pc}{Integer. Maximum number of PCs to display. Default: \code{15}.}
 
-\item{show_values}{Logical. Display values on plot using ggrepel to avoid overlap. Default: TRUE.}
+\item{show_cumulative}{Logical. Show cumulative variance explained as a dashed line
+with a secondary y-axis. Only available when \code{what = "variance"}. Default: \code{TRUE}.}
 
-\item{theme_base_size}{Numeric. Base font size for theme. Default: 11.}
+\item{show_values}{Logical. Display value labels on the plot using \code{ggrepel} to avoid
+overlap. Falls back to \code{geom_text} if \code{ggrepel} is not installed. Default: \code{TRUE}.}
 
-\item{verbose}{Logical. Print messages. Default: TRUE.}
+\item{bar_color}{Character. Fill color for bars (when \code{type = "bar"} or \code{"both"}).
+Default: \code{"#0072B2"} (Okabe-Ito blue).}
+
+\item{line_color}{Character. Color for the primary line and points (when \code{type = "line"}
+or \code{"both"}). Default: \code{"#0072B2"} (Okabe-Ito blue).}
+
+\item{cumulative_color}{Character. Color for the cumulative variance line, points, and
+labels. Default: \code{"#D55E00"} (Okabe-Ito vermillion).}
+
+\item{theme}{Character. ggplot2 theme to apply. Options: \code{"nature"}, \code{"minimal"},
+\code{"classic"}, \code{"bw"}, \code{"light"}, \code{"dark"}. Default: \code{"nature"} (a clean,
+publication-ready style based on \code{theme_bw()} with no gridlines).}
+
+\item{base_size}{Numeric. Base font size for the theme (pts). Default: \code{11}.}
+
+\item{font_family}{Character. Font family for all text elements. Default: \code{"sans"}.}
+
+\item{axis_title_size}{Numeric. Font size for axis titles. Default: \code{base_size + 1}.}
+
+\item{axis_text_size}{Numeric. Font size for axis tick labels. Default: \code{base_size - 1}.}
+
+\item{plot_title_size}{Numeric. Font size for the plot title. Default: \code{base_size + 3}.}
+
+\item{zoom}{Numeric. Uniform scaling factor applied to all text sizes and point/line
+sizes. Values > 1 enlarge, values < 1 shrink. Default: \code{1}.}
+
+\item{verbose}{Logical. Print progress messages. Default: \code{TRUE}.}
 }
 \value{
-A ggplot2 object.
+A \code{ggplot2} object.
 }
 \description{
 Creates a scree plot showing variance explained or eigenvalues per principal component.
@@ -56,60 +93,74 @@ Helps determine the number of meaningful PCs to retain.
 
 The scree plot helps determine how many principal components to retain:
 \itemize{
-\item \strong{Elbow Method}: Look for an "elbow" where the curve flattens. PCs before
-the elbow capture meaningful variance; those after capture mostly noise.
+\item \strong{Elbow Method}: Look for an "elbow" where the curve flattens. PCs before the
+elbow capture meaningful variance; those after capture mostly noise.
 \item \strong{Kaiser Criterion}: Retain PCs with eigenvalues > 1 (when \code{what = "eigen"}).
 These PCs explain more variance than a single original variable.
-\item \strong{Cumulative Variance}: Retain enough PCs to explain 70-90\% of total variance
+\item \strong{Cumulative Variance}: Retain enough PCs to explain 70–90\% of total variance
 (shown when \code{show_cumulative = TRUE}).
 }
 
 \strong{Plot Types:}
 \itemize{
-\item \strong{bar}: Traditional bar chart, good for discrete comparison
-\item \strong{line}: Line plot, better for seeing trends
-\item \strong{both}: Combines bars and line for comprehensive view
+\item \code{"bar"}: Traditional bar chart; good for discrete comparison.
+\item \code{"line"}: Line plot; better for visualising trends and the elbow.
+\item \code{"both"}: Combines bars and a line for a comprehensive view.
 }
 
 \strong{Cumulative Variance Line:}
 
-When \code{show_cumulative = TRUE}, a line showing cumulative variance is added
-to the plot on a secondary y-axis at the top. This helps visualize how
-many PCs are needed to explain a target percentage of variance (e.g., 80\%).
+When \code{show_cumulative = TRUE}, a dashed line showing cumulative variance is
+overlaid on a shared y-axis scale. A secondary axis on the right is labelled
+accordingly. Only available when \code{what = "variance"}.
 
 \strong{When to Use Each Metric:}
 \itemize{
 \item \strong{Variance explained}: More intuitive (percentages). Recommended for most users.
-\item \strong{Eigenvalues}: Useful for Kaiser criterion and advanced analysis.
+\item \strong{Eigenvalues}: Useful for the Kaiser criterion and advanced analysis.
 }
+
+\strong{Themes:}
+
+The \code{"nature"} theme (default) applies \code{theme_bw()} with all gridlines removed —
+suitable for journal figures. Other options map directly to their ggplot2 equivalents,
+also with gridlines suppressed.
 }
 \examples{
 \dontrun{
 # Run PCA first
 pca_result <- run_pca(scaled_data, metadata, scale_method = "auto")
 
-# Basic scree plot
+# Basic scree plot (nature theme, Okabe-Ito colors, defaults)
 plot_scree(pca_result)
 
-# Eigenvalue plot with custom styling
-plot_scree(pca_result, 
-          what = "eigen",
-          type = "both",
-          title = "PCA Eigenvalues",
-          position = "left")
-
-# Variance plot without cumulative line
+# Eigenvalue plot, bar + line geometry
 plot_scree(pca_result,
-          show_cumulative = FALSE,
-          max_pc = 10)
+           what     = "eigen",
+           type     = "both",
+           title    = "PCA Eigenvalues",
+           position = "left")
+
+# Variance plot without cumulative line, classic theme
+plot_scree(pca_result,
+           show_cumulative = FALSE,
+           max_pc          = 10,
+           theme           = "classic")
+
+# Larger font, serif family, custom zoom
+plot_scree(pca_result,
+           base_size   = 13,
+           font_family = "serif",
+           zoom        = 1.2)
 }
 }
 \references{
 Cattell, R.B. (1966). The scree test for the number of factors.
-Multivariate Behavioral Research, 1(2), 245-276. \doi{10.1207/s15327906mbr0102_10}
+\emph{Multivariate Behavioral Research}, 1(2), 245–276.
+\doi{10.1207/s15327906mbr0102_10}
 
 Kaiser, H.F. (1960). The application of electronic computers to factor analysis.
-Educational and Psychological Measurement, 20(1), 141-151.
+\emph{Educational and Psychological Measurement}, 20(1), 141–151.
 \doi{10.1177/001316446002000116}
 }
 \author{
