@@ -2,64 +2,106 @@
 #'
 #' @description
 #' Replaces missing values (NAs) using either a simple deterministic method
-#' (fraction of minimum) or a statistical imputation method (quantile regression).
+#' (fraction of minimum), a statistical imputation method (quantile regression
+#' imputation of left-censored data, QRILC), or any method available in
+#' \code{\link[mice]{mice}} (Multiple Imputation by Chained Equations).
 #'
-#' @param x Matrix or data frame. Numeric data with samples in rows and features in columns.
-#'   Missing values should be represented as NA.
-#' @param method Numeric or character. If numeric, represents the fraction of the minimum
-#'   positive value per feature to use for imputation (e.g., 0.2 = 1/5th of minimum).
-#'   If character, must be one of the available imputation methods. Currently supported:
-#'   "quantileregression" (uses QRILC algorithm). Default: 0.2 (1/5th of minimum).
+#' @param x Matrix or data frame. Numeric data with samples in rows and features
+#'   in columns. Missing values should be represented as `NA`.
+#' @param method Numeric or character. Controls the imputation strategy:
+#'   \itemize{
+#'     \item **Numeric** — fraction of the smallest positive value per feature
+#'       used for deterministic imputation (e.g., `0.2` = 1/5th of the smallest
+#'       positive value). Recommended range: 0.01–0.5. Values > 1 trigger a
+#'       warning.
+#'     \item **`"quantileregression"`** — uses the QRILC algorithm from the
+#'       \pkg{imputeLCMD} package. Assumes Missing Not At Random (MNAR) data.
+#'       Controlled further by `tune_sigma`.
+#'     \item **Any `mice` method string** — e.g., `"pmm"`, `"norm"`,
+#'       `"norm.boot"`, `"norm.nob"`, `"mean"`, `"2l.norm"`, `"rf"`,
+#'       `"cart"`, etc. Delegates to \code{\link[mice]{mice}} from the
+#'       \pkg{mice} package. Controlled further by `m`, `maxit`, `seed`,
+#'       and `...`.
+#'   }
+#'   Default: `0.2` (1/5th of minimum, deterministic).
 #' @param tune_sigma Numeric. Only used when `method = "quantileregression"`.
-#'   Controls the standard deviation of the left-censored missing value distribution.
-#'   Smaller values (e.g., 0.5) assume tighter distribution; larger values (e.g., 2)
-#'   allow more spread. Default: 1.
-#' @param verbose Logical. Print progress messages. Default: TRUE.
+#'   Controls the standard deviation of the left-censored missing value
+#'   distribution. Smaller values (e.g., `0.5`) assume a tighter distribution;
+#'   larger values (e.g., `2`) allow more spread. Default: `1`.
+#' @param m Integer. Only used when `method` routes to \pkg{mice}. Number of
+#'   multiple imputations. The first completed dataset is used as the imputed
+#'   result. Default: `5`.
+#' @param maxit Integer. Only used when `method` routes to \pkg{mice}. Number
+#'   of iterations for the chained equations algorithm. Default: `5`.
+#' @param seed Integer or `NA`. Only used when `method` routes to \pkg{mice}.
+#'   Random seed passed to \code{\link[mice]{mice}} for reproducibility.
+#'   Default: `NA` (no seed set).
+#' @param verbose Logical. Print progress messages. Default: `TRUE`.
+#' @param ... Additional arguments passed to \code{\link[mice]{mice}} when
+#'   `method` routes to the \pkg{mice} engine. Has no effect for numeric or
+#'   `"quantileregression"` methods.
 #'
-#' @return A list containing:
-#'   \item{data}{Matrix or data frame with imputed values (same class as input `x`)}
-#'   \item{n_missing_before}{Integer. Number of missing values before imputation}
-#'   \item{n_missing_after}{Integer. Number of missing values after imputation (should be 0)}
-#'   \item{imputed_summary}{Data frame with per-feature imputation statistics}
-#'   \item{parameters}{List of parameters used}
-#'   \item{method_used}{Character describing the imputation method applied}
+#' @return A list with the following elements:
+#'   \item{data}{Matrix or data frame with imputed values (same class as input `x`).}
+#'   \item{n_missing_before}{Integer. Number of missing values before imputation.}
+#'   \item{n_missing_after}{Integer. Number of missing values after imputation
+#'     (should be 0).}
+#'   \item{imputed_summary}{Data frame with per-feature imputation statistics.}
+#'   \item{parameters}{List of parameters used, including method, tune_sigma
+#'     (QRILC only), and m/maxit/seed (mice only).}
+#'   \item{method_used}{Character string describing the imputation method applied.}
 #'
 #' @details
 #' **Missing Value Imputation Strategies:**
-#' 
-#' 1. **Deterministic (fraction of minimum)**: When `method` is numeric, each missing
-#'    value in a feature is replaced by the minimum positive value in that feature
-#'    multiplied by the specified fraction. This assumes missing values represent
-#'    low abundance (Missing Not At Random - MNAR) and is common in metabolomics
-#'    for values below detection limit.
-#'    
-#'    - **Recommended range**: 0.01 to 0.5 (1% to 50% of minimum)
-#'    - Values > 1 will trigger a warning as they exceed the observed minimum
-#'    - Default (0.2) replaces NAs with 1/5th of the feature's minimum
 #'
-#' 2. **Quantile Regression (QRILC)**: When `method = "quantileregression"`, uses
-#'    the Quantile Regression Imputation of Left-Censored data algorithm. This
-#'    method assumes missing values are Missing Not At Random (MNAR) due to low
-#'    abundance and models them from a left-censored distribution.
-#'    
-#'    - The `tune_sigma` parameter controls the spread of imputed values
-#'    - Requires the `imputeLCMD` package
-#'    - More sophisticated than simple fraction-of-minimum
+#' 1. **Deterministic (fraction of minimum):** When `method` is numeric, each
+#'    missing value in a feature is replaced by the smallest strictly positive
+#'    value observed in that feature, multiplied by the specified fraction.
+#'    Zero and negative values are excluded when determining this minimum.
+#'    This assumes missing values represent low abundance (MNAR — Missing Not
+#'    At Random) and is standard practice in metabolomics for values below the
+#'    detection limit.
+#'
+#' 2. **Quantile Regression (QRILC):** When `method = "quantileregression"`,
+#'    uses the Quantile Regression Imputation of Left-Censored data algorithm
+#'    from the \pkg{imputeLCMD} package. Models missing values from a
+#'    left-censored distribution, controlled by `tune_sigma`. More
+#'    statistically principled than simple fraction-of-minimum for MNAR data.
+#'    Requires \pkg{imputeLCMD}: `BiocManager::install("imputeLCMD")`.
+#'
+#' 3. **mice (Multiple Imputation by Chained Equations):** When `method` is
+#'    a recognised \pkg{mice} method string, \code{\link[mice]{mice}} is
+#'    called internally on the feature matrix. The first of the `m` completed
+#'    datasets is extracted via `mice::complete()` and returned. Supported
+#'    `mice` methods include (non-exhaustive): `"pmm"` (predictive mean
+#'    matching), `"norm"`, `"norm.boot"`, `"norm.nob"`, `"mean"`, `"rf"`
+#'    (random forest), `"cart"`, `"2l.norm"`, `"midastouch"`, `"sample"`.
+#'    See \code{\link[mice]{mice}} for the full list. Requires \pkg{mice}:
+#'    `install.packages("mice")`. Additional arguments for \pkg{mice} can be
+#'    passed via `...`.
 #'
 #' @author John Lennon L. Calorio
 #'
 #' @references
-#' Wei, R., Wang, J., Su, M., Jia, E., Chen, S., Chen, T., & Ni, Y. (2018).
-#' Missing Value Imputation Approach for Mass Spectrometry-based Metabolomics Data.
-#' Scientific Reports, 8(1), 663. \doi{10.1038/s41598-017-19120-0}
-#' 
-#' Lazar, C., Gatto, L., Ferro, M., Bruley, C., & Burger, T. (2016).
-#' Accounting for the Multiple Natures of Missing Values in Label-Free Quantitative
-#' Proteomics Data Sets to Compare Imputation Strategies.
-#' Journal of Proteome Research, 15(4), 1116-1125. \doi{10.1021/acs.jproteome.5b00981}
+#' Van Buuren, S., & Groothuis-Oudshoorn, K. (2011). mice: Multivariate
+#' Imputation by Chained Equations in R. *Journal of Statistical Software*,
+#' 45(3), 1–67. 10.18637/jss.v045.i03
 #'
+#' Wei, R., Wang, J., Su, M., Jia, E., Chen, S., Chen, T., & Ni, Y. (2018).
+#' Missing Value Imputation Approach for Mass Spectrometry-based Metabolomics
+#' Data. *Scientific Reports*, 8(1), 663.
+#' 10.1038/s41598-017-19120-0
+#'
+#' Lazar, C., Gatto, L., Ferro, M., Bruley, C., & Burger, T. (2016).
+#' Accounting for the Multiple Natures of Missing Values in Label-Free
+#' Quantitative Proteomics Data Sets to Compare Imputation Strategies.
+#' *Journal of Proteome Research*, 15(4), 1116–1125.
+#' 10.1021/acs.jproteome.5b00981
+#'
+#' @seealso \code{\link[mice]{mice}}, \code{\link[imputeLCMD]{impute.QRILC}}
+#'
+#' @importFrom mice mice complete
 #' @importFrom imputeLCMD impute.QRILC
-#' @importFrom matrixStats colMins
 #'
 #' @export
 #'
@@ -70,179 +112,251 @@
 #' x <- matrix(abs(rnorm(100 * 50, mean = 100)), nrow = 100, ncol = 50)
 #' x[sample(length(x), 200)] <- NA
 #' colnames(x) <- paste0("Feature", 1:50)
-#' 
-#' # Simple imputation (1/5th of minimum)
+#'
+#' # 1. Deterministic imputation (1/5th of minimum per feature)
 #' result1 <- run_mvimpute(x, method = 0.2)
-#' 
-#' # Quantile regression imputation
+#'
+#' # 2. Quantile regression imputation (QRILC)
 #' result2 <- run_mvimpute(x, method = "quantileregression", tune_sigma = 1)
+#'
+#' # 3. Predictive mean matching via mice
+#' result3 <- run_mvimpute(x, method = "pmm", m = 5, maxit = 5, seed = 42)
+#'
+#' # 4. Random forest imputation via mice
+#' result4 <- run_mvimpute(x, method = "rf", m = 5, maxit = 5, seed = 42)
+#'
+#' # 5. Passing additional mice arguments via ...
+#' result5 <- run_mvimpute(x, method = "norm.boot", m = 10, printFlag = FALSE)
 #' }
 run_mvimpute <- function(
     x,
-    method = 0.2,
+    method    = 0.2,
     tune_sigma = 1,
-    verbose = TRUE
+    m          = 5,
+    maxit      = 5,
+    seed       = NA,
+    verbose    = TRUE,
+    ...
 ) {
-  
+
   msg <- function(...) if (verbose) message(...)
-  
+
+  # ---------------------------------------------------------------------------
   # Input validation
+  # ---------------------------------------------------------------------------
   if (!is.matrix(x) && !is.data.frame(x)) {
-    stop("'x' must be a matrix or data frame")
+    stop("'x' must be a matrix or data frame.")
   }
-  
+
   was_matrix <- is.matrix(x)
-  x_matrix <- as.matrix(x)
-  
+  x_matrix   <- as.matrix(x)
+
   n_missing_before <- sum(is.na(x_matrix))
-  
-  if (n_missing_before == 0) {
+
+  if (n_missing_before == 0L) {
     msg("No missing values detected. Returning original data.")
-    result <- list(
-      data = if (was_matrix) x_matrix else as.data.frame(x_matrix),
-      n_missing_before = 0,
-      n_missing_after = 0,
-      imputed_summary = data.frame(
-        Feature = colnames(x_matrix),
-        N_Missing = 0,
-        Imputation_Value = NA
+    return(list(
+      data             = if (was_matrix) x_matrix else as.data.frame(x_matrix),
+      n_missing_before = 0L,
+      n_missing_after  = 0L,
+      imputed_summary  = data.frame(
+        Feature   = colnames(x_matrix),
+        N_Missing = 0L,
+        Imputation_Value = NA_real_
       ),
-      parameters = list(method = method, tune_sigma = tune_sigma),
+      parameters  = list(method = method, tune_sigma = tune_sigma,
+                         m = m, maxit = maxit, seed = seed),
       method_used = "None (no missing values)"
-    )
-    return(result)
+    ))
   }
-  
-  msg(sprintf("Starting missing value imputation (%d missing values)...", n_missing_before))
-  
-  # Imputation strategy
+
+  msg(sprintf("Starting missing value imputation (%d missing values)...",
+              n_missing_before))
+
+  # ---------------------------------------------------------------------------
+  # Dispatch: numeric -> deterministic | "quantileregression" -> QRILC
+  #           anything else -> mice
+  # ---------------------------------------------------------------------------
+
   if (is.numeric(method)) {
-    
-    if (length(method) != 1) {
-      stop("'method' when numeric must be a single value")
+
+    # -- Deterministic (fraction of minimum) ----------------------------------
+    if (length(method) != 1L) {
+      stop("'method' when numeric must be a single scalar value.")
     }
     if (method <= 0) {
-      stop("'method' when numeric must be positive")
+      stop("'method' when numeric must be a positive value.")
     }
     if (method > 1) {
-      warning("'method' > 1 means imputed values will exceed the observed minimum. ",
-              "This is unusual for MNAR imputation. Consider using a value < 1.")
+      warning(
+        "'method' > 1 means imputed values will exceed the observed minimum. ",
+        "This is unusual for MNAR imputation. Consider using a value < 1."
+      )
     }
-    
-    msg(sprintf("Using deterministic imputation: %.2f x minimum value per feature", method))
-    
-  # # Calculate minimum per column (ignoring NAs)
-  # min_vals <- matrixStats::colMins(x_matrix, na.rm = TRUE)
-  
-  # # Handle features that were all NA (min will be Inf)
-  # min_vals[!is.finite(min_vals)] <- 1e-9
-  
-  # # Impute: NA -> fraction of minimum
-  # imputation_vals <- min_vals * method
-  # na_indices <- is.na(x_matrix)
-  # x_matrix[na_indices] <- imputation_vals[col(x_matrix)][na_indices]
-  
-  # method_description <- sprintf("Deterministic: %.2f x min", method)
-  
-  # imputed_summary <- data.frame(
-  #   Feature = colnames(x_matrix),
-  #   N_Missing = colSums(na_indices),
-  #   Min_Value = min_vals,
-  #   Imputation_Value = imputation_vals
-  # )
 
-  # Calculate minimum per column (ignoring NAs)
-  min_vals <- matrixStats::colMins(x_matrix, na.rm = TRUE)
+    msg(sprintf(
+      "Using deterministic imputation: %.4f x minimum value per feature.", method
+    ))
 
-  # Handle features that were all NA (min will be Inf)
-  min_vals[!is.finite(min_vals)] <- 1e-9
+    na_indices <- is.na(x_matrix)
 
-  # Apply the fraction
-  min_vals <- min_vals * method
+    # Smallest strictly positive value per feature (NAs and non-positives excluded)
+    pos_min <- function(col) {
+      v <- col[!is.na(col) & col > 0]
+      if (length(v) == 0L) 1e-9 else min(v)   # fallback: no positive values
+    }
+    min_vals <- apply(x_matrix, 2L, pos_min)
 
-  # Impute: NA -> fraction of minimum (direct indexing)
-  na_indices <- is.na(x_matrix)
-  x_matrix[na_indices] <- min_vals[col(x_matrix)][na_indices]
+    imputation_vals <- min_vals * method
+    x_matrix[na_indices] <- imputation_vals[col(x_matrix)][na_indices]
 
-  method_description <- sprintf("Deterministic: %.2f x min", method)
+    method_description <- sprintf("Deterministic: %.4f x min positive", method)
 
-  imputed_summary <- data.frame(
-    Feature = colnames(x_matrix),
-    N_Missing = colSums(na_indices),
-    Min_Value = min_vals / method,  # Store original min
-    Imputation_Value = min_vals
-  )
-    
+    imputed_summary <- data.frame(
+      Feature          = colnames(x_matrix),
+      N_Missing        = colSums(na_indices),
+      Min_Positive     = min_vals,
+      Imputation_Value = imputation_vals
+    )
+
+    params_out <- list(method = method, tune_sigma = NA, m = NA,
+                       maxit = NA, seed = NA)
+
   } else if (is.character(method)) {
-    
-    method <- tolower(method)
-    
-    if (method == "quantileregression") {
-      
+
+    method_lc <- tolower(trimws(method))
+
+    if (method_lc == "quantileregression") {
+
+      # -- QRILC --------------------------------------------------------------
       if (!requireNamespace("imputeLCMD", quietly = TRUE)) {
-        stop("Package 'imputeLCMD' is required for quantile regression imputation. ",
-             "Install it with: BiocManager::install('imputeLCMD')")
-      }
-      
-      if (!is.numeric(tune_sigma) || length(tune_sigma) != 1 || tune_sigma <= 0) {
-        stop("'tune_sigma' must be a positive numeric value")
-      }
-      
-      msg(sprintf("Using quantile regression imputation (QRILC) with tune_sigma = %.2f", tune_sigma))
-      
-      tryCatch({
-        # QRILC expects features in rows
-        x_imputed <- imputeLCMD::impute.QRILC(t(x_matrix), tune.sigma = tune_sigma)
-        x_matrix <- t(x_imputed[[1]])
-        
-        method_description <- sprintf("QRILC (tune_sigma = %.2f)", tune_sigma)
-        
-        imputed_summary <- data.frame(
-          Feature = colnames(x_matrix),
-          N_Missing = colSums(is.na(as.matrix(x))),
-          Method = "QRILC"
+        stop(
+          "Package 'imputeLCMD' is required for quantile regression imputation. ",
+          "Install it with: BiocManager::install('imputeLCMD')"
         )
-        
+      }
+      if (!is.numeric(tune_sigma) || length(tune_sigma) != 1L || tune_sigma <= 0) {
+        stop("'tune_sigma' must be a single positive numeric value.")
+      }
+
+      msg(sprintf(
+        "Using quantile regression imputation (QRILC) with tune_sigma = %.2f.",
+        tune_sigma
+      ))
+
+      na_indices <- is.na(x_matrix)   # capture before imputation for summary
+
+      tryCatch({
+        x_imputed <- imputeLCMD::impute.QRILC(t(x_matrix), tune.sigma = tune_sigma)
+        x_matrix  <- t(x_imputed[[1]])
       }, error = function(e) {
-        stop("Quantile regression imputation failed: ", e$message,
-             "\nConsider using a deterministic method instead.")
+        stop(
+          "Quantile regression imputation failed: ", e$message,
+          "\nConsider using a deterministic method instead."
+        )
       })
-      
+
+      method_description <- sprintf("QRILC (tune_sigma = %.2f)", tune_sigma)
+
+      imputed_summary <- data.frame(
+        Feature   = colnames(x_matrix),
+        N_Missing = colSums(na_indices),
+        Method    = "QRILC"
+      )
+
+      params_out <- list(method = method, tune_sigma = tune_sigma,
+                         m = NA, maxit = NA, seed = NA)
+
     } else {
-      stop("Unknown imputation method '", method, "'. ",
-           "Supported methods: 'quantileregression' or a numeric fraction.")
+
+      # -- mice ---------------------------------------------------------------
+      if (!requireNamespace("mice", quietly = TRUE)) {
+        stop(
+          "Package 'mice' is required for method = '", method, "'. ",
+          "Install it with: install.packages('mice')"
+        )
+      }
+
+      # Validate mice-specific arguments
+      if (!is.numeric(m) || length(m) != 1L || m < 1L) {
+        stop("'m' must be a single positive integer.")
+      }
+      if (!is.numeric(maxit) || length(maxit) != 1L || maxit < 1L) {
+        stop("'maxit' must be a single positive integer.")
+      }
+      if (!is.na(seed) && (!is.numeric(seed) || length(seed) != 1L)) {
+        stop("'seed' must be a single integer or NA.")
+      }
+
+      msg(sprintf(
+        "Using mice imputation (method = '%s', m = %d, maxit = %d, seed = %s).",
+        method, as.integer(m), as.integer(maxit),
+        if (is.na(seed)) "NA" else as.character(as.integer(seed))
+      ))
+
+      na_indices <- is.na(x_matrix)   # capture before imputation for summary
+
+      tryCatch({
+        mice_obj <- mice::mice(
+          data    = as.data.frame(x_matrix),
+          method  = method,
+          m       = as.integer(m),
+          maxit   = as.integer(maxit),
+          seed    = if (is.na(seed)) NA_integer_ else as.integer(seed),
+          printFlag = FALSE,   # silence mice internal output; verbose handled above
+          ...
+        )
+        x_matrix <- as.matrix(mice::complete(mice_obj, action = 1L))
+      }, error = function(e) {
+        stop(
+          "mice imputation failed (method = '", method, "'): ", e$message,
+          "\nCheck that the method name is valid. ",
+          "See ?mice::mice for supported methods."
+        )
+      })
+
+      method_description <- sprintf(
+        "mice: %s (m = %d, maxit = %d)", method,
+        as.integer(m), as.integer(maxit)
+      )
+
+      imputed_summary <- data.frame(
+        Feature   = colnames(x_matrix),
+        N_Missing = colSums(na_indices),
+        Method    = method
+      )
+
+      params_out <- list(method = method, tune_sigma = NA,
+                         m = as.integer(m), maxit = as.integer(maxit),
+                         seed = if (is.na(seed)) NA_integer_ else as.integer(seed))
     }
-    
+
   } else {
-    stop("'method' must be either numeric (fraction of minimum) or character (method name)")
+    stop(
+      "'method' must be numeric (fraction of minimum), ",
+      "'quantileregression', or a mice method string (e.g., 'pmm', 'rf')."
+    )
   }
-  
+
+  # ---------------------------------------------------------------------------
+  # Finalise and return
+  # ---------------------------------------------------------------------------
   n_missing_after <- sum(is.na(x_matrix))
-  
-  msg(sprintf("Imputation complete. Missing values: %d -> %d", 
+
+  msg(sprintf("Imputation complete. Missing values: %d -> %d.",
               n_missing_before, n_missing_after))
-  
-  # Return in original class
-  if (!was_matrix) {
-    x_matrix <- as.data.frame(x_matrix)
-  }
-  
-  result <- list(
-    data = x_matrix,
+
+  list(
+    data             = if (was_matrix) x_matrix else as.data.frame(x_matrix),
     n_missing_before = n_missing_before,
-    n_missing_after = n_missing_after,
-    imputed_summary = imputed_summary,
-    parameters = list(
-      method = method,
-      tune_sigma = if (is.character(method) && method == "quantileregression") tune_sigma else NA
-    ),
-    method_used = method_description
+    n_missing_after  = n_missing_after,
+    imputed_summary  = imputed_summary,
+    parameters       = params_out,
+    method_used      = method_description
   )
-  
-  return(result)
 }
 
-# S3 print methods for cleaner output
+# S3 print method for cleaner output
 #' @export
 print.run_mvimpute <- function(x, ...) {
   cat("=== Missing Value Imputation Results ===\n")

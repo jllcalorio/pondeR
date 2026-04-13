@@ -4,59 +4,103 @@
 \alias{run_mvimpute}
 \title{Impute Missing Values in Metabolomics Data}
 \usage{
-run_mvimpute(x, method = 0.2, tune_sigma = 1, verbose = TRUE)
+run_mvimpute(
+  x,
+  method = 0.2,
+  tune_sigma = 1,
+  m = 5,
+  maxit = 5,
+  seed = NA,
+  verbose = TRUE,
+  ...
+)
 }
 \arguments{
-\item{x}{Matrix or data frame. Numeric data with samples in rows and features in columns.
-Missing values should be represented as NA.}
+\item{x}{Matrix or data frame. Numeric data with samples in rows and features
+in columns. Missing values should be represented as \code{NA}.}
 
-\item{method}{Numeric or character. If numeric, represents the fraction of the minimum
-positive value per feature to use for imputation (e.g., 0.2 = 1/5th of minimum).
-If character, must be one of the available imputation methods. Currently supported:
-"quantileregression" (uses QRILC algorithm). Default: 0.2 (1/5th of minimum).}
+\item{method}{Numeric or character. Controls the imputation strategy:
+\itemize{
+\item \strong{Numeric} — fraction of the smallest positive value per feature
+used for deterministic imputation (e.g., \code{0.2} = 1/5th of the smallest
+positive value). Recommended range: 0.01–0.5. Values > 1 trigger a
+warning.
+\item \strong{\code{"quantileregression"}} — uses the QRILC algorithm from the
+\pkg{imputeLCMD} package. Assumes Missing Not At Random (MNAR) data.
+Controlled further by \code{tune_sigma}.
+\item \strong{Any \code{mice} method string} — e.g., \code{"pmm"}, \code{"norm"},
+\code{"norm.boot"}, \code{"norm.nob"}, \code{"mean"}, \code{"2l.norm"}, \code{"rf"},
+\code{"cart"}, etc. Delegates to \code{\link[mice]{mice}} from the
+\pkg{mice} package. Controlled further by \code{m}, \code{maxit}, \code{seed},
+and \code{...}.
+}
+Default: \code{0.2} (1/5th of minimum, deterministic).}
 
 \item{tune_sigma}{Numeric. Only used when \code{method = "quantileregression"}.
-Controls the standard deviation of the left-censored missing value distribution.
-Smaller values (e.g., 0.5) assume tighter distribution; larger values (e.g., 2)
-allow more spread. Default: 1.}
+Controls the standard deviation of the left-censored missing value
+distribution. Smaller values (e.g., \code{0.5}) assume a tighter distribution;
+larger values (e.g., \code{2}) allow more spread. Default: \code{1}.}
 
-\item{verbose}{Logical. Print progress messages. Default: TRUE.}
+\item{m}{Integer. Only used when \code{method} routes to \pkg{mice}. Number of
+multiple imputations. The first completed dataset is used as the imputed
+result. Default: \code{5}.}
+
+\item{maxit}{Integer. Only used when \code{method} routes to \pkg{mice}. Number
+of iterations for the chained equations algorithm. Default: \code{5}.}
+
+\item{seed}{Integer or \code{NA}. Only used when \code{method} routes to \pkg{mice}.
+Random seed passed to \code{\link[mice]{mice}} for reproducibility.
+Default: \code{NA} (no seed set).}
+
+\item{verbose}{Logical. Print progress messages. Default: \code{TRUE}.}
+
+\item{...}{Additional arguments passed to \code{\link[mice]{mice}} when
+\code{method} routes to the \pkg{mice} engine. Has no effect for numeric or
+\code{"quantileregression"} methods.}
 }
 \value{
-A list containing:
-\item{data}{Matrix or data frame with imputed values (same class as input \code{x})}
-\item{n_missing_before}{Integer. Number of missing values before imputation}
-\item{n_missing_after}{Integer. Number of missing values after imputation (should be 0)}
-\item{imputed_summary}{Data frame with per-feature imputation statistics}
-\item{parameters}{List of parameters used}
-\item{method_used}{Character describing the imputation method applied}
+A list with the following elements:
+\item{data}{Matrix or data frame with imputed values (same class as input \code{x}).}
+\item{n_missing_before}{Integer. Number of missing values before imputation.}
+\item{n_missing_after}{Integer. Number of missing values after imputation
+(should be 0).}
+\item{imputed_summary}{Data frame with per-feature imputation statistics.}
+\item{parameters}{List of parameters used, including method, tune_sigma
+(QRILC only), and m/maxit/seed (mice only).}
+\item{method_used}{Character string describing the imputation method applied.}
 }
 \description{
 Replaces missing values (NAs) using either a simple deterministic method
-(fraction of minimum) or a statistical imputation method (quantile regression).
+(fraction of minimum), a statistical imputation method (quantile regression
+imputation of left-censored data, QRILC), or any method available in
+\code{\link[mice]{mice}} (Multiple Imputation by Chained Equations).
 }
 \details{
 \strong{Missing Value Imputation Strategies:}
 \enumerate{
-\item \strong{Deterministic (fraction of minimum)}: When \code{method} is numeric, each missing
-value in a feature is replaced by the minimum positive value in that feature
-multiplied by the specified fraction. This assumes missing values represent
-low abundance (Missing Not At Random - MNAR) and is common in metabolomics
-for values below detection limit.
-\itemize{
-\item \strong{Recommended range}: 0.01 to 0.5 (1\% to 50\% of minimum)
-\item Values > 1 will trigger a warning as they exceed the observed minimum
-\item Default (0.2) replaces NAs with 1/5th of the feature's minimum
-}
-\item \strong{Quantile Regression (QRILC)}: When \code{method = "quantileregression"}, uses
-the Quantile Regression Imputation of Left-Censored data algorithm. This
-method assumes missing values are Missing Not At Random (MNAR) due to low
-abundance and models them from a left-censored distribution.
-\itemize{
-\item The \code{tune_sigma} parameter controls the spread of imputed values
-\item Requires the \code{imputeLCMD} package
-\item More sophisticated than simple fraction-of-minimum
-}
+\item \strong{Deterministic (fraction of minimum):} When \code{method} is numeric, each
+missing value in a feature is replaced by the smallest strictly positive
+value observed in that feature, multiplied by the specified fraction.
+Zero and negative values are excluded when determining this minimum.
+This assumes missing values represent low abundance (MNAR — Missing Not
+At Random) and is standard practice in metabolomics for values below the
+detection limit.
+\item \strong{Quantile Regression (QRILC):} When \code{method = "quantileregression"},
+uses the Quantile Regression Imputation of Left-Censored data algorithm
+from the \pkg{imputeLCMD} package. Models missing values from a
+left-censored distribution, controlled by \code{tune_sigma}. More
+statistically principled than simple fraction-of-minimum for MNAR data.
+Requires \pkg{imputeLCMD}: \code{BiocManager::install("imputeLCMD")}.
+\item \strong{mice (Multiple Imputation by Chained Equations):} When \code{method} is
+a recognised \pkg{mice} method string, \code{\link[mice]{mice}} is
+called internally on the feature matrix. The first of the \code{m} completed
+datasets is extracted via \code{mice::complete()} and returned. Supported
+\code{mice} methods include (non-exhaustive): \code{"pmm"} (predictive mean
+matching), \code{"norm"}, \code{"norm.boot"}, \code{"norm.nob"}, \code{"mean"}, \code{"rf"}
+(random forest), \code{"cart"}, \code{"2l.norm"}, \code{"midastouch"}, \code{"sample"}.
+See \code{\link[mice]{mice}} for the full list. Requires \pkg{mice}:
+\code{install.packages("mice")}. Additional arguments for \pkg{mice} can be
+passed via \code{...}.
 }
 }
 \examples{
@@ -67,22 +111,40 @@ x <- matrix(abs(rnorm(100 * 50, mean = 100)), nrow = 100, ncol = 50)
 x[sample(length(x), 200)] <- NA
 colnames(x) <- paste0("Feature", 1:50)
 
-# Simple imputation (1/5th of minimum)
+# 1. Deterministic imputation (1/5th of minimum per feature)
 result1 <- run_mvimpute(x, method = 0.2)
 
-# Quantile regression imputation
+# 2. Quantile regression imputation (QRILC)
 result2 <- run_mvimpute(x, method = "quantileregression", tune_sigma = 1)
+
+# 3. Predictive mean matching via mice
+result3 <- run_mvimpute(x, method = "pmm", m = 5, maxit = 5, seed = 42)
+
+# 4. Random forest imputation via mice
+result4 <- run_mvimpute(x, method = "rf", m = 5, maxit = 5, seed = 42)
+
+# 5. Passing additional mice arguments via ...
+result5 <- run_mvimpute(x, method = "norm.boot", m = 10, printFlag = FALSE)
 }
 }
 \references{
+Van Buuren, S., & Groothuis-Oudshoorn, K. (2011). mice: Multivariate
+Imputation by Chained Equations in R. \emph{Journal of Statistical Software},
+45(3), 1–67. 10.18637/jss.v045.i03
+
 Wei, R., Wang, J., Su, M., Jia, E., Chen, S., Chen, T., & Ni, Y. (2018).
-Missing Value Imputation Approach for Mass Spectrometry-based Metabolomics Data.
-Scientific Reports, 8(1), 663. \doi{10.1038/s41598-017-19120-0}
+Missing Value Imputation Approach for Mass Spectrometry-based Metabolomics
+Data. \emph{Scientific Reports}, 8(1), 663.
+10.1038/s41598-017-19120-0
 
 Lazar, C., Gatto, L., Ferro, M., Bruley, C., & Burger, T. (2016).
-Accounting for the Multiple Natures of Missing Values in Label-Free Quantitative
-Proteomics Data Sets to Compare Imputation Strategies.
-Journal of Proteome Research, 15(4), 1116-1125. \doi{10.1021/acs.jproteome.5b00981}
+Accounting for the Multiple Natures of Missing Values in Label-Free
+Quantitative Proteomics Data Sets to Compare Imputation Strategies.
+\emph{Journal of Proteome Research}, 15(4), 1116–1125.
+10.1021/acs.jproteome.5b00981
+}
+\seealso{
+\code{\link[mice]{mice}}, \code{\link[imputeLCMD]{impute.QRILC}}
 }
 \author{
 John Lennon L. Calorio
