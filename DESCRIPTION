@@ -37,6 +37,7 @@ Imports:
     logistf,
     magrittr,
     matrixStats,
+    mice,
     mixOmics,
     moments,
     nortest,
