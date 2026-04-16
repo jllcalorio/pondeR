@@ -56,7 +56,11 @@ Default: \code{NA} (no seed set).}
 
 \item{...}{Additional arguments passed to \code{\link[mice]{mice}} when
 \code{method} routes to the \pkg{mice} engine. Has no effect for numeric or
-\code{"quantileregression"} methods.}
+\code{"quantileregression"} methods. A notable argument is \code{predictorMatrix}:
+by default, \code{run_mvimpute} builds one automatically via
+\code{\link[mice]{quickpred}} to avoid failures caused by constant or
+collinear features, which are common in wide metabolomics/metagenomics
+data. Supply your own \code{predictorMatrix} via \code{...} to override this.}
 }
 \value{
 A list with the following elements:
@@ -99,7 +103,12 @@ datasets is extracted via \code{mice::complete()} and returned. Supported
 matching), \code{"norm"}, \code{"norm.boot"}, \code{"norm.nob"}, \code{"mean"}, \code{"rf"}
 (random forest), \code{"cart"}, \code{"2l.norm"}, \code{"midastouch"}, \code{"sample"}.
 See \code{\link[mice]{mice}} for the full list. Requires \pkg{mice}:
-\code{install.packages("mice")}. Additional arguments for \pkg{mice} can be
+\code{install.packages("mice")}. By default, \code{run_mvimpute} builds a
+predictor matrix automatically via \code{\link[mice]{quickpred}} to
+guard against the common failure where \code{mice} removes all predictors due
+to constant or collinear columns (frequent in wide, sparse
+metabolomics/metagenomics data). Supply a custom \code{predictorMatrix} via
+\code{...} to override. Additional arguments for \pkg{mice} can also be
 passed via \code{...}.
 }
 }
@@ -130,18 +139,18 @@ result5 <- run_mvimpute(x, method = "norm.boot", m = 10, printFlag = FALSE)
 \references{
 Van Buuren, S., & Groothuis-Oudshoorn, K. (2011). mice: Multivariate
 Imputation by Chained Equations in R. \emph{Journal of Statistical Software},
-45(3), 1–67. 10.18637/jss.v045.i03
+45(3), 1–67. \doi{10.18637/jss.v045.i03}
 
 Wei, R., Wang, J., Su, M., Jia, E., Chen, S., Chen, T., & Ni, Y. (2018).
 Missing Value Imputation Approach for Mass Spectrometry-based Metabolomics
 Data. \emph{Scientific Reports}, 8(1), 663.
-10.1038/s41598-017-19120-0
+\doi{10.1038/s41598-017-19120-0}
 
 Lazar, C., Gatto, L., Ferro, M., Bruley, C., & Burger, T. (2016).
 Accounting for the Multiple Natures of Missing Values in Label-Free
 Quantitative Proteomics Data Sets to Compare Imputation Strategies.
 \emph{Journal of Proteome Research}, 15(4), 1116–1125.
-10.1021/acs.jproteome.5b00981
+\doi{10.1021/acs.jproteome.5b00981}
 }
 \seealso{
 \code{\link[mice]{mice}}, \code{\link[imputeLCMD]{impute.QRILC}}
