@@ -34,6 +34,8 @@ Imports:
     gtsummary,
     htmlwidgets,
     imputeLCMD,
+    lme4,
+    lmerTest,
     logistf,
     magrittr,
     matrixStats,
