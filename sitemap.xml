@@ -7,6 +7,8 @@
 <url><loc>https://jllcalorio.github.io/pondeR/articles/intro.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/authors.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/index.html</loc></url>
+<url><loc>https://jllcalorio.github.io/pondeR/reference/get_groupsizes.html</loc></url>
+<url><loc>https://jllcalorio.github.io/pondeR/reference/get_removed_samples.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/get_sigfeatures.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/has_inf.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/has_na.html</loc></url>
@@ -44,10 +46,12 @@
 <url><loc>https://jllcalorio.github.io/pondeR/reference/run_filtervariance.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/run_foldchange.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/run_logreg.html</loc></url>
+<url><loc>https://jllcalorio.github.io/pondeR/reference/run_mixedmodel.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/run_mvimpute.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/run_normalize.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/run_pca.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/run_pls.html</loc></url>
+<url><loc>https://jllcalorio.github.io/pondeR/reference/run_randomize.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/run_reduce.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/run_regreg.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/run_relabel.html</loc></url>

@@ -149,6 +149,19 @@ Utility functions for data management, relabelling, and S3 methods.
 Additional exported functions. New functions land here automatically
 until formally categorised.
 
+- [`get_groupsizes()`](https://jllcalorio.github.io/pondeR/reference/get_groupsizes.md)
+  :
+
+  Inspect Group Sample Sizes That May Trigger CV Fold Reduction in
+  [`run_regreg()`](https://jllcalorio.github.io/pondeR/reference/run_regreg.md)
+
+- [`get_removed_samples()`](https://jllcalorio.github.io/pondeR/reference/get_removed_samples.md)
+  :
+
+  Get Samples Removed by
+  [`run_regreg()`](https://jllcalorio.github.io/pondeR/reference/run_regreg.md)
+  Due to Missing Covariate Data
+
 - [`get_sigfeatures()`](https://jllcalorio.github.io/pondeR/reference/get_sigfeatures.md)
   : Get Features with Non-Zero Coefficients from a Regularized
   Regression Result
@@ -267,6 +280,9 @@ until formally categorised.
   : Perform Binary Logistic Regression (Standard or Firth-Corrected)
   with Iterative Feature Combinations
 
+- [`run_mixedmodel()`](https://jllcalorio.github.io/pondeR/reference/run_mixedmodel.md)
+  : Perform Linear Mixed-Effects Model Analysis
+
 - [`run_mvimpute()`](https://jllcalorio.github.io/pondeR/reference/run_mvimpute.md)
   : Impute Missing Values in Metabolomics Data
 
@@ -278,6 +294,9 @@ until formally categorised.
 
 - [`run_pls()`](https://jllcalorio.github.io/pondeR/reference/run_pls.md)
   : Perform Partial Least Squares (PLS) Analysis
+
+- [`run_randomize()`](https://jllcalorio.github.io/pondeR/reference/run_randomize.md)
+  : Randomize a Data Frame, Matrix, or Vector
 
 - [`run_reduce()`](https://jllcalorio.github.io/pondeR/reference/run_reduce.md)
   : Reduce Multiple Data Frames by Common or Unique Column/Row Names
