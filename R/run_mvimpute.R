@@ -39,7 +39,11 @@
 #' @param verbose Logical. Print progress messages. Default: `TRUE`.
 #' @param ... Additional arguments passed to \code{\link[mice]{mice}} when
 #'   `method` routes to the \pkg{mice} engine. Has no effect for numeric or
-#'   `"quantileregression"` methods.
+#'   `"quantileregression"` methods. A notable argument is `predictorMatrix`:
+#'   by default, `run_mvimpute` builds one automatically via
+#'   \code{\link[mice]{quickpred}} to avoid failures caused by constant or
+#'   collinear features, which are common in wide metabolomics/metagenomics
+#'   data. Supply your own `predictorMatrix` via `...` to override this.
 #'
 #' @return A list with the following elements:
 #'   \item{data}{Matrix or data frame with imputed values (same class as input `x`).}
@@ -77,7 +81,12 @@
 #'    matching), `"norm"`, `"norm.boot"`, `"norm.nob"`, `"mean"`, `"rf"`
 #'    (random forest), `"cart"`, `"2l.norm"`, `"midastouch"`, `"sample"`.
 #'    See \code{\link[mice]{mice}} for the full list. Requires \pkg{mice}:
-#'    `install.packages("mice")`. Additional arguments for \pkg{mice} can be
+#'    `install.packages("mice")`. By default, `run_mvimpute` builds a
+#'    predictor matrix automatically via \code{\link[mice]{quickpred}} to
+#'    guard against the common failure where `mice` removes all predictors due
+#'    to constant or collinear columns (frequent in wide, sparse
+#'    metabolomics/metagenomics data). Supply a custom `predictorMatrix` via
+#'    `...` to override. Additional arguments for \pkg{mice} can also be
 #'    passed via `...`.
 #'
 #' @author John Lennon L. Calorio
@@ -85,18 +94,18 @@
 #' @references
 #' Van Buuren, S., & Groothuis-Oudshoorn, K. (2011). mice: Multivariate
 #' Imputation by Chained Equations in R. *Journal of Statistical Software*,
-#' 45(3), 1–67. 10.18637/jss.v045.i03
+#' 45(3), 1–67. \doi{10.18637/jss.v045.i03}
 #'
 #' Wei, R., Wang, J., Su, M., Jia, E., Chen, S., Chen, T., & Ni, Y. (2018).
 #' Missing Value Imputation Approach for Mass Spectrometry-based Metabolomics
 #' Data. *Scientific Reports*, 8(1), 663.
-#' 10.1038/s41598-017-19120-0
+#' \doi{10.1038/s41598-017-19120-0}
 #'
 #' Lazar, C., Gatto, L., Ferro, M., Bruley, C., & Burger, T. (2016).
 #' Accounting for the Multiple Natures of Missing Values in Label-Free
 #' Quantitative Proteomics Data Sets to Compare Imputation Strategies.
 #' *Journal of Proteome Research*, 15(4), 1116–1125.
-#' 10.1021/acs.jproteome.5b00981
+#' \doi{10.1021/acs.jproteome.5b00981}
 #'
 #' @seealso \code{\link[mice]{mice}}, \code{\link[imputeLCMD]{impute.QRILC}}
 #'
@@ -296,22 +305,50 @@ run_mvimpute <- function(
 
       na_indices <- is.na(x_matrix)   # capture before imputation for summary
 
+      dots <- list(...)
+
+      # Build a safe predictor matrix automatically unless the user supplies one.
+      # quickpred() selects only features with sufficient observed variance and
+      # correlation with the target, avoiding the "no predictors left" failure
+      # that occurs when mice encounters constant or collinear columns.
+      if (is.null(dots$predictorMatrix)) {
+        pred_matrix <- tryCatch(
+          mice::quickpred(as.data.frame(x_matrix)),
+          error = function(e) {
+            stop(
+              "mice::quickpred() failed to build a predictor matrix: ", e$message,
+              "\nYour data may have too few samples or too many constant/collinear ",
+              "features for mice-based imputation. ",
+              "Consider using method = 0.2 or method = 'quantileregression' instead."
+            )
+          }
+        )
+        dots$predictorMatrix <- pred_matrix
+        msg("Predictor matrix built automatically via mice::quickpred().")
+      }
+
       tryCatch({
-        mice_obj <- mice::mice(
-          data    = as.data.frame(x_matrix),
-          method  = method,
-          m       = as.integer(m),
-          maxit   = as.integer(maxit),
-          seed    = if (is.na(seed)) NA_integer_ else as.integer(seed),
-          printFlag = FALSE,   # silence mice internal output; verbose handled above
-          ...
+        mice_obj <- do.call(
+          mice::mice,
+          c(
+            list(
+              data      = as.data.frame(x_matrix),
+              method    = method,
+              m         = as.integer(m),
+              maxit     = as.integer(maxit),
+              seed      = if (is.na(seed)) NA_integer_ else as.integer(seed),
+              printFlag = FALSE
+            ),
+            dots
+          )
         )
         x_matrix <- as.matrix(mice::complete(mice_obj, action = 1L))
       }, error = function(e) {
         stop(
           "mice imputation failed (method = '", method, "'): ", e$message,
-          "\nCheck that the method name is valid. ",
-          "See ?mice::mice for supported methods."
+          "\nIf the error mentions constant or collinear variables, your data may ",
+          "be too sparse or wide for mice-based imputation. ",
+          "Consider using method = 0.2 or method = 'quantileregression' instead."
         )
       })
 
