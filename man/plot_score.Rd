@@ -5,12 +5,13 @@
 \alias{plot_score.run_pca}
 \alias{plot_score.run_pls}
 \alias{plot_score.default}
-\title{Plot PCA Scores Plot}
+\alias{plot_score.run_pcoa}
+\title{Scores Plot for Multivariate Ordination Results}
 \usage{
-plot_score(pca_result, ...)
+plot_score(res, ...)
 
 \method{plot_score}{run_pca}(
-  pca_result,
+  res,
   pc = c(1, 2),
   color_by,
   points_from,
@@ -42,7 +43,7 @@ plot_score(pca_result, ...)
 )
 
 \method{plot_score}{run_pls}(
-  pca_result,
+  res,
   pc = c(1, 2),
   color_by,
   points_from,
@@ -73,10 +74,47 @@ plot_score(pca_result, ...)
   verbose = TRUE
 )
 
-\method{plot_score}{default}(pca_result, ...)
+\method{plot_score}{default}(res, ...)
+
+\method{plot_score}{run_pcoa}(
+  res,
+  metadata,
+  pc = c(1, 2),
+  color_by,
+  points_from,
+  title = NULL,
+  subtitle = NULL,
+  caption = NULL,
+  position = "center",
+  arrange_levels = NULL,
+  ellipse = TRUE,
+  ellipse_type = "t",
+  ellipse_level = 0.95,
+  legend = NULL,
+  legend_position = "bottom",
+  show_outliers = FALSE,
+  label_outliers = "all",
+  colors = NULL,
+  point_size = 3,
+  point_alpha = 0.8,
+  theme = "nature",
+  base_size = 11,
+  font_family = "sans",
+  axis_title_size = NULL,
+  axis_text_size = NULL,
+  plot_title_size = NULL,
+  legend_title_size = NULL,
+  legend_text_size = NULL,
+  zoom = 1,
+  verbose = TRUE
+)
+
+\method{plot_score}{default}(res, ...)
 }
 \arguments{
-\item{pca_result}{List. Output from \code{run_pca()}.}
+\item{res}{List. Output from \code{run_pca()}, \code{run_pls()}, or
+\code{run_pcoa()}. The appropriate plot method is selected automatically
+via S3 dispatch based on the class of \code{res}.}
 
 \item{pc}{Character vector of length 2. Principal components to plot, e.g., \code{c("PC1", "PC2")}.
 Can also be numeric, e.g., \code{c(1, 2)}. Default: \code{c(1, 2)}.}
@@ -153,14 +191,24 @@ style based on \code{theme_bw()}).}
 Values > 1 enlarge, values < 1 shrink. Default: \code{1}.}
 
 \item{verbose}{Logical. Print progress messages. Default: \code{TRUE}.}
+
+\item{metadata}{A \code{data.frame} with one row per observation (sample).
+Required for \code{plot_score.run_pcoa} because \code{run_pcoa()} does not
+bundle metadata inside its result (unlike \code{run_pca()}). Row order must
+match the row order of the data matrix originally passed to
+\code{run_pcoa()}.}
 }
 \value{
 A \code{ggplot2} object.
 }
 \description{
-Creates a scores plot showing sample positions in principal component space.
-Supports discrete group coloring, continuous variable coloring, confidence
-ellipses, and outlier detection.
+Produces a publication-ready scores plot from the output of multivariate
+ordination and dimensionality-reduction methods, including Principal
+Component Analysis (\code{run_pca}), Partial Least Squares and PLS-DA
+(\code{run_pls}), and Principal Coordinate Analysis (\code{run_pcoa}).
+Supports discrete group coloring with confidence ellipses, continuous
+gradient coloring, outlier detection and labeling, and a range of
+publication themes.
 }
 \details{
 \strong{Scores Plot Interpretation:}
@@ -250,17 +298,17 @@ metadata <- data.frame(
 
 # Run PCA (excluding QC samples)
 scaled_result <- run_scale(x, method = "auto")
-pca_result    <- run_pca(scaled_result$data, metadata,
+res    <- run_pca(scaled_result$data, metadata,
                          group   = "Group",
                          exclude = "QC")
 
 # Basic scores plot — nature theme, Okabe-Ito colors (defaults)
-plot_score(pca_result,
+plot_score(res,
            color_by    = "Group",
            points_from = "Sample")
 
 # PC2 vs PC3 with left-aligned title
-plot_score(pca_result,
+plot_score(res,
            pc          = c(2, 3),
            color_by    = "Group",
            points_from = "Sample",
@@ -268,19 +316,19 @@ plot_score(pca_result,
            position    = "left")
 
 # Color by batch with custom palette
-plot_score(pca_result,
+plot_score(res,
            color_by    = "Batch",
            points_from = "Sample",
            colors      = c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3"))
 
 # Continuous coloring by time
-plot_score(pca_result,
+plot_score(res,
            color_by    = "Time",
            points_from = "Sample",
            legend      = "Collection Time (h)")
 
 # Show outliers in specific groups, classic theme, larger zoom
-plot_score(pca_result,
+plot_score(res,
            color_by       = "Group",
            points_from    = "Sample",
            show_outliers  = TRUE,
@@ -290,7 +338,7 @@ plot_score(pca_result,
            zoom           = 1.2)
 
 # Stricter outlier detection with serif font
-plot_score(pca_result,
+plot_score(res,
            color_by      = "Group",
            points_from   = "Sample",
            show_outliers = TRUE,
