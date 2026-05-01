@@ -1,512 +1,3 @@
-# =============================================================================
-#  .run_diff_single  (unchanged — omitted for brevity)
-# =============================================================================
-
-.run_diff_single <- function(
-    x,
-    outcome,
-    group,
-    paired                = FALSE,
-    test_type             = c("auto", "parametric", "nonparametric"),
-    normality_method      = c("auto", "shapiro", "lilliefors"),
-    alpha_normality       = 0.05,
-    alpha_variance        = 0.05,
-    test_alpha            = 0.05,
-    min_n_threshold       = 3,
-    calculate_effect_size = TRUE,
-    perform_posthoc       = TRUE,
-    p_adjust_method       = "BH",
-    group_order           = NULL,
-    verbose               = FALSE,
-    num_cores             = 1L
-) {
-  test_type        <- match.arg(test_type)
-  normality_method <- match.arg(normality_method)
-  warnings_list    <- character(0)
-
-  # ---- num_cores ----
-  avail_cores <- parallel::detectCores()
-  if (is.na(avail_cores)) avail_cores <- 1L
-  if (identical(num_cores, "max")) {
-    num_cores <- max(1L, avail_cores - 2L)
-  } else {
-    num_cores <- as.integer(num_cores)
-  }
-
-  # ---- basic checks ----
-  if (!is.data.frame(x))
-    stop("'x' must be a data frame.")
-  if (!outcome %in% names(x))
-    stop(sprintf("Outcome '%s' not found in data.", outcome))
-  if (!group %in% names(x))
-    stop(sprintf("Group '%s' not found in data.", group))
-
-  y   <- x[[outcome]]
-  grp <- as.factor(x[[group]])
-  if (!is.numeric(y))
-    stop("Outcome variable must be numeric.")
-
-  if (!is.null(group_order)) {
-    if (!all(group_order %in% levels(grp)))
-      stop("'group_order' contains levels not present in the data.")
-    grp <- factor(grp, levels = group_order)
-  }
-
-  cc <- stats::complete.cases(y, grp)
-  if (sum(!cc) > 0) {
-    msg           <- sprintf("Removing %d rows with missing values.", sum(!cc))
-    warnings_list <- c(warnings_list, msg)
-  }
-  y   <- y[cc]
-  grp <- droplevels(grp[cc])
-
-  if (nlevels(grp) < 2)
-    stop("Grouping factor must have at least 2 levels after removing missing values.")
-
-  groups   <- levels(grp)
-  n_groups <- length(groups)
-  group_ns <- table(grp)
-  min_n    <- min(group_ns)
-
-  if (min_n < min_n_threshold)
-    warnings_list <- c(warnings_list,
-                       sprintf("Min sample size (%d) below threshold (%d).",
-                               min_n, min_n_threshold))
-
-  # ---- test family ----
-  if (n_groups == 2) {
-    test_family <- if (paired) "paired_two_sample" else "independent_two_sample"
-  } else {
-    test_family <- if (paired) "repeated_measures_anova" else "independent_anova"
-  }
-  if (test_family == "repeated_measures_anova")
-    stop("Repeated measures ANOVA is not yet implemented.")
-  if (paired && n_groups == 2 && group_ns[1] != group_ns[2])
-    stop("Paired tests require equal group sizes after removing missing values.")
-
-  # ---- normality helper ----
-  .check_norm <- function(data_vector, group_label = NULL) {
-    n <- length(data_vector)
-    if (n < 3)
-      return(list(violated = TRUE, p_value = NA_real_,
-                  method = "Insufficient data", label = group_label))
-    use_m <- if (normality_method == "auto") {
-      if (n < 50) "shapiro" else "lilliefors"
-    } else normality_method
-
-    if (use_m == "shapiro") {
-      res <- stats::shapiro.test(data_vector)
-      return(list(violated = res$p.value < alpha_normality,
-                  p_value  = res$p.value,
-                  method   = "Shapiro-Wilk",
-                  label    = group_label))
-    } else {
-      if (!requireNamespace("nortest", quietly = TRUE)) {
-        res <- stats::shapiro.test(data_vector)
-        warnings_list <<- c(warnings_list,
-                            "nortest unavailable; fell back to Shapiro-Wilk.")
-        return(list(violated = res$p.value < alpha_normality,
-                    p_value  = res$p.value,
-                    method   = "Shapiro-Wilk (fallback)",
-                    label    = group_label))
-      }
-      res <- nortest::lillie.test(data_vector)
-      return(list(violated = res$p.value < alpha_normality,
-                  p_value  = res$p.value,
-                  method   = "Lilliefors (K-S)",
-                  label    = group_label))
-    }
-  }
-
-  # ---- assumption checks ----
-  normality_violated <- FALSE
-  variance_violated  <- FALSE
-  norm_results_raw   <- list()
-  variance_p         <- NA_real_
-  variance_method    <- NA_character_
-
-  if (test_type == "auto") {
-    if (n_groups == 2) {
-      run_nc <- function(g) .check_norm(y[grp == g], g)
-      norm_results_raw <- if (num_cores > 1 && .Platform$OS.type != "windows") {
-        parallel::mclapply(groups, run_nc, mc.cores = num_cores)
-      } else if (num_cores > 1) {
-        cl <- parallel::makeCluster(num_cores)
-        on.exit(try(parallel::stopCluster(cl), silent = TRUE), add = TRUE)
-        parallel::clusterExport(
-          cl,
-          varlist = c("y", "grp", ".check_norm", "normality_method", "alpha_normality"),
-          envir   = environment()
-        )
-        parallel::clusterEvalQ(cl, {
-          if (requireNamespace("nortest", quietly = TRUE)) library(nortest)
-        })
-        parallel::parLapply(cl, groups, run_nc)
-      } else {
-        lapply(groups, run_nc)
-      }
-    } else {
-      fit              <- stats::lm(y ~ grp)
-      nr               <- .check_norm(fit$residuals, "residuals")
-      norm_results_raw <- list(nr)
-    }
-
-    for (nr in norm_results_raw) {
-      if (inherits(nr, "try-error")) next
-      if (isTRUE(nr$violated)) normality_violated <- TRUE
-    }
-
-    if (!paired) {
-      variance_p <- tryCatch({
-        if (requireNamespace("car", quietly = TRUE)) {
-          variance_method <- "Levene's test"
-          car::leveneTest(y, grp)$`Pr(>F)`[1]
-        } else {
-          variance_method <- "Bartlett's test"
-          stats::bartlett.test(x = y, g = grp)$p.value
-        }
-      }, error = function(e) {
-        warnings_list <<- c(warnings_list,
-                            "Variance test failed; assumed homogeneous.")
-        1
-      })
-      if (!is.na(variance_p) && variance_p < alpha_variance)
-        variance_violated <- TRUE
-    }
-  }
-
-  # ---- select & run test ----
-  test_used       <- NULL
-  test_result     <- NULL
-  parametric_used <- TRUE
-  fitted_model    <- NULL
-
-  if (test_type == "auto") {
-    if (test_family == "independent_two_sample") {
-      if (normality_violated) {
-        test_used       <- "Mann-Whitney U test (Wilcoxon rank-sum)"
-        test_result     <- stats::wilcox.test(x = y[grp == groups[1]],
-                                              y = y[grp == groups[2]])
-        parametric_used <- FALSE
-      } else if (variance_violated) {
-        test_used   <- "Welch's t-test"
-        test_result <- stats::t.test(x = y[grp == groups[1]],
-                                     y = y[grp == groups[2]], var.equal = FALSE)
-      } else {
-        test_used   <- "Student's t-test"
-        test_result <- stats::t.test(x = y[grp == groups[1]],
-                                     y = y[grp == groups[2]], var.equal = TRUE)
-      }
-    } else if (test_family == "paired_two_sample") {
-      g1 <- y[grp == groups[1]]
-      g2 <- y[grp == groups[2]]
-      if (normality_violated) {
-        test_used       <- "Wilcoxon signed-rank test"
-        test_result     <- stats::wilcox.test(g1, g2, paired = TRUE)
-        parametric_used <- FALSE
-      } else {
-        test_used   <- "Paired t-test"
-        test_result <- stats::t.test(g1, g2, paired = TRUE)
-      }
-    } else {
-      # independent_anova
-      if (normality_violated) {
-        test_used       <- "Kruskal-Wallis test"
-        test_result     <- stats::kruskal.test(x = y, g = grp)
-        parametric_used <- FALSE
-      } else if (variance_violated) {
-        test_used   <- "Welch's ANOVA"
-        test_result <- stats::oneway.test(stats::formula(y ~ grp), var.equal = FALSE)
-      } else {
-        test_used    <- "One-way ANOVA"
-        fitted_model <- stats::aov(y ~ grp)
-        sa           <- summary(fitted_model)[[1]]
-        test_result  <- list(
-          statistic = c("F value" = sa$`F value`[1]),
-          parameter = c(df1 = sa$Df[1], df2 = sa$Df[2]),
-          p.value   = sa$`Pr(>F)`[1],
-          method    = test_used
-        )
-      }
-    }
-  } else if (test_type == "parametric") {
-    if (test_family == "independent_two_sample") {
-      test_used   <- "Student's t-test (forced)"
-      test_result <- stats::t.test(x = y[grp == groups[1]],
-                                   y = y[grp == groups[2]], var.equal = TRUE)
-    } else if (test_family == "paired_two_sample") {
-      test_used   <- "Paired t-test (forced)"
-      test_result <- stats::t.test(y[grp == groups[1]], y[grp == groups[2]],
-                                   paired = TRUE)
-    } else {
-      test_used    <- "One-way ANOVA (forced)"
-      fitted_model <- stats::aov(y ~ grp)
-      sa           <- summary(fitted_model)[[1]]
-      test_result  <- list(
-        statistic = c("F value" = sa$`F value`[1]),
-        parameter = c(df1 = sa$Df[1], df2 = sa$Df[2]),
-        p.value   = sa$`Pr(>F)`[1],
-        method    = test_used
-      )
-    }
-  } else {
-    # nonparametric
-    parametric_used <- FALSE
-    if (test_family == "independent_two_sample") {
-      test_used   <- "Mann-Whitney U test (forced)"
-      test_result <- stats::wilcox.test(x = y[grp == groups[1]],
-                                        y = y[grp == groups[2]])
-    } else if (test_family == "paired_two_sample") {
-      test_used   <- "Wilcoxon signed-rank test (forced)"
-      # test_result <- stats::wilcox.test(y[grp == groups[1]], y[grp == groups[2]],
-      #                                   paired = TRUE)
-      test_result <- withCallingHandlers(
-        stats::wilcox.test(x = y[grp == groups[1]], y = y[grp == groups[2]]),
-        warning = function(w) {
-          if (grepl("ties", conditionMessage(w), ignore.case = TRUE))
-            warnings_list <<- c(warnings_list, conditionMessage(w))
-          invokeRestart("muffleWarning")
-        }
-      )
-    } else {
-      test_used   <- "Kruskal-Wallis test (forced)"
-      test_result <- stats::kruskal.test(x = y, g = grp)
-    }
-  }
-
-  # ---- effect size ----
-  es_result <- NULL
-  if (calculate_effect_size && !is.null(test_result) &&
-      requireNamespace("effectsize", quietly = TRUE)) {
-    es_result <- tryCatch({
-      if (test_family %in% c("independent_two_sample", "paired_two_sample")) {
-        is_paired_fam <- (test_family == "paired_two_sample")
-        if (parametric_used) {
-          es     <- effectsize::cohens_d(
-                      x         = y[grp == groups[1]],
-                      y         = y[grp == groups[2]],
-                      pooled_sd = !variance_violated,
-                      verbose   = FALSE
-                    )
-          interp <- effectsize::interpret(es, rules = "cohen1988")
-          list(estimate  = es$Cohens_d,
-               ci_low    = es$CI_low,
-               ci_high   = es$CI_high,
-               magnitude = as.character(interp$Interpretation),
-               metric    = if (is_paired_fam) "Cohen's d (paired)" else "Cohen's d")
-        } else {
-          es     <- effectsize::rank_biserial(
-                      x       = y[grp == groups[1]],
-                      y       = y[grp == groups[2]],
-                      verbose = FALSE
-                    )
-          interp <- effectsize::interpret(es, rules = "funder2019")
-          list(estimate  = es$r_rank_biserial,
-               ci_low    = es$CI_low,
-               ci_high   = es$CI_high,
-               magnitude = as.character(interp$Interpretation),
-               metric    = if (is_paired_fam) "Rank-biserial correlation (paired)"
-                           else "Rank-biserial correlation")
-        }
-      } else {
-        # independent_anova
-        if (parametric_used) {
-          es_model <- if (is.null(fitted_model)) {
-            warnings_list <<- c(warnings_list,
-              "Eta-squared calculated from standard ANOVA (Welch's ANOVA used for test).")
-            stats::aov(y ~ grp)
-          } else fitted_model
-          es     <- effectsize::eta_squared(es_model, verbose = FALSE)
-          interp <- effectsize::interpret(es, rules = "field2013")
-          list(estimate  = es$Eta2,
-               ci_low    = es$CI_low,
-               ci_high   = es$CI_high,
-               magnitude = as.character(interp$Interpretation),
-               metric    = "Eta-squared")
-        } else {
-          es     <- effectsize::rank_epsilon_squared(x = y, groups = grp,
-                                                     verbose = FALSE)
-          interp <- effectsize::interpret(es, rules = "field2013")
-          list(estimate  = es$rank_epsilon_squared,
-               ci_low    = if (!is.null(es$CI_low))  es$CI_low  else NA_real_,
-               ci_high   = if (!is.null(es$CI_high)) es$CI_high else NA_real_,
-               magnitude = as.character(interp$Interpretation),
-               metric    = "Rank epsilon-squared")
-        }
-      }
-    }, error = function(e) {
-      warnings_list <<- c(warnings_list, paste("Effect size failed:", e$message))
-      NULL
-    })
-  }
-
-  # ---- post-hoc ----
-  posthoc_result <- NULL
-  if (perform_posthoc && n_groups > 2 &&
-      !is.null(test_result) && test_result$p.value < test_alpha &&
-      requireNamespace("rstatix", quietly = TRUE)) {
-    posthoc_result <- tryCatch({
-      td <- tibble::tibble(y = y, grp = grp)
-      ph <- NULL
-
-      if (test_used %in% c("One-way ANOVA", "One-way ANOVA (forced)")) {
-        ph              <- rstatix::tukey_hsd(td, y ~ grp)
-        ph$posthoc_test <- "Tukey HSD"
-        ph$statistic    <- NA_real_
-        ph$p            <- NA_real_
-        nl              <- stats::setNames(as.numeric(group_ns), names(group_ns))
-        ph$n1           <- nl[ph$group1]
-        ph$n2           <- nl[ph$group2]
-      } else if (test_used == "Welch's ANOVA") {
-        ph              <- rstatix::games_howell_test(td, y ~ grp)
-        ph$posthoc_test <- "Games-Howell"
-        ph$p            <- NA_real_
-      } else if (test_used %in% c("Kruskal-Wallis test",
-                                   "Kruskal-Wallis test (forced)")) {
-        ph              <- rstatix::dunn_test(td, y ~ grp,
-                                              p.adjust.method = p_adjust_method)
-        ph$posthoc_test <- "Dunn's test"
-      }
-
-      if (!is.null(ph)) {
-        if ("p.adj" %in% names(ph)) {
-          ph$p.adj.signif <- ifelse(ph$p.adj < 0.001, "***",
-                             ifelse(ph$p.adj < 0.01,  "**",
-                             ifelse(ph$p.adj < 0.05,  "*", "ns")))
-          ph$significant  <- ph$p.adj < test_alpha
-        }
-
-        # Stochastic dominance interpretation via mean ranks
-        rks        <- rank(y)
-        mean_ranks <- tapply(rks, grp, mean)
-        ph$interpretation <- mapply(function(g1, g2, sig) {
-          if (is.na(sig) || sig == "ns") return("No significant difference")
-          if (mean_ranks[g1] < mean_ranks[g2])
-            paste0(g1, " tends to have smaller values than ", g2)
-          else
-            paste0(g1, " tends to have larger values than ", g2)
-        },
-        ph$group1, ph$group2,
-        if ("p.adj.signif" %in% names(ph)) ph$p.adj.signif else rep("ns", nrow(ph)),
-        SIMPLIFY = TRUE, USE.NAMES = FALSE)
-      }
-      ph
-    }, error = function(e) {
-      warnings_list <<- c(warnings_list, paste("Post-hoc failed:", e$message))
-      NULL
-    })
-  }
-
-  # ---- data summary ----
-  dg <- droplevels(grp)
-  data_summary <- data.frame(
-    group     = levels(dg),
-    n         = as.numeric(table(dg)),
-    mean      = as.numeric(tapply(y, dg, mean)),
-    sd        = as.numeric(tapply(y, dg, stats::sd)),
-    se        = as.numeric(tapply(y, dg,
-                  function(v) stats::sd(v) / sqrt(length(v)))),
-    median    = as.numeric(tapply(y, dg, stats::median)),
-    q25       = as.numeric(tapply(y, dg,
-                  function(v) stats::quantile(v, 0.25))),
-    q75       = as.numeric(tapply(y, dg,
-                  function(v) stats::quantile(v, 0.75))),
-    min       = as.numeric(tapply(y, dg, min)),
-    max       = as.numeric(tapply(y, dg, max)),
-    row.names = NULL
-  )
-
-  # ---- return rich list (mirrors old run_diff structure for plot_diff) ----
-  list(
-    test_used          = test_used,
-    test_result        = test_result,
-    effect_size        = es_result,
-    posthoc_result     = posthoc_result,
-    norm_results       = norm_results_raw,
-    variance_p         = variance_p,
-    variance_method    = variance_method,
-    normality_violated = normality_violated,
-    variance_violated  = variance_violated,
-    parametric         = parametric_used,
-    data_summary       = data_summary,
-    outcome            = outcome,
-    group_var          = group,
-    groups             = groups,
-    n_groups           = n_groups,
-    group_ns           = group_ns,
-    paired             = paired,
-    test_type          = test_type,
-    test_alpha         = test_alpha,
-    warnings           = warnings_list,
-    raw_data           = tibble::tibble(outcome = y, group = grp)
-  )
-}
-
-
-
-# =============================================================================
-#  Helper: build a summary_table data frame from a named list of run_diff
-#          objects (one element per outcome).  Used both for the main table
-#          and for each subgroup × level slice.
-# =============================================================================
-.build_summary_table <- function(results_list, outcome_names, test_alpha) {
-  tbl_rows <- lapply(outcome_names, function(oc) {
-    res <- results_list[[oc]]
-
-    if (is.null(res)) {
-      return(data.frame(
-        outcome               = oc,
-        test_used             = NA_character_,
-        statistic             = NA_real_,
-        df                    = NA_character_,
-        p_value               = NA_real_,
-        effect_size_metric    = NA_character_,
-        effect_size_estimate  = NA_real_,
-        effect_size_ci_low    = NA_real_,
-        effect_size_ci_high   = NA_real_,
-        effect_size_magnitude = NA_character_,
-        significant           = NA,
-        n_significant_posthoc = NA_integer_,
-        posthoc_pairs         = NA_integer_,
-        stringsAsFactors      = FALSE
-      ))
-    }
-
-    tr <- res$test_result
-    es <- res$effect_size
-    ph <- res$posthoc_result
-
-    df_val <- if (!is.null(tr$parameter) && length(tr$parameter) > 0)
-      paste(names(tr$parameter), round(tr$parameter, 4), sep = " = ", collapse = ", ")
-    else NA_character_
-
-    n_sig_ph <- if (!is.null(ph) && nrow(ph) > 0) sum(ph$significant, na.rm = TRUE) else NA_integer_
-    total_ph <- if (!is.null(ph) && nrow(ph) > 0) nrow(ph) else NA_integer_
-
-    data.frame(
-      outcome               = oc,
-      test_used             = res$test_used,
-      statistic             = if (!is.null(tr$statistic)) as.numeric(tr$statistic[[1]]) else NA_real_,
-      df                    = df_val,
-      p_value               = if (!is.null(tr$p.value)) tr$p.value else NA_real_,
-      effect_size_metric    = if (!is.null(es)) es$metric    else NA_character_,
-      effect_size_estimate  = if (!is.null(es)) es$estimate  else NA_real_,
-      effect_size_ci_low    = if (!is.null(es)) es$ci_low    else NA_real_,
-      effect_size_ci_high   = if (!is.null(es)) es$ci_high   else NA_real_,
-      effect_size_magnitude = if (!is.null(es)) es$magnitude else NA_character_,
-      significant           = if (!is.null(tr$p.value)) tr$p.value < test_alpha else NA,
-      n_significant_posthoc = n_sig_ph,
-      posthoc_pairs         = total_ph,
-      stringsAsFactors      = FALSE
-    )
-  })
-
-  tbl <- do.call(rbind, tbl_rows)
-  rownames(tbl) <- NULL
-  tbl
-}
-
-
 #' Automatic Statistical Comparison with Comprehensive Analysis
 #'
 #' @title Automatic Statistical Comparison with Comprehensive Analysis
@@ -1074,33 +565,73 @@ run_diff <- function(
   }
 
   # --- 3. Helper Function: Check Normality ---
+  # check_normality <- function(data_vector, group_label = NULL, method = normality_method) {
+  #   n <- length(data_vector)
+  #   if (n < 3)
+  #     return(list(violated = TRUE, p_value = NA_real_, method = "Insufficient data"))
+  #   use_method <- if (method == "auto") { if (n < 50) "shapiro" else "lilliefors" } else method
+  #   if (use_method == "shapiro") {
+  #     shapiro_result <- shapiro.test(data_vector)
+  #     p_val          <- shapiro_result$p.value
+  #     return(list(violated = p_val < alpha_normality, p_value = p_val,
+  #                 method = "Shapiro-Wilk test",
+  #                 label  = if (!is.null(group_label)) sprintf("Normality: %s", group_label) else "Normality"))
+  #   } else {
+  #     if (!requireNamespace("nortest", quietly = TRUE)) {
+  #       warning("Package 'nortest' not available. Falling back to Shapiro-Wilk test.")
+  #       shapiro_result <- shapiro.test(data_vector)
+  #       p_val          <- shapiro_result$p.value
+  #       return(list(violated = p_val < alpha_normality, p_value = p_val,
+  #                   method = "Shapiro-Wilk test (fallback)",
+  #                   label  = if (!is.null(group_label)) sprintf("Normality: %s", group_label) else "Normality"))
+  #     }
+  #     lillie_result <- nortest::lillie.test(data_vector)
+  #     p_val         <- lillie_result$p.value
+  #     return(list(violated = p_val < alpha_normality, p_value = p_val,
+  #                 method = "Lilliefors (K-S) test",
+  #                 label  = if (!is.null(group_label)) sprintf("Normality: %s", group_label) else "Normality"))
+  #   }
+  # }
   check_normality <- function(data_vector, group_label = NULL, method = normality_method) {
-    n <- length(data_vector)
-    if (n < 3)
-      return(list(violated = TRUE, p_value = NA_real_, method = "Insufficient data"))
-    use_method <- if (method == "auto") { if (n < 50) "shapiro" else "lilliefors" } else method
-    if (use_method == "shapiro") {
+  n <- length(data_vector)
+  if (n < 3)
+    return(list(violated = TRUE, p_value = NA_real_, method = "Insufficient data",
+                label = if (!is.null(group_label)) sprintf("Normality: %s", group_label) else "Normality"))
+
+  if (length(unique(data_vector)) < 2) {
+    msg <- if (!is.null(group_label))
+      sprintf("All values in group '%s' are identical; normality assumption violated.", group_label)
+    else
+      "All values are identical; normality assumption violated."
+    warnings_list <<- c(warnings_list, msg)
+    return(list(violated = TRUE, p_value = NA_real_,
+                method = "Skipped (zero variance)",
+                label  = if (!is.null(group_label)) sprintf("Normality: %s", group_label) else "Normality"))
+  }
+
+  use_method <- if (method == "auto") { if (n < 50) "shapiro" else "lilliefors" } else method
+  if (use_method == "shapiro") {
+    shapiro_result <- shapiro.test(data_vector)
+    p_val          <- shapiro_result$p.value
+    return(list(violated = p_val < alpha_normality, p_value = p_val,
+                method = "Shapiro-Wilk test",
+                label  = if (!is.null(group_label)) sprintf("Normality: %s", group_label) else "Normality"))
+  } else {
+    if (!requireNamespace("nortest", quietly = TRUE)) {
+      warning("Package 'nortest' not available. Falling back to Shapiro-Wilk test.")
       shapiro_result <- shapiro.test(data_vector)
       p_val          <- shapiro_result$p.value
       return(list(violated = p_val < alpha_normality, p_value = p_val,
-                  method = "Shapiro-Wilk test",
-                  label  = if (!is.null(group_label)) sprintf("Normality: %s", group_label) else "Normality"))
-    } else {
-      if (!requireNamespace("nortest", quietly = TRUE)) {
-        warning("Package 'nortest' not available. Falling back to Shapiro-Wilk test.")
-        shapiro_result <- shapiro.test(data_vector)
-        p_val          <- shapiro_result$p.value
-        return(list(violated = p_val < alpha_normality, p_value = p_val,
-                    method = "Shapiro-Wilk test (fallback)",
-                    label  = if (!is.null(group_label)) sprintf("Normality: %s", group_label) else "Normality"))
-      }
-      lillie_result <- nortest::lillie.test(data_vector)
-      p_val         <- lillie_result$p.value
-      return(list(violated = p_val < alpha_normality, p_value = p_val,
-                  method = "Lilliefors (K-S) test",
+                  method = "Shapiro-Wilk test (fallback)",
                   label  = if (!is.null(group_label)) sprintf("Normality: %s", group_label) else "Normality"))
     }
+    lillie_result <- nortest::lillie.test(data_vector)
+    p_val         <- lillie_result$p.value
+    return(list(violated = p_val < alpha_normality, p_value = p_val,
+                method = "Lilliefors (K-S) test",
+                label  = if (!is.null(group_label)) sprintf("Normality: %s", group_label) else "Normality"))
   }
+}
 
   # --- 4. Assumption Checking ---
   normality_violated <- FALSE
@@ -1251,6 +782,7 @@ run_diff <- function(
       test_used   <- "Mann-Whitney U test (forced)"
       # test_result <- wilcox.test(x = y[grp == groups[1]], y = y[grp == groups[2]])
       test_result <- withCallingHandlers(
+        # stats::wilcox.test(x = y[grp == groups[1]], y = y[grp == groups[2]]),
         stats::wilcox.test(x = y[grp == groups[1]], y = y[grp == groups[2]]),
         warning = function(w) {
           if (grepl("ties", conditionMessage(w), ignore.case = TRUE))
@@ -1280,7 +812,7 @@ run_diff <- function(
         is_paired_fam <- (test_family == "paired_two_sample")
         if (parametric_used) {
           es     <- effectsize::cohens_d(x = y[grp == groups[1]], y = y[grp == groups[2]],
-                                         pooled_sd = !variance_violated, verbose = FALSE)
+                                         pooled_sd = !variance_violated, paired = TRUE, verbose = FALSE)
           interp <- effectsize::interpret(es, rules = "cohen1988")
           list(estimate = es$Cohens_d, ci_low = es$CI_low, ci_high = es$CI_high,
                magnitude = as.character(interp$Interpretation),
@@ -1289,7 +821,7 @@ run_diff <- function(
                                         as.character(interp$Interpretation), es$Cohens_d))
         } else {
           es     <- effectsize::rank_biserial(x = y[grp == groups[1]], y = y[grp == groups[2]],
-                                              verbose = FALSE)
+                                              paired = TRUE, verbose = FALSE)
           interp <- effectsize::interpret(es, rules = "funder2019")
           list(estimate = es$r_rank_biserial, ci_low = es$CI_low, ci_high = es$CI_high,
                magnitude = as.character(interp$Interpretation),
@@ -1335,69 +867,124 @@ run_diff <- function(
   posthoc_result <- NULL
 
   if (perform_posthoc && n_groups > 2 &&
-      !is.null(test_result) && test_result$p.value < test_alpha &&
-      requireNamespace("rstatix", quietly = TRUE)) {
-    posthoc_result <- tryCatch({
-      test_data <- tibble::tibble(y = y, grp = grp)
-      ph        <- NULL
-      if (test_used %in% c("One-way ANOVA", "One-way ANOVA (forced)")) {
-        ph              <- rstatix::tukey_hsd(test_data, y ~ grp)
-        ph$posthoc_test <- "Tukey HSD"
-        ph$statistic    <- NA_real_
-        ph$p            <- NA_real_
-        n_lookup        <- as.numeric(group_ns); names(n_lookup) <- names(group_ns)
-        ph$n1           <- n_lookup[ph$group1]; ph$n2 <- n_lookup[ph$group2]
-      } else if (test_used == "Welch's ANOVA") {
-        ph              <- rstatix::games_howell_test(test_data, y ~ grp)
-        ph$posthoc_test <- "Games-Howell"
-        ph$p            <- NA_real_
-      } else if (test_used %in% c("Kruskal-Wallis test", "Kruskal-Wallis test (forced)")) {
-        ph              <- rstatix::dunn_test(test_data, y ~ grp, p.adjust.method = p_adjust_method)
-        ph$posthoc_test <- "Dunn's test"
-      }
-      if ("p" %in% names(ph)) {
-        ph$p.format <- ifelse(ph$p < 0.001, "p < 0.001", sprintf("p = %.3f", ph$p))
-      } else { ph$p.format <- NA_character_ }
-      if ("p.adj" %in% names(ph)) {
-        ph$p.adj.signif <- ifelse(ph$p.adj < 0.001, "***",
-                           ifelse(ph$p.adj < 0.01,  "**",
-                           ifelse(ph$p.adj < 0.05,  "*", "ns")))
-        ph$p.adj.format <- ifelse(ph$p.adj < 0.001, "p < 0.001", sprintf("p = %.3f", ph$p.adj))
-        ph$significant  <- ph$p.adj < test_alpha
-      } else { ph$p.adj.signif <- NA_character_; ph$p.adj.format <- NA_character_; ph$significant <- NA }
-      summary_stats <- data.frame(group = groups, mean = as.numeric(tapply(y, grp, mean)),
-                                   stringsAsFactors = FALSE)
-      ph <- merge(ph, summary_stats, by.x = "group1", by.y = "group", all.x = TRUE)
-      names(ph)[names(ph) == "mean"] <- "mean1"
-      ph <- merge(ph, summary_stats, by.x = "group2", by.y = "group", all.x = TRUE)
-      names(ph)[names(ph) == "mean"] <- "mean2"
-      if ("p.adj.signif" %in% names(ph)) {
-        if (parametric_used) {
-          ph$interpretation <- ifelse(ph$p.adj.signif == "ns",
-            "No significant difference between groups",
-            ifelse(ph$mean1 < ph$mean2,
-                   paste0(ph$group1, " has lower mean than ",  ph$group2),
-                   paste0(ph$group1, " has higher mean than ", ph$group2)))
-        } else {
-          ranks      <- rank(y); mean_rank1 <- tapply(ranks, grp, mean)
-          ph$interpretation <- mapply(function(g1, g2, signif) {
-            if (signif == "ns") return("No significant difference between groups")
-            if (mean_rank1[g1] < mean_rank1[g2]) paste0(g1, " tends to have smaller values than ", g2)
-            else paste0(g1, " tends to have larger values than ", g2)
-          }, ph$group1, ph$group2, ph$p.adj.signif, SIMPLIFY = TRUE, USE.NAMES = FALSE)
+    !is.null(test_result) && test_result$p.value < test_alpha &&
+    requireNamespace("rstatix", quietly = TRUE)) {
+      posthoc_result <- tryCatch({
+        test_data <- tibble::tibble(y = y, grp = grp)
+        ph        <- NULL
+
+        if (test_used %in% c("One-way ANOVA", "One-way ANOVA (forced)")) {
+          ph              <- as.data.frame(rstatix::tukey_hsd(test_data, y ~ grp))
+          # Drop rstatix's own hardcoded p.adj.signif immediately — we recompute
+          # it below using test_alpha so it respects the user's chosen threshold.
+          ph$p.adj.signif <- NULL
+          ph$posthoc_test <- "Tukey HSD"
+          ph$statistic    <- NA_real_   # tukey_hsd() genuinely has no per-pair statistic
+          ph$p            <- NA_real_   # tukey_hsd() genuinely has no raw p
+          # Use match() not [] subsetting to safely extract n per group from table()
+          n_lookup        <- as.numeric(group_ns)
+          names(n_lookup) <- names(group_ns)
+          ph$n1           <- n_lookup[match(ph$group1, names(n_lookup))]
+          ph$n2           <- n_lookup[match(ph$group2, names(n_lookup))]
+
+        } else if (test_used == "Welch's ANOVA") {
+          ph              <- as.data.frame(rstatix::games_howell_test(test_data, y ~ grp))
+          # Drop rstatix's own hardcoded p.adj.signif immediately — same reason.
+          ph$p.adj.signif <- NULL
+          ph$posthoc_test <- "Games-Howell"
+          # games_howell_test() returns statistic, n1, n2 natively — do not overwrite.
+          # games_howell_test() does NOT return a raw p (only p.adj) — p stays absent.
+
+        } else if (test_used %in% c("Kruskal-Wallis test", "Kruskal-Wallis test (forced)")) {
+          ph              <- as.data.frame(rstatix::dunn_test(test_data, y ~ grp,
+                                                              p.adjust.method = p_adjust_method))
+          # Drop rstatix's own hardcoded p.adj.signif immediately — same reason.
+          ph$p.adj.signif <- NULL
+          ph$posthoc_test <- "Dunn's test"
+          # dunn_test() returns statistic, p, and p.adj natively — do not overwrite.
         }
-      } else { ph$interpretation <- NA_character_ }
-      final_cols <- c("group1", "group2", "n1", "n2", "statistic", "p", "p.adj",
-                      "posthoc_test", "p.format", "p.adj.format", "p.adj.signif",
-                      "significant", "mean1", "mean2", "interpretation")
-      for (col in final_cols) if (!col %in% names(ph)) ph[[col]] <- NA
-      ph[, final_cols]
-    }, error = function(e) {
-      msg <- paste("Could not perform post-hoc test:", e$message)
-      warnings_list <<- c(warnings_list, msg)
-      if (verbose) message(msg)
-      NULL
-    })
+
+        # ---- p.format (raw p, only present for Dunn's) ----
+        if ("p" %in% names(ph) && !all(is.na(ph$p))) {
+          ph$p.format <- ifelse(ph$p < 0.001, "p < 0.001", sprintf("p = %.3f", ph$p))
+        } else {
+          if (!"p" %in% names(ph)) ph$p <- NA_real_
+          ph$p.format <- NA_character_
+        }
+
+        # ---- p.adj.signif and significant — both respect test_alpha ----
+        if ("p.adj" %in% names(ph)) {
+          ph$significant  <- ph$p.adj < test_alpha
+
+          ph$p.adj.signif <- ifelse(
+            ph$p.adj < test_alpha,
+            ifelse(ph$p.adj < 0.001, "***",
+            ifelse(ph$p.adj < 0.01,  "**",
+            ifelse(ph$p.adj < 0.05,  "*",
+                  sprintf("* (p<%.2f)", test_alpha)))),  # significant but above 0.05
+            "ns"
+          )
+
+          ph$p.adj.format <- ifelse(
+            ph$p.adj < 0.001, "p < 0.001", sprintf("p = %.3f", ph$p.adj)
+          )
+        } else {
+          ph$p.adj.signif <- NA_character_
+          ph$p.adj.format <- NA_character_
+          ph$significant  <- NA
+        }
+
+        # ---- mean lookup via match() to avoid merge() side-effects ----
+        summary_stats <- data.frame(
+          group = groups,
+          mean  = as.numeric(tapply(y, grp, mean)),
+          stringsAsFactors = FALSE
+        )
+        ph$mean1 <- summary_stats$mean[match(ph$group1, summary_stats$group)]
+        ph$mean2 <- summary_stats$mean[match(ph$group2, summary_stats$group)]
+
+        # ---- interpretation: driven by ph$significant (respects test_alpha) ----
+        if ("significant" %in% names(ph)) {
+          if (parametric_used) {
+            ph$interpretation <- ifelse(
+              !ph$significant %in% TRUE,              # vectorized; handles NA safely
+              "No significant difference between groups",
+              ifelse(ph$mean1 < ph$mean2,
+                    paste0(ph$group1, " has lower mean than ",  ph$group2),
+                    paste0(ph$group1, " has higher mean than ", ph$group2))
+            )
+          } else {
+            ranks      <- rank(y)
+            mean_ranks <- tapply(ranks, grp, mean)
+            ph$interpretation <- mapply(
+              function(g1, g2, sig) {
+                if (!isTRUE(sig)) return("No significant difference between groups")
+                if (mean_ranks[g1] < mean_ranks[g2])
+                  paste0(g1, " tends to have smaller values than ", g2)
+                else
+                  paste0(g1, " tends to have larger values than ", g2)
+              },
+              ph$group1, ph$group2, ph$significant,
+              SIMPLIFY = TRUE, USE.NAMES = FALSE
+            )
+          }
+        } else {
+          ph$interpretation <- NA_character_
+        }
+
+        # ---- assemble final columns ----
+        final_cols <- c("group1", "group2", "n1", "n2", "statistic", "p", "p.adj",
+                        "posthoc_test", "p.format", "p.adj.format", "p.adj.signif",
+                        "significant", "mean1", "mean2", "interpretation")
+        for (col in final_cols) if (!col %in% names(ph)) ph[[col]] <- NA
+        ph[, final_cols]
+
+      }, error = function(e) {
+        msg <- paste("Could not perform post-hoc test:", e$message)
+        warnings_list <<- c(warnings_list, msg)
+        if (verbose) message(msg)
+        NULL
+      })
   }
 
   # --- 8. Comprehensive Data Summary ---
@@ -1624,4 +1211,556 @@ summary.run_diff <- function(object, ...) {
     for (w in object$warnings) cat(sprintf("  - %s\n", w))
   }
   invisible(object)
+}
+
+
+# =============================================================================
+#  .run_diff_single for plot_diff function
+# =============================================================================
+
+.run_diff_single <- function(
+    x,
+    outcome,
+    group,
+    paired                = FALSE,
+    test_type             = c("auto", "parametric", "nonparametric"),
+    normality_method      = c("auto", "shapiro", "lilliefors"),
+    alpha_normality       = 0.05,
+    alpha_variance        = 0.05,
+    test_alpha            = 0.05,
+    min_n_threshold       = 3,
+    calculate_effect_size = TRUE,
+    perform_posthoc       = TRUE,
+    p_adjust_method       = "BH",
+    group_order           = NULL,
+    verbose               = FALSE,
+    num_cores             = 1L
+) {
+  test_type        <- match.arg(test_type)
+  normality_method <- match.arg(normality_method)
+  warnings_list    <- character(0)
+
+  # ---- num_cores ----
+  avail_cores <- parallel::detectCores()
+  if (is.na(avail_cores)) avail_cores <- 1L
+  if (identical(num_cores, "max")) {
+    num_cores <- max(1L, avail_cores - 2L)
+  } else {
+    num_cores <- as.integer(num_cores)
+  }
+
+  # ---- basic checks ----
+  if (!is.data.frame(x))
+    stop("'x' must be a data frame.")
+  if (!outcome %in% names(x))
+    stop(sprintf("Outcome '%s' not found in data.", outcome))
+  if (!group %in% names(x))
+    stop(sprintf("Group '%s' not found in data.", group))
+
+  y   <- x[[outcome]]
+  grp <- as.factor(x[[group]])
+  if (!is.numeric(y))
+    stop("Outcome variable must be numeric.")
+
+  if (!is.null(group_order)) {
+    if (!all(group_order %in% levels(grp)))
+      stop("'group_order' contains levels not present in the data.")
+    grp <- factor(grp, levels = group_order)
+  }
+
+  cc <- stats::complete.cases(y, grp)
+  if (sum(!cc) > 0) {
+    msg           <- sprintf("Removing %d rows with missing values.", sum(!cc))
+    warnings_list <- c(warnings_list, msg)
+  }
+  y   <- y[cc]
+  grp <- droplevels(grp[cc])
+
+  if (nlevels(grp) < 2)
+    stop("Grouping factor must have at least 2 levels after removing missing values.")
+
+  groups   <- levels(grp)
+  n_groups <- length(groups)
+  group_ns <- table(grp)
+  min_n    <- min(group_ns)
+
+  if (min_n < min_n_threshold)
+    warnings_list <- c(warnings_list,
+                       sprintf("Min sample size (%d) below threshold (%d).",
+                               min_n, min_n_threshold))
+
+  # ---- test family ----
+  if (n_groups == 2) {
+    test_family <- if (paired) "paired_two_sample" else "independent_two_sample"
+  } else {
+    test_family <- if (paired) "repeated_measures_anova" else "independent_anova"
+  }
+  if (test_family == "repeated_measures_anova")
+    stop("Repeated measures ANOVA is not yet implemented.")
+  if (paired && n_groups == 2 && group_ns[1] != group_ns[2])
+    stop("Paired tests require equal group sizes after removing missing values.")
+
+  # ---- normality helper ----
+  # .check_norm <- function(data_vector, group_label = NULL) {
+  #   n <- length(data_vector)
+  #   if (n < 3)
+  #     return(list(violated = TRUE, p_value = NA_real_,
+  #                 method = "Insufficient data", label = group_label))
+  #   use_m <- if (normality_method == "auto") {
+  #     if (n < 50) "shapiro" else "lilliefors"
+  #   } else normality_method
+
+  #   if (use_m == "shapiro") {
+  #     res <- stats::shapiro.test(data_vector)
+  #     return(list(violated = res$p.value < alpha_normality,
+  #                 p_value  = res$p.value,
+  #                 method   = "Shapiro-Wilk",
+  #                 label    = group_label))
+  #   } else {
+  #     if (!requireNamespace("nortest", quietly = TRUE)) {
+  #       res <- stats::shapiro.test(data_vector)
+  #       warnings_list <<- c(warnings_list,
+  #                           "nortest unavailable; fell back to Shapiro-Wilk.")
+  #       return(list(violated = res$p.value < alpha_normality,
+  #                   p_value  = res$p.value,
+  #                   method   = "Shapiro-Wilk (fallback)",
+  #                   label    = group_label))
+  #     }
+  #     res <- nortest::lillie.test(data_vector)
+  #     return(list(violated = res$p.value < alpha_normality,
+  #                 p_value  = res$p.value,
+  #                 method   = "Lilliefors (K-S)",
+  #                 label    = group_label))
+  #   }
+  # }
+  .check_norm <- function(data_vector, group_label = NULL) {
+  n <- length(data_vector)
+  if (n < 3)
+    return(list(violated = TRUE, p_value = NA_real_,
+                method = "Insufficient data", label = group_label))
+
+  if (length(unique(data_vector)) < 2) {
+    msg <- if (!is.null(group_label))
+      sprintf("All values in group '%s' are identical; normality assumption violated.", group_label)
+    else
+      "All values are identical; normality assumption violated."
+    warnings_list <<- c(warnings_list, msg)
+    return(list(violated = TRUE, p_value = NA_real_,
+                method = "Skipped (zero variance)", label = group_label))
+  }
+
+  use_m <- if (normality_method == "auto") {
+    if (n < 50) "shapiro" else "lilliefors"
+  } else normality_method
+
+  if (use_m == "shapiro") {
+    res <- stats::shapiro.test(data_vector)
+    return(list(violated = res$p.value < alpha_normality,
+                p_value  = res$p.value,
+                method   = "Shapiro-Wilk",
+                label    = group_label))
+  } else {
+    if (!requireNamespace("nortest", quietly = TRUE)) {
+      res <- stats::shapiro.test(data_vector)
+      warnings_list <<- c(warnings_list,
+                          "nortest unavailable; fell back to Shapiro-Wilk.")
+      return(list(violated = res$p.value < alpha_normality,
+                  p_value  = res$p.value,
+                  method   = "Shapiro-Wilk (fallback)",
+                  label    = group_label))
+    }
+    res <- nortest::lillie.test(data_vector)
+    return(list(violated = res$p.value < alpha_normality,
+                p_value  = res$p.value,
+                method   = "Lilliefors (K-S)",
+                label    = group_label))
+  }
+}
+
+  # ---- assumption checks ----
+  normality_violated <- FALSE
+  variance_violated  <- FALSE
+  norm_results_raw   <- list()
+  variance_p         <- NA_real_
+  variance_method    <- NA_character_
+
+  if (test_type == "auto") {
+    if (n_groups == 2) {
+      run_nc <- function(g) .check_norm(y[grp == g], g)
+      norm_results_raw <- if (num_cores > 1 && .Platform$OS.type != "windows") {
+        parallel::mclapply(groups, run_nc, mc.cores = num_cores)
+      } else if (num_cores > 1) {
+        cl <- parallel::makeCluster(num_cores)
+        on.exit(try(parallel::stopCluster(cl), silent = TRUE), add = TRUE)
+        parallel::clusterExport(
+          cl,
+          varlist = c("y", "grp", ".check_norm", "normality_method", "alpha_normality"),
+          envir   = environment()
+        )
+        parallel::clusterEvalQ(cl, {
+          if (requireNamespace("nortest", quietly = TRUE)) library(nortest)
+        })
+        parallel::parLapply(cl, groups, run_nc)
+      } else {
+        lapply(groups, run_nc)
+      }
+    } else {
+      fit              <- stats::lm(y ~ grp)
+      nr               <- .check_norm(fit$residuals, "residuals")
+      norm_results_raw <- list(nr)
+    }
+
+    for (nr in norm_results_raw) {
+      if (inherits(nr, "try-error")) next
+      if (isTRUE(nr$violated)) normality_violated <- TRUE
+    }
+
+    if (!paired) {
+      variance_p <- tryCatch({
+        if (requireNamespace("car", quietly = TRUE)) {
+          variance_method <- "Levene's test"
+          car::leveneTest(y, grp)$`Pr(>F)`[1]
+        } else {
+          variance_method <- "Bartlett's test"
+          stats::bartlett.test(x = y, g = grp)$p.value
+        }
+      }, error = function(e) {
+        warnings_list <<- c(warnings_list,
+                            "Variance test failed; assumed homogeneous.")
+        1
+      })
+      if (!is.na(variance_p) && variance_p < alpha_variance)
+        variance_violated <- TRUE
+    }
+  }
+
+  # ---- select & run test ----
+  test_used       <- NULL
+  test_result     <- NULL
+  parametric_used <- TRUE
+  fitted_model    <- NULL
+
+  if (test_type == "auto") {
+    if (test_family == "independent_two_sample") {
+      if (normality_violated) {
+        test_used       <- "Mann-Whitney U test (Wilcoxon rank-sum)"
+        test_result     <- stats::wilcox.test(x = y[grp == groups[1]],
+                                              y = y[grp == groups[2]])
+        parametric_used <- FALSE
+      } else if (variance_violated) {
+        test_used   <- "Welch's t-test"
+        test_result <- stats::t.test(x = y[grp == groups[1]],
+                                     y = y[grp == groups[2]], var.equal = FALSE)
+      } else {
+        test_used   <- "Student's t-test"
+        test_result <- stats::t.test(x = y[grp == groups[1]],
+                                     y = y[grp == groups[2]], var.equal = TRUE)
+      }
+    } else if (test_family == "paired_two_sample") {
+      g1 <- y[grp == groups[1]]
+      g2 <- y[grp == groups[2]]
+      if (normality_violated) {
+        test_used       <- "Wilcoxon signed-rank test"
+        test_result     <- stats::wilcox.test(g1, g2, paired = TRUE)
+        parametric_used <- FALSE
+      } else {
+        test_used   <- "Paired t-test"
+        test_result <- stats::t.test(g1, g2, paired = TRUE)
+      }
+    } else {
+      # independent_anova
+      if (normality_violated) {
+        test_used       <- "Kruskal-Wallis test"
+        test_result     <- stats::kruskal.test(x = y, g = grp)
+        parametric_used <- FALSE
+      } else if (variance_violated) {
+        test_used   <- "Welch's ANOVA"
+        test_result <- stats::oneway.test(stats::formula(y ~ grp), var.equal = FALSE)
+      } else {
+        test_used    <- "One-way ANOVA"
+        fitted_model <- stats::aov(y ~ grp)
+        sa           <- summary(fitted_model)[[1]]
+        test_result  <- list(
+          statistic = c("F value" = sa$`F value`[1]),
+          parameter = c(df1 = sa$Df[1], df2 = sa$Df[2]),
+          p.value   = sa$`Pr(>F)`[1],
+          method    = test_used
+        )
+      }
+    }
+  } else if (test_type == "parametric") {
+    if (test_family == "independent_two_sample") {
+      test_used   <- "Student's t-test (forced)"
+      test_result <- stats::t.test(x = y[grp == groups[1]],
+                                   y = y[grp == groups[2]], var.equal = TRUE)
+    } else if (test_family == "paired_two_sample") {
+      test_used   <- "Paired t-test (forced)"
+      test_result <- stats::t.test(y[grp == groups[1]], y[grp == groups[2]],
+                                   paired = TRUE)
+    } else {
+      test_used    <- "One-way ANOVA (forced)"
+      fitted_model <- stats::aov(y ~ grp)
+      sa           <- summary(fitted_model)[[1]]
+      test_result  <- list(
+        statistic = c("F value" = sa$`F value`[1]),
+        parameter = c(df1 = sa$Df[1], df2 = sa$Df[2]),
+        p.value   = sa$`Pr(>F)`[1],
+        method    = test_used
+      )
+    }
+  } else {
+    # nonparametric
+    parametric_used <- FALSE
+    if (test_family == "independent_two_sample") {
+      test_used   <- "Mann-Whitney U test (forced)"
+      test_result <- stats::wilcox.test(x = y[grp == groups[1]],
+                                        y = y[grp == groups[2]])
+    } else if (test_family == "paired_two_sample") {
+      test_used   <- "Wilcoxon signed-rank test (forced)"
+      test_result <- withCallingHandlers(
+        stats::wilcox.test(x = y[grp == groups[1]], y = y[grp == groups[2]], paired = TRUE),
+        warning = function(w) {
+          if (grepl("ties", conditionMessage(w), ignore.case = TRUE))
+            warnings_list <<- c(warnings_list, conditionMessage(w))
+          invokeRestart("muffleWarning")
+        }
+      )
+    } else {
+      test_used   <- "Kruskal-Wallis test (forced)"
+      test_result <- stats::kruskal.test(x = y, g = grp)
+    }
+  }
+
+  # ---- effect size ----
+  es_result <- NULL
+  if (calculate_effect_size && !is.null(test_result) &&
+      requireNamespace("effectsize", quietly = TRUE)) {
+    es_result <- tryCatch({
+      if (test_family %in% c("independent_two_sample", "paired_two_sample")) {
+        is_paired_fam <- (test_family == "paired_two_sample")
+        if (parametric_used) {
+          es     <- effectsize::cohens_d(
+                      x         = y[grp == groups[1]],
+                      y         = y[grp == groups[2]],
+                      #pooled_sd = !variance_violated,
+                      paired    = TRUE,
+                      verbose   = FALSE
+                    )
+          interp <- effectsize::interpret(es, rules = "cohen1988")
+          list(estimate  = es$Cohens_d,
+               ci_low    = es$CI_low,
+               ci_high   = es$CI_high,
+               magnitude = as.character(interp$Interpretation),
+               metric    = if (is_paired_fam) "Cohen's d (paired)" else "Cohen's d")
+        } else {
+          es     <- effectsize::rank_biserial(
+                      x       = y[grp == groups[1]],
+                      y       = y[grp == groups[2]],
+                      paired  = TRUE,
+                      verbose = FALSE
+                    )
+          interp <- effectsize::interpret(es, rules = "funder2019")
+          list(estimate  = es$r_rank_biserial,
+               ci_low    = es$CI_low,
+               ci_high   = es$CI_high,
+               magnitude = as.character(interp$Interpretation),
+               metric    = if (is_paired_fam) "Rank-biserial correlation (paired)"
+                           else "Rank-biserial correlation")
+        }
+      } else {
+        # independent_anova
+        if (parametric_used) {
+          es_model <- if (is.null(fitted_model)) {
+            warnings_list <<- c(warnings_list,
+              "Eta-squared calculated from standard ANOVA (Welch's ANOVA used for test).")
+            stats::aov(y ~ grp)
+          } else fitted_model
+          es     <- effectsize::eta_squared(es_model, verbose = FALSE)
+          interp <- effectsize::interpret(es, rules = "field2013")
+          list(estimate  = es$Eta2,
+               ci_low    = es$CI_low,
+               ci_high   = es$CI_high,
+               magnitude = as.character(interp$Interpretation),
+               metric    = "Eta-squared")
+        } else {
+          es     <- effectsize::rank_epsilon_squared(x = y, groups = grp,
+                                                     verbose = FALSE)
+          interp <- effectsize::interpret(es, rules = "field2013")
+          list(estimate  = es$rank_epsilon_squared,
+               ci_low    = if (!is.null(es$CI_low))  es$CI_low  else NA_real_,
+               ci_high   = if (!is.null(es$CI_high)) es$CI_high else NA_real_,
+               magnitude = as.character(interp$Interpretation),
+               metric    = "Rank epsilon-squared")
+        }
+      }
+    }, error = function(e) {
+      warnings_list <<- c(warnings_list, paste("Effect size failed:", e$message))
+      NULL
+    })
+  }
+
+  # ---- post-hoc ----
+  posthoc_result <- NULL
+  if (perform_posthoc && n_groups > 2 &&
+      !is.null(test_result) && test_result$p.value < test_alpha &&
+      requireNamespace("rstatix", quietly = TRUE)) {
+    posthoc_result <- tryCatch({
+      td <- tibble::tibble(y = y, grp = grp)
+      ph <- NULL
+
+      if (test_used %in% c("One-way ANOVA", "One-way ANOVA (forced)")) {
+        ph              <- rstatix::tukey_hsd(td, y ~ grp)
+        ph$posthoc_test <- "Tukey HSD"
+        ph$statistic    <- NA_real_
+        ph$p            <- NA_real_
+        nl              <- stats::setNames(as.numeric(group_ns), names(group_ns))
+        ph$n1           <- nl[ph$group1]
+        ph$n2           <- nl[ph$group2]
+      } else if (test_used == "Welch's ANOVA") {
+        ph              <- rstatix::games_howell_test(td, y ~ grp)
+        ph$posthoc_test <- "Games-Howell"
+        ph$p            <- NA_real_
+      } else if (test_used %in% c("Kruskal-Wallis test",
+                                   "Kruskal-Wallis test (forced)")) {
+        ph              <- rstatix::dunn_test(td, y ~ grp,
+                                              p.adjust.method = p_adjust_method)
+        ph$posthoc_test <- "Dunn's test"
+      }
+
+      if (!is.null(ph)) {
+        if ("p.adj" %in% names(ph)) {
+          ph$p.adj.signif <- ifelse(ph$p.adj < 0.001, "***",
+                             ifelse(ph$p.adj < 0.01,  "**",
+                             ifelse(ph$p.adj < 0.05,  "*", "ns")))
+          ph$significant  <- ph$p.adj < test_alpha
+        }
+
+        # Stochastic dominance interpretation via mean ranks
+        rks        <- rank(y)
+        mean_ranks <- tapply(rks, grp, mean)
+        ph$interpretation <- mapply(function(g1, g2, sig) {
+          if (is.na(sig) || sig == "ns") return("No significant difference")
+          if (mean_ranks[g1] < mean_ranks[g2])
+            paste0(g1, " tends to have smaller values than ", g2)
+          else
+            paste0(g1, " tends to have larger values than ", g2)
+        },
+        ph$group1, ph$group2,
+        if ("p.adj.signif" %in% names(ph)) ph$p.adj.signif else rep("ns", nrow(ph)),
+        SIMPLIFY = TRUE, USE.NAMES = FALSE)
+      }
+      ph
+    }, error = function(e) {
+      warnings_list <<- c(warnings_list, paste("Post-hoc failed:", e$message))
+      NULL
+    })
+  }
+
+  # ---- data summary ----
+  dg <- droplevels(grp)
+  data_summary <- data.frame(
+    group     = levels(dg),
+    n         = as.numeric(table(dg)),
+    mean      = as.numeric(tapply(y, dg, mean)),
+    sd        = as.numeric(tapply(y, dg, stats::sd)),
+    se        = as.numeric(tapply(y, dg,
+                  function(v) stats::sd(v) / sqrt(length(v)))),
+    median    = as.numeric(tapply(y, dg, stats::median)),
+    q25       = as.numeric(tapply(y, dg,
+                  function(v) stats::quantile(v, 0.25))),
+    q75       = as.numeric(tapply(y, dg,
+                  function(v) stats::quantile(v, 0.75))),
+    min       = as.numeric(tapply(y, dg, min)),
+    max       = as.numeric(tapply(y, dg, max)),
+    row.names = NULL
+  )
+
+  # ---- return rich list (mirrors old run_diff structure for plot_diff) ----
+  list(
+    test_used          = test_used,
+    test_result        = test_result,
+    effect_size        = es_result,
+    posthoc_result     = posthoc_result,
+    norm_results       = norm_results_raw,
+    variance_p         = variance_p,
+    variance_method    = variance_method,
+    normality_violated = normality_violated,
+    variance_violated  = variance_violated,
+    parametric         = parametric_used,
+    data_summary       = data_summary,
+    outcome            = outcome,
+    group_var          = group,
+    groups             = groups,
+    n_groups           = n_groups,
+    group_ns           = group_ns,
+    paired             = paired,
+    test_type          = test_type,
+    test_alpha         = test_alpha,
+    warnings           = warnings_list,
+    raw_data           = tibble::tibble(outcome = y, group = grp)
+  )
+}
+
+
+
+# =============================================================================
+#  Helper: build a summary_table data frame from a named list of run_diff
+#          objects (one element per outcome).  Used both for the main table
+#          and for each subgroup × level slice.
+# =============================================================================
+.build_summary_table <- function(results_list, outcome_names, test_alpha) {
+  tbl_rows <- lapply(outcome_names, function(oc) {
+    res <- results_list[[oc]]
+
+    if (is.null(res)) {
+      return(data.frame(
+        outcome               = oc,
+        test_used             = NA_character_,
+        statistic             = NA_real_,
+        df                    = NA_character_,
+        p_value               = NA_real_,
+        effect_size_metric    = NA_character_,
+        effect_size_estimate  = NA_real_,
+        effect_size_ci_low    = NA_real_,
+        effect_size_ci_high   = NA_real_,
+        effect_size_magnitude = NA_character_,
+        significant           = NA,
+        n_significant_posthoc = NA_integer_,
+        posthoc_pairs         = NA_integer_,
+        stringsAsFactors      = FALSE
+      ))
+    }
+
+    tr <- res$test_result
+    es <- res$effect_size
+    ph <- res$posthoc_result
+
+    df_val <- if (!is.null(tr$parameter) && length(tr$parameter) > 0)
+      paste(names(tr$parameter), round(tr$parameter, 4), sep = " = ", collapse = ", ")
+    else NA_character_
+
+    n_sig_ph <- if (!is.null(ph) && nrow(ph) > 0) sum(ph$significant, na.rm = TRUE) else NA_integer_
+    total_ph <- if (!is.null(ph) && nrow(ph) > 0) nrow(ph) else NA_integer_
+
+    data.frame(
+      outcome               = oc,
+      test_used             = res$test_used,
+      statistic             = if (!is.null(tr$statistic)) as.numeric(tr$statistic[[1]]) else NA_real_,
+      df                    = df_val,
+      p_value               = if (!is.null(tr$p.value)) tr$p.value else NA_real_,
+      effect_size_metric    = if (!is.null(es)) es$metric    else NA_character_,
+      effect_size_estimate  = if (!is.null(es)) es$estimate  else NA_real_,
+      effect_size_ci_low    = if (!is.null(es)) es$ci_low    else NA_real_,
+      effect_size_ci_high   = if (!is.null(es)) es$ci_high   else NA_real_,
+      effect_size_magnitude = if (!is.null(es)) es$magnitude else NA_character_,
+      significant           = if (!is.null(tr$p.value)) tr$p.value < test_alpha else NA,
+      n_significant_posthoc = n_sig_ph,
+      posthoc_pairs         = total_ph,
+      stringsAsFactors      = FALSE
+    )
+  })
+
+  tbl <- do.call(rbind, tbl_rows)
+  rownames(tbl) <- NULL
+  tbl
 }
