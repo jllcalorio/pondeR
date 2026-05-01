@@ -133,7 +133,7 @@
 #' @param export_filename String. The file name of the exported file/s. Multiple exports can be done by setting each to TRUE. The default is "Summary Results" and will remain as it is if `export_filename = NULL` or `export_filename = ""`.
 #'
 #' @importFrom openxlsx saveWorkbook writeData addWorksheet createWorkbook
-#' @importFrom gtsummary label_style_pvalue
+#' @import gtsummary
 #' @import webshot2
 #'
 #' @returns A `gtsummary` table object (inherits from `gt_tbl`), representing the simple descriptive statistics.
