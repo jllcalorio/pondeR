@@ -12,6 +12,7 @@ Depends:
 Imports:
     anthro,
     anthroplus,
+    ape,
     BiocManager,
     BiocParallel,
     car,
@@ -43,6 +44,7 @@ Imports:
     mixOmics,
     moments,
     nortest,
+    OmicFlow,
     openxlsx,
     parallel,
     parallelly,
@@ -63,6 +65,7 @@ Imports:
     tibble,
     tools,
     utils,
+    vegan,
     viridis,
     vsn,
     webshot2
