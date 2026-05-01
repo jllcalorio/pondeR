@@ -296,6 +296,19 @@
 #'   \code{"kendall"}, \code{"pointbiserial"}, \code{"phi"}, \code{"cramerv"},
 #'   or \code{"poly"}. When \code{"auto"}, the method is selected per variable
 #'   pair based on data type, normality, and sample size.
+#' @param force_test A list of two-element lists, each specifying a variable
+#'   pair and the correlation method to use for that pair, overriding the
+#'   global \code{method} argument. Each element must be of the form
+#'   \code{list(c("var1", "var2"), "method")}. For example:
+#'   \preformatted{force_test = list(
+#'     list(c("var1", "var2"), "pearson"),
+#'     list(c("var1", "var3"), "spearman")
+#'   )}
+#'   Valid methods are all values accepted by \code{method} except
+#'   \code{"auto"}. Column names are order-insensitive within each pair.
+#'   If a pair appears more than once, the last entry takes precedence with
+#'   a warning. Pairs not listed here are analyzed using the global
+#'   \code{method}. Default \code{NULL} (no overrides).
 #' @param sig_threshold A single numeric value in \code{(0, 1)} specifying
 #'   the significance threshold for p-values. Correlations with
 #'   \code{p >= sig_threshold} are masked in the masked table. Default
@@ -386,6 +399,7 @@ run_correl <- function(x,
                         metadata         = NULL,
                         remove           = NULL,
                         method           = "auto",
+                        force_test       = NULL,
                         sig_threshold    = 0.05,
                         normality_method = "auto",
                         alpha_normality  = 0.05,
@@ -449,6 +463,53 @@ run_correl <- function(x,
     stop("`alpha_normality` must be a single numeric value between 0 and 1 ",
          "(exclusive).", call. = FALSE)
 
+  # --- Validate `force_test` --------------------------------------------------
+
+  .ft_lookup <- list()  # will map "var1\rvar2" -> method string
+
+  if (!is.null(force_test)) {
+    if (!is.list(force_test))
+      stop("`force_test` must be a list of two-element lists, e.g.:\n",
+           '  list(list(c("var1", "var2"), "pearson"), list(c("var1", "var3"), "spearman"))',
+           call. = FALSE)
+
+    for (i in seq_along(force_test)) {
+      item <- force_test[[i]]
+
+      if (!is.list(item) || length(item) != 2L)
+        stop("`force_test[[", i, "]]` must be a two-element list: ",
+             'list(c("var1", "var2"), "method").', call. = FALSE)
+
+      pair   <- item[[1L]]
+      ft_mtd <- item[[2L]]
+
+      if (!is.character(pair) || length(pair) != 2L)
+        stop("The first element of `force_test[[", i, "]]` must be a ",
+             "character vector of length 2 naming two columns.", call. = FALSE)
+      if (!is.character(ft_mtd) || length(ft_mtd) != 1L ||
+          !ft_mtd %in% valid_methods || ft_mtd == "auto")
+        stop("The second element of `force_test[[", i, "]]` must be one of: ",
+             paste0('"', setdiff(valid_methods, "auto"), '"', collapse = ", "),
+             ".\n  Supplied in `force_test[[", i, "]]`: '", ft_mtd, "'.",
+             call. = FALSE)
+      if (!pair[1L] %in% names(x))
+        stop("Column '", pair[1L], "' in `force_test[[", i, "]]` ",
+             "not found in `x`.", call. = FALSE)
+      if (!pair[2L] %in% names(x))
+        stop("Column '", pair[2L], "' in `force_test[[", i, "]]` ",
+             "not found in `x`.", call. = FALSE)
+
+      # Store under a canonical sorted key so order doesn't matter
+      key <- paste(sort(pair), collapse = "\r")
+      if (key %in% names(.ft_lookup))
+        warning(sprintf(
+          "Duplicate `force_test` entry for pair ('%s', '%s'). ",
+          pair[1L], pair[2L]
+        ), "The last entry will be used.", call. = FALSE)
+      .ft_lookup[[key]] <- ft_mtd
+    }
+  }  
+  
   # --- Apply `remove` filters -------------------------------------------------
 
   if (!is.null(remove)) {
@@ -505,6 +566,32 @@ run_correl <- function(x,
 
   results <- vector("list", length(pairs))
 
+  # for (i in seq_along(pairs)) {
+  #   vnames     <- pairs[[i]]
+  #   xname      <- vnames[1L]
+  #   yname      <- vnames[2L]
+  #   vx         <- x[[xname]]
+  #   vy         <- x[[yname]]
+
+  #   results[[i]] <- .correl_pair(
+  #     vx               = vx,
+  #     vy               = vy,
+  #     xname            = xname,
+  #     yname            = yname,
+  #     method           = method,
+  #     sig_threshold    = sig_threshold,
+  #     normality_method = normality_method,
+  #     alpha_normality  = alpha_normality,
+  #     cor_args         = extra_args
+  #   )
+
+  #   if (verbose)
+  #     message(sprintf("[%d/%d] %s vs %s — method: %s, r = %.4f, p = %.4f",
+  #                     i, length(pairs), xname, yname,
+  #                     results[[i]]$method_used,
+  #                     results[[i]]$estimate %||% NA,
+  #                     results[[i]]$p_value   %||% NA))
+  # }
   for (i in seq_along(pairs)) {
     vnames     <- pairs[[i]]
     xname      <- vnames[1L]
@@ -512,12 +599,23 @@ run_correl <- function(x,
     vx         <- x[[xname]]
     vy         <- x[[yname]]
 
+    # Resolve per-pair forced method (if any), else fall back to `method`
+    ft_key      <- paste(sort(c(xname, yname)), collapse = "\r")
+    pair_method <- if (!is.null(.ft_lookup[[ft_key]])) {
+      if (verbose)
+        message(sprintf("[%d/%d] %s vs %s — force_test override: '%s'",
+                        i, length(pairs), xname, yname, .ft_lookup[[ft_key]]))
+      .ft_lookup[[ft_key]]
+    } else {
+      method
+    }
+
     results[[i]] <- .correl_pair(
       vx               = vx,
       vy               = vy,
       xname            = xname,
       yname            = yname,
-      method           = method,
+      method           = pair_method,
       sig_threshold    = sig_threshold,
       normality_method = normality_method,
       alpha_normality  = alpha_normality,
