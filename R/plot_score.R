@@ -1,11 +1,17 @@
-#' Plot PCA Scores Plot
+#' @title Scores Plot for Multivariate Ordination Results
 #'
 #' @description
-#' Creates a scores plot showing sample positions in principal component space.
-#' Supports discrete group coloring, continuous variable coloring, confidence
-#' ellipses, and outlier detection.
+#' Produces a publication-ready scores plot from the output of multivariate
+#' ordination and dimensionality-reduction methods, including Principal
+#' Component Analysis (\code{run_pca}), Partial Least Squares and PLS-DA
+#' (\code{run_pls}), and Principal Coordinate Analysis (\code{run_pcoa}).
+#' Supports discrete group coloring with confidence ellipses, continuous
+#' gradient coloring, outlier detection and labeling, and a range of
+#' publication themes.
 #'
-#' @param pca_result List. Output from `run_pca()`.
+#' @param res List. Output from \code{run_pca()}, \code{run_pls()}, or
+#'   \code{run_pcoa()}. The appropriate plot method is selected automatically
+#'   via S3 dispatch based on the class of \code{res}.
 #' @param pc Character vector of length 2. Principal components to plot, e.g., `c("PC1", "PC2")`.
 #'   Can also be numeric, e.g., `c(1, 2)`. Default: `c(1, 2)`.
 #' @param color_by Character. Name of column in `metadata` to use for coloring points.
@@ -161,17 +167,17 @@
 #'
 #' # Run PCA (excluding QC samples)
 #' scaled_result <- run_scale(x, method = "auto")
-#' pca_result    <- run_pca(scaled_result$data, metadata,
+#' res    <- run_pca(scaled_result$data, metadata,
 #'                          group   = "Group",
 #'                          exclude = "QC")
 #'
 #' # Basic scores plot — nature theme, Okabe-Ito colors (defaults)
-#' plot_score(pca_result,
+#' plot_score(res,
 #'            color_by    = "Group",
 #'            points_from = "Sample")
 #'
 #' # PC2 vs PC3 with left-aligned title
-#' plot_score(pca_result,
+#' plot_score(res,
 #'            pc          = c(2, 3),
 #'            color_by    = "Group",
 #'            points_from = "Sample",
@@ -179,19 +185,19 @@
 #'            position    = "left")
 #'
 #' # Color by batch with custom palette
-#' plot_score(pca_result,
+#' plot_score(res,
 #'            color_by    = "Batch",
 #'            points_from = "Sample",
 #'            colors      = c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3"))
 #'
 #' # Continuous coloring by time
-#' plot_score(pca_result,
+#' plot_score(res,
 #'            color_by    = "Time",
 #'            points_from = "Sample",
 #'            legend      = "Collection Time (h)")
 #'
 #' # Show outliers in specific groups, classic theme, larger zoom
-#' plot_score(pca_result,
+#' plot_score(res,
 #'            color_by       = "Group",
 #'            points_from    = "Sample",
 #'            show_outliers  = TRUE,
@@ -201,7 +207,7 @@
 #'            zoom           = 1.2)
 #'
 #' # Stricter outlier detection with serif font
-#' plot_score(pca_result,
+#' plot_score(res,
 #'            color_by      = "Group",
 #'            points_from   = "Sample",
 #'            show_outliers = TRUE,
@@ -210,12 +216,12 @@
 #'            base_size     = 13)
 #' }
 #' 
-plot_score <- function(pca_result, ...) UseMethod("plot_score")
+plot_score <- function(res, ...) UseMethod("plot_score")
 
 #' @rdname plot_score
 #' @export
 plot_score.run_pca <- function(
-    pca_result,
+    res,
     pc               = c(1, 2),
     color_by,
     points_from,
@@ -264,7 +270,7 @@ plot_score.run_pca <- function(
   if (missing(color_by)) {
     stop(
       "'color_by' is required. Please specify a column name from metadata.\n",
-      sprintf("Available columns: %s\n", paste(colnames(pca_result$metadata), collapse = ", ")),
+      sprintf("Available columns: %s\n", paste(colnames(res$metadata), collapse = ", ")),
       "Solution: Add color_by = 'ColumnName' to your function call."
     )
   }
@@ -272,7 +278,7 @@ plot_score.run_pca <- function(
   if (missing(points_from)) {
     stop(
       "'points_from' is required. Please specify a column name from metadata for point labels.\n",
-      sprintf("Available columns: %s\n", paste(colnames(pca_result$metadata), collapse = ", ")),
+      sprintf("Available columns: %s\n", paste(colnames(res$metadata), collapse = ", ")),
       "Solution: Add points_from = 'ColumnName' (e.g., points_from = 'Sample') to your function call."
     )
   }
@@ -386,10 +392,10 @@ plot_score.run_pca <- function(
     )
   }
 
-  if (pc_x < 1L || pc_x > pca_result$n_pcs || pc_y < 1L || pc_y > pca_result$n_pcs) {
+  if (pc_x < 1L || pc_x > res$n_pcs || pc_y < 1L || pc_y > res$n_pcs) {
     stop(
-      sprintf("Requested PCs are out of range. Available: PC1 to PC%d.\n", pca_result$n_pcs),
-      sprintf("Solution: Choose pc values between 1 and %d.", pca_result$n_pcs)
+      sprintf("Requested PCs are out of range. Available: PC1 to PC%d.\n", res$n_pcs),
+      sprintf("Solution: Choose pc values between 1 and %d.", res$n_pcs)
     )
   }
 
@@ -400,10 +406,10 @@ plot_score.run_pca <- function(
     )
   }
 
-  if (!color_by %in% colnames(pca_result$metadata)) {
+  if (!color_by %in% colnames(res$metadata)) {
     stop(
       sprintf("Column '%s' specified in 'color_by' not found in metadata.\n", color_by),
-      sprintf("Available columns: %s\n", paste(colnames(pca_result$metadata), collapse = ", ")),
+      sprintf("Available columns: %s\n", paste(colnames(res$metadata), collapse = ", ")),
       "Solution: Use a valid column name from metadata."
     )
   }
@@ -419,8 +425,8 @@ plot_score.run_pca <- function(
   # DATA PREPARATION
   # ============================================================================
 
-  metadata <- pca_result$metadata
-  scores   <- pca_result$scores
+  metadata <- res$metadata
+  scores   <- res$scores
 
   is_numeric_color <- is.numeric(metadata[[color_by]])
 
@@ -583,8 +589,8 @@ plot_score.run_pca <- function(
   # BUILD PLOT
   # ============================================================================
 
-  x_label <- sprintf("PC%d (%.1f%%)", pc_x, pca_result$variance_explained[pc_x])
-  y_label <- sprintf("PC%d (%.1f%%)", pc_y, pca_result$variance_explained[pc_y])
+  x_label <- sprintf("PC%d (%.1f%%)", pc_x, res$variance_explained[pc_x])
+  y_label <- sprintf("PC%d (%.1f%%)", pc_y, res$variance_explained[pc_y])
 
   if (is.null(title)) {
     title <- sprintf("PCA Scores Plot (PC%d vs PC%d)", pc_x, pc_y)
@@ -592,11 +598,7 @@ plot_score.run_pca <- function(
 
   if (is_numeric_color) {
     # Continuous: bin into quartiles for shape aesthetic
-    breaks <- quantile(plot_data$ColorGroup, probs = c(0, 0.25, 0.5, 0.75, 1), na.rm = TRUE)
-    plot_data$ShapeGroup <- cut(plot_data$ColorGroup,
-                                breaks = breaks,
-                                labels = c("Q1", "Q2", "Q3", "Q4"),
-                                include.lowest = TRUE)
+    plot_data$ShapeGroup <- .bin_continuous_safe(plot_data$ColorGroup)
 
     p <- ggplot2::ggplot(
       plot_data,
@@ -713,10 +715,10 @@ plot_score.run_pls <- plot_score.run_pca
 
 #' @rdname plot_score
 #' @export
-plot_score.default <- function(pca_result, ...) {
+plot_score.default <- function(res, ...) {
   stop(
-    "'pca_result' must be output from run_pca() or run_pls().\n",
-    sprintf("Got object of class: %s\n", paste(class(pca_result), collapse = ", ")),
+    "'res' must be output from run_pca() or run_pls().\n",
+    sprintf("Got object of class: %s\n", paste(class(res), collapse = ", ")),
     "Solution: Pass the result of run_pca() or run_pls() directly."
   )
 }
@@ -775,4 +777,224 @@ plot_score.default <- function(pca_result, ...) {
   }
 
   unique(valid_groups)
+}
+
+#' @rdname plot_score
+#' @param metadata A \code{data.frame} with one row per observation (sample).
+#'   Required for \code{plot_score.run_pcoa} because \code{run_pcoa()} does not
+#'   bundle metadata inside its result (unlike \code{run_pca()}). Row order must
+#'   match the row order of the data matrix originally passed to
+#'   \code{run_pcoa()}.
+#' @export
+plot_score.run_pcoa <- function(
+    res,                  # run_pcoa result (name kept for S3 consistency)
+    metadata,             # required: data.frame, same row order as pcoa scores
+    pc               = c(1, 2),
+    color_by,
+    points_from,
+    title            = NULL,
+    subtitle         = NULL,
+    caption          = NULL,
+    position         = "center",
+    arrange_levels   = NULL,
+    ellipse          = TRUE,
+    ellipse_type     = "t",
+    ellipse_level    = 0.95,
+    legend           = NULL,
+    legend_position  = "bottom",
+    show_outliers    = FALSE,
+    label_outliers   = "all",
+    colors           = NULL,
+    point_size       = 3,
+    point_alpha      = 0.8,
+    theme            = "nature",
+    base_size        = 11,
+    font_family      = "sans",
+    axis_title_size  = NULL,
+    axis_text_size   = NULL,
+    plot_title_size  = NULL,
+    legend_title_size = NULL,
+    legend_text_size  = NULL,
+    zoom             = 1,
+    verbose          = TRUE
+) {
+
+  # ── 1. Validate metadata ────────────────────────────────────────────────────
+  if (missing(metadata)) {
+    stop(
+      "'metadata' is required for plot_score.run_pcoa().\n",
+      "  Provide a data.frame with one row per observation, in the same row ",
+      "order as the data originally passed to run_pcoa().",
+      call. = FALSE
+    )
+  }
+
+  if (!is.data.frame(metadata) && !inherits(metadata, "tbl_df")) {
+    stop(
+      "'metadata' must be a data.frame or tibble.\n",
+      "  Received an object of class: ", paste(class(metadata), collapse = ", "),
+      call. = FALSE
+    )
+  }
+
+  n_obs <- res$n_obs
+  if (nrow(metadata) != n_obs) {
+    stop(
+      "Row count mismatch: 'metadata' has ", nrow(metadata), " row(s) but the ",
+      "PCoA result has ", n_obs, " observation(s).\n",
+      "  Ensure 'metadata' has exactly one row per observation, in the same ",
+      "order as the original data passed to run_pcoa().",
+      call. = FALSE
+    )
+  }
+
+  # ── 2. Build a pseudo run_pca-compatible object ─────────────────────────────
+  n_axes  <- res$n_axes
+  pc_nms  <- colnames(res$scores)   # already "PC1", "PC2", ...
+
+  proxy <- list(
+    scores            = res$scores,
+    metadata          = metadata,
+    variance_explained = res$variance_explained,
+    n_pcs             = n_axes
+  )
+  class(proxy) <- c("run_pca", "list")   # borrow run_pca dispatch for the body
+
+  # ── 3. Patch axis title builder so labels read "PCo" not "PC" ───────────────
+  if (is.numeric(pc)) {
+    pc_x <- as.integer(pc[1L])
+    pc_y <- as.integer(pc[2L])
+  } else {
+    pc_x <- as.integer(gsub("PC", "", pc[1L], ignore.case = TRUE))
+    pc_y <- as.integer(gsub("PC", "", pc[2L], ignore.case = TRUE))
+  }
+
+  if (is.null(title)) {
+    title <- sprintf("PCoA Scores Plot (PCoA%d vs PCoA%d)", pc_x, pc_y)
+  }
+
+  # ── 3.5 Auto-generate PERMANOVA & Post-Hoc subtitle if present ──────────────
+  if (is.null(subtitle)) {
+    sub_parts <- c()
+
+    # 1. Main PERMANOVA
+    if (!is.null(res$permanova)) {
+      r2_val <- res$permanova$R2
+      p_val  <- res$permanova$p_value
+      p_str  <- if (!is.na(p_val) && p_val < 0.001) "< 0.001" else sprintf("= %.3f", p_val)
+      sub_parts <- c(sub_parts, sprintf("PERMANOVA: R\u00b2 = %.2f; p %s", r2_val, p_str))
+    }
+
+    # 2. Pairwise Post-Hoc
+    if (!is.null(res$pairwise_adonis)) {
+      pa_res <- as.data.frame(res$pairwise_adonis)
+      
+      # Dynamically detect column names to accommodate OmicFlow ("p.adj") 
+      # and other standard packages ("p.adjusted")
+      p_col <- intersect(c("p.adj", "p.adjusted", "padj", "p.value", "pval"), colnames(pa_res))[1]
+      pair_col <- intersect(c("pairs", "group", "contrast"), colnames(pa_res))[1]
+      
+      if (!is.na(p_col) && !is.na(pair_col)) {
+        # Using which() prevents NA rows if the p-value column contains NAs
+        sig_pairs <- pa_res[which(pa_res[[p_col]] < 0.05), pair_col]
+        
+        if (length(sig_pairs) > 0) {
+          sig_str <- paste(sig_pairs, collapse = ", ")
+          
+          # If the string is too long (e.g., highly multi-group design), truncate to avoid plot distortion
+          if (nchar(sig_str) > 60) {
+             sig_str <- sprintf("%d significant pairs (p < 0.05)", length(sig_pairs))
+          } else {
+             sig_str <- paste0("Sig. pairs: ", sig_str)
+          }
+          sub_parts <- c(sub_parts, sprintf("Post-hoc: %s", sig_str))
+        } else {
+          sub_parts <- c(sub_parts, "Post-hoc: No sig. pairs (p < 0.05)")
+        }
+      }
+    }
+
+    # Combine into a single multi-line subtitle
+    if (length(sub_parts) > 0) {
+      subtitle <- paste(sub_parts, collapse = "\n")
+    }
+  }
+
+  # ── 4. Delegate to run_pca method ───────────────────────────────────────────
+  p <- plot_score.run_pca(
+    res               = proxy,
+    pc                = pc,
+    color_by          = color_by,
+    points_from       = points_from,
+    title             = title,
+    subtitle          = subtitle,    # Automatically populated here
+    caption           = caption,
+    position          = position,
+    arrange_levels    = arrange_levels,
+    ellipse           = ellipse,
+    ellipse_type      = ellipse_type,
+    ellipse_level     = ellipse_level,
+    legend            = legend,
+    legend_position   = legend_position,
+    show_outliers     = show_outliers,
+    label_outliers    = label_outliers,
+    colors            = colors,
+    point_size        = point_size,
+    point_alpha       = point_alpha,
+    theme             = theme,
+    base_size         = base_size,
+    font_family       = font_family,
+    axis_title_size   = axis_title_size,
+    axis_text_size    = axis_text_size,
+    plot_title_size   = plot_title_size,
+    legend_title_size = legend_title_size,
+    legend_text_size  = legend_text_size,
+    zoom              = zoom,
+    verbose           = verbose
+  )
+
+  # ── 5. Re-label axes to "PCo" convention ────────────────────────────────────
+  ve <- res$variance_explained
+  p  <- p + ggplot2::labs(
+    x = sprintf("PC%d (%.1f%%)", pc_x, ve[pc_x]),
+    y = sprintf("PC%d (%.1f%%)", pc_y, ve[pc_y])
+  )
+
+  return(p)
+}
+
+.bin_continuous_safe <- function(x) {
+  # Try quantile-based cut first; if breaks are non-unique (duplicate quantiles,
+  # common with integer or low-cardinality continuous variables), fall back to
+  # rank-based ntile-style binning, which always produces 4 non-empty bins.
+  breaks <- unique(
+    quantile(x, probs = c(0, 0.25, 0.5, 0.75, 1), na.rm = TRUE)
+  )
+  lbs <- c("Q1", "Q2", "Q3", "Q4")
+
+  if (length(breaks) == 5L) {
+    # Happy path: all four quantile boundaries are distinct
+    result <- cut(x, breaks = breaks, labels = lbs, include.lowest = TRUE)
+  } else {
+    # Fallback: rank-based equal-frequency binning — always produces 4 groups
+    # regardless of ties in the original variable.
+    n      <- length(x)
+    rnk    <- rank(x, ties.method = "first", na.last = "keep")
+    bin    <- ceiling(rnk / n * 4L)
+    bin    <- pmin(bin, 4L)           # guard against floating-point ceiling > 4
+    result <- factor(lbs[bin], levels = lbs)
+  }
+  result
+}
+
+# Also update the .default method error message to include run_pcoa:
+#' @rdname plot_score
+#' @export
+plot_score.default <- function(res, ...) {
+  stop(
+    "'res' must be output from run_pca(), run_pls(), or run_pcoa().\n",
+    sprintf("Got object of class: %s\n", paste(class(res), collapse = ", ")),
+    "Solution: Pass the result of run_pca(), run_pls(), or run_pcoa() directly.",
+    call. = FALSE
+  )
 }
