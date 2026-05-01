@@ -411,15 +411,18 @@ plot_diff <- function(x,
     # (hyphens, spaces, parentheses) in column names safely.
     safe_var <- paste0("`", var, "`")
 
+    # -------------------------------------------------------------------------
+    # 6c. Base plot  — pass var directly, NOT safe_var
+    # -------------------------------------------------------------------------
     p <- if (plot_type == "boxplot") {
-      ggpubr::ggboxplot(plot_data, x = group, y = safe_var,
+      ggpubr::ggboxplot(plot_data, x = group, y = var,
                         color = group, palette = plot_colors,
                         add = "jitter", order = group_order, ...)
     } else {
-      ggpubr::ggviolin(plot_data, x = group, y = safe_var,
-                       color = group, fill = group, palette = plot_colors,
-                       add = "boxplot", add.params = list(fill = "white"),
-                       order = group_order, ...)
+      ggpubr::ggviolin(plot_data, x = group, y = var,
+                      color = group, fill = group, palette = plot_colors,
+                      add = "boxplot", add.params = list(fill = "white"),
+                      order = group_order, ...)
     }
 
     p <- p +
@@ -442,29 +445,37 @@ plot_diff <- function(x,
     # 6e. Aggregate value text
     # -------------------------------------------------------------------------
     if (show_agg_val) {
-      # Build the aes string using the backtick-quoted safe_var so that
-      # column names containing spaces, hyphens, or parentheses are handled
-      # correctly inside after_stat() — .data[[var]] does NOT work there.
-      agg_aes_str <- paste0(
-        "ggplot2::aes(x = .data[[group]], y = ", safe_var, ",",
-        " label = after_stat(format_agg_val(y, label_prefix = 'PLACEHOLDER')))"
-      )
+      # Pre-compute aggregate labels into a summary data frame.
+      # This avoids eval(parse()) and after_stat() entirely, both of which
+      # break on column names containing spaces, hyphens, or parentheses.
+      agg_fun    <- if (is_parametric) mean else median
+      agg_prefix <- if (is_parametric) "M" else "Med"
+      agg_color  <- if (is_parametric) "red" else "blue"
 
-      if (is_parametric) {
-        agg_aes <- eval(parse(text = sub("PLACEHOLDER", "M",   agg_aes_str)))
-        p <- p + ggplot2::stat_summary(
-          mapping = agg_aes,
-          fun   = mean, geom = "text",
-          vjust = -0.7, color = "red", size = fs_agg
+      agg_df <- do.call(rbind, lapply(unique(plot_data[[group]]), function(g) {
+        vals <- plot_data[[var]][plot_data[[group]] == g]
+        agg  <- agg_fun(vals, na.rm = TRUE)
+        data.frame(
+          grp_col = g,
+          agg_val = agg,
+          agg_lbl = format_agg_val(agg, label_prefix = agg_prefix),
+          stringsAsFactors = FALSE
         )
-      } else {
-        agg_aes <- eval(parse(text = sub("PLACEHOLDER", "Med", agg_aes_str)))
-        p <- p + ggplot2::stat_summary(
-          mapping = agg_aes,
-          fun   = median, geom = "text",
-          vjust = -0.7, color = "blue", size = fs_agg
-        )
-      }
+      }))
+      names(agg_df)[1] <- group
+
+      p <- p + ggplot2::geom_text(
+        data    = agg_df,
+        mapping = ggplot2::aes(
+          x     = .data[[group]],
+          y     = agg_val,
+          label = agg_lbl
+        ),
+        vjust  = -0.7,
+        color  = agg_color,
+        size   = fs_agg,
+        inherit.aes = FALSE
+      )
     }
 
     # -------------------------------------------------------------------------
