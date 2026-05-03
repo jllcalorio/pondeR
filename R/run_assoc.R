@@ -41,10 +41,19 @@
 #' }
 #'
 #' @param x A data frame containing the variables for analysis.
-#' @param var1 A character string specifying the name of the first categorical
-#'   variable (typically rows).
-#' @param var2 A character string specifying the name of the second categorical
-#'   variable (typically columns).
+#' @param var1 A character vector of one or more column names in \code{x}
+#'   specifying the categorical variable(s) to test. Each variable in
+#'   \code{var1} will be independently paired with \code{var2} for a test of
+#'   association. All listed columns must be categorical (factor or character),
+#'   unless \code{force_categorical = TRUE}.
+#' @param var2 A character string specifying the name of a single categorical
+#'   variable (typically the grouping or outcome column). Each variable in
+#'   \code{var1} will be compared against this variable.
+#' @param force_categorical Logical. If \code{TRUE}, any column in \code{var1}
+#'   or \code{var2} that is not already a factor or character will be coerced
+#'   to a factor before analysis. This is useful when numeric codes represent
+#'   categorical groups (e.g., \code{0}/\code{1}, \code{1}/\code{2}/\code{3}).
+#'   A warning is issued for each coerced column. Default is \code{FALSE}.
 #' @param weight An optional character string specifying the name of a weight
 #'   column. Use this if \code{x} is in a frequency-aggregated format (e.g.,
 #'   from \code{as.data.frame.table()}).
@@ -141,6 +150,7 @@ run_assoc <- function(x,
                       var2,
                       weight                  = NULL,
                       paired                  = FALSE,
+                      force_categorical       = FALSE,
                       test_type               = c("auto", "chisq", "fisher"),
                       expected_freq_threshold = 5,
                       continuity_correction   = TRUE,
@@ -160,11 +170,19 @@ run_assoc <- function(x,
   if (!is.data.frame(x))
     stop("'x' must be a data frame.")
 
+  # var1 can now be a vector of column names; var2 must be scalar
+  if (!is.character(var1) || length(var1) < 1L)
+    stop("'var1' must be a non-empty character vector of column name(s).")
+  if (!is.character(var2) || length(var2) != 1L)
+    stop("'var2' must be a single character string.")
+
   vars_to_check <- if (is.null(weight)) c(var1, var2) else c(var1, var2, weight)
   missing_vars  <- setdiff(vars_to_check, names(x))
   if (length(missing_vars) > 0)
     stop(paste("Variable(s) not found in 'x':", paste(missing_vars, collapse = ", ")))
 
+  if (!is.logical(force_categorical) || length(force_categorical) != 1L)
+    stop("'force_categorical' must be a single logical value (TRUE or FALSE).")
   if (!is.logical(paired) || length(paired) != 1L)
     stop("'paired' must be a single logical value (TRUE or FALSE).")
   if (!is.numeric(expected_freq_threshold) || length(expected_freq_threshold) != 1L ||
@@ -186,25 +204,66 @@ run_assoc <- function(x,
     stop(paste0("'p_adjust_method' must be one of: ",
                 paste(stats::p.adjust.methods, collapse = ", "), "."))
 
-  # Remove missing values
-  data_complete <- stats::na.omit(x[, vars_to_check, drop = FALSE])
-  n_removed     <- nrow(x) - nrow(data_complete)
-  if (n_removed > 0) {
-    msg           <- sprintf("Removing %d row(s) with missing values.", n_removed)
-    warnings_list <- c(warnings_list, msg)
-    if (verbose) message(msg)
+  # -- Categorical type check / force_categorical coercion --------------------
+  cat_cols <- c(var1, var2)
+  for (col in cat_cols) {
+    is_cat <- is.factor(x[[col]]) || is.character(x[[col]])
+    if (!is_cat) {
+      if (!force_categorical) {
+        stop(sprintf(
+          paste0("Column '%s' is not a factor or character (found: %s). ",
+                 "Coerce it to a factor first, or set `force_categorical = TRUE`."),
+          col, class(x[[col]])[1L]
+        ))
+      } else {
+        msg           <- sprintf(
+          "Column '%s' (%s) coerced to factor via `force_categorical = TRUE`.",
+          col, class(x[[col]])[1L]
+        )
+        warnings_list <- c(warnings_list, msg)
+        if (verbose) message("Warning: ", msg)
+        x[[col]]      <- as.factor(x[[col]])
+      }
+    }
   }
-  if (nrow(data_complete) == 0)
-    stop("No complete cases remain after removing missing values.")
 
-  # Convert to factors and drop unused levels
-  data_complete[[var1]] <- droplevels(as.factor(data_complete[[var1]]))
-  data_complete[[var2]] <- droplevels(as.factor(data_complete[[var2]]))
-
-  if (verbose) {
-    message("\n=== Auto Compare Categorical Analysis ===")
-    message(sprintf("Row: %s | Column: %s | Paired: %s", var1, var2, paired))
-    message(sprintf("Test Type: %s", if (paired) "mcnemar" else test_type))
+  # -- If var1 has multiple variables, dispatch a loop and return a list ------
+  if (length(var1) > 1L) {
+    if (verbose)
+      message(sprintf(
+        "\n=== run_assoc: running %d pairwise associations with '%s' ===",
+        length(var1), var2
+      ))
+    results <- lapply(var1, function(v) {
+      if (verbose) message(sprintf("\n--- Testing: %s vs. %s ---", v, var2))
+      tryCatch(
+        run_assoc(
+          x                       = x,
+          var1                    = v,
+          var2                    = var2,
+          weight                  = weight,
+          paired                  = paired,
+          force_categorical       = force_categorical,
+          test_type               = test_type,
+          expected_freq_threshold = expected_freq_threshold,
+          continuity_correction   = continuity_correction,
+          fisher_simulate         = fisher_simulate,
+          test_alpha              = test_alpha,
+          calculate_association   = calculate_association,
+          perform_posthoc         = perform_posthoc,
+          p_adjust_method         = p_adjust_method,
+          verbose                 = verbose
+        ),
+        error = function(e) {
+          msg <- sprintf("Error in '%s' vs. '%s': %s", v, var2, conditionMessage(e))
+          if (verbose) message("  ERROR: ", msg)
+          structure(list(error = msg, var1 = v, var2 = var2), class = "run_assoc_error")
+        }
+      )
+    })
+    names(results) <- paste0(var1, "_vs_", var2)
+    class(results) <- "run_assoc_multi"
+    return(invisible(results))
   }
 
   # ---------------------------------------------------------------------------
@@ -671,4 +730,47 @@ summary.run_assoc <- function(object, ...) {
   }
 
   invisible(object)
+}
+
+#' Print method for run_assoc_multi objects
+#' @param x An object of class \code{run_assoc_multi} from \code{run_assoc}.
+#' @param ... Further arguments passed to or from other methods.
+#' @export
+print.run_assoc_multi <- function(x, ...) {
+  cat(sprintf("\n=== run_assoc: %d pairwise association result(s) ===\n", length(x)))
+  for (nm in names(x)) {
+    cat(sprintf("\n--- %s ---\n", nm))
+    if (inherits(x[[nm]], "run_assoc_error")) {
+      cat(sprintf("  ERROR: %s\n", x[[nm]]$error))
+    } else {
+      print(x[[nm]])
+    }
+  }
+  invisible(x)
+}
+
+#' Summary method for run_assoc_multi objects
+#' @param object An object of class \code{run_assoc_multi} from \code{run_assoc}.
+#' @param ... Further arguments passed to or from other methods.
+#' @export
+summary.run_assoc_multi <- function(object, ...) {
+  cat(sprintf("\n=== run_assoc: Summary of %d pairwise association(s) ===\n", length(object)))
+  for (nm in names(object)) {
+    cat(sprintf("\n--- %s ---\n", nm))
+    if (inherits(object[[nm]], "run_assoc_error")) {
+      cat(sprintf("  ERROR: %s\n", object[[nm]]$error))
+    } else {
+      summary(object[[nm]])
+    }
+  }
+  invisible(object)
+}
+
+#' Print method for run_assoc_error objects
+#' @param x An object of class \code{run_assoc_error}.
+#' @param ... Further arguments passed to or from other methods.
+#' @export
+print.run_assoc_error <- function(x, ...) {
+  cat(sprintf("\n[run_assoc ERROR] %s vs. %s\n  %s\n", x$var1, x$var2, x$error))
+  invisible(x)
 }
