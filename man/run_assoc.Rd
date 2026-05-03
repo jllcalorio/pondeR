@@ -10,6 +10,7 @@ run_assoc(
   var2,
   weight = NULL,
   paired = FALSE,
+  force_categorical = FALSE,
   test_type = c("auto", "chisq", "fisher"),
   expected_freq_threshold = 5,
   continuity_correction = TRUE,
@@ -24,11 +25,15 @@ run_assoc(
 \arguments{
 \item{x}{A data frame containing the variables for analysis.}
 
-\item{var1}{A character string specifying the name of the first categorical
-variable (typically rows).}
+\item{var1}{A character vector of one or more column names in \code{x}
+specifying the categorical variable(s) to test. Each variable in
+\code{var1} will be independently paired with \code{var2} for a test of
+association. All listed columns must be categorical (factor or character),
+unless \code{force_categorical = TRUE}.}
 
-\item{var2}{A character string specifying the name of the second categorical
-variable (typically columns).}
+\item{var2}{A character string specifying the name of a single categorical
+variable (typically the grouping or outcome column). Each variable in
+\code{var1} will be compared against this variable.}
 
 \item{weight}{An optional character string specifying the name of a weight
 column. Use this if \code{x} is in a frequency-aggregated format (e.g.,
@@ -36,6 +41,12 @@ from \code{as.data.frame.table()}).}
 
 \item{paired}{A logical indicating whether the observations are paired (for
 McNemar's test). Default is \code{FALSE}.}
+
+\item{force_categorical}{Logical. If \code{TRUE}, any column in \code{var1}
+or \code{var2} that is not already a factor or character will be coerced
+to a factor before analysis. This is useful when numeric codes represent
+categorical groups (e.g., \code{0}/\code{1}, \code{1}/\code{2}/\code{3}).
+A warning is issued for each coerced column. Default is \code{FALSE}.}
 
 \item{test_type}{A character string specifying the test strategy for
 independent samples. One of \code{"auto"} (default), \code{"chisq"}, or
