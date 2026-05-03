@@ -393,18 +393,75 @@ run_foldchange <- function(
   }
 
   # ---------------------------------------------------------------------------
-  # 11.  Assemble and return
+  # 11.  Build summary_table
+  # ---------------------------------------------------------------------------
+  summary_list <- lapply(seq_len(n_comp), function(i) {
+    lbl   <- comp_labels[i]
+    g_num <- lvl_order[pairs[1L, i]]
+    g_den <- lvl_order[pairs[2L, i]]
+
+    fc_col     <- fc_mat[, i]
+    l2fc_col   <- if (log2) log2fc_mat[, i] else rep(NA_real_, n_feat)
+    mean_num   <- means_mat[g_num, ]
+    mean_den   <- means_mat[g_den, ]
+
+    regulation <- ifelse(
+      is.na(fc_col), NA_character_,
+      ifelse(fc_col > 1, "Up", ifelse(fc_col < 1, "Down", "Unchanged"))
+    )
+
+    data.frame(
+      comparison   = lbl,
+      feature      = feat_cols,
+      mean_num     = mean_num,
+      mean_den     = mean_den,
+      fold_change  = fc_col,
+      log2_fc      = l2fc_col,
+      abs_fc       = abs(fc_col),
+      abs_log2_fc  = abs(l2fc_col),
+      regulation   = regulation,
+      stringsAsFactors = FALSE,
+      row.names    = NULL
+    )
+  })
+
+  # Rename mean columns to carry group names
+  summary_list <- lapply(summary_list, function(df) {
+    g_num <- sub("_vs_.*$", "", df$comparison[1L])
+    g_den <- sub("^.*_vs_", "", df$comparison[1L])
+    colnames(df)[colnames(df) == "mean_num"] <- paste0("mean_", g_num)
+    colnames(df)[colnames(df) == "mean_den"] <- paste0("mean_", g_den)
+    df
+  })
+
+  summary_table <- do.call(rbind, summary_list)
+  rownames(summary_table) <- NULL
+
+  if (sort && n_comp >= 1L) {
+    summary_table <- summary_table[
+      order(summary_table$comparison,
+            summary_table$abs_fc,
+            decreasing = c(FALSE, TRUE),
+            method = "radix"), ,
+      drop = FALSE
+    ]
+    rownames(summary_table) <- NULL
+  }
+
+  # ---------------------------------------------------------------------------
+  # 12.  Assemble and return
   # ---------------------------------------------------------------------------
   structure(
     list(
-      fc_table     = fc_df,
-      log2fc_table = log2fc_df,
-      shifted_data = shifted_data,
-      min_value    = min_val,
-      shift        = shift_delta,
-      group_means  = group_means_df,
-      comparisons  = comp_labels,
-      params       = list(
+      fc_table      = fc_df,
+      log2fc_table  = log2fc_df,
+      summary_table = summary_table,
+      shifted_data  = shifted_data,
+      min_value     = min_val,
+      shift         = shift_delta,
+      group_means   = group_means_df,
+      comparisons   = comp_labels,
+      params        = list(
         group    = group,
         arrange  = lvl_order,
         filter   = filter,
@@ -419,7 +476,6 @@ run_foldchange <- function(
     )
   )
 }
-
 
 # =============================================================================
 #  S3 print method
