@@ -287,48 +287,77 @@ run_pls <- function(
   vip_scores <- NULL
   
   if (method == "oplsda") {
-    
+
     if (nlevels(Y) > 2) {
       warning("OPLS-DA typically requires exactly 2 classes. 'ropls' may fail or fall back to PLS-DA.")
     }
-    
+
     pls_model <- tryCatch({
-      ropls::opls(x_matrix, Y, predI = 1, orthoI = orthoI, crossvalI = crossvalI, 
-                  permI = permI, scaleC = "none", 
-                  #fig.mac = FALSE, 
+      ropls::opls(x_matrix, Y, predI = 1, orthoI = orthoI, crossvalI = crossvalI,
+                  permI = permI, scaleC = "none",
                   info.txtC = "none")
     }, error = function(e) stop("ropls::opls failed: ", e$message))
-    
-    # Combine Predictive and Orthogonal scores
-    if (is.null(pls_model@orthoScoreMN)) {
+
+    pred_scores   <- pls_model@scoreMN
+    ortho_scores  <- pls_model@orthoScoreMN
+    pred_loadings <- pls_model@loadingMN
+    ortho_loadings <- pls_model@orthoLoadingMN
+
+    # Graceful fallback: use whatever the model produced
+    if (is.null(pred_scores) || ncol(pred_scores) == 0) {
+      warning(
+        "OPLS-DA produced no predictive component. ",
+        "The model may be invalid for this dataset (e.g., insufficient cross-validated R2/Q2). ",
+        "Scores and loadings will be empty."
+      )
+      scores   <- matrix(NA_real_, nrow = nrow(x_matrix), ncol = 1,
+                         dimnames = list(rownames(x_matrix), "PC1"))
+      loadings <- matrix(NA_real_, nrow = ncol(x_matrix), ncol = 1,
+                         dimnames = list(colnames(x_matrix), "PC1"))
+      variance_explained <- NA_real_
+    } else if (is.null(ortho_scores) || ncol(ortho_scores) == 0) {
       warning("No orthogonal components found. The model is functionally equivalent to PLS-DA.")
-      scores <- pls_model@scoreMN
-      loadings <- pls_model@loadingMN
-      variance_explained <- pls_model@modelDF$R2X * 100
+      scores   <- pred_scores
+      loadings <- pred_loadings
+      variance_explained <- pls_model@modelDF["p1", "R2X"] * 100
     } else {
-      scores <- cbind(pls_model@scoreMN, pls_model@orthoScoreMN)
-      loadings <- cbind(pls_model@loadingMN, pls_model@orthoLoadingMN)
-      
-      # Extract R2X (Predictive then Orthogonal)
-      r2x_pred <- pls_model@modelDF["p1", "R2X"] * 100
+      scores   <- cbind(pred_scores, ortho_scores)
+      loadings <- cbind(pred_loadings, ortho_loadings)
+      r2x_pred  <- pls_model@modelDF["p1", "R2X"] * 100
       r2x_ortho <- pls_model@modelDF[grep("^o", rownames(pls_model@modelDF)), "R2X"] * 100
       variance_explained <- c(r2x_pred, r2x_ortho)
     }
-    vip_scores <- ropls::getVipVn(pls_model)
-    
+
+    vip_scores <- tryCatch(ropls::getVipVn(pls_model), error = function(e) NULL)
+
   } else if (method == "plsda") {
-    
+
     pls_model <- tryCatch({
-      ropls::opls(x_matrix, Y, predI = ncomp, orthoI = 0, crossvalI = crossvalI, 
-                  permI = permI, scaleC = "none", 
-                  #fig.mac = FALSE, 
+      ropls::opls(x_matrix, Y, predI = ncomp, orthoI = 0, crossvalI = crossvalI,
+                  permI = permI, scaleC = "none",
                   info.txtC = "none")
     }, error = function(e) stop("ropls::opls failed: ", e$message))
-    
-    scores <- pls_model@scoreMN
-    loadings <- pls_model@loadingMN
-    variance_explained <- pls_model@modelDF$R2X * 100
-    vip_scores <- ropls::getVipVn(pls_model)
+
+    pred_scores <- pls_model@scoreMN
+
+    if (is.null(pred_scores) || ncol(pred_scores) == 0) {
+      warning(
+        "PLS-DA produced no components. ",
+        "The model may be invalid for this dataset (e.g., no cross-validated components retained). ",
+        "Scores and loadings will be empty."
+      )
+      scores   <- matrix(NA_real_, nrow = nrow(x_matrix), ncol = 1,
+                         dimnames = list(rownames(x_matrix), "PC1"))
+      loadings <- matrix(NA_real_, nrow = ncol(x_matrix), ncol = 1,
+                         dimnames = list(colnames(x_matrix), "PC1"))
+      variance_explained <- NA_real_
+    } else {
+      scores   <- pred_scores
+      loadings <- pls_model@loadingMN
+      variance_explained <- pls_model@modelDF$R2X * 100
+    }
+
+    vip_scores <- tryCatch(ropls::getVipVn(pls_model), error = function(e) NULL)
     
   } else if (method == "splsda") {
     
@@ -356,12 +385,13 @@ run_pls <- function(
   # msg(sprintf("%s complete: %d components computed from %d samples and %d features",
   #             toupper(method), n_pcs, n_samples, n_features))
 
-  # Ensure scores is a matrix/df before checking ncol
+  # Removed hard stop — emit a warning instead and let the result object through
   if (is.null(scores)) {
-    stop("The PLS model failed to produce scores. Check if groups are valid or if data has variance.")
+    warning("The PLS model failed to produce scores. Check if groups are valid or if data has variance.")
+    scores <- matrix(NA_real_, nrow = nrow(x_matrix), ncol = 1,
+                     dimnames = list(rownames(x_matrix), "PC1"))
   }
-  
-  # If scores is a vector (single component), force it to a matrix
+
   if (is.null(dim(scores))) {
     scores <- matrix(scores, ncol = 1)
   }
@@ -372,7 +402,11 @@ run_pls <- function(
   if (n_pcs > 0) {
     colnames(scores) <- paste0("PC", seq_len(n_pcs))
   } else {
-    stop("No components were computed. The model may be invalid.")
+    # Still don't hard-stop; produce a 1-column NA matrix so downstream code survives
+    warning("No components were computed. The model may be invalid.")
+    scores <- matrix(NA_real_, nrow = nrow(x_matrix), ncol = 1,
+                     dimnames = list(rownames(x_matrix), "PC1"))
+    n_pcs <- 1L
   }
   
   n_samples <- nrow(scores)
