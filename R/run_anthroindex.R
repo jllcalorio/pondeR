@@ -194,7 +194,7 @@
   ifelse(is.na(bmi),  NA_character_,
   ifelse(bmi < 17.0,  "Moderate and severe thinness",
   ifelse(bmi < 18.5,  "Underweight",
-  ifelse(bmi < 25.0,  "Normal weight",
+  ifelse(bmi < 25.0,  "Normal",
   ifelse(bmi < 30.0,  "Overweight",
   ifelse(bmi < 35.0,  "Stage 1 Obesity",
   ifelse(bmi < 40.0,  "Stage 2 Obesity",
@@ -563,7 +563,7 @@
 #' |---|---|
 #' | Moderate and severe thinness | < 17.0 kg/m\eqn{^2} |
 #' | Underweight | \eqn{\geq} 17.0 and < 18.5 kg/m\eqn{^2} |
-#' | Normal weight | \eqn{\geq} 18.5 and < 25.0 kg/m\eqn{^2} |
+#' | Normal | \eqn{\geq} 18.5 and < 25.0 kg/m\eqn{^2} |
 #' | Overweight | \eqn{\geq} 25.0 and < 30.0 kg/m\eqn{^2} |
 #' | Stage 1 Obesity | \eqn{\geq} 30.0 and < 35.0 kg/m\eqn{^2} |
 #' | Stage 2 Obesity | \eqn{\geq} 35.0 and < 40.0 kg/m\eqn{^2} |
