@@ -47,7 +47,7 @@ multivariate data exploration.
 - [`plot_scree()`](https://jllcalorio.github.io/pondeR/reference/plot_scree.md)
   : Plot PCA Scree Plot
 - [`plot_score()`](https://jllcalorio.github.io/pondeR/reference/plot_score.md)
-  : Plot PCA Scores Plot
+  : Scores Plot for Multivariate Ordination Results
 
 ## Visualisation
 
@@ -93,6 +93,12 @@ Utility functions for data management, relabelling, and S3 methods.
 - [`print(`*`<run_assoc>`*`)`](https://jllcalorio.github.io/pondeR/reference/print.run_assoc.md)
   : Print method for run_assoc objects
 
+- [`print(`*`<run_assoc_error>`*`)`](https://jllcalorio.github.io/pondeR/reference/print.run_assoc_error.md)
+  : Print method for run_assoc_error objects
+
+- [`print(`*`<run_assoc_multi>`*`)`](https://jllcalorio.github.io/pondeR/reference/print.run_assoc_multi.md)
+  : Print method for run_assoc_multi objects
+
 - [`print(`*`<run_auc>`*`)`](https://jllcalorio.github.io/pondeR/reference/print.run_auc.md)
   :
 
@@ -113,6 +119,9 @@ Utility functions for data management, relabelling, and S3 methods.
 
 - [`summary(`*`<run_assoc>`*`)`](https://jllcalorio.github.io/pondeR/reference/summary.run_assoc.md)
   : Summary method for run_assoc objects
+
+- [`summary(`*`<run_assoc_multi>`*`)`](https://jllcalorio.github.io/pondeR/reference/summary.run_assoc_multi.md)
+  : Summary method for run_assoc_multi objects
 
 - [`summary(`*`<run_diff>`*`)`](https://jllcalorio.github.io/pondeR/reference/summary.run_diff.md)
   : Summary method for run_diff objects
@@ -178,6 +187,9 @@ until formally categorised.
 - [`plot_meanmap()`](https://jllcalorio.github.io/pondeR/reference/plot_meanmap.md)
   : Mean Intensity Heatmap with Hierarchical Clustering Dendrogram
 
+- [`plot_mixedmodel()`](https://jllcalorio.github.io/pondeR/reference/plot_mixedmodel.md)
+  : Plot Results from a Linear Mixed-Effects Model Analysis
+
 - [`plot_multi_y()`](https://jllcalorio.github.io/pondeR/reference/plot_multi_y.md)
   : Plot Multiple Variables on Primary and Secondary Y Axes
 
@@ -185,7 +197,7 @@ until formally categorised.
   : Plot Relative Abundance as Stacked Bar Chart
 
 - [`plot_score()`](https://jllcalorio.github.io/pondeR/reference/plot_score.md)
-  : Plot PCA Scores Plot
+  : Scores Plot for Multivariate Ordination Results
 
 - [`plot_scree()`](https://jllcalorio.github.io/pondeR/reference/plot_scree.md)
   : Plot PCA Scree Plot
@@ -200,6 +212,12 @@ until formally categorised.
 
 - [`print(`*`<run_assoc>`*`)`](https://jllcalorio.github.io/pondeR/reference/print.run_assoc.md)
   : Print method for run_assoc objects
+
+- [`print(`*`<run_assoc_error>`*`)`](https://jllcalorio.github.io/pondeR/reference/print.run_assoc_error.md)
+  : Print method for run_assoc_error objects
+
+- [`print(`*`<run_assoc_multi>`*`)`](https://jllcalorio.github.io/pondeR/reference/print.run_assoc_multi.md)
+  : Print method for run_assoc_multi objects
 
 - [`print(`*`<run_auc>`*`)`](https://jllcalorio.github.io/pondeR/reference/print.run_auc.md)
   :
@@ -265,6 +283,10 @@ until formally categorised.
 - [`run_pca()`](https://jllcalorio.github.io/pondeR/reference/run_pca.md)
   : Perform Principal Component Analysis
 
+- [`run_pcoa()`](https://jllcalorio.github.io/pondeR/reference/run_pcoa.md)
+  : Principal Coordinate Analysis (PCoA) with Optional PERMANOVA and
+  Post-hoc
+
 - [`run_pls()`](https://jllcalorio.github.io/pondeR/reference/run_pls.md)
   : Perform Partial Least Squares (PLS) Analysis
 
@@ -298,6 +320,9 @@ until formally categorised.
 
 - [`summary(`*`<run_assoc>`*`)`](https://jllcalorio.github.io/pondeR/reference/summary.run_assoc.md)
   : Summary method for run_assoc objects
+
+- [`summary(`*`<run_assoc_multi>`*`)`](https://jllcalorio.github.io/pondeR/reference/summary.run_assoc_multi.md)
+  : Summary method for run_assoc_multi objects
 
 - [`summary(`*`<run_diff>`*`)`](https://jllcalorio.github.io/pondeR/reference/summary.run_diff.md)
   : Summary method for run_diff objects

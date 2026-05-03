@@ -67,6 +67,7 @@ confidence intervals, and p-values.</p>
 <span>  metadata <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  remove <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  method <span class="op">=</span> <span class="st">"auto"</span>,</span>
+<span>  force_test <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  sig_threshold <span class="op">=</span> <span class="fl">0.05</span>,</span>
 <span>  normality_method <span class="op">=</span> <span class="st">"auto"</span>,</span>
 <span>  alpha_normality <span class="op">=</span> <span class="fl">0.05</span>,</span>
@@ -118,6 +119,20 @@ One of <code>"auto"</code> (default), <code>"pearson"</code>, <code>"spearman"</
 <code>"kendall"</code>, <code>"pointbiserial"</code>, <code>"phi"</code>, <code>"cramerv"</code>,
 or <code>"poly"</code>. When <code>"auto"</code>, the method is selected per variable
 pair based on data type, normality, and sample size.</p></dd>
+
+
+<dt id="arg-force-test">force_test<a class="anchor" aria-label="anchor" href="#arg-force-test"></a></dt>
+<dd><p>A list of two-element lists, each specifying a variable
+pair and the correlation method to use for that pair, overriding the
+global <code>method</code> argument. Each element must be of the form
+<code>list(c("var1", "var2"), "method")</code>. For example:</p><div class="sourceCode"><pre><code><span><span class="va">force_test</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"var1"</span>, <span class="st">"var2"</span><span class="op">)</span>, <span class="st">"pearson"</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"var1"</span>, <span class="st">"var3"</span><span class="op">)</span>, <span class="st">"spearman"</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span></code></pre></div><p>Valid methods are all values accepted by <code>method</code> except
+<code>"auto"</code>. Column names are order-insensitive within each pair.
+If a pair appears more than once, the last entry takes precedence with
+a warning. Pairs not listed here are analyzed using the global
+<code>method</code>. Default <code>NULL</code> (no overrides).</p></dd>
 
 
 <dt id="arg-sig-threshold">sig_threshold<a class="anchor" aria-label="anchor" href="#arg-sig-threshold"></a></dt>

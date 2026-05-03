@@ -24,6 +24,7 @@
 <url><loc>https://jllcalorio.github.io/pondeR/reference/plot_dist_beforeafter.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/plot_heatmap.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/plot_meanmap.html</loc></url>
+<url><loc>https://jllcalorio.github.io/pondeR/reference/plot_mixedmodel.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/plot_multi_y.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/plot_relabund.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/plot_score.html</loc></url>
@@ -31,6 +32,8 @@
 <url><loc>https://jllcalorio.github.io/pondeR/reference/plot_volcano.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/print.plot_volcano.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/print.run_assoc.html</loc></url>
+<url><loc>https://jllcalorio.github.io/pondeR/reference/print.run_assoc_error.html</loc></url>
+<url><loc>https://jllcalorio.github.io/pondeR/reference/print.run_assoc_multi.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/print.run_auc.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/print.run_diff.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/print.run_foldchange.html</loc></url>
@@ -50,6 +53,7 @@
 <url><loc>https://jllcalorio.github.io/pondeR/reference/run_mvimpute.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/run_normalize.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/run_pca.html</loc></url>
+<url><loc>https://jllcalorio.github.io/pondeR/reference/run_pcoa.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/run_pls.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/run_randomize.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/run_reduce.html</loc></url>
@@ -61,6 +65,7 @@
 <url><loc>https://jllcalorio.github.io/pondeR/reference/save_excel.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/save_plots.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/summary.run_assoc.html</loc></url>
+<url><loc>https://jllcalorio.github.io/pondeR/reference/summary.run_assoc_multi.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/summary.run_diff.html</loc></url>
 </urlset>
 

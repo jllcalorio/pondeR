@@ -14,6 +14,7 @@ run_assoc(
   var2,
   weight = NULL,
   paired = FALSE,
+  force_categorical = FALSE,
   test_type = c("auto", "chisq", "fisher"),
   expected_freq_threshold = 5,
   continuity_correction = TRUE,
@@ -34,13 +35,17 @@ run_assoc(
 
 - var1:
 
-  A character string specifying the name of the first categorical
-  variable (typically rows).
+  A character vector of one or more column names in `x` specifying the
+  categorical variable(s) to test. Each variable in `var1` will be
+  independently paired with `var2` for a test of association. All listed
+  columns must be categorical (factor or character), unless
+  `force_categorical = TRUE`.
 
 - var2:
 
-  A character string specifying the name of the second categorical
-  variable (typically columns).
+  A character string specifying the name of a single categorical
+  variable (typically the grouping or outcome column). Each variable in
+  `var1` will be compared against this variable.
 
 - weight:
 
@@ -52,6 +57,14 @@ run_assoc(
 
   A logical indicating whether the observations are paired (for
   McNemar's test). Default is `FALSE`.
+
+- force_categorical:
+
+  Logical. If `TRUE`, any column in `var1` or `var2` that is not already
+  a factor or character will be coerced to a factor before analysis.
+  This is useful when numeric codes represent categorical groups (e.g.,
+  `0`/`1`, `1`/`2`/`3`). A warning is issued for each coerced column.
+  Default is `FALSE`.
 
 - test_type:
 

@@ -25,12 +25,18 @@ example, with `subgroup = "Gender"`, the result will include
 run_diff(
   x,
   outcome,
-  group,
+  group = NULL,
+  within = NULL,
+  subject_id = NULL,
   paired = FALSE,
   test_type = c("auto", "parametric", "nonparametric"),
   normality_method = c("auto", "shapiro", "lilliefors"),
   alpha_normality = 0.05,
   alpha_variance = 0.05,
+  alpha_sphericity = 0.05,
+  type_sosquares = 2,
+  rm_effect_size = "pes",
+  correction = "auto",
   test_alpha = 0.05,
   min_n_threshold = 3,
   calculate_effect_size = TRUE,
@@ -87,6 +93,40 @@ run_diff(
 - alpha_variance:
 
   Significance level for variance homogeneity tests. Default is 0.05.
+
+- alpha_sphericity:
+
+  Significance level for sphericity tests. Default is 0.05.
+
+- type_sosquares:
+
+  Integer specifying the type of sums of squares for the ANOVA. Accepted
+  values are `1`, `2` (default), or `3`. Type 2 yields identical results
+  to type 1 for balanced designs but is more appropriate for unbalanced
+  designs. Type 3 matches output from commercial software such as SPSS.
+  Only used for RM and mixed ANOVA designs. See
+  [`anova_test`](https://rpkgs.datanovia.com/rstatix/reference/anova_test.html)
+  for details.
+
+- rm_effect_size:
+
+  Character vector specifying which effect size(s) to compute for RM and
+  mixed ANOVA designs. Accepted values are `"ges"` (generalized
+  eta-squared), `"pes"` (partial eta-squared, default), or
+  `c("ges", "pes")` for both. When both are requested, `"ges"` is used
+  as the primary metric reported in `$effect_size`. Only used for RM and
+  mixed ANOVA designs. See
+  [`anova_test`](https://rpkgs.datanovia.com/rstatix/reference/anova_test.html).
+
+- correction:
+
+  Character string specifying the sphericity correction method applied
+  to within-subject p-values when sphericity is violated. Passed to
+  [`get_anova_table`](https://rpkgs.datanovia.com/rstatix/reference/anova_test.html).
+  Accepted values are `"auto"` (default; applies Greenhouse-Geisser when
+  sphericity is violated), `"GG"` (always apply Greenhouse-Geisser),
+  `"HF"` (always apply Huynh-Feldt), or `"none"` (uncorrected). Only
+  used for RM and mixed ANOVA designs.
 
 - test_alpha:
 
@@ -617,5 +657,57 @@ res_plant <- run_diff(
   verbose     = FALSE
 )
 print(res_plant$data_summary)
+
+# --- One-way Repeated Measures ANOVA ---
+# Does HeartRate change across time points (Pre, During, Post)?
+res_rm1 <- run_diff(
+  x          = df_long,
+  outcome    = "HeartRate",
+  within     = "Time",
+  subject_id = "ID",
+  verbose    = FALSE
+)
+print(res_rm1)
+summary(res_rm1)
+
+# --- Two-way Repeated Measures ANOVA ---
+# Does an outcome change across two within-subject factors?
+# Requires a dataset where subjects are measured under all combinations
+# of two within-subject factors (e.g., Time × Condition).
+# Create a minimal example with two within factors:
+set.seed(1)
+df_2rm <- data.frame(
+  id        = rep(paste0("S", 1:10), each = 6),
+  time      = rep(rep(c("T1", "T2", "T3"), each = 2), 10),
+  condition = rep(c("A", "B"), times = 30),
+  score     = rnorm(60, mean = 50, sd = 10)
+)
+res_rm2 <- run_diff(
+  x          = df_2rm,
+  outcome    = "score",
+  within     = c("time", "condition"),
+  subject_id = "id",
+  verbose    = FALSE
+)
+print(res_rm2)
+res_rm2$anova_table
+
+# --- Two-way Mixed ANOVA ---
+# Does HeartRate differ by Group (between) and Time (within),
+# and is there a Group x Time interaction?
+res_mixed <- run_diff(
+  x          = df_long,
+  outcome    = "HeartRate",
+  group      = "Group",
+  within     = "Time",
+  subject_id = "ID",
+  verbose    = FALSE
+)
+print(res_mixed)
+summary(res_mixed)
+# Full ANOVA table with all effects and GG-corrected p-values if needed:
+res_mixed$anova_table
+# Significant post-hoc pairs:
+res_mixed$posthoc_result[res_mixed$posthoc_result$significant %in% TRUE, ]
 } # }
 ```

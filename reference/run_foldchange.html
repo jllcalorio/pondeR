@@ -210,18 +210,11 @@ consume directly.</p>
 <span class="r-in"><span>  metadata <span class="op">=</span> <span class="va">meta_iris</span>,</span></span>
 <span class="r-in"><span>  group    <span class="op">=</span> <span class="st">"Species"</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in match.names(clabs, names(xi)):</span> names do not match previous names</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">fc_table</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>        feature setosa_vs_versicolor setosa_vs_virginica versicolor_vs_virginica</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1  Sepal.Width            1.2375451           1.1526564               0.9314055</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 Sepal.Length            0.8433288           0.7598664               0.9010322</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 Petal.Length            0.3431925           0.2633285               0.7672911</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4  Petal.Width            0.1855204           0.1214215               0.6544916</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error:</span> object 'res' not found</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">log2fc_table</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>        feature setosa_vs_versicolor setosa_vs_virginica versicolor_vs_virginica</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1  Sepal.Width            0.3074811           0.2049625              -0.1025187</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 Sepal.Length           -0.2458328          -0.3961823              -0.1503495</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 Petal.Length           -1.5429101          -1.9250643              -0.3821541</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4  Petal.Width           -2.4303506          -3.0419040              -0.6115534</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error:</span> object 'res' not found</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## -----------------------------------------------------------------------</span></span></span>
 <span class="r-in"><span><span class="co">## Example 2 — custom order, filter one level, select two features</span></span></span>
@@ -234,13 +227,11 @@ consume directly.</p>
 <span class="r-in"><span>  filter   <span class="op">=</span> <span class="cn">NULL</span>,</span></span>
 <span class="r-in"><span>  select   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Sepal.Length"</span>, <span class="st">"Petal.Length"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in match.names(clabs, names(xi)):</span> names do not match previous names</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">res2</span><span class="op">$</span><span class="va">comparisons</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "virginica_vs_versicolor" "virginica_vs_setosa"    </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [3] "versicolor_vs_setosa"   </span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error:</span> object 'res2' not found</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">res2</span><span class="op">$</span><span class="va">fc_table</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>        feature virginica_vs_versicolor virginica_vs_setosa versicolor_vs_setosa</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 Petal.Length                1.303286            3.797538             2.913817</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 Sepal.Length                1.109838            1.316021             1.185777</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error:</span> object 'res2' not found</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## -----------------------------------------------------------------------</span></span></span>
 <span class="r-in"><span><span class="co">## Example 3 — data with special characters in column names</span></span></span>

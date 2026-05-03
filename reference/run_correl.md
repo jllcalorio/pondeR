@@ -17,6 +17,7 @@ run_correl(
   metadata = NULL,
   remove = NULL,
   method = "auto",
+  force_test = NULL,
   sig_threshold = 0.05,
   normality_method = "auto",
   alpha_normality = 0.05,
@@ -66,6 +67,24 @@ run_correl(
   `"pointbiserial"`, `"phi"`, `"cramerv"`, or `"poly"`. When `"auto"`,
   the method is selected per variable pair based on data type,
   normality, and sample size.
+
+- force_test:
+
+  A list of two-element lists, each specifying a variable pair and the
+  correlation method to use for that pair, overriding the global
+  `method` argument. Each element must be of the form
+  `list(c("var1", "var2"), "method")`. For example:
+
+      force_test = list(
+          list(c("var1", "var2"), "pearson"),
+          list(c("var1", "var3"), "spearman")
+        )
+
+  Valid methods are all values accepted by `method` except `"auto"`.
+  Column names are order-insensitive within each pair. If a pair appears
+  more than once, the last entry takes precedence with a warning. Pairs
+  not listed here are analyzed using the global `method`. Default `NULL`
+  (no overrides).
 
 - sig_threshold:
 

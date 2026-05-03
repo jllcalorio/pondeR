@@ -84,12 +84,18 @@ and inside it <code>$summary_table_Gender$Male</code> and <code>$summary_table_G
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">run_diff</span><span class="op">(</span></span>
 <span>  <span class="va">x</span>,</span>
 <span>  <span class="va">outcome</span>,</span>
-<span>  <span class="va">group</span>,</span>
+<span>  group <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  within <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  subject_id <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  paired <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  test_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"parametric"</span>, <span class="st">"nonparametric"</span><span class="op">)</span>,</span>
 <span>  normality_method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"shapiro"</span>, <span class="st">"lilliefors"</span><span class="op">)</span>,</span>
 <span>  alpha_normality <span class="op">=</span> <span class="fl">0.05</span>,</span>
 <span>  alpha_variance <span class="op">=</span> <span class="fl">0.05</span>,</span>
+<span>  alpha_sphericity <span class="op">=</span> <span class="fl">0.05</span>,</span>
+<span>  type_sosquares <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  rm_effect_size <span class="op">=</span> <span class="st">"pes"</span>,</span>
+<span>  correction <span class="op">=</span> <span class="st">"auto"</span>,</span>
 <span>  test_alpha <span class="op">=</span> <span class="fl">0.05</span>,</span>
 <span>  min_n_threshold <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>  calculate_effect_size <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -147,6 +153,38 @@ Default is <code>"auto"</code>.</p></dd>
 <dt id="arg-alpha-variance">alpha_variance<a class="anchor" aria-label="anchor" href="#arg-alpha-variance"></a></dt>
 <dd><p>Significance level for variance homogeneity tests. Default is
 0.05.</p></dd>
+
+
+<dt id="arg-alpha-sphericity">alpha_sphericity<a class="anchor" aria-label="anchor" href="#arg-alpha-sphericity"></a></dt>
+<dd><p>Significance level for sphericity tests. Default is 0.05.</p></dd>
+
+
+<dt id="arg-type-sosquares">type_sosquares<a class="anchor" aria-label="anchor" href="#arg-type-sosquares"></a></dt>
+<dd><p>Integer specifying the type of sums of squares for the
+ANOVA. Accepted values are <code>1</code>, <code>2</code> (default), or <code>3</code>.
+Type 2 yields identical results to type 1 for balanced designs but is more
+appropriate for unbalanced designs. Type 3 matches output from commercial
+software such as SPSS. Only used for RM and mixed ANOVA designs. See
+<code><a href="https://rpkgs.datanovia.com/rstatix/reference/anova_test.html" class="external-link">anova_test</a></code> for details.</p></dd>
+
+
+<dt id="arg-rm-effect-size">rm_effect_size<a class="anchor" aria-label="anchor" href="#arg-rm-effect-size"></a></dt>
+<dd><p>Character vector specifying which effect size(s) to
+compute for RM and mixed ANOVA designs. Accepted values are <code>"ges"</code>
+(generalized eta-squared), <code>"pes"</code> (partial eta-squared, default), or
+<code>c("ges", "pes")</code> for both. When both are requested, <code>"ges"</code> is
+used as the primary metric reported in <code>$effect_size</code>. Only used for
+RM and mixed ANOVA designs. See <code><a href="https://rpkgs.datanovia.com/rstatix/reference/anova_test.html" class="external-link">anova_test</a></code>.</p></dd>
+
+
+<dt id="arg-correction">correction<a class="anchor" aria-label="anchor" href="#arg-correction"></a></dt>
+<dd><p>Character string specifying the sphericity correction
+method applied to within-subject p-values when sphericity is violated.
+Passed to <code><a href="https://rpkgs.datanovia.com/rstatix/reference/anova_test.html" class="external-link">get_anova_table</a></code>. Accepted values are
+<code>"auto"</code> (default; applies Greenhouse-Geisser when sphericity is
+violated), <code>"GG"</code> (always apply Greenhouse-Geisser), <code>"HF"</code>
+(always apply Huynh-Feldt), or <code>"none"</code> (uncorrected). Only used for
+RM and mixed ANOVA designs.</p></dd>
 
 
 <dt id="arg-test-alpha">test_alpha<a class="anchor" aria-label="anchor" href="#arg-test-alpha"></a></dt>
@@ -469,6 +507,58 @@ one group's values tend to be systematically higher or lower than another's.</p>
 <span class="r-in"><span>  verbose     <span class="op">=</span> <span class="cn">FALSE</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">res_plant</span><span class="op">$</span><span class="va">data_summary</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># --- One-way Repeated Measures ANOVA ---</span></span></span>
+<span class="r-in"><span><span class="co"># Does HeartRate change across time points (Pre, During, Post)?</span></span></span>
+<span class="r-in"><span><span class="va">res_rm1</span> <span class="op">&lt;-</span> <span class="fu">run_diff</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  x          <span class="op">=</span> <span class="va">df_long</span>,</span></span>
+<span class="r-in"><span>  outcome    <span class="op">=</span> <span class="st">"HeartRate"</span>,</span></span>
+<span class="r-in"><span>  within     <span class="op">=</span> <span class="st">"Time"</span>,</span></span>
+<span class="r-in"><span>  subject_id <span class="op">=</span> <span class="st">"ID"</span>,</span></span>
+<span class="r-in"><span>  verbose    <span class="op">=</span> <span class="cn">FALSE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">res_rm1</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">res_rm1</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># --- Two-way Repeated Measures ANOVA ---</span></span></span>
+<span class="r-in"><span><span class="co"># Does an outcome change across two within-subject factors?</span></span></span>
+<span class="r-in"><span><span class="co"># Requires a dataset where subjects are measured under all combinations</span></span></span>
+<span class="r-in"><span><span class="co"># of two within-subject factors (e.g., Time × Condition).</span></span></span>
+<span class="r-in"><span><span class="co"># Create a minimal example with two within factors:</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">df_2rm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  id        <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"S"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">6</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  time      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"T1"</span>, <span class="st">"T2"</span>, <span class="st">"T3"</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>, <span class="fl">10</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  condition <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"B"</span><span class="op">)</span>, times <span class="op">=</span> <span class="fl">30</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  score     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">60</span>, mean <span class="op">=</span> <span class="fl">50</span>, sd <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">res_rm2</span> <span class="op">&lt;-</span> <span class="fu">run_diff</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  x          <span class="op">=</span> <span class="va">df_2rm</span>,</span></span>
+<span class="r-in"><span>  outcome    <span class="op">=</span> <span class="st">"score"</span>,</span></span>
+<span class="r-in"><span>  within     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"time"</span>, <span class="st">"condition"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  subject_id <span class="op">=</span> <span class="st">"id"</span>,</span></span>
+<span class="r-in"><span>  verbose    <span class="op">=</span> <span class="cn">FALSE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">res_rm2</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">res_rm2</span><span class="op">$</span><span class="va">anova_table</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># --- Two-way Mixed ANOVA ---</span></span></span>
+<span class="r-in"><span><span class="co"># Does HeartRate differ by Group (between) and Time (within),</span></span></span>
+<span class="r-in"><span><span class="co"># and is there a Group x Time interaction?</span></span></span>
+<span class="r-in"><span><span class="va">res_mixed</span> <span class="op">&lt;-</span> <span class="fu">run_diff</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  x          <span class="op">=</span> <span class="va">df_long</span>,</span></span>
+<span class="r-in"><span>  outcome    <span class="op">=</span> <span class="st">"HeartRate"</span>,</span></span>
+<span class="r-in"><span>  group      <span class="op">=</span> <span class="st">"Group"</span>,</span></span>
+<span class="r-in"><span>  within     <span class="op">=</span> <span class="st">"Time"</span>,</span></span>
+<span class="r-in"><span>  subject_id <span class="op">=</span> <span class="st">"ID"</span>,</span></span>
+<span class="r-in"><span>  verbose    <span class="op">=</span> <span class="cn">FALSE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">res_mixed</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">res_mixed</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># Full ANOVA table with all effects and GG-corrected p-values if needed:</span></span></span>
+<span class="r-in"><span><span class="va">res_mixed</span><span class="op">$</span><span class="va">anova_table</span></span></span>
+<span class="r-in"><span><span class="co"># Significant post-hoc pairs:</span></span></span>
+<span class="r-in"><span><span class="va">res_mixed</span><span class="op">$</span><span class="va">posthoc_result</span><span class="op">[</span><span class="va">res_mixed</span><span class="op">$</span><span class="va">posthoc_result</span><span class="op">$</span><span class="va">significant</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="cn">TRUE</span>, <span class="op">]</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>

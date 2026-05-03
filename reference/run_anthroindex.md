@@ -315,7 +315,7 @@ populated when `return` includes `"bmifa"`.
 | Nutritional status           | BMI threshold                        |
 | Moderate and severe thinness | \< 17.0 kg/m\\^2\\                   |
 | Underweight                  | \\\geq\\ 17.0 and \< 18.5 kg/m\\^2\\ |
-| Normal weight                | \\\geq\\ 18.5 and \< 25.0 kg/m\\^2\\ |
+| Normal                       | \\\geq\\ 18.5 and \< 25.0 kg/m\\^2\\ |
 | Overweight                   | \\\geq\\ 25.0 and \< 30.0 kg/m\\^2\\ |
 | Stage 1 Obesity              | \\\geq\\ 30.0 and \< 35.0 kg/m\\^2\\ |
 | Stage 2 Obesity              | \\\geq\\ 35.0 and \< 40.0 kg/m\\^2\\ |
