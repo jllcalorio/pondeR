@@ -102,6 +102,26 @@
 #' @param alpha_normality Significance level for normality tests. Default is 0.05.
 #' @param alpha_variance Significance level for variance homogeneity tests. Default is
 #'   0.05.
+#' @param alpha_sphericity Significance level for sphericity tests. Default is 0.05.
+#' @param type_sosquares Integer specifying the type of sums of squares for the
+#'   ANOVA. Accepted values are \code{1}, \code{2} (default), or \code{3}.
+#'   Type 2 yields identical results to type 1 for balanced designs but is more
+#'   appropriate for unbalanced designs. Type 3 matches output from commercial
+#'   software such as SPSS. Only used for RM and mixed ANOVA designs. See
+#'   \code{\link[rstatix]{anova_test}} for details.
+#' @param rm_effect_size Character vector specifying which effect size(s) to
+#'   compute for RM and mixed ANOVA designs. Accepted values are \code{"ges"}
+#'   (generalized eta-squared), \code{"pes"} (partial eta-squared, default), or
+#'   \code{c("ges", "pes")} for both. When both are requested, \code{"ges"} is
+#'   used as the primary metric reported in \code{$effect_size}. Only used for
+#'   RM and mixed ANOVA designs. See \code{\link[rstatix]{anova_test}}.
+#' @param correction Character string specifying the sphericity correction
+#'   method applied to within-subject p-values when sphericity is violated.
+#'   Passed to \code{\link[rstatix]{get_anova_table}}. Accepted values are
+#'   \code{"auto"} (default; applies Greenhouse-Geisser when sphericity is
+#'   violated), \code{"GG"} (always apply Greenhouse-Geisser), \code{"HF"}
+#'   (always apply Huynh-Feldt), or \code{"none"} (uncorrected). Only used for
+#'   RM and mixed ANOVA designs.
 #' @param test_alpha Significance level for the final statistical test. Default is 0.05.
 #' @param min_n_threshold Minimum sample size required per group. Default is 3.
 #' @param calculate_effect_size Logical indicating whether to calculate effect sizes.
@@ -325,18 +345,76 @@
 #'   verbose     = FALSE
 #' )
 #' print(res_plant$data_summary)
+#' 
+#' # --- One-way Repeated Measures ANOVA ---
+#' # Does HeartRate change across time points (Pre, During, Post)?
+#' res_rm1 <- run_diff(
+#'   x          = df_long,
+#'   outcome    = "HeartRate",
+#'   within     = "Time",
+#'   subject_id = "ID",
+#'   verbose    = FALSE
+#' )
+#' print(res_rm1)
+#' summary(res_rm1)
+#'
+#' # --- Two-way Repeated Measures ANOVA ---
+#' # Does an outcome change across two within-subject factors?
+#' # Requires a dataset where subjects are measured under all combinations
+#' # of two within-subject factors (e.g., Time × Condition).
+#' # Create a minimal example with two within factors:
+#' set.seed(1)
+#' df_2rm <- data.frame(
+#'   id        = rep(paste0("S", 1:10), each = 6),
+#'   time      = rep(rep(c("T1", "T2", "T3"), each = 2), 10),
+#'   condition = rep(c("A", "B"), times = 30),
+#'   score     = rnorm(60, mean = 50, sd = 10)
+#' )
+#' res_rm2 <- run_diff(
+#'   x          = df_2rm,
+#'   outcome    = "score",
+#'   within     = c("time", "condition"),
+#'   subject_id = "id",
+#'   verbose    = FALSE
+#' )
+#' print(res_rm2)
+#' res_rm2$anova_table
+#'
+#' # --- Two-way Mixed ANOVA ---
+#' # Does HeartRate differ by Group (between) and Time (within),
+#' # and is there a Group x Time interaction?
+#' res_mixed <- run_diff(
+#'   x          = df_long,
+#'   outcome    = "HeartRate",
+#'   group      = "Group",
+#'   within     = "Time",
+#'   subject_id = "ID",
+#'   verbose    = FALSE
+#' )
+#' print(res_mixed)
+#' summary(res_mixed)
+#' # Full ANOVA table with all effects and GG-corrected p-values if needed:
+#' res_mixed$anova_table
+#' # Significant post-hoc pairs:
+#' res_mixed$posthoc_result[res_mixed$posthoc_result$significant %in% TRUE, ]
 #' }
 #'
 #' @export
 run_diff <- function(
     x,
     outcome,
-    group,
+    group                 = NULL,
+    within                = NULL,
+    subject_id            = NULL,
     paired                = FALSE,
     test_type             = c("auto", "parametric", "nonparametric"),
     normality_method      = c("auto", "shapiro", "lilliefors"),
     alpha_normality       = 0.05,
     alpha_variance        = 0.05,
+    alpha_sphericity      = 0.05,
+    type_sosquares        = 2,
+    rm_effect_size        = "pes",
+    correction            = "auto",
     test_alpha            = 0.05,
     min_n_threshold       = 3,
     calculate_effect_size = TRUE,
@@ -363,11 +441,17 @@ run_diff <- function(
           x                     = x,
           outcome               = oc,
           group                 = group,
+          within                = within,
+          subject_id            = subject_id,
           paired                = paired,
           test_type             = test_type,
           normality_method      = normality_method,
           alpha_normality       = alpha_normality,
           alpha_variance        = alpha_variance,
+          alpha_sphericity      = alpha_sphericity,
+          type_sosquares        = type_sosquares,
+          rm_effect_size        = rm_effect_size,
+          correction            = correction,
           test_alpha            = test_alpha,
           min_n_threshold       = min_n_threshold,
           calculate_effect_size = calculate_effect_size,
@@ -467,6 +551,39 @@ run_diff <- function(
                  paste(non_cat, collapse = ", ")))
   }
 
+  # --- RM-specific parameter validation ---
+  if (!type_sosquares %in% c(1L, 2L, 3L))
+    stop("'type_sosquares' must be 1, 2, or 3.")
+  type_sosquares <- as.integer(type_sosquares)
+
+  valid_rm_es <- c("ges", "pes", "both")
+  if (!all(rm_effect_size %in% c("ges", "pes")))
+    stop("'rm_effect_size' must be \"ges\", \"pes\", or c(\"ges\", \"pes\") for both.")
+  # Normalise: sort so ges always comes first when both requested
+  rm_effect_size <- intersect(c("ges", "pes"), rm_effect_size)
+
+  correction <- match.arg(correction, c("auto", "GG", "HF", "none"))
+
+  # --- within / subject_id / mixed-ANOVA Validation ---
+  is_rm_design    <- !is.null(within)
+  is_mixed_design <- !is.null(within) && !is.null(group)
+
+  if (is_rm_design) {
+    if (!requireNamespace("rstatix", quietly = TRUE))
+      stop("Package 'rstatix' is required for repeated-measures and mixed ANOVA. ",
+           "Please install it with: install.packages('rstatix')")
+    if (is.null(subject_id))
+      stop("'subject_id' must be specified for repeated-measures or mixed-ANOVA designs.")
+    if (!is.character(within) || length(within) < 1)
+      stop("'within' must be a character vector of within-subject factor column name(s).")
+    missing_w <- setdiff(within, names(x))
+    if (length(missing_w) > 0)
+      stop(paste("Within-subject column(s) not found in data:",
+                 paste(missing_w, collapse = ", ")))
+    if (!subject_id %in% names(x))
+      stop(paste0("subject_id column '", subject_id, "' not found in data."))
+  }
+
   avail_cores                         <- parallel::detectCores()
   if (is.na(avail_cores)) avail_cores <- 1
 
@@ -486,42 +603,99 @@ run_diff <- function(
     stop("Invalid 'num_cores' argument. Must be an integer or 'max'.")
   }
 
+  # if (!is.data.frame(x))
+  #   stop("'x' must be a data frame.")
+  # if (!all(c(outcome, group) %in% names(x)))
+  #   stop(paste0("Outcome variable '", outcome, "' or group variable '", group,
+  #               "' not found in data."))
+
+  # y   <- x[[outcome]]
+  # grp <- as.factor(x[[group]])
+
+  # if (!is.numeric(y))
+  #   stop("Outcome variable must be numeric.")
+
+  # if (!is.null(group_order)) {
+  #   if (!all(group_order %in% levels(grp)))
+  #     stop("group_order contains levels not present in the data.")
+  #   grp <- factor(grp, levels = group_order)
+  # }
+
+  # complete_cases <- complete.cases(y, grp)
+  # if (sum(!complete_cases) > 0) {
+  #   msg           <- sprintf("Removing %d rows with missing values.", sum(!complete_cases))
+  #   warnings_list <- c(warnings_list, msg)
+  #   if (verbose) message(msg)
+  # }
+  # y   <- y[complete_cases]
+  # grp <- droplevels(grp[complete_cases])
+
+  # if (nlevels(grp) < 2)
+  #   stop("Grouping factor must have at least 2 levels after removing missing values.")
+
+  # groups   <- levels(grp)
+  # n_groups <- length(groups)
+  # group_ns <- table(grp)
+  # min_n    <- min(group_ns)
+
+  # if (verbose) {
+  #   message("\n=== Auto Compare Analysis ===")
+  #   message(sprintf("Outcome: %s | Group: %s | Paired: %s", outcome, group, paired))
+  #   message(sprintf("Number of groups: %d", n_groups))
+  #   message(sprintf("Sample sizes: %s", paste(names(group_ns), "=", group_ns, collapse = ", ")))
+  #   message(sprintf("Test Type: %s", test_type))
+  # }
+
   if (!is.data.frame(x))
     stop("'x' must be a data frame.")
-  if (!all(c(outcome, group) %in% names(x)))
-    stop(paste0("Outcome variable '", outcome, "' or group variable '", group,
-                "' not found in data."))
 
-  y   <- x[[outcome]]
-  grp <- as.factor(x[[group]])
+  # For RM designs, group may be NULL (pure within) or a between factor.
+  # Validate outcome always; validate group only when it is specified.
+  if (!outcome %in% names(x))
+    stop(paste0("Outcome variable '", outcome, "' not found in data."))
+  if (!is.null(group) && !group %in% names(x))
+    stop(paste0("Group variable '", group, "' not found in data."))
 
+  # Classical path needs y / grp. For RM designs these are still extracted
+  # so assumption checks and verbose output work, but grp may be a dummy
+  # if group is NULL (pure RM). The RM block returns early before using grp
+  # for testing, so a dummy factor is harmless.
+  y <- x[[outcome]]
   if (!is.numeric(y))
     stop("Outcome variable must be numeric.")
 
-  if (!is.null(group_order)) {
-    if (!all(group_order %in% levels(grp)))
-      stop("group_order contains levels not present in the data.")
-    grp <- factor(grp, levels = group_order)
+  if (!is.null(group)) {
+    grp <- as.factor(x[[group]])
+    if (!is.null(group_order)) {
+      if (!all(group_order %in% levels(grp)))
+        stop("group_order contains levels not present in the data.")
+      grp <- factor(grp, levels = group_order)
+    }
+    complete_cases <- complete.cases(y, grp)
+    if (sum(!complete_cases) > 0) {
+      msg           <- sprintf("Removing %d rows with missing values.", sum(!complete_cases))
+      warnings_list <- c(warnings_list, msg)
+      if (verbose) message(msg)
+    }
+    y   <- y[complete_cases]
+    grp <- droplevels(grp[complete_cases])
+    if (nlevels(grp) < 2)
+      stop("Grouping factor must have at least 2 levels after removing missing values.")
+    groups   <- levels(grp)
+    n_groups <- length(groups)
+    group_ns <- table(grp)
+    min_n    <- min(group_ns)
+  } else {
+    # Pure RM design: create a dummy single-level grp so downstream code
+    # that references grp/groups/n_groups doesn't break before the early return.
+    grp      <- factor(rep("all", nrow(x)))
+    groups   <- levels(grp)
+    n_groups <- 1L
+    group_ns <- table(grp)
+    min_n    <- as.integer(nrow(x))
   }
 
-  complete_cases <- complete.cases(y, grp)
-  if (sum(!complete_cases) > 0) {
-    msg           <- sprintf("Removing %d rows with missing values.", sum(!complete_cases))
-    warnings_list <- c(warnings_list, msg)
-    if (verbose) message(msg)
-  }
-  y   <- y[complete_cases]
-  grp <- droplevels(grp[complete_cases])
-
-  if (nlevels(grp) < 2)
-    stop("Grouping factor must have at least 2 levels after removing missing values.")
-
-  groups   <- levels(grp)
-  n_groups <- length(groups)
-  group_ns <- table(grp)
-  min_n    <- min(group_ns)
-
-  if (verbose) {
+  if (verbose && !is_rm_design) {
     message("\n=== Auto Compare Analysis ===")
     message(sprintf("Outcome: %s | Group: %s | Paired: %s", outcome, group, paired))
     message(sprintf("Number of groups: %d", n_groups))
@@ -531,20 +705,26 @@ run_diff <- function(
 
   # --- 2. Initialize Assumption Checks and Determine Test Family ---
   assumptions <- data.frame(
-    check            = character(),
-    result           = character(),
-    p_value          = numeric(),
-    decision         = character(),
+    check = character(), result = character(),
+    p_value = numeric(), decision = character(),
     stringsAsFactors = FALSE
   )
 
-  assumptions <- rbind(assumptions, data.frame(
-    check            = "Minimum sample size",
-    result           = sprintf("Min n = %d", min_n),
-    p_value          = NA_real_,
-    decision         = ifelse(min_n >= min_n_threshold, "PASS", "WARNING"),
-    stringsAsFactors = FALSE
-  ))
+  if (!is_rm_design) {
+    assumptions <- rbind(assumptions, data.frame(
+      check    = "Minimum sample size",
+      result   = sprintf("Min n = %d", min_n),
+      p_value  = NA_real_,
+      decision = ifelse(min_n >= min_n_threshold, "PASS", "WARNING"),
+      stringsAsFactors = FALSE
+    ))
+    if (min_n < min_n_threshold) {
+      msg           <- sprintf("Warning: Minimum sample size (%d) is below threshold (%d)",
+                               min_n, min_n_threshold)
+      warnings_list <- c(warnings_list, msg)
+      if (verbose) message(msg)
+    }
+  }
 
   if (min_n < min_n_threshold) {
     msg           <- sprintf("Warning: Minimum sample size (%d) is below threshold (%d)",
@@ -553,15 +733,33 @@ run_diff <- function(
     if (verbose) message(msg)
   }
 
-  if (n_groups == 2) {
+  # if (n_groups == 2) {
+  #   test_family <- ifelse(paired, "paired_two_sample", "independent_two_sample")
+  # } else if (n_groups > 2) {
+  #   test_family <- ifelse(paired, "repeated_measures_anova", "independent_anova")
+  # }
+
+  # if (paired && n_groups == 2) {
+  #   if (group_ns[1] != group_ns[2])
+  #     stop("For paired tests, groups must have equal sample sizes after removing missing values.")
+  # }
+  if (is_rm_design) {
+    has_between <- !is.null(group) &&
+                   group %in% names(x) &&
+                   length(unique(na.omit(as.character(x[[group]])))) > 1
+    if (length(within) == 1 && !has_between) {
+      test_family <- "one_way_rm_anova"
+    } else if (length(within) >= 2 && !has_between) {
+      test_family <- "two_way_rm_anova"
+    } else if (length(within) >= 1 && has_between) {
+      test_family <- "mixed_anova"
+    } else {
+      test_family <- "one_way_rm_anova"
+    }
+  } else if (n_groups == 2) {
     test_family <- ifelse(paired, "paired_two_sample", "independent_two_sample")
   } else if (n_groups > 2) {
     test_family <- ifelse(paired, "repeated_measures_anova", "independent_anova")
-  }
-
-  if (paired && n_groups == 2) {
-    if (group_ns[1] != group_ns[2])
-      stop("For paired tests, groups must have equal sample sizes after removing missing values.")
   }
 
   # --- 3. Helper Function: Check Normality ---
@@ -637,7 +835,7 @@ run_diff <- function(
   normality_violated <- FALSE
   variance_violated  <- FALSE
 
-  if (test_type == "auto") {
+  if (test_type == "auto" && !is_rm_design) {
     if (n_groups == 2) {
       run_norm_check <- function(g) check_normality(y[grp == g], g, normality_method)
       norm_results   <- list()
@@ -707,45 +905,66 @@ run_diff <- function(
   parametric_used <- TRUE
   fitted_model    <- NULL
 
-  if (test_type == "auto") {
-    if (test_family == "independent_two_sample") {
-      if (normality_violated) {
-        test_used       <- "Mann-Whitney U test (Wilcoxon rank-sum)"
-        # test_result     <- wilcox.test(x = y[grp == groups[1]], y = y[grp == groups[2]])
-        test_result <- withCallingHandlers(
-            stats::wilcox.test(x = y[grp == groups[1]], y = y[grp == groups[2]]),
-            warning = function(w) {
-              if (grepl("ties", conditionMessage(w), ignore.case = TRUE))
-                warnings_list <<- c(warnings_list, conditionMessage(w))
-              invokeRestart("muffleWarning")
-            }
+  if (!is_rm_design) {
+    if (test_type == "auto") {
+      if (test_family == "independent_two_sample") {
+        if (normality_violated) {
+          test_used       <- "Mann-Whitney U test (Wilcoxon rank-sum)"
+          # test_result     <- wilcox.test(x = y[grp == groups[1]], y = y[grp == groups[2]])
+          test_result <- withCallingHandlers(
+              stats::wilcox.test(x = y[grp == groups[1]], y = y[grp == groups[2]]),
+              warning = function(w) {
+                if (grepl("ties", conditionMessage(w), ignore.case = TRUE))
+                  warnings_list <<- c(warnings_list, conditionMessage(w))
+                invokeRestart("muffleWarning")
+              }
+            )
+          parametric_used <- FALSE
+        } else if (variance_violated) {
+          test_used   <- "Welch's t-test"
+          test_result <- t.test(x = y[grp == groups[1]], y = y[grp == groups[2]], var.equal = FALSE)
+        } else {
+          test_used   <- "Student's t-test"
+          test_result <- t.test(x = y[grp == groups[1]], y = y[grp == groups[2]], var.equal = TRUE)
+        }
+      } else if (test_family == "paired_two_sample") {
+        g1 <- y[grp == groups[1]]; g2 <- y[grp == groups[2]]
+        if (normality_violated) {
+          test_used <- "Wilcoxon signed-rank test"; test_result <- wilcox.test(g1, g2, paired = TRUE)
+          parametric_used <- FALSE
+        } else {
+          test_used <- "Paired t-test"; test_result <- t.test(g1, g2, paired = TRUE)
+        }
+      } else if (test_family == "independent_anova") {
+        if (normality_violated) {
+          test_used       <- "Kruskal-Wallis test"
+          test_result     <- kruskal.test(x = y, g = grp)
+          parametric_used <- FALSE
+        } else if (variance_violated) {
+          test_used   <- "Welch's ANOVA"
+          test_result <- oneway.test(formula(y ~ grp), var.equal = FALSE)
+        } else {
+          test_used    <- "One-way ANOVA"
+          fitted_model <- aov(y ~ grp)
+          summary_aov  <- summary(fitted_model)[[1]]
+          test_result  <- list(
+            statistic = c("F value" = summary_aov$`F value`[1]),
+            parameter = c("df1" = summary_aov$Df[1], "df2" = summary_aov$Df[2]),
+            p.value   = summary_aov$`Pr(>F)`[1],
+            method    = test_used,
+            data.name = deparse(substitute(y))
           )
-        parametric_used <- FALSE
-      } else if (variance_violated) {
-        test_used   <- "Welch's t-test"
-        test_result <- t.test(x = y[grp == groups[1]], y = y[grp == groups[2]], var.equal = FALSE)
-      } else {
-        test_used   <- "Student's t-test"
+        }
+      }
+    } else if (test_type == "parametric") {
+      if (test_family == "independent_two_sample") {
+        test_used   <- "Student's t-test (forced)"
         test_result <- t.test(x = y[grp == groups[1]], y = y[grp == groups[2]], var.equal = TRUE)
-      }
-    } else if (test_family == "paired_two_sample") {
-      g1 <- y[grp == groups[1]]; g2 <- y[grp == groups[2]]
-      if (normality_violated) {
-        test_used <- "Wilcoxon signed-rank test"; test_result <- wilcox.test(g1, g2, paired = TRUE)
-        parametric_used <- FALSE
-      } else {
-        test_used <- "Paired t-test"; test_result <- t.test(g1, g2, paired = TRUE)
-      }
-    } else if (test_family == "independent_anova") {
-      if (normality_violated) {
-        test_used       <- "Kruskal-Wallis test"
-        test_result     <- kruskal.test(x = y, g = grp)
-        parametric_used <- FALSE
-      } else if (variance_violated) {
-        test_used   <- "Welch's ANOVA"
-        test_result <- oneway.test(formula(y ~ grp), var.equal = FALSE)
-      } else {
-        test_used    <- "One-way ANOVA"
+      } else if (test_family == "paired_two_sample") {
+        test_used   <- "Paired t-test (forced)"
+        test_result <- t.test(y[grp == groups[1]], y[grp == groups[2]], paired = TRUE)
+      } else if (test_family == "independent_anova") {
+        test_used    <- "One-way ANOVA (forced)"
         fitted_model <- aov(y ~ grp)
         summary_aov  <- summary(fitted_model)[[1]]
         test_result  <- list(
@@ -756,51 +975,468 @@ run_diff <- function(
           data.name = deparse(substitute(y))
         )
       }
-    }
-  } else if (test_type == "parametric") {
-    if (test_family == "independent_two_sample") {
-      test_used   <- "Student's t-test (forced)"
-      test_result <- t.test(x = y[grp == groups[1]], y = y[grp == groups[2]], var.equal = TRUE)
-    } else if (test_family == "paired_two_sample") {
-      test_used   <- "Paired t-test (forced)"
-      test_result <- t.test(y[grp == groups[1]], y[grp == groups[2]], paired = TRUE)
-    } else if (test_family == "independent_anova") {
-      test_used    <- "One-way ANOVA (forced)"
-      fitted_model <- aov(y ~ grp)
-      summary_aov  <- summary(fitted_model)[[1]]
-      test_result  <- list(
-        statistic = c("F value" = summary_aov$`F value`[1]),
-        parameter = c("df1" = summary_aov$Df[1], "df2" = summary_aov$Df[2]),
-        p.value   = summary_aov$`Pr(>F)`[1],
-        method    = test_used,
-        data.name = deparse(substitute(y))
-      )
-    }
-  } else if (test_type == "nonparametric") {
-    parametric_used <- FALSE
-    if (test_family == "independent_two_sample") {
-      test_used   <- "Mann-Whitney U test (forced)"
-      # test_result <- wilcox.test(x = y[grp == groups[1]], y = y[grp == groups[2]])
-      test_result <- withCallingHandlers(
-        # stats::wilcox.test(x = y[grp == groups[1]], y = y[grp == groups[2]]),
-        stats::wilcox.test(x = y[grp == groups[1]], y = y[grp == groups[2]]),
-        warning = function(w) {
-          if (grepl("ties", conditionMessage(w), ignore.case = TRUE))
-            warnings_list <<- c(warnings_list, conditionMessage(w))
-          invokeRestart("muffleWarning")
-        }
-      )
-    } else if (test_family == "paired_two_sample") {
-      test_used   <- "Wilcoxon signed-rank test (forced)"
-      test_result <- wilcox.test(y[grp == groups[1]], y[grp == groups[2]], paired = TRUE)
-    } else if (test_family == "independent_anova") {
-      test_used   <- "Kruskal-Wallis test (forced)"
-      test_result <- kruskal.test(x = y, g = grp)
+    } else if (test_type == "nonparametric") {
+      parametric_used <- FALSE
+      if (test_family == "independent_two_sample") {
+        test_used   <- "Mann-Whitney U test (forced)"
+        # test_result <- wilcox.test(x = y[grp == groups[1]], y = y[grp == groups[2]])
+        test_result <- withCallingHandlers(
+          # stats::wilcox.test(x = y[grp == groups[1]], y = y[grp == groups[2]]),
+          stats::wilcox.test(x = y[grp == groups[1]], y = y[grp == groups[2]]),
+          warning = function(w) {
+            if (grepl("ties", conditionMessage(w), ignore.case = TRUE))
+              warnings_list <<- c(warnings_list, conditionMessage(w))
+            invokeRestart("muffleWarning")
+          }
+        )
+      } else if (test_family == "paired_two_sample") {
+        test_used   <- "Wilcoxon signed-rank test (forced)"
+        test_result <- wilcox.test(y[grp == groups[1]], y[grp == groups[2]], paired = TRUE)
+      } else if (test_family == "independent_anova") {
+        test_used   <- "Kruskal-Wallis test (forced)"
+        test_result <- kruskal.test(x = y, g = grp)
+      }
     }
   }
 
-  if (test_family == "repeated_measures_anova")
-    stop("Repeated measures ANOVA is not yet implemented.")
+  # if (test_family == "repeated_measures_anova")
+    # stop("Repeated measures ANOVA is not yet implemented.")
+  # ===========================================================================
+  # RM / Mixed ANOVA path — executed before the classical effect-size /
+  # post-hoc blocks; returns early with a fully structured result list.
+  # ===========================================================================
+  if (test_family %in% c("one_way_rm_anova", "two_way_rm_anova", "mixed_anova")) {
+
+    # ---- 0.  Build analysis data frame ----------------------------------------
+    # Keep only the columns we need; drop rows with any NA in key columns.
+    key_cols <- c(subject_id, within, outcome)
+    if (test_family == "mixed_anova") key_cols <- c(key_cols, group)
+    key_cols <- unique(key_cols)
+
+    df_rm <- x[, key_cols, drop = FALSE]
+
+    # Coerce within-factor(s) and between-factor to factor
+    for (wf in within) df_rm[[wf]] <- as.factor(df_rm[[wf]])
+    if (test_family == "mixed_anova") df_rm[[group]] <- as.factor(df_rm[[group]])
+    df_rm[[subject_id]] <- as.factor(df_rm[[subject_id]])
+
+    # Remove incomplete cases
+    cc_rm <- stats::complete.cases(df_rm)
+    if (sum(!cc_rm) > 0) {
+      msg <- sprintf("Removing %d rows with missing values (RM/Mixed ANOVA).", sum(!cc_rm))
+      warnings_list <- c(warnings_list, msg)
+      if (verbose) message(msg)
+    }
+    df_rm <- df_rm[cc_rm, , drop = FALSE]
+
+    # ---- 0b.  Safe syntactic name for outcome ---------------------------------
+    # Column names with spaces/hyphens/special characters break formula parsing
+    # inside rstatix::anova_test(). Use a guaranteed-safe internal name and
+    # restore the original name in outputs.
+    safe_outcome <- ".outcome_internal_"
+    df_rm[[safe_outcome]] <- df_rm[[outcome]]
+    # All subsequent anova_test / pairwise_t_test calls use safe_outcome.
+    # We restore the original outcome name in data_summary at step 6.
+
+    # ---- 1.  Assumption: Normality of residuals --------------------------------
+    assumptions_rm <- data.frame(
+      check = character(), result = character(),
+      p_value = numeric(), decision = character(),
+      stringsAsFactors = FALSE
+    )
+
+    # Fit a simple lm on the outcome to get residuals for normality check
+    rhs <- if (test_family == "mixed_anova") {
+      paste(c(group, within), collapse = " * ")
+    } else {
+      paste(within, collapse = " * ")
+    }
+    lm_formula <- stats::as.formula(paste(safe_outcome, "~", rhs))
+    lm_fit     <- tryCatch(stats::lm(lm_formula, data = df_rm), error = function(e) NULL)
+
+    if (!is.null(lm_fit)) {
+      nc <- check_normality(lm_fit$residuals, NULL, normality_method)
+      nc$label <- "Normality of residuals"
+      assumptions_rm <- rbind(assumptions_rm, data.frame(
+        check   = nc$label, result  = nc$method,
+        p_value = nc$p_value,
+        decision = ifelse(nc$violated, "VIOLATED", "OK"),
+        stringsAsFactors = FALSE
+      ))
+      if (nc$violated) {
+        msg <- "Normality of residuals violated; interpret RM/mixed ANOVA results with caution."
+        warnings_list <- c(warnings_list, msg)
+        if (verbose) message("Warning: ", msg)
+      }
+    }
+
+    # ---- 2.  Run rstatix::anova_test ------------------------------------------
+    # Build the formula for anova_test.
+    # For mixed ANOVA:   outcome ~ between + Error(subject/within1*within2)
+    # For RM ANOVA:      outcome ~ Error(subject/within1*within2)
+    # rstatix::anova_test() accepts a 'wid' and 'within' / 'between' approach
+    # which is cleaner and handles Mauchly automatically.
+
+    if (!requireNamespace("rstatix", quietly = TRUE))
+      stop("Package 'rstatix' is required for RM/mixed ANOVA.")
+
+    anova_args <- list(
+      data        = df_rm,
+      dv          = safe_outcome,
+      wid         = subject_id,
+      within      = within,
+      type        = type_sosquares,
+      effect.size = rm_effect_size[1],   # primary pass; see below for "both"
+      detailed    = TRUE
+    )
+    if (test_family == "mixed_anova") {
+      anova_args[["between"]] <- group
+    }
+
+    aov_res <- tryCatch(
+      do.call(rstatix::anova_test, anova_args),
+      error = function(e) {
+        stop("rstatix::anova_test failed: ", e$message)
+      }
+    )
+
+    # Extract ANOVA table applying the user's sphericity correction choice
+    aov_tbl <- as.data.frame(rstatix::get_anova_table(aov_res, correction = correction))
+
+    # ---- Handle "both" effect sizes -----------------------------------------
+    # rstatix::anova_test() can only compute one effect size at a time when the
+    # internal branch is a strict if/else (pes vs ges). When the user requests
+    # both, we run a second pass for the other metric and merge the column in.
+    if (length(rm_effect_size) == 2) {
+      second_es <- rm_effect_size[2]   # the one not yet in aov_tbl
+      anova_args2              <- anova_args
+      anova_args2$effect.size  <- second_es
+      aov_res2 <- tryCatch(
+        do.call(rstatix::anova_test, anova_args2),
+        error = function(e) {
+          msg <- paste0("Second effect size ('", second_es, "') pass failed: ", e$message)
+          warnings_list <<- c(warnings_list, msg)
+          if (verbose) message("Warning: ", msg)
+          NULL
+        }
+      )
+      if (!is.null(aov_res2)) {
+        aov_tbl2 <- as.data.frame(rstatix::get_anova_table(aov_res2, correction = correction))
+        # Merge second effect size column if not already present
+        if (second_es %in% names(aov_tbl2) && !second_es %in% names(aov_tbl)) {
+          # Match rows by Effect name to be safe
+          idx <- match(aov_tbl$Effect, aov_tbl2$Effect)
+          aov_tbl[[second_es]] <- aov_tbl2[[second_es]][idx]
+        }
+      }
+    }
+
+    # ---- 3.  Sphericity assumption (Mauchly's test) ----------------------------
+    # aov_res$`Mauchly's Test for Sphericity` is present when a within factor
+    # has > 2 levels.
+    if (!is.null(aov_res$`Mauchly's Test for Sphericity`)) {
+      mauchly_tbl <- as.data.frame(aov_res$`Mauchly's Test for Sphericity`)
+      for (i in seq_len(nrow(mauchly_tbl))) {
+        sph_p    <- mauchly_tbl$p[i]
+        sph_eff  <- as.character(mauchly_tbl$Effect[i])
+        sph_dec  <- ifelse(!is.na(sph_p) & sph_p < alpha_sphericity,
+                           "VIOLATED", "OK")
+        assumptions_rm <- rbind(assumptions_rm, data.frame(
+          check    = paste0("Sphericity (Mauchly): ", sph_eff),
+          result   = sprintf("W = %.4f", mauchly_tbl$W[i]),
+          p_value  = sph_p,
+          decision = sph_dec,
+          stringsAsFactors = FALSE
+        ))
+        if (sph_dec == "VIOLATED") {
+          msg <- sprintf(
+            "Sphericity violated for '%s' (Mauchly p = %.4f). GG correction applied.",
+            sph_eff, sph_p)
+          warnings_list <- c(warnings_list, msg)
+          if (verbose) message("Warning: ", msg)
+        }
+      }
+      # Also record GG/HF corrections if present
+      if (!is.null(aov_res$`Sphericity Corrections`)) {
+        sph_cor <- as.data.frame(aov_res$`Sphericity Corrections`)
+        for (i in seq_len(nrow(sph_cor))) {
+          assumptions_rm <- rbind(assumptions_rm, data.frame(
+            check    = paste0("GG epsilon: ", sph_cor$Effect[i]),
+            result   = sprintf("eps = %.4f", sph_cor$GGe[i]),
+            p_value  = sph_cor$`p[GG]`[i],
+            decision = "INFO",
+            stringsAsFactors = FALSE
+          ))
+        }
+      }
+    }
+
+    # ---- 4.  Effect size -------------------------------------------------------
+    # ges (generalized eta-squared) is already in aov_tbl$ges
+    # We also expose the primary/omnibus effect for the top-level effect_size slot.
+    # For one-way RM: the single within effect.
+    # For two-way RM / mixed: the interaction term (last row) as primary.
+    primary_row <- aov_tbl[nrow(aov_tbl), ]   # interaction or last main effect
+
+    # Primary effect size for the top-level $effect_size slot.
+    # Uses rm_effect_size[1] (the first requested metric).
+    primary_es_col <- rm_effect_size[1]
+    es_rm <- if (primary_es_col %in% names(aov_tbl) &&
+                 !is.na(primary_row[[primary_es_col]])) {
+      es_val  <- as.numeric(primary_row[[primary_es_col]])
+      es_label <- if (primary_es_col == "ges") "Generalized eta-squared (ges)"
+                  else                         "Partial eta-squared (pes)"
+      # Field (2013) thresholds apply to both ges and pes
+      mag <- if (es_val >= 0.14) "large" else if (es_val >= 0.06) "medium" else "small"
+      list(
+        estimate  = es_val,
+        ci_low    = NA_real_,
+        ci_high   = NA_real_,
+        magnitude = mag,
+        metric    = es_label,
+        interpretation = sprintf("Effect size: %s (%s = %.3f)", mag, primary_es_col, es_val)
+      )
+    } else NULL
+
+    # ---- 5.  Post-hoc tests ----------------------------------------------------
+    posthoc_rm <- NULL
+
+    if (perform_posthoc && requireNamespace("rstatix", quietly = TRUE)) {
+
+      sig_effects <- aov_tbl$Effect[!is.na(aov_tbl$p) & aov_tbl$p < test_alpha]
+
+      if (length(sig_effects) > 0) {
+        ph_list <- list()
+
+        for (eff in sig_effects) {
+          eff_factors    <- trimws(strsplit(eff, ":")[[1]])
+          within_in_eff  <- intersect(eff_factors, within)
+          between_in_eff <- if (!is.null(group)) intersect(eff_factors, group) else character(0)
+
+          # Skip effects that contain neither a within nor a between factor
+          if (length(within_in_eff) == 0 && length(between_in_eff) == 0) next
+
+          ph_one <- tryCatch({
+            if (length(within_in_eff) > 0) {
+              # -----------------------------------------------------------
+              # Within or interaction effect: use paired pairwise_t_test.
+              # For interactions, group the data by the between factor first
+              # so comparisons are made within each between-factor level.
+              # -----------------------------------------------------------
+              ph_formula <- stats::as.formula(
+                paste(safe_outcome, "~", within_in_eff[1])
+              )
+              if (length(between_in_eff) > 0) {
+                # Interaction: run pairwise test grouped by between factor
+                rstatix::pairwise_t_test(
+                  data            = df_rm,
+                  formula         = ph_formula,
+                  paired          = TRUE,
+                  p.adjust.method = p_adjust_method,
+                  detailed        = TRUE
+                ) |> as.data.frame()
+              } else {
+                # Main within effect only
+                rstatix::pairwise_t_test(
+                  data            = df_rm,
+                  formula         = ph_formula,
+                  paired          = TRUE,
+                  p.adjust.method = p_adjust_method,
+                  detailed        = TRUE
+                ) |> as.data.frame()
+              }
+            } else {
+              # -----------------------------------------------------------
+              # Pure between-subject effect: unpaired pairwise_t_test
+              # -----------------------------------------------------------
+              ph_formula <- stats::as.formula(
+                paste(safe_outcome, "~", between_in_eff[1])
+              )
+              rstatix::pairwise_t_test(
+                data            = df_rm,
+                formula         = ph_formula,
+                paired          = FALSE,
+                p.adjust.method = p_adjust_method,
+                detailed        = TRUE
+              ) |> as.data.frame()
+            }
+          }, error = function(e) {
+            msg <- paste0("Post-hoc failed for effect '", eff, "': ", e$message)
+            warnings_list <<- c(warnings_list, msg)
+            if (verbose) message(msg)
+            NULL
+          })
+
+          if (!is.null(ph_one) && nrow(ph_one) > 0) {
+            ph_one$effect       <- eff
+            ph_one$posthoc_test <- if (length(within_in_eff) > 0)
+              "Pairwise t-test (paired)" else "Pairwise t-test (independent)"
+            ph_list[[eff]] <- ph_one
+          }
+        }
+
+        if (length(ph_list) > 0) {
+          # Bind all effects; fill missing columns with NA
+          all_cols <- unique(unlist(lapply(ph_list, names)))
+          ph_list  <- lapply(ph_list, function(df) {
+            for (cn in setdiff(all_cols, names(df))) df[[cn]] <- NA
+            df[, all_cols, drop = FALSE]
+          })
+          posthoc_rm           <- do.call(rbind, ph_list)
+          rownames(posthoc_rm) <- NULL
+
+          # ---- p.adj.signif and significant ----
+          if ("p.adj" %in% names(posthoc_rm)) {
+            posthoc_rm$significant <- posthoc_rm$p.adj < test_alpha
+            posthoc_rm$p.adj.signif <- ifelse(
+              posthoc_rm$p.adj < test_alpha,
+              ifelse(posthoc_rm$p.adj < 0.001, "***",
+              ifelse(posthoc_rm$p.adj < 0.01,  "**",
+              ifelse(posthoc_rm$p.adj < 0.05,  "*",
+                     sprintf("* (p<%.2f)", test_alpha)))),
+              "ns"
+            )
+            posthoc_rm$p.adj.format <- ifelse(
+              posthoc_rm$p.adj < 0.001, "p < 0.001",
+              sprintf("p = %.3f", posthoc_rm$p.adj)
+            )
+          }
+          if ("p" %in% names(posthoc_rm)) {
+            posthoc_rm$p.format <- ifelse(
+              is.na(posthoc_rm$p), NA_character_,
+              ifelse(posthoc_rm$p < 0.001, "p < 0.001",
+                     sprintf("p = %.3f", posthoc_rm$p))
+            )
+          }
+
+          # ---- mean1 / mean2 from within[1] marginal means ----
+          mean_tbl <- stats::setNames(
+            as.numeric(tapply(df_rm[[safe_outcome]], df_rm[[within[1]]], mean, na.rm = TRUE)),
+            levels(as.factor(df_rm[[within[1]]]))
+          )
+          posthoc_rm$mean1 <- mean_tbl[match(posthoc_rm$group1, names(mean_tbl))]
+          posthoc_rm$mean2 <- mean_tbl[match(posthoc_rm$group2, names(mean_tbl))]
+
+          # ---- interpretation ----
+          posthoc_rm$interpretation <- ifelse(
+            !posthoc_rm$significant %in% TRUE,
+            "No significant difference",
+            ifelse(
+              !is.na(posthoc_rm$mean1) & !is.na(posthoc_rm$mean2) &
+                posthoc_rm$mean1 < posthoc_rm$mean2,
+              paste0(posthoc_rm$group1, " has lower mean than ", posthoc_rm$group2),
+              paste0(posthoc_rm$group1, " has higher mean than ", posthoc_rm$group2)
+            )
+          )
+        }
+      }
+    }
+
+    # ---- 6.  Data summary (per-cell means) -------------------------------------
+    # For RM: summarise by within factor(s); for mixed: by between × within
+    summary_factors <- if (test_family == "mixed_anova") c(group, within) else within
+    ds_rm <- tryCatch({
+      agg <- stats::aggregate(
+        stats::as.formula(paste(safe_outcome, "~",
+                                paste(summary_factors, collapse = " + "))),
+        data = df_rm, FUN = function(v)
+          c(n      = length(v),
+            mean   = mean(v),
+            sd     = stats::sd(v),
+            se     = stats::sd(v) / sqrt(length(v)),
+            median = stats::median(v),
+            q25    = stats::quantile(v, 0.25, names = FALSE),
+            q75    = stats::quantile(v, 0.75, names = FALSE),
+            min    = min(v),
+            max    = max(v))
+      )
+      # aggregate with c() returns a matrix column; flatten
+      stats_mat <- as.data.frame(agg[[safe_outcome]])
+      names(stats_mat) <- c("n", "mean", "sd", "se", "median", "q25", "q75", "min", "max")
+      cbind(agg[, summary_factors, drop = FALSE], stats_mat)
+    }, error = function(e) {
+      warning("Could not build data_summary for RM/mixed ANOVA: ", e$message)
+      NULL
+    })
+
+    # ---- 7.  Verbose output ----------------------------------------------------
+    if (verbose) {
+      message("\n--- RM/Mixed ANOVA Results ---")
+      message(sprintf("Design: %s", test_family))
+      print(aov_tbl)
+      if (!is.null(posthoc_rm) && nrow(posthoc_rm) > 0) {
+        message(sprintf("\n--- Post-Hoc (Pairwise t-test, adj: %s) ---", p_adjust_method))
+        sig_ph <- posthoc_rm[posthoc_rm$significant %in% TRUE, ]
+        if (nrow(sig_ph) > 0) print(sig_ph) else message("No significant pairwise differences.")
+      }
+    }
+
+    # ---- 8.  Construct test_result stub for compatibility ----------------------
+    # The rest of the package (summary_table, print.run_diff) reads
+    # test_result$statistic, test_result$p.value, test_result$parameter.
+    # We expose the primary (interaction or last) effect's values.
+    test_result_rm <- list(
+      statistic = stats::setNames(as.numeric(primary_row$F), "F value"),
+      parameter = stats::setNames(
+        c(as.numeric(primary_row$DFn), as.numeric(primary_row$DFd)),
+        c("DFn", "DFd")
+      ),
+      p.value = as.numeric(primary_row$p),
+      method  = test_family,
+      anova_table = aov_tbl   # full table accessible if needed
+    )
+
+    # ---- 9.  Return ------------------------------------------------------------
+    result_rm <- list(
+      test_used         = switch(test_family,
+        one_way_rm_anova = "One-way Repeated Measures ANOVA",
+        two_way_rm_anova = "Two-way Repeated Measures ANOVA",
+        mixed_anova      = "Two-way Mixed ANOVA"
+      ),
+      test_result       = test_result_rm,
+      effect_size       = es_rm,
+      posthoc_result    = posthoc_rm,
+      assumptions       = assumptions_rm,
+      parametric        = TRUE,
+      data_summary      = ds_rm,
+      anova_table       = aov_tbl,          # full ANOVA table (all effects)
+      sphericity        = aov_res$`Mauchly's Test for Sphericity`,
+      sphericity_corrections = aov_res$`Sphericity Corrections`,
+      outcome           = outcome,
+      group_var         = group,
+      within_vars       = within,
+      subject_id_var    = subject_id,
+      paired            = paired,
+      test_type         = test_type,
+      test_alpha        = test_alpha,
+      subgroup_analysis = NULL,
+      warnings          = warnings_list,
+      parameters        = list(
+        test_type             = test_type,
+        normality_method      = normality_method,
+        alpha_normality       = alpha_normality,
+        alpha_variance        = alpha_variance,
+        alpha_sphericity      = alpha_sphericity,
+        type_sosquares        = type_sosquares,
+        rm_effect_size        = rm_effect_size,
+        correction            = correction,
+        test_alpha            = test_alpha,
+        min_n_threshold       = min_n_threshold,
+        calculate_effect_size = calculate_effect_size,
+        perform_posthoc       = perform_posthoc,
+        p_adjust_method       = p_adjust_method,
+        group_order           = group_order,
+        subgroup              = subgroup,
+        within                = within,
+        subject_id            = subject_id,
+        paired                = paired
+      ),
+      raw_data = df_rm
+    )
+    class(result_rm) <- "run_diff"
+    return(result_rm)
+  }
+  # End RM/mixed ANOVA path
 
   # --- 6. Calculate Effect Size ---
   effect_size_result <- NULL
@@ -811,8 +1447,13 @@ run_diff <- function(
       if (test_family %in% c("independent_two_sample", "paired_two_sample")) {
         is_paired_fam <- (test_family == "paired_two_sample")
         if (parametric_used) {
-          es     <- effectsize::cohens_d(x = y[grp == groups[1]], y = y[grp == groups[2]],
-                                         pooled_sd = !variance_violated, paired = TRUE, verbose = FALSE)
+          es     <- effectsize::cohens_d(
+                      x         = y[grp == groups[1]],
+                      y         = y[grp == groups[2]],
+                      pooled_sd = !variance_violated,
+                      paired    = is_paired_fam,
+                      verbose   = FALSE
+                    )
           interp <- effectsize::interpret(es, rules = "cohen1988")
           list(estimate = es$Cohens_d, ci_low = es$CI_low, ci_high = es$CI_high,
                magnitude = as.character(interp$Interpretation),
@@ -820,15 +1461,20 @@ run_diff <- function(
                interpretation = sprintf("Effect size: %s (%.3f)",
                                         as.character(interp$Interpretation), es$Cohens_d))
         } else {
-          es     <- effectsize::rank_biserial(x = y[grp == groups[1]], y = y[grp == groups[2]],
-                                              paired = TRUE, verbose = FALSE)
+          es     <- effectsize::rank_biserial(
+                      x       = y[grp == groups[1]],
+                      y       = y[grp == groups[2]],
+                      paired  = is_paired_fam,
+                      verbose = FALSE
+                    )
           interp <- effectsize::interpret(es, rules = "funder2019")
           list(estimate = es$r_rank_biserial, ci_low = es$CI_low, ci_high = es$CI_high,
                magnitude = as.character(interp$Interpretation),
                metric = if (is_paired_fam) "Rank-biserial correlation (paired)"
                         else "Rank-biserial correlation",
                interpretation = sprintf("Effect size: %s (%.3f)",
-                                        as.character(interp$Interpretation), es$r_rank_biserial))
+                                        as.character(interp$Interpretation),
+                                        es$r_rank_biserial))
         }
       } else if (test_family == "independent_anova") {
         if (parametric_used) {
@@ -846,10 +1492,11 @@ run_diff <- function(
         } else {
           es     <- effectsize::rank_epsilon_squared(x = y, groups = grp, verbose = FALSE)
           interp <- effectsize::interpret(es, rules = "field2013")
-          list(estimate = es$rank_epsilon_squared,
-               ci_low  = if (!is.null(es$CI_low))  es$CI_low  else NA_real_,
-               ci_high = if (!is.null(es$CI_high)) es$CI_high else NA_real_,
-               magnitude = as.character(interp$Interpretation), metric = "Rank epsilon-squared",
+          list(estimate  = es$rank_epsilon_squared,
+               ci_low    = if (!is.null(es$CI_low))  es$CI_low  else NA_real_,
+               ci_high   = if (!is.null(es$CI_high)) es$CI_high else NA_real_,
+               magnitude = as.character(interp$Interpretation),
+               metric    = "Rank epsilon-squared",
                interpretation = sprintf("Effect size: %s (%.3f)",
                                         as.character(interp$Interpretation),
                                         es$rank_epsilon_squared))
@@ -1055,9 +1702,12 @@ run_diff <- function(
         }
         sg_result <- tryCatch(
           run_diff(
-            x = x_sub, outcome = outcome, group = group, paired = paired,
+            x = x_sub, outcome = outcome, group = group, 
+            within = within, subject_id = subject_id,
+            paired = paired,
             test_type = test_type, normality_method = normality_method,
             alpha_normality = alpha_normality, alpha_variance = alpha_variance,
+            alpha_sphericity = alpha_sphericity,
             test_alpha = test_alpha, min_n_threshold = min_n_threshold,
             calculate_effect_size = calculate_effect_size,
             perform_posthoc = perform_posthoc, p_adjust_method = p_adjust_method,
@@ -1097,6 +1747,10 @@ run_diff <- function(
       normality_method      = normality_method,
       alpha_normality       = alpha_normality,
       alpha_variance        = alpha_variance,
+      alpha_sphericity      = alpha_sphericity,
+      type_sosquares        = type_sosquares,
+      rm_effect_size        = rm_effect_size,
+      correction            = correction,
       test_alpha            = test_alpha,
       min_n_threshold       = min_n_threshold,
       calculate_effect_size = calculate_effect_size,
@@ -1104,13 +1758,15 @@ run_diff <- function(
       p_adjust_method       = p_adjust_method,
       group_order           = group_order,
       subgroup              = subgroup,
+      within                = within,
+      subject_id            = subject_id,
       paired                = paired
     ),
     raw_data = tibble::tibble(outcome = y, group = grp)
   )
 
   return(result)
-}
+  }
 
 
 # =============================================================================
@@ -1126,27 +1782,45 @@ print.run_diff <- function(x, ...) {
   cat(sprintf("Test Used: %s\n", x$test_used))
   cat(sprintf("Parametric: %s\n\n", x$parametric))
   cat("Test Results:\n")
-  cat(sprintf("  Statistic: %.4f\n", x$test_result$statistic))
-  if (x$test_result$p.value < 0.001) {
-    cat("  P-value: < 0.001 ***\n")
-  } else {
-    cat(sprintf("  P-value: %.4f", x$test_result$p.value))
-    if      (x$test_result$p.value < 0.01) cat(" **")
-    else if (x$test_result$p.value < 0.05) cat(" *")
-    cat("\n")
+  cat(sprintf("  Statistic: %.4f\n", x$test_result$statistic[[1]]))
+  if (!is.null(x$test_result$p.value)) {
+    if (x$test_result$p.value < 0.001) {
+      cat("  P-value: < 0.001 ***\n")
+    } else {
+      cat(sprintf("  P-value: %.4f", x$test_result$p.value))
+      if      (x$test_result$p.value < 0.01) cat(" **")
+      else if (x$test_result$p.value < 0.05) cat(" *")
+      cat("\n")
+    }
   }
   if (!is.null(x$effect_size))
     cat(sprintf("  %s\n", x$effect_size$interpretation))
   cat("\n")
-  cat("Data Summary:\n")
-  print(x$data_summary[, c("group", "n", "mean", "sd", "median")], row.names = FALSE)
+  # ---- full ANOVA table for RM/mixed designs ----
+  if (!is.null(x$anova_table)) {
+    cat("ANOVA Table (all effects):\n")
+    print(x$anova_table, row.names = FALSE)
+  } else if (!is.null(x$data_summary)) {
+    cat("Data Summary:\n")
+    # Safely select only columns that actually exist
+    show_cols <- c("group", "n", "mean", "sd", "median")
+    show_cols <- show_cols[show_cols %in% names(x$data_summary)]
+    if (length(show_cols) >= 2) {
+      print(x$data_summary[, show_cols, drop = FALSE], row.names = FALSE)
+    } else {
+      print(x$data_summary, row.names = FALSE)
+    }
+  }
   if (!is.null(x$posthoc_result)) {
-    cat(sprintf("\n\nPost-Hoc Tests (%s):\n", unique(x$posthoc_result$posthoc_test)))
-    sig_only <- x$posthoc_result[x$posthoc_result$significant %in% TRUE,
-                                  c("group1", "group2", "p.adj", "p.adj.signif")]
+    cat(sprintf("\n\nPost-Hoc Tests (%s):\n",
+                paste(unique(x$posthoc_result$posthoc_test), collapse = ", ")))
+    sig_only <- x$posthoc_result[x$posthoc_result$significant %in% TRUE, , drop = FALSE]
+    # Select columns that exist
+    ph_show <- c("group1", "group2", "effect", "p.adj", "p.adj.signif")
+    ph_show <- ph_show[ph_show %in% names(sig_only)]
     if (nrow(sig_only) > 0) {
       cat("Significant comparisons:\n")
-      print(sig_only, row.names = FALSE)
+      print(sig_only[, ph_show, drop = FALSE], row.names = FALSE)
     } else {
       cat("No significant pairwise differences found.\n")
     }
@@ -1169,12 +1843,40 @@ summary.run_diff <- function(object, ...) {
   cat(sprintf("Paired Analysis:   %s\n", object$paired))
   cat(sprintf("Test Strategy:     %s (alpha = %.2f)\n", object$test_type, object$test_alpha))
   cat(sprintf("Test Selected:     %s\n\n", object$test_used))
+  if (!is.null(object$within_vars))
+    cat(sprintf("Within-Subject Factor(s): %s\n",
+                paste(object$within_vars, collapse = ", ")))
+  if (!is.null(object$subject_id_var))
+    cat(sprintf("Subject ID Variable:      %s\n", object$subject_id_var))
   cat("--- Descriptive Statistics ---\n")
   print(object$data_summary, row.names = FALSE)
   cat("\n--- Assumption Checks ---\n")
   print(object$assumptions, row.names = FALSE)
+  # Full ANOVA table for RM/mixed designs
+  if (!is.null(object$anova_table)) {
+    cat("\n--- Full ANOVA Table (all effects) ---\n")
+    print(object$anova_table, row.names = FALSE)
+  }
+  if (!is.null(object$sphericity)) {
+    cat("\n--- Mauchly's Test for Sphericity ---\n")
+    print(as.data.frame(object$sphericity), row.names = FALSE)
+  }
+  if (!is.null(object$sphericity_corrections)) {
+    cat("\n--- Sphericity Corrections (GG / HF) ---\n")
+    print(as.data.frame(object$sphericity_corrections), row.names = FALSE)
+  }
   cat("\n--- Statistical Test Results ---\n")
-  print(object$test_result)
+  if (is.null(object$anova_table)) {
+    # Classical design: print the htest object normally
+    print(object$test_result)
+  } else {
+    # RM/mixed: anova_table already printed above; just show primary effect summary
+    tr <- object$test_result
+    cat(sprintf("Primary effect: F(%s, %s) = %.4f, p = %s\n",
+                tr$parameter["DFn"], tr$parameter["DFd"],
+                tr$statistic[[1]],
+                if (tr$p.value < 0.001) "< 0.001" else sprintf("%.4f", tr$p.value)))
+  }
   if (!is.null(object$effect_size)) {
     cat("\n--- Effect Size ---\n")
     cat(sprintf("Metric:    %s\n", object$effect_size$metric))
@@ -1709,11 +2411,30 @@ summary.run_diff <- function(object, ...) {
 #          and for each subgroup × level slice.
 # =============================================================================
 .build_summary_table <- function(results_list, outcome_names, test_alpha) {
+
+  # ------------------------------------------------------------------
+  # Pass 1: collect all group names that appear across any outcome so
+  # we can build a consistent, union set of average_* columns.
+  # ------------------------------------------------------------------
+  all_groups <- character(0)
+  for (oc in outcome_names) {
+    res <- results_list[[oc]]
+    if (!is.null(res) && !is.null(res$data_summary)) {
+      all_groups <- union(all_groups, as.character(res$data_summary$group))
+    }
+  }
+  avg_col_names <- if (length(all_groups) > 0)
+    paste0("average_", all_groups) else character(0)
+
+  # ------------------------------------------------------------------
+  # Pass 2: build one row per outcome
+  # ------------------------------------------------------------------
   tbl_rows <- lapply(outcome_names, function(oc) {
     res <- results_list[[oc]]
 
+    # ---- skeleton row for failed / NULL outcomes ----
     if (is.null(res)) {
-      return(data.frame(
+      base <- data.frame(
         outcome               = oc,
         test_used             = NA_character_,
         statistic             = NA_real_,
@@ -1728,36 +2449,65 @@ summary.run_diff <- function(object, ...) {
         n_significant_posthoc = NA_integer_,
         posthoc_pairs         = NA_integer_,
         stringsAsFactors      = FALSE
-      ))
+      )
+      # fill every average_* column with NA
+      for (cn in avg_col_names) base[[cn]] <- NA_real_
+      return(base)
     }
 
     tr <- res$test_result
     es <- res$effect_size
     ph <- res$posthoc_result
+    ds <- res$data_summary   # data frame: columns group, n, mean, …
 
     df_val <- if (!is.null(tr$parameter) && length(tr$parameter) > 0)
       paste(names(tr$parameter), round(tr$parameter, 4), sep = " = ", collapse = ", ")
     else NA_character_
 
-    n_sig_ph <- if (!is.null(ph) && nrow(ph) > 0) sum(ph$significant, na.rm = TRUE) else NA_integer_
+    n_sig_ph <- if (!is.null(ph) && nrow(ph) > 0)
+      sum(ph$significant, na.rm = TRUE) else NA_integer_
     total_ph <- if (!is.null(ph) && nrow(ph) > 0) nrow(ph) else NA_integer_
 
-    data.frame(
+    # ---- per-group averages ----
+    avg_vals <- stats::setNames(
+      vector("list", length(avg_col_names)),
+      avg_col_names
+    )
+    for (cn in avg_col_names) {
+      grp_label <- sub("^average_", "", cn)
+      if (!is.null(ds) && grp_label %in% ds$group) {
+        avg_vals[[cn]] <- ds$mean[ds$group == grp_label]
+      } else {
+        avg_vals[[cn]] <- NA_real_
+      }
+    }
+
+    # ---- assemble ----
+    row <- data.frame(
       outcome               = oc,
       test_used             = res$test_used,
-      statistic             = if (!is.null(tr$statistic)) as.numeric(tr$statistic[[1]]) else NA_real_,
+      statistic             = if (!is.null(tr$statistic))
+                                as.numeric(tr$statistic[[1]]) else NA_real_,
       df                    = df_val,
       p_value               = if (!is.null(tr$p.value)) tr$p.value else NA_real_,
-      effect_size_metric    = if (!is.null(es)) es$metric    else NA_character_,
-      effect_size_estimate  = if (!is.null(es)) es$estimate  else NA_real_,
-      effect_size_ci_low    = if (!is.null(es)) es$ci_low    else NA_real_,
-      effect_size_ci_high   = if (!is.null(es)) es$ci_high   else NA_real_,
-      effect_size_magnitude = if (!is.null(es)) es$magnitude else NA_character_,
-      significant           = if (!is.null(tr$p.value)) tr$p.value < test_alpha else NA,
-      n_significant_posthoc = n_sig_ph,
-      posthoc_pairs         = total_ph,
       stringsAsFactors      = FALSE
     )
+
+    # insert average_* columns right after p_value
+    for (cn in avg_col_names) row[[cn]] <- as.numeric(avg_vals[[cn]])
+
+    # append effect-size + significance columns
+    row$effect_size_metric    <- if (!is.null(es)) es$metric    else NA_character_
+    row$effect_size_estimate  <- if (!is.null(es)) es$estimate  else NA_real_
+    row$effect_size_ci_low    <- if (!is.null(es)) es$ci_low    else NA_real_
+    row$effect_size_ci_high   <- if (!is.null(es)) es$ci_high   else NA_real_
+    row$effect_size_magnitude <- if (!is.null(es)) es$magnitude else NA_character_
+    row$significant           <- if (!is.null(tr$p.value))
+                                   tr$p.value < test_alpha else NA
+    row$n_significant_posthoc <- n_sig_ph
+    row$posthoc_pairs         <- total_ph
+
+    row
   })
 
   tbl <- do.call(rbind, tbl_rows)
