@@ -271,7 +271,7 @@ when \code{return} includes \code{"bmifa"}.\tabular{ll}{
    Nutritional status \tab BMI threshold \cr
    Moderate and severe thinness \tab < 17.0 kg/m\eqn{^2} \cr
    Underweight \tab \eqn{\geq} 17.0 and < 18.5 kg/m\eqn{^2} \cr
-   Normal weight \tab \eqn{\geq} 18.5 and < 25.0 kg/m\eqn{^2} \cr
+   Normal \tab \eqn{\geq} 18.5 and < 25.0 kg/m\eqn{^2} \cr
    Overweight \tab \eqn{\geq} 25.0 and < 30.0 kg/m\eqn{^2} \cr
    Stage 1 Obesity \tab \eqn{\geq} 30.0 and < 35.0 kg/m\eqn{^2} \cr
    Stage 2 Obesity \tab \eqn{\geq} 35.0 and < 40.0 kg/m\eqn{^2} \cr
