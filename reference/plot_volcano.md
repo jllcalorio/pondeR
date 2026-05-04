@@ -19,8 +19,8 @@ plot_volcano(
   z,
   group = NULL,
   features = NULL,
-  up = 1,
-  down = -1,
+  up = 1.5,
+  down = 0.5,
   pval = 0.05,
   annotate = NULL,
   use_ggrepel = TRUE,
@@ -61,8 +61,11 @@ plot_volcano(
 
 - y:
 
-  A single character string naming the column in `x` that contains log2
-  fold change values (numeric).
+  A single character string naming the column in `x` that contains
+  **log2** fold change values (numeric). Note that the `up` and `down`
+  thresholds are specified as raw fold changes (e.g., `up = 1.5`), which
+  are converted to log2 scale internally before being applied to this
+  column.
 
 - z:
 
@@ -83,15 +86,16 @@ plot_volcano(
 
 - up:
 
-  A single numeric value. Features with \\\text{log2FC} \ge \text{up}\\
-  *and* \\p \< \text{pval}\\ are coloured as up-regulated. Default `1`.
+  A single numeric value greater than 1. Features with a fold change
+  \\\ge \text{up}\\ *and* \\p \< \text{pval}\\ are coloured as
+  up-regulated. Default `1.5` (i.e., a 1.5-fold increase).
 
 - down:
 
-  A single numeric value. Features with \\\text{log2FC} \le
-  \text{down}\\ *and* \\p \< \text{pval}\\ are coloured as
-  down-regulated. Typically negative (e.g. `log2(0.5)` = `-1`). Default
-  `-1`.
+  A single numeric value in \\(0, 1)\\. Features with a fold change
+  \\\le \text{down}\\ *and* \\p \< \text{pval}\\ are coloured as
+  down-regulated. For example, `down = 0.667` corresponds to a ~1.5-fold
+  decrease. Default `0.5`.
 
 - pval:
 
@@ -269,11 +273,12 @@ dat <- data.frame(
 )
 
 res <- plot_volcano(x = dat, y = "log2fc", z = "pvalue")
+#> Error: Column `y` ("log2fc") contains non-positive values. Fold changes must be positive (e.g., 0.5 for a 2-fold decrease).
 print(res$plots[[1]])
-
+#> Error: object 'res' not found
 
 ## -----------------------------------------------------------------------
-## Example 2 — asymmetric thresholds using log2() directly, with labels
+## Example 2 — asymmetric thresholds as raw fold changes, with labels
 ## -----------------------------------------------------------------------
 ann <- setNames(c("feat_1", "feat_2", "feat_3"),
                 c("Marker A", "Marker B", "Marker C"))
@@ -283,12 +288,13 @@ res2 <- plot_volcano(
   y        = "log2fc",
   z        = "pvalue",
   features = "feature",
-  up       = log2(1.5),
-  down     = log2(0.5),
+  up       = 1.5,
+  down     = 1/1.5,
   annotate = ann
 )
+#> Error: Column `y` ("log2fc") contains non-positive values. Fold changes must be positive (e.g., 0.5 for a 2-fold decrease).
 print(res2$plots[[1]])
-
+#> Error: object 'res2' not found
 
 ## -----------------------------------------------------------------------
 ## Example 3 — multi-group overlay
@@ -312,6 +318,7 @@ res3 <- plot_volcano(
   alpha       = 0.5,
   legend_nrow = 2
 )
+#> Error: Column `y` ("log2fc") contains non-positive values. Fold changes must be positive (e.g., 0.5 for a 2-fold decrease).
 print(res3$plots[[1]])
-
+#> Error: object 'res3' not found
 ```
