@@ -17,7 +17,10 @@
 #'   one row per feature. Must contain the columns named by \code{y} and
 #'   \code{z}. Column names may contain special characters.
 #' @param y A single character string naming the column in \code{x} that
-#'   contains log2 fold change values (numeric).
+#'   contains \strong{log2} fold change values (numeric). Note that the
+#'   \code{up} and \code{down} thresholds are specified as raw fold changes
+#'   (e.g., \code{up = 1.5}), which are converted to log2 scale internally
+#'   before being applied to this column.
 #' @param z A single character string naming the column in \code{x} that
 #'   contains raw p-values (numeric, in \eqn{[0, 1]}).
 #' @param group An optional single character string naming the column in
@@ -27,13 +30,13 @@
 #' @param features A single character string naming the column in \code{x}
 #'   that contains the feature identifiers. Required when \code{annotate} is
 #'   not \code{NULL}.
-#' @param up A single numeric value. Features with
-#'   \eqn{\text{log2FC} \ge \text{up}} \emph{and} \eqn{p < \text{pval}} are
-#'   coloured as up-regulated. Default \code{1}.
-#' @param down A single numeric value. Features with
-#'   \eqn{\text{log2FC} \le \text{down}} \emph{and} \eqn{p < \text{pval}}
-#'   are coloured as down-regulated. Typically negative (e.g.
-#'   \code{log2(0.5)} = \code{-1}). Default \code{-1}.
+#' @param up A single numeric value greater than 1. Features with a fold
+#'   change \eqn{\ge \text{up}} \emph{and} \eqn{p < \text{pval}} are
+#'   coloured as up-regulated. Default \code{1.5} (i.e., a 1.5-fold increase).
+#' @param down A single numeric value in \eqn{(0, 1)}. Features with a fold
+#'   change \eqn{\le \text{down}} \emph{and} \eqn{p < \text{pval}} are
+#'   coloured as down-regulated. For example, \code{down = 0.667} corresponds
+#'   to a ~1.5-fold decrease. Default \code{0.5}.
 #' @param pval A single numeric value in \eqn{(0, 1]}. Default \code{0.05}.
 #' @param annotate An optional vector of feature identifiers to label on the
 #'   plot. Values must be found in the column specified by \code{features}.
@@ -123,7 +126,7 @@
 #' print(res$plots[[1]])
 #'
 #' ## -----------------------------------------------------------------------
-#' ## Example 2 — asymmetric thresholds using log2() directly, with labels
+#' ## Example 2 — asymmetric thresholds as raw fold changes, with labels
 #' ## -----------------------------------------------------------------------
 #' ann <- setNames(c("feat_1", "feat_2", "feat_3"),
 #'                 c("Marker A", "Marker B", "Marker C"))
@@ -133,8 +136,8 @@
 #'   y        = "log2fc",
 #'   z        = "pvalue",
 #'   features = "feature",
-#'   up       = log2(1.5),
-#'   down     = log2(0.5),
+#'   up       = 1.5,
+#'   down     = 1/1.5,
 #'   annotate = ann
 #' )
 #' print(res2$plots[[1]])
@@ -176,8 +179,8 @@ plot_volcano <- function(
     z,
     group            = NULL,
     features         = NULL,
-    up               = 1,
-    down             = -1,
+    up               = 1.5,
+    down             = 0.5,
     pval             = 0.05,
     annotate         = NULL,
     use_ggrepel      = TRUE,
@@ -273,12 +276,18 @@ plot_volcano <- function(
   # ---------------------------------------------------------------------------
   # 5.  Validate thresholds / numerics
   # ---------------------------------------------------------------------------
-  .chk_num1 <- function(v, nm) {
-    if (!is.numeric(v) || length(v) != 1L || is.na(v))
-      stop("`", nm, "` must be a single numeric value.", call. = FALSE)
-  }
-  .chk_num1(up,   "up")
-  .chk_num1(down, "down")
+  # .chk_num1 <- function(v, nm) {
+  #   if (!is.numeric(v) || length(v) != 1L || is.na(v))
+  #     stop("`", nm, "` must be a single numeric value.", call. = FALSE)
+  # }
+  # .chk_num1(up,   "up")
+  # .chk_num1(down, "down")
+  if (!is.numeric(up) || length(up) != 1L || is.na(up) || up <= 1)
+    stop("`up` must be a single numeric value greater than 1 (e.g., 1.5 for a 1.5-fold increase).",
+         call. = FALSE)
+  if (!is.numeric(down) || length(down) != 1L || is.na(down) || down <= 0 || down >= 1)
+    stop("`down` must be a single numeric value in (0, 1) (e.g., 0.667 for a ~1.5-fold decrease).",
+         call. = FALSE)
 
   if (!is.numeric(pval) || length(pval) != 1L || is.na(pval) ||
       pval <= 0 || pval > 1)
@@ -294,6 +303,12 @@ plot_volcano <- function(
   if (!is.numeric(alpha) || length(alpha) != 1L || is.na(alpha) ||
       alpha <= 0 || alpha > 1)
     stop("`alpha` must be a single numeric value in (0, 1].", call. = FALSE)
+
+  # ---------------------------------------------------------------------------
+  # 5b.  Convert raw fold change thresholds to log2 scale for internal use
+  # ---------------------------------------------------------------------------
+  up_log2   <- log2(up)
+  down_log2 <- log2(down)
 
   # ---------------------------------------------------------------------------
   # 6.  Validate logicals
@@ -417,19 +432,17 @@ plot_volcano <- function(
   }
 
   # ---------------------------------------------------------------------------
-  # 13.  Classify features
+  # 13.  Log2-transform x[[y]] for plotting and classification
   # ---------------------------------------------------------------------------
-  x$.regulation <- ifelse(
-    !is.na(x[[y]]) & !is.na(x[[z]]) & x[[y]] >= up    & x[[z]] < pval, "Up",
-    ifelse(
-      !is.na(x[[y]]) & !is.na(x[[z]]) & x[[y]] <= down & x[[z]] < pval, "Down",
-      "NS"
-    )
-  )
+  raw_fc <- x[[y]]
 
-  # ---------------------------------------------------------------------------
-  # 14.  Y-axis transformation
-  # ---------------------------------------------------------------------------
+  if (any(!is.na(raw_fc) & raw_fc <= 0))
+    stop("Column `y` (\"", y, "\") contains non-positive values. ",
+         "Fold changes must be positive (e.g., 0.5 for a 2-fold decrease).",
+         call. = FALSE)
+
+  x$.x_plot <- log2(raw_fc)
+
   if (neglog10) {
     x$.y_plot <- -base::log10(x[[z]])
     h_line_y  <- -base::log10(pval)
@@ -440,6 +453,17 @@ plot_volcano <- function(
     y_lbl     <- if (!is.null(ylab)) ylab else "p-value"
   }
   x_lbl <- if (!is.null(xlab)) xlab else expression(log[2]~"Fold Change")
+
+  # ---------------------------------------------------------------------------
+  # 14.  Classify features
+  # ---------------------------------------------------------------------------
+  x$.regulation <- ifelse(
+    !is.na(x$.x_plot) & !is.na(x[[z]]) & x$.x_plot >= up_log2   & x[[z]] < pval, "Up",
+    ifelse(
+      !is.na(x$.x_plot) & !is.na(x[[z]]) & x$.x_plot <= down_log2 & x[[z]] < pval, "Down",
+      "NS"
+    )
+  )
 
   # ---------------------------------------------------------------------------
   # 15.  Annotation label column
@@ -553,7 +577,7 @@ plot_volcano <- function(
     p <- ggplot2::ggplot(
       df,
       ggplot2::aes(
-        x      = .data[[y]],
+        x      = .data[[".x_plot"]],
         y      = .data[[".y_plot"]],
         colour = .data[[".colour_key"]]
       )
@@ -562,9 +586,9 @@ plot_volcano <- function(
       .build_colour_scale() +
       ggplot2::geom_hline(yintercept = h_line_y, linetype = "dashed",
                           colour = h_col,   linewidth = 0.6) +
-      ggplot2::geom_vline(xintercept = up,        linetype = "dashed",
+      ggplot2::geom_vline(xintercept = up_log2,        linetype = "dashed",
                           colour = v_col_u, linewidth = 0.6) +
-      ggplot2::geom_vline(xintercept = down,      linetype = "dashed",
+      ggplot2::geom_vline(xintercept = down_log2,      linetype = "dashed",
                           colour = v_col_d, linewidth = 0.6) +
       ggplot2::labs(
         title    = title_str,
@@ -628,7 +652,7 @@ plot_volcano <- function(
   # ---------------------------------------------------------------------------
   # 21.  Clean up internal columns before returning classified data
   # ---------------------------------------------------------------------------
-  drop_cols <- intersect(c(".y_plot", ".ann_lbl", ".colour_key"), colnames(x))
+  drop_cols <- intersect(c(".x_plot", ".y_plot", ".ann_lbl", ".colour_key"), colnames(x))
   x_out     <- x[, setdiff(colnames(x), drop_cols), drop = FALSE]
 
   structure(
@@ -680,7 +704,7 @@ print.plot_volcano <- function(x, ...) {
   cat("── plot_volcano results ────────────────────────────────────\n")
   cat(sprintf("  Features   : %d  (Up: %d | Down: %d | NS: %d)\n",
               nrow(clf), up_n, dn_n, ns_n))
-  cat(sprintf("  Thresholds : log2FC >= %.4f (up) | <= %.4f (down)  |  p < %.4f\n",
+  cat(sprintf("  Thresholds : FC >= %.4f (up) | <= %.4f (down)  |  p < %.4f\n",
               x$params$up, x$params$down, x$params$pval))
   if (!is.null(x$params$group))
     cat(sprintf("  Group col  : %s\n", x$params$group))

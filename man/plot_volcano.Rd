@@ -10,8 +10,8 @@ plot_volcano(
   z,
   group = NULL,
   features = NULL,
-  up = 1,
-  down = -1,
+  up = 1.5,
+  down = 0.5,
   pval = 0.05,
   annotate = NULL,
   use_ggrepel = TRUE,
@@ -47,7 +47,10 @@ one row per feature. Must contain the columns named by \code{y} and
 \code{z}. Column names may contain special characters.}
 
 \item{y}{A single character string naming the column in \code{x} that
-contains log2 fold change values (numeric).}
+contains \strong{log2} fold change values (numeric). Note that the
+\code{up} and \code{down} thresholds are specified as raw fold changes
+(e.g., \code{up = 1.5}), which are converted to log2 scale internally
+before being applied to this column.}
 
 \item{z}{A single character string naming the column in \code{x} that
 contains raw p-values (numeric, in \eqn{[0, 1]}).}
@@ -61,14 +64,14 @@ one plot and coloured by group. Default \code{NULL}.}
 that contains the feature identifiers. Required when \code{annotate} is
 not \code{NULL}.}
 
-\item{up}{A single numeric value. Features with
-\eqn{\text{log2FC} \ge \text{up}} \emph{and} \eqn{p < \text{pval}} are
-coloured as up-regulated. Default \code{1}.}
+\item{up}{A single numeric value greater than 1. Features with a fold
+change \eqn{\ge \text{up}} \emph{and} \eqn{p < \text{pval}} are
+coloured as up-regulated. Default \code{1.5} (i.e., a 1.5-fold increase).}
 
-\item{down}{A single numeric value. Features with
-\eqn{\text{log2FC} \le \text{down}} \emph{and} \eqn{p < \text{pval}}
-are coloured as down-regulated. Typically negative (e.g.
-\code{log2(0.5)} = \code{-1}). Default \code{-1}.}
+\item{down}{A single numeric value in \eqn{(0, 1)}. Features with a fold
+change \eqn{\le \text{down}} \emph{and} \eqn{p < \text{pval}} are
+coloured as down-regulated. For example, \code{down = 0.667} corresponds
+to a ~1.5-fold decrease. Default \code{0.5}.}
 
 \item{pval}{A single numeric value in \eqn{(0, 1]}. Default \code{0.05}.}
 
@@ -195,7 +198,7 @@ res <- plot_volcano(x = dat, y = "log2fc", z = "pvalue")
 print(res$plots[[1]])
 
 ## -----------------------------------------------------------------------
-## Example 2 — asymmetric thresholds using log2() directly, with labels
+## Example 2 — asymmetric thresholds as raw fold changes, with labels
 ## -----------------------------------------------------------------------
 ann <- setNames(c("feat_1", "feat_2", "feat_3"),
                 c("Marker A", "Marker B", "Marker C"))
@@ -205,8 +208,8 @@ res2 <- plot_volcano(
   y        = "log2fc",
   z        = "pvalue",
   features = "feature",
-  up       = log2(1.5),
-  down     = log2(0.5),
+  up       = 1.5,
+  down     = 1/1.5,
   annotate = ann
 )
 print(res2$plots[[1]])
