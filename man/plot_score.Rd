@@ -28,10 +28,10 @@ plot_score(res, ...)
   show_outliers = FALSE,
   label_outliers = "all",
   colors = NULL,
-  point_size = 3,
+  point_size = 10,
   point_alpha = 0.8,
   theme = "nature",
-  base_size = 11,
+  base_size = 30,
   font_family = "sans",
   axis_title_size = NULL,
   axis_text_size = NULL,
@@ -60,10 +60,10 @@ plot_score(res, ...)
   show_outliers = FALSE,
   label_outliers = "all",
   colors = NULL,
-  point_size = 3,
+  point_size = 10,
   point_alpha = 0.8,
   theme = "nature",
-  base_size = 11,
+  base_size = 30,
   font_family = "sans",
   axis_title_size = NULL,
   axis_text_size = NULL,
@@ -165,7 +165,7 @@ or a character vector of specific group names from the \code{color_by} variable.
 (default), the Okabe-Ito colorblind-friendly palette is used. Ignored when \code{color_by}
 is numeric (continuous scale is always used for numeric variables).}
 
-\item{point_size}{Numeric. Size of points. Default: \code{3}.}
+\item{point_size}{Numeric. Size of points. Default: \code{10}.}
 
 \item{point_alpha}{Numeric. Transparency of points (0–1). Default: \code{0.8}.}
 
@@ -173,7 +173,7 @@ is numeric (continuous scale is always used for numeric variables).}
 \code{"classic"}, \code{"bw"}, \code{"light"}, \code{"dark"}. Default: \code{"nature"} (a clean, publication-ready
 style based on \code{theme_bw()}).}
 
-\item{base_size}{Numeric. Base font size for the theme (pts). Default: \code{11}.}
+\item{base_size}{Numeric. Base font size for the theme (pts). Default: \code{30}.}
 
 \item{font_family}{Character. Font family for all text elements. Default: \code{"sans"}.}
 

@@ -22,10 +22,11 @@ plot_diff(
   plot_subtitle = NULL,
   xlab = NULL,
   ylab = NULL,
+  linewidth = 3,
   show_global_p = FALSE,
   global_p_position = NULL,
   global_p_x = NULL,
-  global_font_size = NULL,
+  global_font_size = 30,
   title_size = NULL,
   subtitle_size = NULL,
   xlab_size = NULL,
@@ -102,6 +103,9 @@ Default is \code{NULL}.}
 \item{ylab}{Character string or \code{NULL}. Y-axis label. Default is
 \code{NULL}.}
 
+\item{linewidth}{Numeric. Line width for plot elements (e.g., boxplot borders).
+Default is \code{3}.}
+
 \item{show_global_p}{Logical. If \code{TRUE}, annotates the plot with the
 omnibus p-value. Default is \code{FALSE}.}
 
@@ -112,7 +116,7 @@ global p-value annotation. Default is \code{NULL} (automatic).}
 p-value annotation. Default is \code{NULL} (automatic).}
 
 \item{global_font_size}{Numeric or \code{NULL}. Base font size for
-proportional scaling of all text elements. Default is \code{NULL}.}
+proportional scaling of all text elements. Default is \code{30}.}
 
 \item{title_size}{Numeric or \code{NULL}. Title font size. Default is
 \code{NULL}.}

@@ -11,17 +11,17 @@ plot_mixedmodel(
   use_padj = TRUE,
   p_threshold = 0.05,
   estimate_threshold = 0,
-  label_top = 10L,
   label_features = NULL,
-  label_sig_only = TRUE,
+  minmax = NULL,
+  iqr_k = 1.5,
   label_size = 3,
   label_max_overlap = 20L,
   label_box = FALSE,
   label_color = "match",
   point_size = 2,
   point_size_sig = 2.5,
-  alpha = 0.4,
-  alpha_sig = 0.85,
+  alpha = 0.6,
+  label_sig_only = TRUE,
   color_up = "#D85A30",
   color_down = "#0072B2",
   color_ns = "#888780",
@@ -59,17 +59,20 @@ focusing on a single predictor when the formula has many.}
 \eqn{\pm}\code{estimate_threshold}. Set to \code{0} to suppress. Default:
 \code{0} (no vertical lines).}
 
-\item{label_top}{Integer. Number of top features to label per panel (by
-lowest adjusted p-value). Labels are drawn with \pkg{ggrepel} if available,
-otherwise plain \code{geom_text}. Default: \code{10}.}
-
 \item{label_features}{A character vector of specific feature names to label,
 regardless of significance rank. Combined with \code{label_top} (union).
 Default: \code{NULL}.}
 
-\item{label_sig_only}{Logical. If \code{TRUE}, only features that pass
-\code{p_threshold} are eligible for \code{label_top} auto-labeling.
-Manual \code{label_features} are always shown. Default: \code{TRUE}.}
+\item{minmax}{A numeric vector of length 2, e.g. \code{c(-0.02, 0.02)}.
+Features with estimate \eqn{\le} \code{minmax[1]} or \eqn{\ge}
+\code{minmax[2]} are annotated. Overrides automatic IQR-based annotation.
+Default: \code{NULL}.}
+
+\item{iqr_k}{Numeric. IQR fence multiplier used for automatic annotation
+when both \code{minmax} and \code{label_features} are \code{NULL}.
+Features beyond \eqn{Q1 - k \times IQR} or \eqn{Q3 + k \times IQR} are
+labelled. Set to \code{Inf} to disable automatic annotation entirely.
+Default: \code{1.5}.}
 
 \item{label_size}{Numeric. Font size for point labels (in ggplot2 pt units).
 Default: \code{3}.}
@@ -91,10 +94,12 @@ Default: \code{2}.}
 Default: \code{2.5}.}
 
 \item{alpha}{Numeric in (0, 1]. Transparency for non-significant points.
-Default: \code{0.4}.}
+Default: \code{0.6}.}
 
-\item{alpha_sig}{Numeric in (0, 1]. Transparency for significant points.
-Default: \code{0.85}.}
+\item{label_sig_only}{Logical. If \code{TRUE} (default), only features
+passing \code{p_threshold} are eligible for \code{minmax} or IQR-based
+auto-annotation. Features in \code{label_features} are always annotated
+regardless of this setting. Default: \code{TRUE}.}
 
 \item{color_up}{Character. Color for significantly up-regulated (positive
 estimate + significant) features. Default: \code{"#D85A30"} (Okabe-Ito
@@ -170,13 +175,6 @@ When \code{estimate_threshold = 0} (default), the up/down split is purely on
 the sign of the estimate — useful for a single continuous predictor (e.g.,
 age, time as numeric) where there is no conventional fold-change cutoff.
 
-\strong{Labeling strategy}: Auto-labels (\code{label_top}) are selected
-within each facet panel independently, ranked by ascending p-value. If
-\code{label_sig_only = TRUE}, only features crossing \code{p_threshold}
-are eligible. Manual labels (\code{label_features}) are always drawn even
-if non-significant. Duplicate labels (a feature in both \code{label_top}
-and \code{label_features}) are deduplicated.
-
 \strong{ggrepel}: If \pkg{ggrepel} is installed (strongly recommended for
 dense plots), it is used automatically. Install with
 \code{install.packages("ggrepel")}. If absent, \code{geom_text} is used
@@ -197,7 +195,6 @@ plot_mixedmodel(result)
 plot_mixedmodel(
   result,
   term           = "timepost",
-  label_top      = 5,
   label_features = c("glucose", "insulin"),
   color_up       = "#CC79A7",
   alpha          = 0.3,
@@ -208,7 +205,6 @@ plot_mixedmodel(
 # No auto-labels, only highlight manually specified features
 plot_mixedmodel(
   result,
-  label_top      = 0,
   label_features = c("glucose", "insulin", "PA O-28:1"),
   label_box      = TRUE,
   label_color    = "black"
