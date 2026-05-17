@@ -23,15 +23,18 @@
 #' @param estimate_threshold Numeric. Vertical dashed lines drawn at
 #'   \eqn{\pm}\code{estimate_threshold}. Set to \code{0} to suppress. Default:
 #'   \code{0} (no vertical lines).
-#' @param label_top Integer. Number of top features to label per panel (by
-#'   lowest adjusted p-value). Labels are drawn with \pkg{ggrepel} if available,
-#'   otherwise plain \code{geom_text}. Default: \code{10}.
 #' @param label_features A character vector of specific feature names to label,
 #'   regardless of significance rank. Combined with \code{label_top} (union).
 #'   Default: \code{NULL}.
-#' @param label_sig_only Logical. If \code{TRUE}, only features that pass
-#'   \code{p_threshold} are eligible for \code{label_top} auto-labeling.
-#'   Manual \code{label_features} are always shown. Default: \code{TRUE}.
+#' @param minmax A numeric vector of length 2, e.g. \code{c(-0.02, 0.02)}.
+#'   Features with estimate \eqn{\le} \code{minmax[1]} or \eqn{\ge}
+#'   \code{minmax[2]} are annotated. Overrides automatic IQR-based annotation.
+#'   Default: \code{NULL}.
+#' @param iqr_k Numeric. IQR fence multiplier used for automatic annotation
+#'   when both \code{minmax} and \code{label_features} are \code{NULL}.
+#'   Features beyond \eqn{Q1 - k \times IQR} or \eqn{Q3 + k \times IQR} are
+#'   labelled. Set to \code{Inf} to disable automatic annotation entirely.
+#'   Default: \code{1.5}.
 #' @param label_size Numeric. Font size for point labels (in ggplot2 pt units).
 #'   Default: \code{3}.
 #' @param label_max_overlap Integer. Passed to \code{ggrepel::geom_text_repel}'s
@@ -46,9 +49,11 @@
 #' @param point_size_sig Numeric. Point size for significant features.
 #'   Default: \code{2.5}.
 #' @param alpha Numeric in (0, 1]. Transparency for non-significant points.
-#'   Default: \code{0.4}.
-#' @param alpha_sig Numeric in (0, 1]. Transparency for significant points.
-#'   Default: \code{0.85}.
+#'   Default: \code{0.6}.
+#' @param label_sig_only Logical. If \code{TRUE} (default), only features
+#'   passing \code{p_threshold} are eligible for \code{minmax} or IQR-based
+#'   auto-annotation. Features in \code{label_features} are always annotated
+#'   regardless of this setting. Default: \code{TRUE}.
 #' @param color_up Character. Color for significantly up-regulated (positive
 #'   estimate + significant) features. Default: \code{"#D85A30"} (Okabe-Ito
 #'   vermillion).
@@ -96,12 +101,12 @@
 #' the sign of the estimate — useful for a single continuous predictor (e.g.,
 #' age, time as numeric) where there is no conventional fold-change cutoff.
 #'
-#' \strong{Labeling strategy}: Auto-labels (\code{label_top}) are selected
-#' within each facet panel independently, ranked by ascending p-value. If
-#' \code{label_sig_only = TRUE}, only features crossing \code{p_threshold}
-#' are eligible. Manual labels (\code{label_features}) are always drawn even
-#' if non-significant. Duplicate labels (a feature in both \code{label_top}
-#' and \code{label_features}) are deduplicated.
+# \strong{Labeling strategy}: Auto-labels (\code{label_top}) are selected
+# within each facet panel independently, ranked by ascending p-value. If
+# \code{label_sig_only = TRUE}, only features crossing \code{p_threshold}
+# are eligible. Manual labels (\code{label_features}) are always drawn even
+# if non-significant. Duplicate labels (a feature in both \code{label_top}
+# and \code{label_features}) are deduplicated.
 #'
 #' \strong{ggrepel}: If \pkg{ggrepel} is installed (strongly recommended for
 #' dense plots), it is used automatically. Install with
@@ -127,7 +132,6 @@
 #' plot_mixedmodel(
 #'   result,
 #'   term           = "timepost",
-#'   label_top      = 5,
 #'   label_features = c("glucose", "insulin"),
 #'   color_up       = "#CC79A7",
 #'   alpha          = 0.3,
@@ -138,7 +142,6 @@
 #' # No auto-labels, only highlight manually specified features
 #' plot_mixedmodel(
 #'   result,
-#'   label_top      = 0,
 #'   label_features = c("glucose", "insulin", "PA O-28:1"),
 #'   label_box      = TRUE,
 #'   label_color    = "black"
@@ -161,17 +164,17 @@ plot_mixedmodel <- function(
     use_padj           = TRUE,
     p_threshold        = 0.05,
     estimate_threshold = 0,
-    label_top          = 10L,
     label_features     = NULL,
-    label_sig_only     = TRUE,
+    minmax             = NULL,
+    iqr_k              = 1.5,
     label_size         = 3,
     label_max_overlap  = 20L,
     label_box          = FALSE,
     label_color        = "match",
     point_size         = 2,
     point_size_sig     = 2.5,
-    alpha              = 0.4,
-    alpha_sig          = 0.85,
+    alpha              = 0.6,
+    label_sig_only     = TRUE,
     color_up           = "#D85A30",
     color_down         = "#0072B2",
     color_ns           = "#888780",
@@ -198,6 +201,18 @@ plot_mixedmodel <- function(
 
   # ---- type ----------------------------------------------------------------
   type <- match.arg(type, choices = "volcano")   # expand as types are added
+
+  # ---- minmax ----------------------------------------------------------------
+  if (!is.null(minmax)) {
+    if (!is.numeric(minmax) || length(minmax) != 2L || anyNA(minmax))
+      stop("'minmax' must be a numeric vector of length 2, e.g. c(-0.02, 0.02).")
+    if (minmax[1L] >= minmax[2L])
+      stop("'minmax[1]' must be strictly less than 'minmax[2]'.")
+  }
+
+  # ---- iqr_k ----------------------------------------------------------------
+  if (!is.numeric(iqr_k) || length(iqr_k) != 1L || iqr_k < 0)
+    stop("'iqr_k' must be a single non-negative numeric value.")
 
   # ---- zoom ----------------------------------------------------------------
   if (!is.numeric(zoom) || length(zoom) != 1L || zoom <= 0)
@@ -259,7 +274,6 @@ plot_mixedmodel <- function(
   .check_scalar_num(p_threshold, "p_threshold")
   .check_scalar_num(estimate_threshold, "estimate_threshold")
   .check_scalar_num(alpha, "alpha")
-  .check_scalar_num(alpha_sig, "alpha_sig")
   if (p_threshold <= 0 || p_threshold >= 1)
     stop("'p_threshold' must be strictly between 0 and 1.")
 
@@ -289,7 +303,7 @@ plot_mixedmodel <- function(
 
   cfe$.sig <- factor(cfe$.sig, levels = c("Up", "Down", "NS"))
 
-  # ---- label selection per panel -------------------------------------------
+  # ---- annotation selection (by estimate extremity) -----------------------
   label_features <- if (!is.null(label_features)) as.character(label_features) else character(0)
 
   terms_in_plot <- unique(as.character(cfe$term))
@@ -297,25 +311,40 @@ plot_mixedmodel <- function(
 
   for (trm in terms_in_plot) {
     idx_term <- which(cfe$term == trm)
+    ests     <- cfe$estimate[idx_term]
+    p_vals_t <- cfe[[p_col]][idx_term]
 
-    # Manual labels
-    manual_mask  <- cfe$feature[idx_term] %in% label_features
+    # Significance mask for this panel (used when label_sig_only = TRUE)
+    sig_mask <- !is.na(p_vals_t) & p_vals_t < p_threshold
+
+    # 1. Manual label_features — always annotated regardless of label_sig_only
+    manual_mask <- cfe$feature[idx_term] %in% label_features
     label_rows[idx_term[manual_mask]] <- TRUE
 
-    # Auto top-n
-    if (label_top > 0L) {
-      panel_df <- cfe[idx_term, , drop = FALSE]
-      if (label_sig_only) panel_df <- panel_df[panel_df$.sig != "NS", , drop = FALSE]
-      if (nrow(panel_df) > 0L) {
-        ordered_idx <- order(panel_df[[p_col]], na.last = TRUE)
-        top_feats   <- panel_df$feature[head(ordered_idx, label_top)]
-        top_mask    <- cfe$feature[idx_term] %in% top_feats
-        label_rows[idx_term[top_mask]] <- TRUE
+    # Candidate pool respects label_sig_only (excludes manual — already handled)
+    candidate_idx <- if (label_sig_only) idx_term[sig_mask] else idx_term
+    cand_ests     <- cfe$estimate[candidate_idx]
+
+    # 2. minmax — explicit thresholds on the estimate
+    if (!is.null(minmax)) {
+      mm_mask <- cand_ests <= minmax[1L] | cand_ests >= minmax[2L]
+      label_rows[candidate_idx[mm_mask]] <- TRUE
+
+    # 3. Automatic IQR fence (only when minmax is NULL and no label_features given)
+    } else if (length(label_features) == 0L && is.finite(iqr_k)) {
+      if (length(cand_ests) > 0L) {
+        q1  <- stats::quantile(cand_ests, 0.25, na.rm = TRUE)
+        q3  <- stats::quantile(cand_ests, 0.75, na.rm = TRUE)
+        iqr <- q3 - q1
+        if (iqr > 0) {
+          fence_mask <- cand_ests < (q1 - iqr_k * iqr) | cand_ests > (q3 + iqr_k * iqr)
+          label_rows[candidate_idx[fence_mask]] <- TRUE
+        }
       }
     }
   }
 
-  cfe$.label    <- ifelse(label_rows, as.character(cfe$feature), "")
+  cfe$.label     <- ifelse(label_rows, as.character(cfe$feature), "")
   cfe$.lbl_color <- ifelse(
     cfe$.sig == "Up",   color_up,
     ifelse(cfe$.sig == "Down", color_down, color_ns)
@@ -375,7 +404,7 @@ plot_mixedmodel <- function(
 
   # ---- color / alpha / size scales -----------------------------------------
   sig_colors <- c(Up = color_up, Down = color_down, NS = color_ns)
-  sig_alphas <- c(Up = alpha_sig, Down = alpha_sig, NS = alpha)
+  sig_alphas <- c(Up = alpha, Down = alpha, NS = alpha)
   sig_sizes  <- c(Up = point_size_sig, Down = point_size_sig, NS = point_size)
 
   # ---- build base plot -----------------------------------------------------
@@ -433,49 +462,72 @@ plot_mixedmodel <- function(
   label_df    <- cfe[cfe$.label != "", , drop = FALSE]
 
   if (nrow(label_df) > 0L) {
-    # Resolve label color
-    lbl_color_arg <- if (identical(label_color, "match")) label_df$.lbl_color else label_color
 
     if (has_ggrepel) {
       repel_fn <- if (label_box) ggrepel::geom_label_repel else ggrepel::geom_text_repel
-      p <- p + repel_fn(
-        data          = label_df,
-        ggplot2::aes(label = .label),
-        color         = lbl_color_arg,
-        size          = label_size,
-        max.overlaps  = label_max_overlap,
-        segment.size  = 0.3 * zoom,
-        segment.color = "grey50",
-        show.legend   = FALSE,
-        inherit.aes   = FALSE,
-        # re-map x/y from cfe so positions are correct
-        mapping       = ggplot2::aes(
-          x     = estimate,
-          y     = .neg_log10_p,
-          label = .label
+
+      # Resolve label color mapping ----------------------------------------
+      if (identical(label_color, "match")) {
+        # Per-point color lives inside aes(); no bare color argument
+        p <- p + repel_fn(
+          data         = label_df,
+          mapping      = ggplot2::aes(
+            x     = estimate,
+            y     = .neg_log10_p,
+            label = .label,
+            color = .sig          # <-- mapped, not manual
+          ),
+          size          = label_size,
+          max.overlaps  = label_max_overlap,
+          segment.size  = 0.3 * zoom,
+          segment.color = "grey50",
+          show.legend   = FALSE,
+          inherit.aes   = FALSE
+        ) +
+          # Reuse the same color scale already on the plot
+          ggplot2::scale_color_manual(values = sig_colors, drop = FALSE)
+      } else {
+        # Single fixed color — safe to pass as bare argument
+        p <- p + repel_fn(
+          data         = label_df,
+          mapping      = ggplot2::aes(
+            x     = estimate,
+            y     = .neg_log10_p,
+            label = .label
+          ),
+          color         = label_color,
+          size          = label_size,
+          max.overlaps  = label_max_overlap,
+          segment.size  = 0.3 * zoom,
+          segment.color = "grey50",
+          show.legend   = FALSE,
+          inherit.aes   = FALSE
         )
-      )
+      }
+
     } else {
       message(
         "Install 'ggrepel' for better label placement: install.packages('ggrepel').\n",
         "Falling back to geom_text."
       )
+
+      lbl_color_vec <- if (identical(label_color, "match")) label_df$.lbl_color else label_color
+
       p <- p + ggplot2::geom_text(
         data        = label_df,
-        ggplot2::aes(label = .label),
-        color       = lbl_color_arg,
-        size        = label_size,
-        nudge_y     = 0.15,
-        show.legend = FALSE,
-        inherit.aes = FALSE,
         mapping     = ggplot2::aes(
           x     = estimate,
           y     = .neg_log10_p,
           label = .label
-        )
+        ),
+        color       = lbl_color_vec,
+        size        = label_size,
+        nudge_y     = 0.15,
+        show.legend = FALSE,
+        inherit.aes = FALSE
       )
     }
   }
 
-  invisible(p)
+  p   # visible return: auto-prints when unassigned, silent when assigned
 }
