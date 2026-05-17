@@ -49,6 +49,8 @@
 #'   \code{NULL}.
 #' @param ylab Character string or \code{NULL}. Y-axis label. Default is
 #'   \code{NULL}.
+#' @param linewidth Numeric. The width of the lines for the box/violin outlines 
+#'   and statistical brackets. Default is 3.
 #' @param show_global_p Logical. If \code{TRUE}, annotates the plot with the
 #'   omnibus p-value. Default is \code{FALSE}.
 #' @param global_p_position Numeric or \code{NULL}. Y-axis position for the
@@ -56,7 +58,7 @@
 #' @param global_p_x Numeric or \code{NULL}. X-axis position for the global
 #'   p-value annotation. Default is \code{NULL} (automatic).
 #' @param global_font_size Numeric or \code{NULL}. Base font size for
-#'   proportional scaling of all text elements. Default is \code{NULL}.
+#'   proportional scaling of all text elements. Default is \code{30}.
 #' @param title_size Numeric or \code{NULL}. Title font size. Default is
 #'   \code{NULL}.
 #' @param subtitle_size Numeric or \code{NULL}. Subtitle font size. Default
@@ -165,10 +167,11 @@ plot_diff <- function(x,
                       plot_subtitle     = NULL,
                       xlab              = NULL,
                       ylab              = NULL,
+                      linewidth         = 3,
                       show_global_p     = FALSE,
                       global_p_position = NULL,
                       global_p_x        = NULL,
-                      global_font_size  = NULL,
+                      global_font_size  = 30,
                       title_size        = NULL,
                       subtitle_size     = NULL,
                       xlab_size         = NULL,
@@ -330,9 +333,190 @@ plot_diff <- function(x,
     posthoc_data    <- stat_results$posthoc_result
     is_parametric   <- isTRUE(stat_results$parametric)
 
+    # # Prepare plotting data from raw_data stored in the rich list
+    # plot_data           <- stat_results$raw_data
+    # colnames(plot_data) <- c(var, group)
+
+    # if (!is.null(sample_id)) {
+    #   if (!sample_id %in% names(x))
+    #     stop(paste("Sample ID variable", sample_id, "not found in data."))
+    #   plot_data[[sample_id]] <- x[[sample_id]][stats::complete.cases(x[c(var, group)])]
+    # }
+
+    # y_max      <- max(plot_data[[var]], na.rm = TRUE)
+    # y_min      <- min(plot_data[[var]], na.rm = TRUE)
+    # y_range    <- y_max - y_min
+    # y_max_plot <- y_max + y_range * 0.15
+
+    # # -------------------------------------------------------------------------
+    # # 6a. Bracket annotation table
+    # # -------------------------------------------------------------------------
+    # stat_result_plot <- data.frame()
+
+    # if (n_groups > 2 && !is.null(posthoc_data) && nrow(posthoc_data) > 0) {
+    #   req_cols <- c("group1", "group2", "p.adj", "p.adj.signif")
+    #   if (!all(req_cols %in% names(posthoc_data))) {
+    #     warning(paste("Missing expected columns in post-hoc results for", var))
+    #   } else {
+    #     stat_result_plot <- posthoc_data %>%
+    #       dplyr::select(group1, group2, p.adj, p.adj.signif) %>%
+    #       dplyr::mutate(
+    #         y.position = y_max_plot + y_range * (0.05 + bracket_spacing * (dplyr::row_number() - 1))
+    #       )
+    #     if (hide_ns)
+    #       stat_result_plot <- dplyr::filter(stat_result_plot, p.adj < test_alpha)
+    #   }
+    # } else if (n_groups == 2) {
+    #   p_sig <- .signif_stars(main_test_p_val)
+    #   if (!hide_ns || p_sig != "ns") {
+    #     grp_names <- levels(plot_data[[group]])
+    #     if (is.null(grp_names)) grp_names <- unique(as.character(plot_data[[group]]))
+    #     stat_result_plot <- data.frame(
+    #       group1       = grp_names[1],
+    #       group2       = grp_names[2],
+    #       p.adj        = main_test_p_val,
+    #       p.adj.signif = p_sig,
+    #       y.position   = y_max_plot + y_range * 0.05
+    #     )
+    #   }
+    # }
+
+    # if (nrow(stat_result_plot) > 0 && show_p_numeric)
+    #   stat_result_plot$p.adj.fmt <- .fmt_p(stat_result_plot$p.adj)
+
+    # is_significant <- if (nrow(stat_result_plot) > 0)
+    #   any(stat_result_plot$p.adj < test_alpha, na.rm = TRUE)
+    # else
+    #   main_test_p_val < test_alpha
+
+    # # -------------------------------------------------------------------------
+    # # 6b. Labels
+    # # -------------------------------------------------------------------------
+    # title_text    <- if (!is.null(plot_title))    plot_title    else paste(var, "by", group)
+    # subtitle_text <- if (!is.null(plot_subtitle)) plot_subtitle else stat_results$test_used
+    # xlab_text     <- if (!is.null(xlab)) xlab else group
+    # ylab_text     <- if (!is.null(ylab)) ylab else var
+    # p_label_col   <- if (show_p_numeric) "p.adj.fmt" else "p.adj.signif"
+
+    # # -------------------------------------------------------------------------
+    # # 6c. Base plot
+    # # -------------------------------------------------------------------------
+    # base_theme <- ggplot2::theme(
+    #   legend.position = "none",
+    #   plot.title      = ggplot2::element_text(face = "bold", size = fs_title),
+    #   plot.subtitle   = ggplot2::element_text(size = fs_subtitle),
+    #   axis.title.x    = ggplot2::element_text(size = fs_xlab),
+    #   axis.title.y    = ggplot2::element_text(size = fs_ylab),
+    #   axis.text       = ggplot2::element_text(size = fs_axis)
+    # )
+
+    # # Backtick-protect var and group names so ggpubr/ggplot2 handle special characters
+    # # (hyphens, spaces, parentheses) in column names safely.
+    # safe_var   <- paste0("`", var, "`")
+    # safe_group <- paste0("`", group, "`")
+
+    # # -------------------------------------------------------------------------
+    # # 6c. Base plot
+    # # -------------------------------------------------------------------------
+    # p <- if (plot_type == "boxplot") {
+    #   ggpubr::ggboxplot(plot_data, x = safe_group, y = safe_var,
+    #                     color = safe_group, palette = plot_colors,
+    #                     add = "jitter", order = group_order, ...)
+    # } else {
+    #   ggpubr::ggviolin(plot_data, x = safe_group, y = safe_var,
+    #                   color = safe_group, fill = safe_group, palette = plot_colors,
+    #                   add = "boxplot", add.params = list(fill = "white"),
+    #                   order = group_order, ...)
+    # }
+
+    # p <- p +
+    #   ggplot2::labs(title = title_text, subtitle = subtitle_text,
+    #                 x = xlab_text, y = ylab_text) +
+    #   base_theme
+
+    # # -------------------------------------------------------------------------
+    # # 6d. Mean dot
+    # # -------------------------------------------------------------------------
+    # if (show_mean) {
+    #   p <- p + ggplot2::stat_summary(
+    #     mapping = ggplot2::aes(x = .data[[group]], y = .data[[var]]),
+    #     fun     = mean, geom = "point",
+    #     shape   = 21, size = 3, fill = "red", color = "black"
+    #   )
+    # }
+
+    # # -------------------------------------------------------------------------
+    # # 6e. Aggregate value text
+    # # -------------------------------------------------------------------------
+    # if (show_agg_val) {
+    #   # Pre-compute aggregate labels into a summary data frame.
+    #   # This avoids eval(parse()) and after_stat() entirely, both of which
+    #   # break on column names containing spaces, hyphens, or parentheses.
+    #   agg_fun    <- if (is_parametric) mean else median
+    #   agg_prefix <- if (is_parametric) "M" else "Med"
+    #   agg_color  <- if (is_parametric) "red" else "blue"
+
+    #   agg_df <- do.call(rbind, lapply(unique(plot_data[[group]]), function(g) {
+    #     vals <- plot_data[[var]][plot_data[[group]] == g]
+    #     agg  <- agg_fun(vals, na.rm = TRUE)
+    #     data.frame(
+    #       grp_col = g,
+    #       agg_val = agg,
+    #       agg_lbl = format_agg_val(agg, label_prefix = agg_prefix),
+    #       stringsAsFactors = FALSE
+    #     )
+    #   }))
+    #   names(agg_df)[1] <- group
+
+    #   p <- p + ggplot2::geom_text(
+    #     data    = agg_df,
+    #     mapping = ggplot2::aes(
+    #       x     = .data[[group]],
+    #       y     = agg_val,
+    #       label = agg_lbl
+    #     ),
+    #     vjust  = -0.7,
+    #     color  = agg_color,
+    #     size   = fs_agg,
+    #     inherit.aes = FALSE
+    #   )
+    # }
+
+    # # -------------------------------------------------------------------------
+    # # 6f. Point labels
+    # # -------------------------------------------------------------------------
+    # if (!is.null(label_points)) {
+    #   if (label_points == "all") {
+    #     p <- p + ggrepel::geom_text_repel(
+    #       data    = plot_data,
+    #       mapping = ggplot2::aes(x = .data[[group]], y = .data[[var]],
+    #                              label = .data[[sample_id]]),
+    #       size = fs_agg, max.overlaps = Inf
+    #     )
+    #   } else if (label_points == "outliers") {
+    #     outliers <- rstatix::identify_outliers(plot_data, var)
+    #     if (nrow(outliers) > 0) {
+    #       outlier_df <- outliers %>% dplyr::left_join(plot_data, by = c(var, group))
+    #       p <- p + ggrepel::geom_text_repel(
+    #         data    = outlier_df,
+    #         mapping = ggplot2::aes(x = .data[[group]], y = .data[[var]],
+    #                                label = .data[[sample_id]]),
+    #         size = fs_agg, color = "red", max.overlaps = Inf
+    #       )
+    #     }
+    #   }
+    # }
+
     # Prepare plotting data from raw_data stored in the rich list
     plot_data           <- stat_results$raw_data
-    colnames(plot_data) <- c(var, group)
+    
+    # -------------------------------------------------------------------------
+    # CRITICAL FIX: Rename columns to safe internal names to bypass ggpubr's
+    # formula parser crashing on special characters (spaces, colons, hyphens).
+    # -------------------------------------------------------------------------
+    safe_var   <- ".outcome_var"
+    safe_group <- ".group_var"
+    colnames(plot_data) <- c(safe_var, safe_group)
 
     if (!is.null(sample_id)) {
       if (!sample_id %in% names(x))
@@ -340,8 +524,8 @@ plot_diff <- function(x,
       plot_data[[sample_id]] <- x[[sample_id]][stats::complete.cases(x[c(var, group)])]
     }
 
-    y_max      <- max(plot_data[[var]], na.rm = TRUE)
-    y_min      <- min(plot_data[[var]], na.rm = TRUE)
+    y_max      <- max(plot_data[[safe_var]], na.rm = TRUE)
+    y_min      <- min(plot_data[[safe_var]], na.rm = TRUE)
     y_range    <- y_max - y_min
     y_max_plot <- y_max + y_range * 0.15
 
@@ -366,8 +550,8 @@ plot_diff <- function(x,
     } else if (n_groups == 2) {
       p_sig <- .signif_stars(main_test_p_val)
       if (!hide_ns || p_sig != "ns") {
-        grp_names <- levels(plot_data[[group]])
-        if (is.null(grp_names)) grp_names <- unique(as.character(plot_data[[group]]))
+        grp_names <- levels(plot_data[[safe_group]])
+        if (is.null(grp_names)) grp_names <- unique(as.character(plot_data[[safe_group]]))
         stat_result_plot <- data.frame(
           group1       = grp_names[1],
           group2       = grp_names[2],
@@ -407,21 +591,17 @@ plot_diff <- function(x,
       axis.text       = ggplot2::element_text(size = fs_axis)
     )
 
-    # Backtick-protect var name so ggpubr/ggplot2 handle special characters
-    # (hyphens, spaces, parentheses) in column names safely.
-    safe_var <- paste0("`", var, "`")
-
-    # -------------------------------------------------------------------------
-    # 6c. Base plot  — pass var directly, NOT safe_var
-    # -------------------------------------------------------------------------
     p <- if (plot_type == "boxplot") {
-      ggpubr::ggboxplot(plot_data, x = group, y = var,
-                        color = group, palette = plot_colors,
+      ggpubr::ggboxplot(plot_data, x = safe_group, y = safe_var,
+                        color = safe_group, palette = plot_colors,
+                        linewidth = linewidth,
                         add = "jitter", order = group_order, ...)
     } else {
-      ggpubr::ggviolin(plot_data, x = group, y = var,
-                      color = group, fill = group, palette = plot_colors,
+      ggpubr::ggviolin(plot_data, x = safe_group, y = safe_var,
+                      color = safe_group, fill = safe_group, palette = plot_colors,
                       add = "boxplot", add.params = list(fill = "white"),
+                      linewidth = linewidth,
+                      add = "boxplot", add.params = list(fill = "white", size = linewidth),
                       order = group_order, ...)
     }
 
@@ -435,8 +615,9 @@ plot_diff <- function(x,
     # -------------------------------------------------------------------------
     if (show_mean) {
       p <- p + ggplot2::stat_summary(
-        mapping = ggplot2::aes(x = .data[[group]], y = .data[[var]]),
-        fun     = mean, geom = "point",
+        mapping = ggplot2::aes(x = .data[[safe_group]], y = .data[[safe_var]]),
+        # fun     = mean, geom = "point",
+        fun     = mean, geom = "point", stroke = linewidth * 0.5,
         shape   = 21, size = 3, fill = "red", color = "black"
       )
     }
@@ -445,15 +626,12 @@ plot_diff <- function(x,
     # 6e. Aggregate value text
     # -------------------------------------------------------------------------
     if (show_agg_val) {
-      # Pre-compute aggregate labels into a summary data frame.
-      # This avoids eval(parse()) and after_stat() entirely, both of which
-      # break on column names containing spaces, hyphens, or parentheses.
       agg_fun    <- if (is_parametric) mean else median
       agg_prefix <- if (is_parametric) "M" else "Med"
       agg_color  <- if (is_parametric) "red" else "blue"
 
-      agg_df <- do.call(rbind, lapply(unique(plot_data[[group]]), function(g) {
-        vals <- plot_data[[var]][plot_data[[group]] == g]
+      agg_df <- do.call(rbind, lapply(unique(plot_data[[safe_group]]), function(g) {
+        vals <- plot_data[[safe_var]][plot_data[[safe_group]] == g]
         agg  <- agg_fun(vals, na.rm = TRUE)
         data.frame(
           grp_col = g,
@@ -462,12 +640,12 @@ plot_diff <- function(x,
           stringsAsFactors = FALSE
         )
       }))
-      names(agg_df)[1] <- group
+      names(agg_df)[1] <- safe_group
 
       p <- p + ggplot2::geom_text(
         data    = agg_df,
         mapping = ggplot2::aes(
-          x     = .data[[group]],
+          x     = .data[[safe_group]],
           y     = agg_val,
           label = agg_lbl
         ),
@@ -485,17 +663,17 @@ plot_diff <- function(x,
       if (label_points == "all") {
         p <- p + ggrepel::geom_text_repel(
           data    = plot_data,
-          mapping = ggplot2::aes(x = .data[[group]], y = .data[[var]],
+          mapping = ggplot2::aes(x = .data[[safe_group]], y = .data[[safe_var]],
                                  label = .data[[sample_id]]),
           size = fs_agg, max.overlaps = Inf
         )
       } else if (label_points == "outliers") {
-        outliers <- rstatix::identify_outliers(plot_data, var)
+        outliers <- rstatix::identify_outliers(plot_data, safe_var)
         if (nrow(outliers) > 0) {
-          outlier_df <- outliers %>% dplyr::left_join(plot_data, by = c(var, group))
+          outlier_df <- outliers %>% dplyr::left_join(plot_data, by = c(safe_var, safe_group))
           p <- p + ggrepel::geom_text_repel(
             data    = outlier_df,
-            mapping = ggplot2::aes(x = .data[[group]], y = .data[[var]],
+            mapping = ggplot2::aes(x = .data[[safe_group]], y = .data[[safe_var]],
                                    label = .data[[sample_id]]),
             size = fs_agg, color = "red", max.overlaps = Inf
           )
@@ -509,7 +687,8 @@ plot_diff <- function(x,
     if (nrow(stat_result_plot) > 0) {
       p <- p + ggpubr::stat_pvalue_manual(
         stat_result_plot, label = p_label_col,
-        hide.ns = FALSE, tip.length = 0.01, size = fs_pvalue
+        hide.ns = FALSE, tip.length = 0.01, size = fs_pvalue,
+        bracket.size = linewidth * 0.3
       )
     }
 
@@ -590,6 +769,7 @@ plot_diff <- function(x,
               plot_subtitle     = plot_subtitle,
               xlab              = xlab,
               ylab              = ylab,
+              linewidth         = linewidth,
               show_global_p     = show_global_p,
               global_p_position = global_p_position,
               global_p_x        = global_p_x,
