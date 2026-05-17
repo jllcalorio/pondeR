@@ -23,15 +23,15 @@ run_correl(
 \item{x}{A data frame, tibble, or matrix whose columns are the variables
 to correlate. Column names may contain special characters.}
 
-\item{y}{A single character string naming a column in \code{x} to use as
-the primary variable. When both \code{y} and \code{z} are \code{NULL},
+\item{y}{A character vector naming one or more columns in \code{x} to use as
+primary variables. When both \code{y} and \code{z} are \code{NULL},
 all pairwise correlations among numeric columns of \code{x} are computed.
-When only \code{y} is supplied, correlations of \code{y} against all other
-columns are returned.}
+When only \code{y} is supplied, correlations among variables in \code{y}
+and between \code{y} and all other columns are returned.}
 
 \item{z}{A single character string naming a second column in \code{x}.
-When supplied together with \code{y}, only the correlation between
-\code{y} and \code{z} is computed.}
+When supplied together with \code{y}, correlations between each element of
+\code{y} and \code{z} are computed.}
 
 \item{metadata}{A data frame with the same number of rows as \code{x}
 containing sample-level metadata. Appended to the returned tidy tables
