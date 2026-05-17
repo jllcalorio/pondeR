@@ -10,10 +10,13 @@
 #'   in columns. Missing values should be represented as `NA`.
 #' @param method Numeric or character. Controls the imputation strategy:
 #'   \itemize{
-#'     \item **Numeric** — fraction of the smallest positive value per feature
-#'       used for deterministic imputation (e.g., `0.2` = 1/5th of the smallest
-#'       positive value). Recommended range: 0.01–0.5. Values > 1 trigger a
-#'       warning.
+#'     \item **Numeric** — fraction of the smallest observed value per feature
+#'       used for deterministic imputation (e.g., `0.2` = 1/5th of the
+#'       smallest value). By default (`positive_only = TRUE`), the minimum is
+#'       computed from strictly positive values only, which is the standard
+#'       MNAR convention in metabolomics. Set `positive_only = FALSE` to use
+#'       the global minimum including zeros and negative values. Recommended
+#'       range: 0.01–0.5. Values > 1 trigger a warning.
 #'     \item **`"quantileregression"`** — uses the QRILC algorithm from the
 #'       \pkg{imputeLCMD} package. Assumes Missing Not At Random (MNAR) data.
 #'       Controlled further by `tune_sigma`.
@@ -24,6 +27,15 @@
 #'       and `...`.
 #'   }
 #'   Default: `0.2` (1/5th of minimum, deterministic).
+#' @param positive_only Logical. Only used when `method` is numeric. If `TRUE`
+#'   (default), the per-feature minimum is computed from strictly positive
+#'   values only (zeros and negatives are excluded), which is standard practice
+#'   for MNAR imputation in metabolomics where missing values represent
+#'   abundances below the detection limit. If `FALSE`, the global minimum
+#'   across all observed (non-NA) values is used, which may be appropriate
+#'   when features can legitimately be zero or negative (e.g., log-transformed
+#'   or mean-centred data). Has no effect when `method` is
+#'   `"quantileregression"` or a \pkg{mice} method string.
 #' @param tune_sigma Numeric. Only used when `method = "quantileregression"`.
 #'   Controls the standard deviation of the left-censored missing value
 #'   distribution. Smaller values (e.g., `0.5`) assume a tighter distribution;
@@ -51,20 +63,29 @@
 #'   \item{n_missing_after}{Integer. Number of missing values after imputation
 #'     (should be 0).}
 #'   \item{imputed_summary}{Data frame with per-feature imputation statistics.}
-#'   \item{parameters}{List of parameters used, including method, tune_sigma
-#'     (QRILC only), and m/maxit/seed (mice only).}
+#'   \item{parameters}{List of parameters used, including method, positive_only,
+#'     tune_sigma (QRILC only), and m/maxit/seed (mice only).}
 #'   \item{method_used}{Character string describing the imputation method applied.}
 #'
 #' @details
 #' **Missing Value Imputation Strategies:**
 #'
 #' 1. **Deterministic (fraction of minimum):** When `method` is numeric, each
-#'    missing value in a feature is replaced by the smallest strictly positive
-#'    value observed in that feature, multiplied by the specified fraction.
-#'    Zero and negative values are excluded when determining this minimum.
-#'    This assumes missing values represent low abundance (MNAR — Missing Not
-#'    At Random) and is standard practice in metabolomics for values below the
-#'    detection limit.
+#'    missing value in a feature is replaced by a fraction of the per-feature
+#'    minimum, multiplied by the specified fraction. The minimum is determined
+#'    by `positive_only`:
+#'    \itemize{
+#'      \item `positive_only = TRUE` (default): uses the smallest strictly
+#'        positive observed value per feature, excluding zeros and negatives.
+#'        This is standard in metabolomics for values below the detection limit
+#'        (MNAR — Missing Not At Random).
+#'      \item `positive_only = FALSE`: uses the global minimum across all
+#'        observed (non-NA) values, including zeros and negatives. Suitable for
+#'        data that has been log-transformed or mean-centred.
+#'    }
+#'    If no valid minimum can be found (e.g., a feature is entirely NA or, when
+#'    `positive_only = TRUE`, has no positive values), a fallback of `1e-9` is
+#'    used.
 #'
 #' 2. **Quantile Regression (QRILC):** When `method = "quantileregression"`,
 #'    uses the Quantile Regression Imputation of Left-Censored data algorithm
@@ -122,29 +143,33 @@
 #' x[sample(length(x), 200)] <- NA
 #' colnames(x) <- paste0("Feature", 1:50)
 #'
-#' # 1. Deterministic imputation (1/5th of minimum per feature)
+#' # 1. Deterministic imputation (1/5th of minimum positive value per feature)
 #' result1 <- run_mvimpute(x, method = 0.2)
 #'
-#' # 2. Quantile regression imputation (QRILC)
-#' result2 <- run_mvimpute(x, method = "quantileregression", tune_sigma = 1)
+#' # 2. Deterministic imputation using global minimum (including zeros/negatives)
+#' result2 <- run_mvimpute(x, method = 0.2, positive_only = FALSE)
 #'
-#' # 3. Predictive mean matching via mice
-#' result3 <- run_mvimpute(x, method = "pmm", m = 5, maxit = 5, seed = 42)
+#' # 3. Quantile regression imputation (QRILC)
+#' result3 <- run_mvimpute(x, method = "quantileregression", tune_sigma = 1)
 #'
-#' # 4. Random forest imputation via mice
-#' result4 <- run_mvimpute(x, method = "rf", m = 5, maxit = 5, seed = 42)
+#' # 4. Predictive mean matching via mice
+#' result4 <- run_mvimpute(x, method = "pmm", m = 5, maxit = 5, seed = 42)
 #'
-#' # 5. Passing additional mice arguments via ...
-#' result5 <- run_mvimpute(x, method = "norm.boot", m = 10, printFlag = FALSE)
+#' # 5. Random forest imputation via mice
+#' result5 <- run_mvimpute(x, method = "rf", m = 5, maxit = 5, seed = 42)
+#'
+#' # 6. Passing additional mice arguments via ...
+#' result6 <- run_mvimpute(x, method = "norm.boot", m = 10, printFlag = FALSE)
 #' }
 run_mvimpute <- function(
     x,
-    method    = 0.2,
-    tune_sigma = 1,
-    m          = 5,
-    maxit      = 5,
-    seed       = NA,
-    verbose    = TRUE,
+    method       = 0.2,
+    positive_only = TRUE,
+    tune_sigma   = 1,
+    m            = 5,
+    maxit        = 5,
+    seed         = NA,
+    verbose      = TRUE,
     ...
 ) {
 
@@ -155,6 +180,9 @@ run_mvimpute <- function(
   # ---------------------------------------------------------------------------
   if (!is.matrix(x) && !is.data.frame(x)) {
     stop("'x' must be a matrix or data frame.")
+  }
+  if (!is.logical(positive_only) || length(positive_only) != 1L) {
+    stop("'positive_only' must be a single logical value (TRUE or FALSE).")
   }
 
   was_matrix <- is.matrix(x)
@@ -169,12 +197,13 @@ run_mvimpute <- function(
       n_missing_before = 0L,
       n_missing_after  = 0L,
       imputed_summary  = data.frame(
-        Feature   = colnames(x_matrix),
-        N_Missing = 0L,
+        Feature          = colnames(x_matrix),
+        N_Missing        = 0L,
         Imputation_Value = NA_real_
       ),
-      parameters  = list(method = method, tune_sigma = tune_sigma,
-                         m = m, maxit = maxit, seed = seed),
+      parameters  = list(method = method, positive_only = positive_only,
+                         tune_sigma = tune_sigma, m = m, maxit = maxit,
+                         seed = seed),
       method_used = "None (no missing values)"
     ))
   }
@@ -203,33 +232,46 @@ run_mvimpute <- function(
       )
     }
 
-    msg(sprintf(
-      "Using deterministic imputation: %.4f x minimum value per feature.", method
-    ))
-
-    na_indices <- is.na(x_matrix)
-
-    # Smallest strictly positive value per feature (NAs and non-positives excluded)
-    pos_min <- function(col) {
-      v <- col[!is.na(col) & col > 0]
-      if (length(v) == 0L) 1e-9 else min(v)   # fallback: no positive values
+    if (positive_only) {
+      msg(sprintf(
+        "Using deterministic imputation: %.4f x minimum positive value per feature.",
+        method
+      ))
+      get_min <- function(col) {
+        v <- col[!is.na(col) & col > 0]
+        if (length(v) == 0L) 1e-9 else min(v, na.rm = TRUE)
+      }
+    } else {
+      msg(sprintf(
+        "Using deterministic imputation: %.4f x minimum observed value per feature (including zeros/negatives).",
+        method
+      ))
+      get_min <- function(col) {
+        v <- col[!is.na(col)]
+        if (length(v) == 0L) 1e-9 else min(v, na.rm = TRUE)
+      }
     }
-    min_vals <- apply(x_matrix, 2L, pos_min)
 
+    na_indices    <- is.na(x_matrix)
+    min_vals      <- apply(x_matrix, 2L, get_min)
     imputation_vals <- min_vals * method
     x_matrix[na_indices] <- imputation_vals[col(x_matrix)][na_indices]
 
-    method_description <- sprintf("Deterministic: %.4f x min positive", method)
+    method_description <- sprintf(
+      "Deterministic: %.4f x min %s",
+      method,
+      if (positive_only) "positive" else "observed (all)"
+    )
 
     imputed_summary <- data.frame(
       Feature          = colnames(x_matrix),
       N_Missing        = colSums(na_indices),
-      Min_Positive     = min_vals,
+      Min_Value        = min_vals,
       Imputation_Value = imputation_vals
     )
 
-    params_out <- list(method = method, tune_sigma = NA, m = NA,
-                       maxit = NA, seed = NA)
+    params_out <- list(method = method, positive_only = positive_only,
+                       tune_sigma = NA, m = NA, maxit = NA, seed = NA)
 
   } else if (is.character(method)) {
 
@@ -253,7 +295,7 @@ run_mvimpute <- function(
         tune_sigma
       ))
 
-      na_indices <- is.na(x_matrix)   # capture before imputation for summary
+      na_indices <- is.na(x_matrix)
 
       tryCatch({
         x_imputed <- imputeLCMD::impute.QRILC(t(x_matrix), tune.sigma = tune_sigma)
@@ -273,8 +315,8 @@ run_mvimpute <- function(
         Method    = "QRILC"
       )
 
-      params_out <- list(method = method, tune_sigma = tune_sigma,
-                         m = NA, maxit = NA, seed = NA)
+      params_out <- list(method = method, positive_only = NA,
+                         tune_sigma = tune_sigma, m = NA, maxit = NA, seed = NA)
 
     } else {
 
@@ -286,7 +328,6 @@ run_mvimpute <- function(
         )
       }
 
-      # Validate mice-specific arguments
       if (!is.numeric(m) || length(m) != 1L || m < 1L) {
         stop("'m' must be a single positive integer.")
       }
@@ -303,14 +344,10 @@ run_mvimpute <- function(
         if (is.na(seed)) "NA" else as.character(as.integer(seed))
       ))
 
-      na_indices <- is.na(x_matrix)   # capture before imputation for summary
+      na_indices <- is.na(x_matrix)
 
       dots <- list(...)
 
-      # Build a safe predictor matrix automatically unless the user supplies one.
-      # quickpred() selects only features with sufficient observed variance and
-      # correlation with the target, avoiding the "no predictors left" failure
-      # that occurs when mice encounters constant or collinear columns.
       if (is.null(dots$predictorMatrix)) {
         pred_matrix <- tryCatch(
           mice::quickpred(as.data.frame(x_matrix)),
@@ -363,8 +400,9 @@ run_mvimpute <- function(
         Method    = method
       )
 
-      params_out <- list(method = method, tune_sigma = NA,
-                         m = as.integer(m), maxit = as.integer(maxit),
+      params_out <- list(method = method, positive_only = NA,
+                         tune_sigma = NA, m = as.integer(m),
+                         maxit = as.integer(maxit),
                          seed = if (is.na(seed)) NA_integer_ else as.integer(seed))
     }
 
