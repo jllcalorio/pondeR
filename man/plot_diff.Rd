@@ -103,8 +103,8 @@ Default is \code{NULL}.}
 \item{ylab}{Character string or \code{NULL}. Y-axis label. Default is
 \code{NULL}.}
 
-\item{linewidth}{Numeric. Line width for plot elements (e.g., boxplot borders).
-Default is \code{3}.}
+\item{linewidth}{Numeric. The width of the lines for the box/violin outlines
+and statistical brackets. Default is 3.}
 
 \item{show_global_p}{Logical. If \code{TRUE}, annotates the plot with the
 omnibus p-value. Default is \code{FALSE}.}
