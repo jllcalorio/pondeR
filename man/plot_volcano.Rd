@@ -21,14 +21,14 @@ plot_volcano(
   neglog10 = TRUE,
   h_color = NULL,
   v_color = NULL,
-  size = 2,
+  size = 5,
   alpha = 0.6,
   theme = "nature",
   plot_title = NULL,
   plot_subtitle = NULL,
   xlab = NULL,
   ylab = NULL,
-  global_font_size = 14,
+  global_font_size = 25,
   title_size = NULL,
   subtitle_size = NULL,
   xlab_size = NULL,
@@ -43,8 +43,36 @@ plot_volcano(
 }
 \arguments{
 \item{x}{A \code{data.frame}, \code{tibble}, or named \code{matrix} with
-one row per feature. Must contain the columns named by \code{y} and
-\code{z}. Column names may contain special characters.}
+one row per feature (must contain the columns named by \code{y} and
+\code{z}), \strong{or} a named \code{list} containing the output of
+\code{\link{run_foldchange}()} and/or a multi-outcome
+\code{\link{run_diff}()} result (with \code{summary_table = TRUE}).
+Column names may contain special characters.
+
+\strong{List input — supported combinations:}
+\describe{
+\item{\code{list(fc = <run_foldchange>, diff = <run_diff>)}}{
+Both objects are supplied. Log2 fold changes are sourced from
+\code{run_foldchange()}'s \code{$summary_table} (requires
+\code{log2 = TRUE}, the default) and p-values are sourced from
+\code{run_diff()}'s \code{$summary_table}, matched on feature name.
+When \code{run_foldchange()} produced more than one pairwise
+comparison, the \code{comparison} column is automatically used as
+\code{group}, overlaying all comparisons on a single plot with
+distinct colours. This is the recommended usage.}
+\item{\code{list(fc = <run_foldchange>)}}{
+Fold-change object only. P-values are unavailable; all features are
+classified as non-significant and the significance threshold line is
+not meaningful. A warning is issued.}
+\item{\code{list(diff = <run_diff>)}}{
+Differential-analysis object only. Fold changes are set to 1
+(\eqn{\log_2 \text{FC} = 0}) for all features; the x-axis is not
+meaningful. A warning is issued.}
+}
+
+When a list is supplied, the arguments \code{y}, \code{z},
+\code{features}, and \code{group} are set automatically and do not need
+to be specified by the caller (though they can be overridden).}
 
 \item{y}{A single character string naming the column in \code{x} that
 contains \strong{log2} fold change values (numeric). Note that the
@@ -111,7 +139,7 @@ single string colours both lines; a two-element vector colours the
 inherits \code{ns_color}.}
 
 \item{size}{A single positive numeric value controlling the point size.
-Default \code{2}.}
+Default \code{5}.}
 
 \item{alpha}{A single numeric value in \eqn{(0, 1]} controlling point
 transparency. Overlapping points appear darker due to additive blending.
@@ -134,7 +162,7 @@ generates an automatic title.}
 \code{"-log10(p-value)"} or \code{"p-value"}.}
 
 \item{global_font_size}{A positive numeric value setting the base font size
-for all text elements. Default \code{14}.}
+for all text elements. Default \code{25}.}
 
 \item{title_size}{Override for title font size. Default \code{NULL}.}
 

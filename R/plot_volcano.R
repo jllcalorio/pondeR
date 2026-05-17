@@ -14,8 +14,36 @@
 #' group, saving publication space.
 #'
 #' @param x A \code{data.frame}, \code{tibble}, or named \code{matrix} with
-#'   one row per feature. Must contain the columns named by \code{y} and
-#'   \code{z}. Column names may contain special characters.
+#'   one row per feature (must contain the columns named by \code{y} and
+#'   \code{z}), \strong{or} a named \code{list} containing the output of
+#'   \code{\link{run_foldchange}()} and/or a multi-outcome
+#'   \code{\link{run_diff}()} result (with \code{summary_table = TRUE}).
+#'   Column names may contain special characters.
+#'
+#'   \strong{List input — supported combinations:}
+#'   \describe{
+#'     \item{\code{list(fc = <run_foldchange>, diff = <run_diff>)}}{
+#'       Both objects are supplied. Log2 fold changes are sourced from
+#'       \code{run_foldchange()}'s \code{$summary_table} (requires
+#'       \code{log2 = TRUE}, the default) and p-values are sourced from
+#'       \code{run_diff()}'s \code{$summary_table}, matched on feature name.
+#'       When \code{run_foldchange()} produced more than one pairwise
+#'       comparison, the \code{comparison} column is automatically used as
+#'       \code{group}, overlaying all comparisons on a single plot with
+#'       distinct colours. This is the recommended usage.}
+#'     \item{\code{list(fc = <run_foldchange>)}}{
+#'       Fold-change object only. P-values are unavailable; all features are
+#'       classified as non-significant and the significance threshold line is
+#'       not meaningful. A warning is issued.}
+#'     \item{\code{list(diff = <run_diff>)}}{
+#'       Differential-analysis object only. Fold changes are set to 1
+#'       (\eqn{\log_2 \text{FC} = 0}) for all features; the x-axis is not
+#'       meaningful. A warning is issued.}
+#'   }
+#'
+#'   When a list is supplied, the arguments \code{y}, \code{z},
+#'   \code{features}, and \code{group} are set automatically and do not need
+#'   to be specified by the caller (though they can be overridden).
 #' @param y A single character string naming the column in \code{x} that
 #'   contains \strong{log2} fold change values (numeric). Note that the
 #'   \code{up} and \code{down} thresholds are specified as raw fold changes
@@ -66,7 +94,7 @@
 #'   \code{down} line first and the \code{up} line second. Default \code{NULL}
 #'   inherits \code{ns_color}.
 #' @param size A single positive numeric value controlling the point size.
-#'   Default \code{2}.
+#'   Default \code{5}.
 #' @param alpha A single numeric value in \eqn{(0, 1]} controlling point
 #'   transparency. Overlapping points appear darker due to additive blending.
 #'   Default \code{0.6}.
@@ -82,7 +110,7 @@
 #' @param ylab Character string or \code{NULL}. Default \code{NULL} uses
 #'   \code{"-log10(p-value)"} or \code{"p-value"}.
 #' @param global_font_size A positive numeric value setting the base font size
-#'   for all text elements. Default \code{14}.
+#'   for all text elements. Default \code{25}.
 #' @param title_size Override for title font size. Default \code{NULL}.
 #' @param subtitle_size Override for subtitle font size. Default \code{NULL}.
 #' @param xlab_size Override for x-axis label font size. Default \code{NULL}.
@@ -190,14 +218,14 @@ plot_volcano <- function(
     neglog10         = TRUE,
     h_color          = NULL,
     v_color          = NULL,
-    size             = 2,
+    size             = 5,
     alpha            = 0.6,
     theme            = "nature",
     plot_title       = NULL,
     plot_subtitle    = NULL,
     xlab             = NULL,
     ylab             = NULL,
-    global_font_size = 14,
+    global_font_size = 25,
     title_size       = NULL,
     subtitle_size    = NULL,
     xlab_size        = NULL,
@@ -209,6 +237,154 @@ plot_volcano <- function(
     legend_nrow      = NULL,
     ...
 ) {
+
+  # ---------------------------------------------------------------------------
+  # 0.  Accept run_foldchange / run_diff list as `x`
+  # ---------------------------------------------------------------------------
+  # Users may supply a named list of the form:
+  #   list(fc = <run_foldchange result>, diff = <run_diff summary-table result>)
+  # The two objects are matched on feature name and a flat data frame is
+  # reconstructed so that the rest of plot_volcano works unchanged.
+  #
+  # Supported combinations
+  # ──────────────────────
+  # A) run_foldchange only  → log2 FC available; p-values are NOT present,
+  #    so `z` must be left as NULL and the horizontal threshold line is
+  #    suppressed (p-values set to NA / 1).  A warning is issued.
+  #
+  # B) run_diff (multi-outcome summary_table) only → p-values available;
+  #    fold changes are NOT present.  A warning is issued and FC columns
+  #    are set to 1 (log2 FC = 0) so the plot still renders.
+  #
+  # C) Both  → joined on feature name; each pairwise comparison from
+  #    run_foldchange becomes one facet group (or a single plot when only
+  #    one comparison exists), with matching p-values from run_diff.
+  #
+  # Auto-detected column names (can still be overridden via y / z):
+  #   y  <- "log2fc"   (log2 fold change, created internally)
+  #   z  <- "pvalue"   (raw p-value, created internally)
+  #   features <- "feature"
+  #   group    <- comparison label column (only when >1 comparison)
+  # ---------------------------------------------------------------------------
+  if (is.list(x) &&
+      (inherits(x, "run_foldchange") ||
+       any(vapply(x, function(el) inherits(el, c("run_foldchange", "run_diff")),
+                  logical(1L))))) {
+
+    # ---- locate the two component objects ------------------------------------
+    fc_obj   <- NULL
+    diff_obj <- NULL
+
+    if (inherits(x, "run_foldchange")) {
+      # User passed a bare run_foldchange result
+      fc_obj <- x
+    } else {
+      for (el in x) {
+        if (inherits(el, "run_foldchange") && is.null(fc_obj))  fc_obj   <- el
+        if (inherits(el, "run_diff")       && is.null(diff_obj)) diff_obj <- el
+      }
+      # run_diff multi-outcome path returns a plain named list whose elements
+      # are run_diff objects; detect that case via $summary_table
+      if (is.null(diff_obj)) {
+        for (el in x) {
+          if (is.list(el) && !is.null(el$summary_table) &&
+              is.data.frame(el$summary_table) &&
+              "p_value" %in% names(el$summary_table)) {
+            diff_obj <- el
+            break
+          }
+        }
+      }
+    }
+
+    # ---- build the flat data frame from run_foldchange ----------------------
+    if (!is.null(fc_obj)) {
+      if (is.null(fc_obj$summary_table))
+        stop("The `run_foldchange` object has no `$summary_table`. ",
+             "Re-run `run_foldchange()` with default arguments.", call. = FALSE)
+      if (!fc_obj$params$log2)
+        stop("plot_volcano requires log2 fold changes. ",
+             "Re-run `run_foldchange()` with `log2 = TRUE` (the default).",
+             call. = FALSE)
+
+      df_fc <- fc_obj$summary_table
+      # Rename to internal sentinel names
+      df_fc$log2fc  <- df_fc$log2_fc
+      df_fc$pvalue  <- NA_real_    # filled in below if diff_obj is available
+
+      # ---- merge p-values from run_diff summary_table -----------------------
+      if (!is.null(diff_obj)) {
+        st <- if (!is.null(diff_obj$summary_table)) diff_obj$summary_table
+              else NULL
+        if (!is.null(st) && "p_value" %in% names(st) && "outcome" %in% names(st)) {
+          # Match on feature == outcome
+          idx          <- match(df_fc$feature, st$outcome)
+          df_fc$pvalue <- st$p_value[idx]
+        } else {
+          warning("Could not locate a `$summary_table` with `p_value` and `outcome` ",
+                  "columns in the supplied `run_diff` object. ",
+                  "P-values will be set to NA.", call. = FALSE)
+        }
+      } else {
+        warning("No `run_diff` result was found in `x`. ",
+                "P-values are unavailable; the significance threshold line ",
+                "and up/down classification will not be meaningful.",
+                call. = FALSE)
+        df_fc$pvalue <- 1   # ensures all points are classified NS
+      }
+
+      # ---- set plot_volcano arguments that the caller did not supply --------
+      # Only override when the caller left these at their defaults / NULL
+      if (missing(y) || is.null(y) || !y %in% names(df_fc))
+        y <- "log2fc"
+      if (missing(z) || is.null(z) || !z %in% names(df_fc))
+        z <- "pvalue"
+      if (missing(features) || is.null(features))
+        features <- "feature"
+
+      # When multiple comparisons exist, expose them as the `group` column so
+      # the caller gets per-comparison colouring automatically — but only when
+      # `group` was not already specified by the caller.
+      n_comps <- length(unique(df_fc$comparison))
+      if ((missing(group) || is.null(group)) && n_comps > 1L)
+        group <- "comparison"
+
+      # ---- the input validation note about y containing raw FC -------------
+      # run_foldchange$summary_table$log2_fc already contains log2 values.
+      # plot_volcano's default behaviour expects `y` to hold RAW fold changes
+      # and applies log2() internally (step 13).  We have already-log2 values,
+      # so we exponentiate them back to raw FC to undo plot_volcano's internal
+      # log2 step — OR we add a sentinel column that holds the raw FC and use
+      # that as `y`.
+      #
+      # Simplest: expose raw fold_change as `y` and keep log2_fc only for
+      # reference.  plot_volcano will log2-transform fold_change internally.
+      if (y == "log2fc" && "fold_change" %in% names(df_fc)) {
+        y <- "fold_change"   # raw FC → plot_volcano takes log2 internally
+      }
+
+      x <- df_fc   # replace `x` with the flat data frame
+
+    } else if (!is.null(diff_obj)) {
+      # ---- run_diff only (no fold-change object) ----------------------------
+      warning("No `run_foldchange` result found. Fold changes will be set to 1 ",
+              "(log2 FC = 0) for all features; the x-axis is not meaningful.",
+              call. = FALSE)
+      st <- if (!is.null(diff_obj$summary_table)) diff_obj$summary_table else NULL
+      if (is.null(st) || !"p_value" %in% names(st))
+        stop("The `run_diff` object has no usable `$summary_table`.", call. = FALSE)
+
+      st$fold_change <- 1
+      st$pvalue      <- st$p_value
+      if (missing(y) || is.null(y)) y        <- "fold_change"
+      if (missing(z) || is.null(z)) z        <- "pvalue"
+      if (missing(features) || is.null(features)) features <- "outcome"
+      x <- st
+    } else {
+      stop("The list supplied to `x` contains no recognisable `run_foldchange` ",
+           "or `run_diff` object.", call. = FALSE)
+    }
+  }   # end preprocessing block
 
   # ---------------------------------------------------------------------------
   # 1.  Coerce x
