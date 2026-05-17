@@ -5,7 +5,7 @@
 \title{Performs Descriptive Statistics on a Dataframe}
 \usage{
 run_summarytable(
-  df,
+  x,
   summarize_what = NULL,
   split_by = NULL,
   split_by_header = NULL,
@@ -26,7 +26,9 @@ run_summarytable(
   calc_percent_by = "column",
   calc_col_percent_using = "n_valid_in_column",
   add_inferential_pvalues = FALSE,
-  force_statistical_test = NULL,
+  test_type_continuous = c("auto", "parametric", "nonparametric"),
+  test_type_categorical = c("auto", "chisq", "fisher"),
+  paired = FALSE,
   n_digits_pvalues = 3,
   bold_significant_pvalues = TRUE,
   bold_significant_pvalues_at = 0.05,
@@ -34,264 +36,231 @@ run_summarytable(
   bold_labels = TRUE,
   italicize_levels = TRUE,
   clean_table = TRUE,
-  table_name = "auto",
-  export_to_excel = FALSE,
-  export_to_html = FALSE,
-  export_to_png = FALSE,
-  export_to_pdf = FALSE,
-  export_to_word = FALSE,
-  export_filename = "Summary Results"
+  table_name = "auto"
 )
 }
 \arguments{
-\item{df}{Dataframe. The input dataframe. The first row is assumed to contain column names.}
+\item{x}{Dataframe. The input dataframe.}
 
-\item{summarize_what}{Character vector. A character vector of column names that will be included in the analysis, including what will be placed in \code{split_by} and \code{strata_by}.}
+\item{summarize_what}{Character vector. Column names to include in the
+analysis. When \code{NULL} (default), all columns except those named in
+\code{split_by} and \code{strata_by} are included.}
 
-\item{split_by}{String. A column name in \code{df} (must be a categorical variable with at least 2 unique levels/factors) by which to stratify the descriptive statistics. If \code{NULL} (default), no stratification is performed.}
+\item{split_by}{String. A column name in \code{x} (must be categorical with
+at least 2 unique levels) by which to stratify the table. Required when
+\code{add_inferential_pvalues = TRUE}. Default is \code{NULL}.}
 
-\item{split_by_header}{String. The header name to display for the \code{split_by} variable in the output table. Only applicable if \code{split_by} is not \code{NULL}, and takes on the value of \code{split_by}. Defaults to \code{NULL} initially.}
+\item{split_by_header}{String. Display header for the \code{split_by}
+variable. Defaults to the value of \code{split_by}.}
 
-\item{strata_by}{String. A column name in \code{df} (must be a categorical variable with at least 2 unique levels/factors) by which to stratify the descriptive statistics 'before' \code{split_by}. If \code{NULL} (default), no stratification is performed.}
+\item{strata_by}{String. A column name in \code{x} (must be categorical
+with at least 2 unique levels) by which to stratify \emph{before}
+\code{split_by}. Cannot be combined with
+\code{add_inferential_pvalues = TRUE}. Default is \code{NULL}.}
 
-\item{rename_variables}{List. A list of the format \code{list("original_variable_name1" ~ "new_variable_name1", ...)}, used to rename variables in the output table.}
+\item{rename_variables}{List. Formulas of the form
+\code{list("original" ~ "new", ...)} used to relabel variables in the
+table.}
 
-\item{continuous_statistics}{String. The type of statistics to report for continuous variables. Options are:
-\itemize{
-\item 'meanSD': mean ± standard deviation
-\item 'meanSD2': mean (standard deviation), which is another format of meanSD
-\item 'medianIQR': median (interquartile range) or equivalently median (p25, p75)
-\item 'mean': mean (average)
-\item 'sd': standard deviation
-\item 'p0': 0th percentile
-\item 'p25': 25th percentile (1st quartile)
-\item 'p50': 50th percentile (2nd quartile) (median)
-\item 'p75': 75th percentile (3rd quartile)
-\item 'p100': 100th percentile
-\item 'IQR': p25, p75 (interquartile range)
-}
-Defaults to 'meanSD'.}
+\item{continuous_statistics}{String. Summary statistic(s) for continuous
+variables. One of: \code{"meanSD"}, \code{"meanSD2"},
+\code{"medianIQR"}, \code{"mean"}, \code{"sd"}, \code{"median"},
+\code{"p0"}, \code{"p25"}, \code{"p50"}, \code{"p75"}, \code{"p100"},
+\code{"IQR"}. Default is \code{"meanSD"}.}
 
-\item{categorical_statistics}{String. The type of statistics to report for categorical variables.
-\itemize{
-\item 'n_percent': Displays count and percentage of valid values (e.g., '10 (5.0\%)').
-\item 'n': Displays only the count of valid values.
-\item 'percent': Displays only the percentage of valid values.
-}
-Defaults to 'n_percent'.
-Options are 'n_percent' (count (percentage)), 'n' (count only), or 'percent' (percentage only). Defaults to 'n_percent'.}
+\item{categorical_statistics}{String. Summary statistic(s) for categorical
+variables. One of: \code{"n_percent"}, \code{"n"}, \code{"percent"}.
+Default is \code{"n_percent"}.}
 
-\item{force_continuous}{Vector. A character vector of column names that should be treated as continuous, even if their data type suggests otherwise (e.g., numeric variables with few unique values that might be misclassified as categorical).}
+\item{force_continuous}{Character vector. Column names to treat as
+continuous regardless of their storage type. The same coercion is applied
+before passing data to \code{\link{run_diff}}.}
 
-\item{force_categorical}{Vector. A character vector of column names that should be treated as categorical, even if their data type suggests otherwise (e.g., numeric variables that are truly categories, or binary variables that should be presented as full categories rather than dichotomous).}
+\item{force_categorical}{Character vector. Column names to treat as
+categorical regardless of their storage type. The same coercion is
+applied before passing data to \code{\link{run_assoc}}.}
 
-\item{n_digits_continuous}{Numeric Vector or String.
-\itemize{
-\item c(2, 2): A vector of two integers specifying the number of digits to round for mean and standard deviation (or median and IQR) respectively, for continuous variables. For example, \code{c(2, 2)} means 2 decimal places for both (default).
-\item "dynamic": The other option is 'dynamic' which selects the number of decimal places dynamically.
-}}
+\item{n_digits_continuous}{Numeric vector \code{c(d1, d2)} or
+\code{"dynamic"}. Number of decimal places for the first and subsequent
+numeric tokens in continuous summary cells (e.g., mean and SD). Default
+is \code{c(2, 2)}.}
 
-\item{n_digits_categorical}{Numeric Vector or String.
-\itemize{
-\item c(0, 2): A vector of two integers specifying the number of digits to round for counts and percentages respectively, for categorical variables. For example, \code{c(0, 2)} means 0 decimal places for counts and 2 for percentages (default).
-\item "dynamic": Same as in \code{n_digits_continuous}.
-}}
+\item{n_digits_categorical}{Numeric vector \code{c(d1, d2)} or
+\code{"dynamic"}. Decimal places for count and percentage in categorical
+summary cells. Default is \code{c(0, 2)}.}
 
-\item{zero_as_exp}{Logical. If \code{TRUE} (default), applies only to continuous variables: when a
-numeric component (e.g., mean, SD, median, IQR values) rounds to \code{0} at the precision
-specified in \code{n_digits_continuous} but its true value is non-zero, that component is
-displayed in scientific notation (e.g., \code{1.00e-3}) using the same number of decimal places
-as \code{n_digits_continuous}. Values that are genuinely \code{0} are displayed as-is. This prevents
-misleading \verb{0 ± 0} or \code{0 (0, 0)} displays for near-zero but non-zero quantities.
-Examples with \code{n_digits_continuous = c(2, 2)} and \code{continuous_statistics = "meanSD"}:
-\itemize{
-\item \verb{0 ± 0} (true zeros) → \verb{0 ± 0}
-\item \verb{0.01 ± 0.2} → \verb{0.01 ± 0.2}
-\item \verb{0.001 ± 0.00001} → \verb{1.00e-3 ± 1.00e-5}
-\item \verb{0.02 ± 0.0001576} → \verb{0.02 ± 1.58e-4}
-}}
+\item{zero_as_exp}{Logical. When \code{TRUE} (default), continuous summary
+tokens that round to \code{0} at the requested precision but are
+genuinely non-zero are displayed in scientific notation (e.g.,
+\code{1.00e-3}).}
 
-\item{display_missing}{String. Controls how missing values are reported.
-\itemize{
-\item 'ifany': Report missing values only if they are present in the data.
-\item 'no': Do not report missing values.
-\item 'always': Always include a row for missing values, even if none are present.
-}
-Defaults to 'ifany'.}
+\item{display_missing}{String. How to report missing values:
+\code{"ifany"} (default), \code{"no"}, or \code{"always"}.}
 
-\item{missing_text}{String. The label to use for missing values in the output table. Defaults to 'No/Missing data'.}
+\item{missing_text}{String. Label for missing-value rows. Default is
+\code{"No data/missing"}.}
 
-\item{missing_stat}{String. The format for reporting missing value statistics.
-\itemize{
-\item 'n_percent': Displays count and percentage of missing values (e.g., '10 (5.0\%)').
-\item 'n': Displays only the count of missing values.
-\item 'percent': Displays only the percentage of missing values.
-}
-Defaults to 'n_percent'.}
+\item{missing_stat}{String. Format for missing-value counts: one of
+\code{"n_percent"} (default), \code{"n"}, \code{"percent"}.}
 
-\item{include_missing_in_splits}{Boolean. If \code{TRUE} (default), includes the missing values (missing text specified in \code{missing_text}) in the column after specifying \code{split_by} and \code{strata_by}.}
+\item{include_missing_in_splits}{Logical. If \code{TRUE} (default),
+missing values in \code{split_by} / \code{strata_by} columns are kept as
+an explicit level.}
 
-\item{sort_categorical_variables_by}{String. Determines the sorting order for levels within categorical variables.
-\itemize{
-\item 'alphanumeric': Sorts levels alphabetically or numerically. For custom sorting, use \code{factor(data, levels = c(level1, level2, ...))}.
-\item 'frequency': Sorts levels by their frequency (from highest to lowest).
-}
-Defaults to 'alphanumeric'.}
+\item{sort_categorical_variables_by}{String. Level ordering for categorical
+variables: \code{"alphanumeric"} (default) or \code{"frequency"}.}
 
-\item{calc_percent_by}{String. Specifies how percentages are calculated for categorical variables.
-\itemize{
-\item 'column': Percentages are calculated down columns (sum to 100\% per column).
-\item 'row': Percentages are calculated across rows (sum to 100\% per row, useful for \code{split_by}).
-\item 'cell': Percentages are calculated based on the total number of observations in the table.
-}
-Defaults to 'column' if \code{split_by} is not \code{NULL}, otherwise, automatically sets to 'row'.}
+\item{calc_percent_by}{String. Percentage base for categorical variables:
+\code{"column"} (default), \code{"row"}, or \code{"cell"}.}
 
-\item{calc_col_percent_using}{String. Specifies how the percentages are to be calculated.
-\itemize{
-\item 'n_in_column': Percentages are calculated based on the actual number of data points appearing in the column.
-\item 'n_valid_in_column': Percentages are calculated based on the valid (i.e., non missing) values.
-}
-Defaults to 'n_valid_in_column'.
-Note: This only applies when 'calc_percent_by = "column"'.}
+\item{calc_col_percent_using}{String. Denominator when
+\code{calc_percent_by = "column"}: \code{"n_valid_in_column"} (default)
+or \code{"n_in_column"}.}
 
-\item{add_inferential_pvalues}{Boolean. If \code{TRUE}, adds the common comparative statistical tests such as t-tests, chi-square test, ANOVA, and their nonparametric counterparts.}
+\item{add_inferential_pvalues}{Logical. If \code{TRUE}, p-values are
+computed via \code{\link{run_diff}} (continuous variables) and
+\code{\link{run_assoc}} (categorical variables) and injected into the
+table. Requires \code{split_by} to be non-\code{NULL} and
+\code{strata_by} to be \code{NULL}. Default is \code{FALSE}.}
 
-\item{force_statistical_test}{List. A list of the format \code{list("variable_name1" ~ "statistical_test1", ...)}, used to specify the test for the specific variable. Below are the list of tests. See type and enter ?gtsummary::tests for more details, and see \code{tbl_summary() \%>\% add_p()} section.
-\itemize{
-\item 't.test': Perform t-test.
-\item 'paired.t.test': Perform Paired t-test.
-\item 'wilcox.test': Perform Wilcoxon rank-sum test/Mann-Whitney U test.
-\item 'paired.wilcox.test': Perform Paired Wilcoxon rank-sum test.
-\item 'oneway.test': Perform One-way Analysis of Variance (ANOVA).
-\item 'kruskal.test': Perform Kruskal-Wallis test.
-\item 'chisq.test': Perform chi-square test of independence.
-\item 'chisq.test.no.correct': Perform chi-square test of independence. This specifies 'correct = FALSE'.
-\item 'fisher.test': Perform Fisher's exact test.
-\item 'mcnemar.test': Perform McNemar's test.
-\item 'mcnemar.test.wide': Perform McNemar's test.
-\item 'prop.test': Perform Test for equality of proportions.
-\item 'mood.test': Perform Mood two-sample test of scale.
-\item 'lme4': Perform random intercept logistic regression.
-\item 'ancova': Perform Analysis of Covariance (ANCOVA).
-\item 'emmeans': Perform Estimated Marginal Means or LS-means.
-}}
+\item{test_type_continuous}{String. Test strategy forwarded to
+\code{\link{run_diff}} when \code{add_inferential_pvalues = TRUE}. One
+of \code{"auto"} (default), \code{"parametric"}, or
+\code{"nonparametric"}. See \code{\link{run_diff}} for details.}
 
-\item{n_digits_pvalues}{Numeric. Default is 3. The number of digits of p-values if \code{add_inferential_pvalues} is set to \code{TRUE}. This can be set to \code{NULL} which tells the code to automatically format the p-values. If the p-value < 0.10, there will be a maximum of three decimal places, otherwise, there will only be one.}
+\item{test_type_categorical}{String. Test strategy forwarded to
+\code{\link{run_assoc}} when \code{add_inferential_pvalues = TRUE}. One
+of \code{"auto"} (default), \code{"chisq"}, or \code{"fisher"}. See
+\code{\link{run_assoc}} for details.}
 
-\item{bold_significant_pvalues}{Boolean. If \code{TRUE} (default), automatically detects if \code{add_inferential_pvalues = TRUE} then bolds the font of p-values under 0.05 (default) unless set in \code{bold_significant_pvalues_at}.}
+\item{paired}{Logical. If \code{TRUE}, paired tests are used when computing
+p-values. Forwarded to both \code{\link{run_diff}} and
+\code{\link{run_assoc}}. Note that the descriptive statistics shown in
+the table body are always unpaired summaries. Default is \code{FALSE}.}
 
-\item{bold_significant_pvalues_at}{Numeric. The threshold for \code{bold_significant_pvalues} to bold font if significant.}
+\item{n_digits_pvalues}{Numeric or \code{NULL}. Decimal places for
+displayed p-values. Default is \code{3}. Set to \code{NULL} for
+automatic formatting (up to 3 d.p. when \eqn{p < 0.10}, otherwise 1
+d.p.).}
 
-\item{header}{String. The header name for the 'Variable' column in the output table. Defaults to 'Variable'.}
+\item{bold_significant_pvalues}{Logical. If \code{TRUE} (default), p-values
+below \code{bold_significant_pvalues_at} are bolded.}
 
-\item{bold_labels}{Boolean. If \code{TRUE} (default), variable labels in the table will be bolded.}
+\item{bold_significant_pvalues_at}{Numeric. Significance threshold for
+bolding. Default is \code{0.05}.}
 
-\item{italicize_levels}{Boolean. If \code{TRUE} (default), categorical variable levels in the table will be italicized.}
+\item{header}{String. Header for the variable-label column. Default is
+\code{"Variable"}.}
 
-\item{clean_table}{Boolean. If \code{TRUE} (default), cells with a count of 0 are removed (replaced with empty space) from the descriptive table, making it cleaner.}
+\item{bold_labels}{Logical. If \code{TRUE} (default), variable labels are
+bolded.}
 
-\item{table_name}{String or NULL. The table name. Default is 'auto', where the table name depends if the table is descriptive or inferential in nature (has p-values), and automatically creates a table name. Set to \code{NULL} to have no table name. Can accept a string that will be used as the table name.}
+\item{italicize_levels}{Logical. If \code{TRUE} (default), categorical
+level labels are italicised.}
 
-\item{export_to_excel}{Boolean. If TRUE, exports the results to an Excel file. Defaults to FALSE. This is currently not recommended as the output is not formatted good.}
+\item{clean_table}{Logical. If \code{TRUE} (default), cells containing a
+zero count (e.g., \code{0 (0.00\%)}) are replaced with empty strings.}
 
-\item{export_to_html}{Boolean. If TRUE, exports the results to an HTML file. Defaults to FALSE.}
-
-\item{export_to_png}{Boolean. If TRUE, exports the results to a PNG file. Defaults to FALSE.}
-
-\item{export_to_pdf}{Boolean. If TRUE, exports the results to a PDF file. Defaults to FALSE.}
-
-\item{export_to_word}{Boolean. If TRUE, exports the results to a Word file. Defaults to FALSE.}
-
-\item{export_filename}{String. The file name of the exported file/s. Multiple exports can be done by setting each to TRUE. The default is "Summary Results" and will remain as it is if \code{export_filename = NULL} or \code{export_filename = ""}.}
+\item{table_name}{String or \code{NULL}. Table title. \code{"auto"}
+(default) generates a title automatically. \code{NULL} suppresses the
+title.}
 }
 \value{
-A \code{gtsummary} table object (inherits from \code{gt_tbl}), representing the simple descriptive statistics.
+A \code{gt_tbl} object (via \code{gtsummary::as_gt()}) representing
+the descriptive (and optionally inferential) statistics table.
 }
 \description{
-This function generates a comprehensive descriptive statistics table from a given dataframe,
-optionally stratified by a categorical variable. It provides customizable summaries for both
-continuous and categorical variables, including control over rounding, missing data reporting,
-labeling, formatting, and table aesthetics. The output is a publication-ready \code{gtsummary} table
-that can be easily integrated into reports, manuscripts, or exported (via copy-paste for now) for further use.
+Generates a comprehensive descriptive statistics table from a given
+dataframe, optionally stratified by a categorical variable. Provides
+customisable summaries for both continuous and categorical variables,
+including control over rounding, missing data reporting, labelling,
+formatting, and table aesthetics. The output is a publication-ready
+\code{gtsummary} / \code{gt} table.
+
+When \code{add_inferential_pvalues = TRUE}, p-values are computed
+\emph{outside} \code{gtsummary} using \code{\link{run_diff}} (for
+continuous variables) and \code{\link{run_assoc}} (for categorical
+variables), then injected into the table. Each p-value cell carries a
+letter superscript identifying the exact test used; a legend is appended
+as table footnotes. Variables for which a p-value could not be computed
+are shown as \code{---†} with a corresponding footnote.
 }
 \examples{
 \dontrun{
-# Load necessary library
 library(gtsummary)
 library(dplyr)
-library(magrittr)
 
-# Create a sample dataframe
 set.seed(123)
 sample_df <- data.frame(
-  Age = sample(c(18:65, NA), 100,
-               replace = TRUE, prob = c(rep(1, 48), 5)),
-  Gender = sample(c("Male", "Female", NA), 100,
-                  replace = TRUE, prob = c(0.48, 0.48, 0.04)),
-  Education = sample(c("Elementary", "High School", "Bachelors", "Masters", NA), 100,
-                     replace = TRUE, prob = c(0.40, 0.30, 0.15, 0.10, 0.05)),
-  Income = sample(c(seq(5000, 40000, by = 5000), NA), 100,
-                  replace = TRUE, prob = c(rep(1, 8), 2)),
-  Smoker = sample(c(1, 0, NA), 100,
-                  replace = TRUE, prob = c(0.25, 0.65, 0.10)),
-  Region = sample(c("North", "South", "East", "West", NA), 100,
-                  replace = TRUE, prob = c(0.24, 0.24, 0.24, 0.24, .04))
+  Age       = sample(c(18:65, NA), 100, replace = TRUE,
+                     prob = c(rep(1, 48), 5)),
+  Gender    = sample(c("Male", "Female", NA), 100, replace = TRUE,
+                     prob = c(0.48, 0.48, 0.04)),
+  Education = sample(c("Elementary", "High School",
+                        "Bachelors", "Masters", NA), 100,
+                     replace = TRUE,
+                     prob = c(0.40, 0.30, 0.15, 0.10, 0.05)),
+  Income    = sample(c(seq(5000, 40000, by = 5000), NA), 100,
+                     replace = TRUE, prob = c(rep(1, 8), 2)),
+  Smoker    = sample(c(1, 0, NA), 100, replace = TRUE,
+                     prob = c(0.25, 0.65, 0.10)),
+  Region    = sample(c("North", "South", "East", "West", NA), 100,
+                     replace = TRUE,
+                     prob = c(0.24, 0.24, 0.24, 0.24, .04))
 )
 
-# Basic descriptive statistics
-# CORRECT: Piped data goes to 'df' argument automatically
-sample_df \%>\% run_summarytable()
+# Basic descriptive statistics (no grouping)
+sample_df |> run_summarytable()
 
-# INCORRECT: Causes an error because 'sample_df' is passed to 'summarize_what'
-# sample_df \%>\% run_summarytable(sample_df)
-
-# Descriptive statistics split by Gender, with custom header and labels
-sample_df \%>\%
+# Descriptive statistics split by Gender
+sample_df |>
   run_summarytable(
-    split_by = "Gender",
+    split_by        = "Gender",
     split_by_header = "Participant Gender",
-    rename_variables = list(Age ~ "Age (Years)", 
-                            Income ~ "Annual Income", 
+    rename_variables = list(Age    ~ "Age (Years)",
+                            Income ~ "Annual Income",
                             Smoker ~ "Smoking Status")
   )
 
-# Descriptive statistics with median and IQR for continuous, and count only for categorical
-sample_df \%>\%
+# Median and IQR for continuous variables
+sample_df |>
   run_summarytable(
-    continuous_statistics = "medianIQR",
+    continuous_statistics  = "medianIQR",
     categorical_statistics = "n",
-    n_digits_continuous = c(0, 0),
-    n_digits_categorical = c(0, 0)
+    n_digits_continuous    = c(0, 0),
+    n_digits_categorical   = c(0, 0)
   )
 
-# Force 'Smoker' to be continuous (though conceptually it's not, for demonstration)
-# And display missing always (with custom text), with bold labels and italicized levels
-sample_df \%>\%
+# Inferential p-values using run_diff (continuous) and run_assoc
+# (categorical), auto test selection
+sample_df |>
   run_summarytable(
-    force_continuous = "Smoker",
-    display_missing = "always",
-    missing_text = "Data Unavailable",
-    missing_stat = "n",
-    bold_labels = TRUE,
-    italicize_levels = TRUE
-  )
-
-# Sort categorical variables by frequency and calculate percentages by row
-# (not ideal, but for demonstration only)
-sample_df \%>\%
-  run_summarytable(
-    sort_categorical_variables_by = "frequency",
-    calc_percent_by = "row"
-  )
-
-# Perform common comparative statistical tests
-sample_df \%>\%
-  run_summarytable(
-    split_by = "Gender",
+    split_by                = "Gender",
     add_inferential_pvalues = TRUE
+  )
+
+# Force non-parametric tests for continuous variables
+sample_df |>
+  run_summarytable(
+    split_by                = "Gender",
+    add_inferential_pvalues = TRUE,
+    test_type_continuous    = "nonparametric",
+    test_type_categorical   = "fisher"
+  )
+
+# Paired inferential p-values (descriptive body remains unpaired)
+sample_df |>
+  run_summarytable(
+    split_by                = "Gender",
+    add_inferential_pvalues = TRUE,
+    paired                  = TRUE
   )
 }
 
+}
+\seealso{
+\code{\link{run_diff}} for the continuous-variable test engine.
+\code{\link{run_assoc}} for the categorical-variable test engine.
 }
 \author{
 John Lennon L. Calorio
