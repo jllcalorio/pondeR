@@ -45,12 +45,12 @@
 #' @param colors Character vector. Custom color palette for discrete groups. If `NULL`
 #'   (default), the Okabe-Ito colorblind-friendly palette is used. Ignored when `color_by`
 #'   is numeric (continuous scale is always used for numeric variables).
-#' @param point_size Numeric. Size of points. Default: `3`.
+#' @param point_size Numeric. Size of points. Default: `10`.
 #' @param point_alpha Numeric. Transparency of points (0–1). Default: `0.8`.
 #' @param theme Character. ggplot2 theme to apply. Options: `"nature"`, `"minimal"`,
 #'   `"classic"`, `"bw"`, `"light"`, `"dark"`. Default: `"nature"` (a clean, publication-ready
 #'   style based on `theme_bw()`).
-#' @param base_size Numeric. Base font size for the theme (pts). Default: `11`.
+#' @param base_size Numeric. Base font size for the theme (pts). Default: `30`.
 #' @param font_family Character. Font family for all text elements. Default: `"sans"`.
 #' @param axis_title_size Numeric. Font size for axis titles. Default: `base_size + 1`.
 #' @param axis_text_size Numeric. Font size for axis tick labels. Default: `base_size - 1`.
@@ -238,10 +238,10 @@ plot_score.run_pca <- function(
     show_outliers    = FALSE,
     label_outliers   = "all",
     colors           = NULL,
-    point_size       = 3,
+    point_size       = 10,
     point_alpha      = 0.8,
     theme            = "nature",
-    base_size        = 11,
+    base_size        = 30,
     font_family      = "sans",
     axis_title_size  = NULL,
     axis_text_size   = NULL,
@@ -877,45 +877,71 @@ plot_score.run_pcoa <- function(
   if (is.null(subtitle)) {
     sub_parts <- c()
 
-    # 1. Main PERMANOVA
+    # Helper: format a p-value to 3 dp or "<0.001"
+    .fmt_p_sub <- function(p) {
+      if (is.na(p))      return("NA")
+      if (p < 0.001)     return("< 0.001")
+      sprintf("%.3f", round(p, 3L))
+    }
+
+    # 1. Main PERMANOVA line (always shown when present)
     if (!is.null(res$permanova)) {
       r2_val <- res$permanova$R2
       p_val  <- res$permanova$p_value
-      p_str  <- if (!is.na(p_val) && p_val < 0.001) "< 0.001" else sprintf("= %.3f", p_val)
-      sub_parts <- c(sub_parts, sprintf("PERMANOVA: R\u00b2 = %.2f; p %s", r2_val, p_str))
+      sub_parts <- c(sub_parts, sprintf(
+        "PERMANOVA: R\u00b2 = %.2f; p = %s",
+        r2_val, .fmt_p_sub(p_val)
+      ))
     }
 
-    # 2. Pairwise Post-Hoc
-    if (!is.null(res$pairwise_adonis)) {
-      pa_res <- as.data.frame(res$pairwise_adonis)
-      
-      # Dynamically detect column names to accommodate OmicFlow ("p.adj") 
-      # and other standard packages ("p.adjusted")
-      p_col <- intersect(c("p.adj", "p.adjusted", "padj", "p.value", "pval"), colnames(pa_res))[1]
-      pair_col <- intersect(c("pairs", "group", "contrast"), colnames(pa_res))[1]
-      
+    # 2. Determine number of levels in the rhs grouping variable
+    n_levels <- NA_integer_
+    if (!is.null(res$permanova) && !missing(metadata)) {
+      rhs_col  <- res$permanova$rhs
+      if (rhs_col %in% colnames(metadata)) {
+        n_levels <- length(unique(metadata[[rhs_col]]))
+      }
+    }
+
+    # 3. Post-hoc block — only for 3+ groups
+    if (!is.null(res$pairwise_adonis) && !is.na(n_levels) && n_levels >= 3L) {
+
+      pa       <- as.data.frame(res$pairwise_adonis)
+      p_col    <- intersect(c("p.adj", "p.adjusted", "padj", "p.value", "pval"), colnames(pa))[1]
+      pair_col <- intersect(c("pairs", "group", "contrast"),                      colnames(pa))[1]
+
       if (!is.na(p_col) && !is.na(pair_col)) {
-        # Using which() prevents NA rows if the p-value column contains NAs
-        sig_pairs <- pa_res[which(pa_res[[p_col]] < 0.05), pair_col]
-        
-        if (length(sig_pairs) > 0) {
-          sig_str <- paste(sig_pairs, collapse = ", ")
-          
-          # If the string is too long (e.g., highly multi-group design), truncate to avoid plot distortion
-          if (nchar(sig_str) > 60) {
-             sig_str <- sprintf("%d significant pairs (p < 0.05)", length(sig_pairs))
+        sig_rows <- pa[which(pa[[p_col]] < 0.05), , drop = FALSE]
+
+        if (nrow(sig_rows) > 0L) {
+          pair_lines <- vapply(seq_len(nrow(sig_rows)), function(i) {
+            sprintf("%s; p = %s",
+                    sig_rows[[pair_col]][i],
+                    .fmt_p_sub(sig_rows[[p_col]][i]))
+          }, character(1L))
+
+          if (length(pair_lines) > 6L) {
+            # Too many to list inline — redirect to summary()
+            posthoc_str <- sprintf(
+              "Post-hoc Sig. pairs: %d (p < 0.05) — see summary() for full table",
+              length(pair_lines)
+            )
           } else {
-             sig_str <- paste0("Sig. pairs: ", sig_str)
+            posthoc_str <- paste0(
+              "Post-hoc Sig. pairs:\n  ",
+              paste(pair_lines, collapse = "\n  ")
+            )
           }
-          sub_parts <- c(sub_parts, sprintf("Post-hoc: %s", sig_str))
+          sub_parts <- c(sub_parts, posthoc_str)
+
         } else {
           sub_parts <- c(sub_parts, "Post-hoc: No sig. pairs (p < 0.05)")
         }
       }
     }
+    # n_levels == 2: post-hoc block silently omitted; PERMANOVA p already shown above
 
-    # Combine into a single multi-line subtitle
-    if (length(sub_parts) > 0) {
+    if (length(sub_parts) > 0L) {
       subtitle <- paste(sub_parts, collapse = "\n")
     }
   }
