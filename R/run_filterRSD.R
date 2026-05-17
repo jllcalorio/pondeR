@@ -136,7 +136,7 @@ run_filterRSD <- function(
     stop(sprintf("'%s' column not found in metadata", groups))
   }
   
-  valid_qc_types <- c("SQC", "EQC", "QC")
+  valid_qc_types <- qc_types # User can customize QC types, but must be one of these labels
   if (!qc_type %in% valid_qc_types) {
     stop("'qc_type' must be one of: ", paste(valid_qc_types, collapse = ", "))
   }
