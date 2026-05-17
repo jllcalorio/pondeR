@@ -156,6 +156,14 @@ run_mixedmodel <- function(
     verbose           = FALSE
 ) {
 
+  # --- Integration with run_DIpreprocess ---
+  if (inherits(x, "run_DIpreprocess")) {
+    if (missing(metadata) || is.null(metadata)) {
+      metadata <- if (!is.null(x$metadata_merged)) x$metadata_merged else x$metadata
+    }
+    x <- if (!is.null(x$data_nonpls_merged)) x$data_nonpls_merged else x$data_nonpls
+  }
+
   # ---- soft dependencies ---------------------------------------------------
   if (!requireNamespace("lme4",     quietly = TRUE))
     stop("Package 'lme4' is required. Install it with install.packages('lme4').")

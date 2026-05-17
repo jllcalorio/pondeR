@@ -144,6 +144,14 @@ run_foldchange <- function(
     eps      = 1e-8
 ) {
 
+  # --- Integration with run_DIpreprocess ---
+  if (inherits(x, "run_DIpreprocess")) {
+    if (missing(metadata) || is.null(metadata)) {
+      metadata <- if (!is.null(x$metadata_merged)) x$metadata_merged else x$metadata
+    }
+    x <- if (!is.null(x$data_nonpls_merged)) x$data_nonpls_merged else x$data_nonpls
+  }
+
   # ---------------------------------------------------------------------------
   # 1.  Coerce x and metadata to data.frame
   # ---------------------------------------------------------------------------
@@ -473,7 +481,8 @@ run_foldchange <- function(
         n_groups = n_lvl,
         n_comp   = n_comp
       )
-    )
+    ),
+  class = "run_foldchange"
   )
 }
 
