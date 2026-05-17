@@ -427,6 +427,13 @@ run_diff <- function(
     num_cores             = 1
 ) {
 
+  # --- Integration with run_DIpreprocess ---
+  if (inherits(x, "run_DIpreprocess")) {
+    target_meta <- if (!is.null(x$metadata_merged)) x$metadata_merged else x$metadata
+    target_data <- if (!is.null(x$data_nonpls_merged)) x$data_nonpls_merged else x$data_nonpls
+    x <- cbind(target_meta, target_data)
+  }
+  
   # ---------------------------------------------------------------------------
   # Multi-outcome dispatch
   # ---------------------------------------------------------------------------
@@ -1047,9 +1054,9 @@ run_diff <- function(
 
     # Fit a simple lm on the outcome to get residuals for normality check
     rhs <- if (test_family == "mixed_anova") {
-      paste(c(group, within), collapse = " * ")
+      paste(c(paste0("`", group, "`"), paste0("`", within, "`")), collapse = " * ")
     } else {
-      paste(within, collapse = " * ")
+      paste(paste0("`", within, "`"), collapse = " * ")
     }
     lm_formula <- stats::as.formula(paste(safe_outcome, "~", rhs))
     lm_fit     <- tryCatch(stats::lm(lm_formula, data = df_rm), error = function(e) NULL)
@@ -1224,7 +1231,7 @@ run_diff <- function(
               # so comparisons are made within each between-factor level.
               # -----------------------------------------------------------
               ph_formula <- stats::as.formula(
-                paste(safe_outcome, "~", within_in_eff[1])
+                paste(safe_outcome, "~", paste0("`", within_in_eff[1], "`"))
               )
               if (length(between_in_eff) > 0) {
                 # Interaction: run pairwise test grouped by between factor
@@ -1250,7 +1257,7 @@ run_diff <- function(
               # Pure between-subject effect: unpaired pairwise_t_test
               # -----------------------------------------------------------
               ph_formula <- stats::as.formula(
-                paste(safe_outcome, "~", between_in_eff[1])
+                paste(safe_outcome, "~", paste0("`", between_in_eff[1], "`"))
               )
               rstatix::pairwise_t_test(
                 data            = df_rm,
@@ -1338,7 +1345,7 @@ run_diff <- function(
     ds_rm <- tryCatch({
       agg <- stats::aggregate(
         stats::as.formula(paste(safe_outcome, "~",
-                                paste(summary_factors, collapse = " + "))),
+                                paste(paste0("`", summary_factors, "`"), collapse = " + "))),
         data = df_rm, FUN = function(v)
           c(n      = length(v),
             mean   = mean(v),

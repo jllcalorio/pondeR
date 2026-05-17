@@ -171,6 +171,13 @@
 run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels = NULL,
                        remove = NULL, exclude = NULL, iterate = FALSE, add_vif = TRUE,
                        apply_firth = TRUE, force_apply_firth = FALSE) {
+  
+  # --- Integration with run_DIpreprocess ---
+  if (inherits(x, "run_DIpreprocess")) {
+    target_meta <- if (!is.null(x$metadata_merged)) x$metadata_merged else x$metadata
+    target_data <- if (!is.null(x$data_nonpls_merged)) x$data_nonpls_merged else x$data_nonpls
+    x <- cbind(target_meta, target_data)
+  }
 
   # ---------------------------------------------------------------------------
   # 1. Error Handling & Input Validation

@@ -133,6 +133,14 @@ run_pls <- function(
   
   msg <- function(...) if (verbose) message(...)
   
+  # --- Integration with run_DIpreprocess ---
+  if (inherits(x, "run_DIpreprocess")) {
+    if (missing(metadata) || is.null(metadata)) {
+      metadata <- if (!is.null(x$metadata_merged)) x$metadata_merged else x$metadata
+    }
+    x <- if (!is.null(x$data_pls_merged)) x$data_pls_merged else x$data_pls
+  }
+  
   # ============================================================================
   # INPUT VALIDATION
   # ============================================================================
