@@ -148,7 +148,8 @@ R x 2), pairwise Fisher's tests are performed via
 \dontrun{
 # --- Example 1: 2x2 Independent Test (Auto -> Chi-square) ---
 data(mtcars)
-res <- run_assoc(x = mtcars, var1 = "am", var2 = "vs")
+res <- run_assoc(x = mtcars, var1 = "am", var2 = "vs",
+                 force_categorical = TRUE)
 print(res)
 summary(res)
 
@@ -167,12 +168,14 @@ after  <- before
 after[before == "No"][1:14]  <- "Yes"
 after[before == "Yes"][1:3]  <- "No"
 paired_df <- data.frame(before = before, after = after)
-res_paired <- run_assoc(x = paired_df, var1 = "before", var2 = "after", paired = TRUE)
+res_paired <- run_assoc(x = paired_df, var1 = "before", var2 = "after",
+                         paired = TRUE)
 summary(res_paired)
 
 # --- Example 4: Force Chi-square ---
 res_chisq <- run_assoc(x = mtcars, var1 = "am", var2 = "vs",
-                       test_type = "chisq", continuity_correction = TRUE)
+                        test_type = "chisq", continuity_correction = TRUE,
+                        force_categorical = TRUE)
 print(res_chisq)
 }
 

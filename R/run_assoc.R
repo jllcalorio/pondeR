@@ -116,7 +116,8 @@
 #' \dontrun{
 #' # --- Example 1: 2x2 Independent Test (Auto -> Chi-square) ---
 #' data(mtcars)
-#' res <- run_assoc(x = mtcars, var1 = "am", var2 = "vs")
+#' res <- run_assoc(x = mtcars, var1 = "am", var2 = "vs",
+#'                  force_categorical = TRUE)
 #' print(res)
 #' summary(res)
 #'
@@ -135,12 +136,14 @@
 #' after[before == "No"][1:14]  <- "Yes"
 #' after[before == "Yes"][1:3]  <- "No"
 #' paired_df <- data.frame(before = before, after = after)
-#' res_paired <- run_assoc(x = paired_df, var1 = "before", var2 = "after", paired = TRUE)
+#' res_paired <- run_assoc(x = paired_df, var1 = "before", var2 = "after",
+#'                          paired = TRUE)
 #' summary(res_paired)
 #'
 #' # --- Example 4: Force Chi-square ---
 #' res_chisq <- run_assoc(x = mtcars, var1 = "am", var2 = "vs",
-#'                        test_type = "chisq", continuity_correction = TRUE)
+#'                         test_type = "chisq", continuity_correction = TRUE,
+#'                         force_categorical = TRUE)
 #' print(res_chisq)
 #' }
 #'
@@ -275,6 +278,16 @@ run_assoc <- function(x,
     decision = character(),
     stringsAsFactors = FALSE
   )
+
+  # Drop rows with NA in any analysis column
+  cols_for_complete <- if (is.null(weight)) c(var1, var2) else c(var1, var2, weight)
+  data_complete     <- x[stats::complete.cases(x[, cols_for_complete, drop = FALSE]), ]
+
+  if (nrow(data_complete) == 0L)
+    stop("No complete cases found after removing rows with missing values.")
+  if (nrow(data_complete) < nrow(x) && verbose)
+    message(sprintf("Note: %d row(s) with missing values removed before analysis.",
+                    nrow(x) - nrow(data_complete)))
 
   if (is.null(weight)) {
     tbl <- table(data_complete[[var1]], data_complete[[var2]])
