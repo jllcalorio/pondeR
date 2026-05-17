@@ -36,6 +36,7 @@
 #'   skipped entirely.
 #' @param perms A positive integer. Number of permutations for PERMANOVA.
 #'   Passed as the \code{permutations} argument to \code{\link[vegan]{adonis2}}.
+#'   The same value is used when \code{dispersion = TRUE}.
 #'   Default: \code{9999}.
 #' @param groups A single character string naming a column of \code{metadata} to
 #'   use for pairwise post-hoc testing via \code{OmicFlow::pairwise_adonis}.
@@ -43,6 +44,7 @@
 #' @param p_adjust A single character string specifying the p-value adjustment
 #'   method for post-hoc testing. Passed to \code{\link[stats]{p.adjust}}.
 #'   Default: \code{"BH"} (Benjamini-Hochberg).
+#' @param dispersion A boolean. If \code{TRUE}, also tests for homogeneity of group dispersions.
 #' @param ... Additional arguments forwarded to \code{\link[vegan]{vegdist}}
 #'   (e.g., \code{binary}, \code{na.rm}) when \code{x} is not a \code{"dist"}
 #'   object, to \code{\link[ape]{pcoa}} (e.g., \code{rn}), and to
@@ -244,6 +246,7 @@ run_pcoa <- function(x,
                      perms      = 9999L,
                      groups     = NULL,
                      p_adjust   = "BH",
+                     dispersion  = FALSE,
                      ...) {
 
   # ── 0. Capture call ──────────────────────────────────────────────────────────
@@ -606,6 +609,46 @@ run_pcoa <- function(x,
     )
   }
 
+  # ── 10.5 betadisper + PERMDISP ────────────
+  betadisper_result <- NULL
+  permdisp_result   <- NULL
+
+  if (dispersion && run_permanova) {
+
+    if (!requireNamespace("vegan", quietly = TRUE)) {
+      warning("'vegan' is required for dispersion tests but is not installed.",
+              call. = FALSE)
+    } else {
+      perms <- as.integer(perms)
+
+      bd <- tryCatch(
+        vegan::betadisper(
+          d     = dist_matrix,
+          group = metadata[[rhs]]
+        ),
+        error = function(e) {
+          warning("vegan::betadisper() failed:\n  ", conditionMessage(e),
+                  call. = FALSE)
+          NULL
+        }
+      )
+
+      if (!is.null(bd)) {
+        betadisper_result <- bd
+
+        pd <- tryCatch(
+          vegan::permutest(bd, permutations = perms),
+          error = function(e) {
+            warning("vegan::permutest() on betadisper failed:\n  ",
+                    conditionMessage(e), call. = FALSE)
+            NULL
+          }
+        )
+        permdisp_result <- pd
+      }
+    }
+  }
+
   # ── 11. Post-hoc via OmicFlow::pairwise_adonis ───────────────────────────────
   pairwise_result <- NULL
 
@@ -652,7 +695,7 @@ run_pcoa <- function(x,
     }
   }
 
-  # ── 12. Assemble result ───────────────────────────────────────────────────────
+  # ── 12. Assemble result (replace existing list) ───────────────────────────
   result <- list(
     scores             = scores,
     variance_explained = var_pct,
@@ -665,9 +708,11 @@ run_pcoa <- function(x,
     pcoa_raw           = pcoa_raw,
     vegdist_raw        = if (is_precomputed_dist) NULL else vegdist_raw,
     permanova          = permanova_result,
-    pairwise_adonis    = pairwise_result,   # New element added here
+    pairwise_adonis    = pairwise_result,
+    betadisper         = betadisper_result,
+    permdisp           = permdisp_result,
     call               = .call,
-    p_adjust           = p_adjust           # Saved for summary output
+    p_adjust           = p_adjust
   )
   class(result) <- c("run_pcoa", "list")
   result
@@ -704,31 +749,163 @@ print.run_pcoa <- function(x, n_axes = 5L, ...) {
 # ── S3 summary ────────────────────────────────────────────────────────────────
 
 #' @export
-summary.run_pcoa <- function(object, ...) {
-  cat("Principal Coordinate Analysis Summary\n")
-  cat(strrep("=", 45L), "\n")
-  cat("Call:\n  ", deparse(object$call), "\n\n")
-  cat("Dissimilarity method :", object$method, "\n")
-  cat("Correction           :", object$correction, "\n")
-  cat("Observations (n)     :", object$n_obs, "\n")
-  cat("Total axes           :", object$n_axes, "\n\n")
+summary.run_pcoa <- function(object, n_axes = 5L, ...) {
 
-  cat("Eigenvalues and variance explained:\n")
-  df <- data.frame(
-    Axis           = names(object$variance_explained),
-    Eigenvalue     = round(object$eigenvalues[seq_len(object$n_axes)], 6L),
-    Variance_pct   = round(object$variance_explained, 3L),
-    Cumulative_pct = round(cumsum(object$variance_explained), 3L),
+  .fmt_p <- function(p) {
+    if (is.na(p))     return("NA")
+    if (p < 0.001)    return("<0.001")
+    formatC(round(p, 3L), format = "f", digits = 3L)
+  }
+  .fmt_r2 <- function(r) {
+    if (is.na(r)) return("NA")
+    formatC(round(r, 4L), format = "f", digits = 4L)
+  }
+
+  sep <- strrep("=", 55L)
+  cat(sep, "\n")
+  cat("Principal Coordinate Analysis — Summary\n")
+  cat(sep, "\n\n")
+
+  # ── Call ───────────────────────────────────────────────────────────────────
+  cat("Call:\n  ", deparse(object$call), "\n\n")
+
+  # ── Ordination info ────────────────────────────────────────────────────────
+  cat("Dissimilarity method : ", object$method,     "\n")
+  cat("Correction           : ", object$correction, "\n")
+  cat("Observations (n)     : ", object$n_obs,      "\n")
+  cat("Total axes           : ", object$n_axes,     "\n\n")
+
+  # ── Eigenvalue table ───────────────────────────────────────────────────────
+  show_n <- min(n_axes, object$n_axes)
+  cat(sprintf("Eigenvalues and variance explained (first %d axes):\n", show_n))
+  eig_df <- data.frame(
+    Axis           = names(object$variance_explained)[seq_len(show_n)],
+    Eigenvalue     = round(object$eigenvalues[seq_len(show_n)], 5L),
+    Variance_pct   = round(object$variance_explained[seq_len(show_n)], 3L),
+    Cumulative_pct = round(cumsum(object$variance_explained)[seq_len(show_n)], 3L),
     stringsAsFactors = FALSE,
     check.names    = FALSE
   )
-  print(df, row.names = FALSE)
+  print(eig_df, row.names = FALSE)
+  cat("\n")
 
+  # ── PERMANOVA summary table ────────────────────────────────────────────────
   if (!is.null(object$permanova)) {
-    cat("\nPERMANOVA results (", object$permanova$rhs, ", ",
-        object$permanova$perms, " permutations):\n", sep = "")
-    print(object$permanova$table)
+    cat(strrep("-", 55L), "\n")
+    cat(sprintf(
+      "PERMANOVA  (term: '%s'  |  permutations: %d)\n",
+      object$permanova$rhs, object$permanova$perms
+    ))
+    cat(strrep("-", 55L), "\n")
+
+    perm_tbl <- object$permanova$table
+    # Attach a tidy p-value column for display
+    perm_display        <- as.data.frame(perm_tbl)
+    perm_display[["p (formatted)"]] <- vapply(
+      perm_display[["Pr(>F)"]],
+      function(p) if (is.na(p)) "—" else .fmt_p(p),
+      character(1L)
+    )
+    print(perm_display)
+    cat("\n")
   }
+
+  # ── Pairwise post-hoc table ────────────────────────────────────────────────
+  if (!is.null(object$pairwise_adonis)) {
+    pa      <- as.data.frame(object$pairwise_adonis)
+
+    # Detect column names
+    pair_col  <- intersect(c("pairs", "group", "contrast"),       colnames(pa))[1]
+    r2_col    <- intersect(c("R2", "r2"),                          colnames(pa))[1]
+    f_col     <- intersect(c("F.Model", "F", "pseudo.F"),          colnames(pa))[1]
+    praw_col  <- intersect(c("p.value", "pval", "p"),              colnames(pa))[1]
+    padj_col  <- intersect(c("p.adj", "p.adjusted", "padj"),       colnames(pa))[1]
+
+    cat(strrep("-", 55L), "\n")
+    cat(sprintf(
+      "Pairwise PERMANOVA post-hoc  (p-adjust method: %s)\n",
+      if (!is.null(object$p_adjust)) object$p_adjust else "unknown"
+    ))
+    cat(strrep("-", 55L), "\n")
+
+    # Build display table with available columns
+    pa_display <- data.frame(
+      Pair = if (!is.na(pair_col)) pa[[pair_col]] else seq_len(nrow(pa)),
+      stringsAsFactors = FALSE
+    )
+    if (!is.na(r2_col))   pa_display[["R2"]]    <- round(pa[[r2_col]], 4L)
+    if (!is.na(f_col))    pa_display[["F"]]     <- round(pa[[f_col]], 3L)
+    if (!is.na(praw_col)) pa_display[["p.raw"]] <- vapply(pa[[praw_col]], .fmt_p, character(1L))
+    if (!is.na(padj_col)) pa_display[["p.adj"]] <- vapply(pa[[padj_col]], .fmt_p, character(1L))
+
+    # Flag significance
+    if (!is.na(padj_col)) {
+      pa_display[["Sig."]] <- ifelse(pa[[padj_col]] < 0.001, "***",
+                               ifelse(pa[[padj_col]] < 0.01,  "**",
+                                ifelse(pa[[padj_col]] < 0.05,  "*", "")))
+    } else if (!is.na(praw_col)) {
+      pa_display[["Sig."]] <- ifelse(pa[[praw_col]] < 0.001, "***",
+                               ifelse(pa[[praw_col]] < 0.01,  "**",
+                                ifelse(pa[[praw_col]] < 0.05,  "*", "")))
+    }
+
+    print(pa_display, row.names = FALSE)
+    cat("Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05\n\n")
+  }
+
+  # ── betadisper / PERMDISP table ────────────────────────────────────────────
+  # run_pcoa does not store betadisper internally by default, but users may
+  # attach it manually (result$betadisper <- vegan::betadisper(...)).
+  # The block below handles both the vegan betadisper object and a pre-extracted
+  # list with $distances and $group.
+  if (!is.null(object$betadisper)) {
+    bd <- object$betadisper
+
+    cat(strrep("-", 55L), "\n")
+    cat("Homogeneity of Dispersions (betadisper)\n")
+    cat(strrep("-", 55L), "\n")
+
+    # Extract group-level average distance to median
+    if (inherits(bd, "betadisper")) {
+      grp_dist <- tapply(bd$distances, bd$group, mean, na.rm = TRUE)
+    } else if (is.list(bd) && !is.null(bd$distances) && !is.null(bd$group)) {
+      grp_dist <- tapply(bd$distances, bd$group, mean, na.rm = TRUE)
+    } else {
+      grp_dist <- NULL
+    }
+
+    if (!is.null(grp_dist)) {
+      disp_df <- data.frame(
+        Group                      = names(grp_dist),
+        `Avg. dist. to median`     = round(as.numeric(grp_dist), 4L),
+        check.names = FALSE,
+        stringsAsFactors = FALSE
+      )
+      print(disp_df, row.names = FALSE)
+      cat("\n")
+    }
+
+    # If permdisp test result is also stored
+    if (!is.null(object$permdisp)) {
+      pd <- object$permdisp
+      # vegan::permutest.betadisper stores p-value in $tab
+      if (!is.null(pd$tab)) {
+        pv <- pd$tab[["Pr(>F)"]][1L]
+        cat(sprintf(
+          "PERMDISP: F = %.3f,  p %s  (%s)\n",
+          pd$tab[["F"]][1L],
+          if (!is.na(pv) && pv < 0.001) "< 0.001" else sprintf("= %.3f", pv),
+          if (!is.na(pv) && pv < 0.05)
+            "Groups differ in dispersion — interpret PERMANOVA with caution"
+          else
+            "No significant difference in dispersion"
+        ))
+      }
+    }
+    cat("\n")
+  }
+
+  cat(sep, "\n")
   invisible(object)
 }
 

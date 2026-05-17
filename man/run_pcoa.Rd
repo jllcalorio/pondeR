@@ -13,6 +13,7 @@ run_pcoa(
   perms = 9999L,
   groups = NULL,
   p_adjust = "BH",
+  dispersion = FALSE,
   ...
 )
 }
@@ -48,6 +49,7 @@ skipped entirely.}
 
 \item{perms}{A positive integer. Number of permutations for PERMANOVA.
 Passed as the \code{permutations} argument to \code{\link[vegan]{adonis2}}.
+The same value is used when \code{dispersion = TRUE}.
 Default: \code{9999}.}
 
 \item{groups}{A single character string naming a column of \code{metadata} to
@@ -57,6 +59,8 @@ When \code{NULL} (default), post-hoc analysis is skipped.}
 \item{p_adjust}{A single character string specifying the p-value adjustment
 method for post-hoc testing. Passed to \code{\link[stats]{p.adjust}}.
 Default: \code{"BH"} (Benjamini-Hochberg).}
+
+\item{dispersion}{A boolean. If \code{TRUE}, also tests for homogeneity of group dispersions.}
 
 \item{...}{Additional arguments forwarded to \code{\link[vegan]{vegdist}}
 (e.g., \code{binary}, \code{na.rm}) when \code{x} is not a \code{"dist"}
