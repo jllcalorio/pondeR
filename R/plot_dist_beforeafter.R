@@ -168,6 +168,28 @@ plot_dist_beforeafter <- function(
     }
   }
 
+  # --- Integration with run_DIpreprocess ---
+  if (inherits(x, "run_DIpreprocess")) {
+    if (missing(metadata) || is.null(metadata)) {
+      # Must use unmerged metadata because data_imputed is unmerged
+      metadata <- x$metadata
+    }
+    
+    # Extract states
+    data_before <- x$data_imputed
+    data_after  <- x$data_nonpls
+    
+    # Subset to common features to ensure exact alignment
+    common_features <- intersect(colnames(data_before), colnames(data_after))
+    if (length(common_features) == 0) {
+      stop("No common features found between imputed and final non-PLS data.")
+    }
+    
+    # Overwrite x and y
+    x <- data_before[, common_features, drop = FALSE]
+    y <- data_after[, common_features, drop = FALSE]
+  }
+
   # -------------------------------------------------------------------------
   # Input validation: x and y
   # -------------------------------------------------------------------------
