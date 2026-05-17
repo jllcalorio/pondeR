@@ -36,7 +36,7 @@
 #' @param subtitle A single character string for the plot subtitle. Default
 #'   \code{NULL} (no subtitle).
 #' @param global_font_size A single positive numeric specifying the base font
-#'   size in points. Default \code{11}.
+#'   size in points. Default \code{15}.
 #' @param axis_title_size A single positive numeric for axis title font size.
 #'   Defaults to \code{global_font_size}.
 #' @param axis_text_size A single positive numeric for axis text font size.
@@ -98,7 +98,7 @@ plot_dend <- function(x,
                        theme                    = "nature",
                        title                    = NULL,
                        subtitle                 = NULL,
-                       global_font_size         = 11,
+                       global_font_size         = 15,
                        axis_title_size          = NULL,
                        axis_text_size           = NULL,
                        legend_title_size        = NULL,
