@@ -217,7 +217,7 @@ run_normalize <- function(
                        
                        "sum" = {
                          msg("Normalizing by total sum...")
-                         row_sums <- matrixStats::rowSums2(x_matrix, na.rm = TRUE)
+                         row_sums <- rowSums(x_matrix, na.rm = TRUE) # from matrixStats::rowMedians to base R rowSums to avoid dependency for this simple operation
                          all_factors <- row_sums
                          x_matrix / row_sums
                        },
@@ -240,32 +240,36 @@ run_normalize <- function(
                            warning("All normalization factors are NA or 0. Using 'sum' normalization instead.")
                            row_sums <- matrixStats::rowSums2(x_matrix, na.rm = TRUE)
                            all_factors <- row_sums
-                           return(x_matrix / row_sums)
-                         }
-                         
-                         msg(sprintf("Normalizing using factors from '%s' column...", factor_col))
-                         
-                         # Normalize biological samples
-                         x_matrix[non_qc_indices, ] <- x_matrix[non_qc_indices, ] / factor_values
-                         
-                         # Normalize QC samples
-                         if (qc_normalize == "mean") {
-                           qc_factor <- mean(factor_values, na.rm = TRUE)
-                           msg("QC samples normalized using mean of biological factors")
-                         } else if (qc_normalize == "median") {
-                           qc_factor <- median(factor_values, na.rm = TRUE)
-                           msg("QC samples normalized using median of biological factors")
+                           
+                           # FIX: Removed early return() so it assigns to x_matrix naturally
+                           x_matrix / row_sums
+                           
                          } else {
-                           qc_factor <- 1
-                           msg("QC samples not normalized")
+                           msg(sprintf("Normalizing using factors from '%s' column...", factor_col))
+                           
+                           # Normalize biological samples
+                           x_matrix[non_qc_indices, ] <- x_matrix[non_qc_indices, ] / factor_values
+                           
+                           # Normalize QC samples
+                           if (qc_normalize == "mean") {
+                             qc_factor <- mean(factor_values, na.rm = TRUE)
+                             msg("QC samples normalized using mean of biological factors")
+                           } else if (qc_normalize == "median") {
+                             qc_factor <- median(factor_values, na.rm = TRUE)
+                             msg("QC samples normalized using median of biological factors")
+                           } else {
+                             qc_factor <- 1
+                             msg("QC samples not normalized")
+                           }
+                           
+                           x_matrix[qc_indices, ] <- x_matrix[qc_indices, ] / qc_factor
+                           
+                           all_factors <- rep(NA, nrow(x_matrix))
+                           all_factors[non_qc_indices] <- factor_values
+                           all_factors[qc_indices] <- qc_factor
+                           
+                           x_matrix
                          }
-                         
-                         x_matrix[qc_indices, ] <- x_matrix[qc_indices, ] / qc_factor
-                         
-                         all_factors <- rep(NA, nrow(x_matrix))
-                         all_factors[non_qc_indices] <- factor_values
-                         all_factors[qc_indices] <- qc_factor
-                         x_matrix
                        },
                        
                        "pqn_global" = {
