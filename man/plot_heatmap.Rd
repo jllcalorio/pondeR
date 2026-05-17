@@ -28,7 +28,7 @@ plot_heatmap(
   show_dend = FALSE,
   dend_row_width = 0.2,
   dend_col_height = 0.2,
-  global_font_size = 11,
+  global_font_size = 15,
   axis_title_size = NULL,
   axis_text_size = NULL,
   legend_title_size = NULL,
@@ -120,7 +120,7 @@ height of the column dendrogram panel when \code{show_dend = TRUE}.
 Default \code{0.2}.}
 
 \item{global_font_size}{A single positive numeric specifying the base font
-size in points. Default \code{11}.}
+size in points. Default \code{15}.}
 
 \item{axis_title_size}{Font size for axis titles. Defaults to
 \code{global_font_size}.}

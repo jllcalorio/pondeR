@@ -13,7 +13,7 @@ plot_dend(
   theme = "nature",
   title = NULL,
   subtitle = NULL,
-  global_font_size = 11,
+  global_font_size = 15,
   axis_title_size = NULL,
   axis_text_size = NULL,
   legend_title_size = NULL,
@@ -60,7 +60,7 @@ clusters rows), \code{"cols"} (clusters columns), or \code{"both"}
 \code{NULL} (no subtitle).}
 
 \item{global_font_size}{A single positive numeric specifying the base font
-size in points. Default \code{11}.}
+size in points. Default \code{15}.}
 
 \item{axis_title_size}{A single positive numeric for axis title font size.
 Defaults to \code{global_font_size}.}
