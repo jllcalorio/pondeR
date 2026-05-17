@@ -35,16 +35,17 @@ run_correl(
 
 - y:
 
-  A single character string naming a column in `x` to use as the primary
-  variable. When both `y` and `z` are `NULL`, all pairwise correlations
+  A character vector naming one or more columns in `x` to use as primary
+  variables. When both `y` and `z` are `NULL`, all pairwise correlations
   among numeric columns of `x` are computed. When only `y` is supplied,
-  correlations of `y` against all other columns are returned.
+  correlations among variables in `y` and between `y` and all other
+  columns are returned.
 
 - z:
 
   A single character string naming a second column in `x`. When supplied
-  together with `y`, only the correlation between `y` and `z` is
-  computed.
+  together with `y`, correlations between each element of `y` and `z`
+  are computed.
 
 - metadata:
 

@@ -1,19 +1,27 @@
 # Performs Descriptive Statistics on a Dataframe
 
-This function generates a comprehensive descriptive statistics table
-from a given dataframe, optionally stratified by a categorical variable.
-It provides customizable summaries for both continuous and categorical
-variables, including control over rounding, missing data reporting,
-labeling, formatting, and table aesthetics. The output is a
-publication-ready `gtsummary` table that can be easily integrated into
-reports, manuscripts, or exported (via copy-paste for now) for further
-use.
+Generates a comprehensive descriptive statistics table from a given
+dataframe, optionally stratified by a categorical variable. Provides
+customisable summaries for both continuous and categorical variables,
+including control over rounding, missing data reporting, labelling,
+formatting, and table aesthetics. The output is a publication-ready
+`gtsummary` / `gt` table.
+
+When `add_inferential_pvalues = TRUE`, p-values are computed *outside*
+`gtsummary` using
+[`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md)
+(for continuous variables) and
+[`run_assoc`](https://jllcalorio.github.io/pondeR/reference/run_assoc.md)
+(for categorical variables), then injected into the table. Each p-value
+cell carries a letter superscript identifying the exact test used; a
+legend is appended as table footnotes. Variables for which a p-value
+could not be computed are shown as `---†` with a corresponding footnote.
 
 ## Usage
 
 ``` r
 run_summarytable(
-  df,
+  x,
   summarize_what = NULL,
   split_by = NULL,
   split_by_header = NULL,
@@ -34,7 +42,9 @@ run_summarytable(
   calc_percent_by = "column",
   calc_col_percent_using = "n_valid_in_column",
   add_inferential_pvalues = FALSE,
-  force_statistical_test = NULL,
+  test_type_continuous = c("auto", "parametric", "nonparametric"),
+  test_type_categorical = c("auto", "chisq", "fisher"),
+  paired = FALSE,
   n_digits_pvalues = 3,
   bold_significant_pvalues = TRUE,
   bold_significant_pvalues_at = 0.05,
@@ -42,370 +52,209 @@ run_summarytable(
   bold_labels = TRUE,
   italicize_levels = TRUE,
   clean_table = TRUE,
-  table_name = "auto",
-  export_to_excel = FALSE,
-  export_to_html = FALSE,
-  export_to_png = FALSE,
-  export_to_pdf = FALSE,
-  export_to_word = FALSE,
-  export_filename = "Summary Results"
+  table_name = "auto"
 )
 ```
 
 ## Arguments
 
-- df:
+- x:
 
-  Dataframe. The input dataframe. The first row is assumed to contain
-  column names.
+  Dataframe. The input dataframe.
 
 - summarize_what:
 
-  Character vector. A character vector of column names that will be
-  included in the analysis, including what will be placed in `split_by`
-  and `strata_by`.
+  Character vector. Column names to include in the analysis. When `NULL`
+  (default), all columns except those named in `split_by` and
+  `strata_by` are included.
 
 - split_by:
 
-  String. A column name in `df` (must be a categorical variable with at
-  least 2 unique levels/factors) by which to stratify the descriptive
-  statistics. If `NULL` (default), no stratification is performed.
+  String. A column name in `x` (must be categorical with at least 2
+  unique levels) by which to stratify the table. Required when
+  `add_inferential_pvalues = TRUE`. Default is `NULL`.
 
 - split_by_header:
 
-  String. The header name to display for the `split_by` variable in the
-  output table. Only applicable if `split_by` is not `NULL`, and takes
-  on the value of `split_by`. Defaults to `NULL` initially.
+  String. Display header for the `split_by` variable. Defaults to the
+  value of `split_by`.
 
 - strata_by:
 
-  String. A column name in `df` (must be a categorical variable with at
-  least 2 unique levels/factors) by which to stratify the descriptive
-  statistics 'before' `split_by`. If `NULL` (default), no stratification
-  is performed.
+  String. A column name in `x` (must be categorical with at least 2
+  unique levels) by which to stratify *before* `split_by`. Cannot be
+  combined with `add_inferential_pvalues = TRUE`. Default is `NULL`.
 
 - rename_variables:
 
-  List. A list of the format
-  `list("original_variable_name1" ~ "new_variable_name1", ...)`, used to
-  rename variables in the output table.
+  List. Formulas of the form `list("original" ~ "new", ...)` used to
+  relabel variables in the table.
 
 - continuous_statistics:
 
-  String. The type of statistics to report for continuous variables.
-  Options are:
-
-  - 'meanSD': mean ± standard deviation
-
-  - 'meanSD2': mean (standard deviation), which is another format of
-    meanSD
-
-  - 'medianIQR': median (interquartile range) or equivalently median
-    (p25, p75)
-
-  - 'mean': mean (average)
-
-  - 'sd': standard deviation
-
-  - 'p0': 0th percentile
-
-  - 'p25': 25th percentile (1st quartile)
-
-  - 'p50': 50th percentile (2nd quartile) (median)
-
-  - 'p75': 75th percentile (3rd quartile)
-
-  - 'p100': 100th percentile
-
-  - 'IQR': p25, p75 (interquartile range)
-
-  Defaults to 'meanSD'.
+  String. Summary statistic(s) for continuous variables. One of:
+  `"meanSD"`, `"meanSD2"`, `"medianIQR"`, `"mean"`, `"sd"`, `"median"`,
+  `"p0"`, `"p25"`, `"p50"`, `"p75"`, `"p100"`, `"IQR"`. Default is
+  `"meanSD"`.
 
 - categorical_statistics:
 
-  String. The type of statistics to report for categorical variables.
-
-  - 'n_percent': Displays count and percentage of valid values (e.g.,
-    '10 (5.0%)').
-
-  - 'n': Displays only the count of valid values.
-
-  - 'percent': Displays only the percentage of valid values.
-
-  Defaults to 'n_percent'. Options are 'n_percent' (count (percentage)),
-  'n' (count only), or 'percent' (percentage only). Defaults to
-  'n_percent'.
+  String. Summary statistic(s) for categorical variables. One of:
+  `"n_percent"`, `"n"`, `"percent"`. Default is `"n_percent"`.
 
 - force_continuous:
 
-  Vector. A character vector of column names that should be treated as
-  continuous, even if their data type suggests otherwise (e.g., numeric
-  variables with few unique values that might be misclassified as
-  categorical).
+  Character vector. Column names to treat as continuous regardless of
+  their storage type. The same coercion is applied before passing data
+  to
+  [`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md).
 
 - force_categorical:
 
-  Vector. A character vector of column names that should be treated as
-  categorical, even if their data type suggests otherwise (e.g., numeric
-  variables that are truly categories, or binary variables that should
-  be presented as full categories rather than dichotomous).
+  Character vector. Column names to treat as categorical regardless of
+  their storage type. The same coercion is applied before passing data
+  to
+  [`run_assoc`](https://jllcalorio.github.io/pondeR/reference/run_assoc.md).
 
 - n_digits_continuous:
 
-  Numeric Vector or String.
-
-  - c(2, 2): A vector of two integers specifying the number of digits to
-    round for mean and standard deviation (or median and IQR)
-    respectively, for continuous variables. For example, `c(2, 2)` means
-    2 decimal places for both (default).
-
-  - "dynamic": The other option is 'dynamic' which selects the number of
-    decimal places dynamically.
+  Numeric vector `c(d1, d2)` or `"dynamic"`. Number of decimal places
+  for the first and subsequent numeric tokens in continuous summary
+  cells (e.g., mean and SD). Default is `c(2, 2)`.
 
 - n_digits_categorical:
 
-  Numeric Vector or String.
-
-  - c(0, 2): A vector of two integers specifying the number of digits to
-    round for counts and percentages respectively, for categorical
-    variables. For example, `c(0, 2)` means 0 decimal places for counts
-    and 2 for percentages (default).
-
-  - "dynamic": Same as in `n_digits_continuous`.
+  Numeric vector `c(d1, d2)` or `"dynamic"`. Decimal places for count
+  and percentage in categorical summary cells. Default is `c(0, 2)`.
 
 - zero_as_exp:
 
-  Logical. If `TRUE` (default), applies only to continuous variables:
-  when a numeric component (e.g., mean, SD, median, IQR values) rounds
-  to `0` at the precision specified in `n_digits_continuous` but its
-  true value is non-zero, that component is displayed in scientific
-  notation (e.g., `1.00e-3`) using the same number of decimal places as
-  `n_digits_continuous`. Values that are genuinely `0` are displayed
-  as-is. This prevents misleading `0 ± 0` or `0 (0, 0)` displays for
-  near-zero but non-zero quantities. Examples with
-  `n_digits_continuous = c(2, 2)` and
-  `continuous_statistics = "meanSD"`:
-
-  - `0 ± 0` (true zeros) → `0 ± 0`
-
-  - `0.01 ± 0.2` → `0.01 ± 0.2`
-
-  - `0.001 ± 0.00001` → `1.00e-3 ± 1.00e-5`
-
-  - `0.02 ± 0.0001576` → `0.02 ± 1.58e-4`
+  Logical. When `TRUE` (default), continuous summary tokens that round
+  to `0` at the requested precision but are genuinely non-zero are
+  displayed in scientific notation (e.g., `1.00e-3`).
 
 - display_missing:
 
-  String. Controls how missing values are reported.
-
-  - 'ifany': Report missing values only if they are present in the data.
-
-  - 'no': Do not report missing values.
-
-  - 'always': Always include a row for missing values, even if none are
-    present.
-
-  Defaults to 'ifany'.
+  String. How to report missing values: `"ifany"` (default), `"no"`, or
+  `"always"`.
 
 - missing_text:
 
-  String. The label to use for missing values in the output table.
-  Defaults to 'No/Missing data'.
+  String. Label for missing-value rows. Default is `"No data/missing"`.
 
 - missing_stat:
 
-  String. The format for reporting missing value statistics.
-
-  - 'n_percent': Displays count and percentage of missing values (e.g.,
-    '10 (5.0%)').
-
-  - 'n': Displays only the count of missing values.
-
-  - 'percent': Displays only the percentage of missing values.
-
-  Defaults to 'n_percent'.
+  String. Format for missing-value counts: one of `"n_percent"`
+  (default), `"n"`, `"percent"`.
 
 - include_missing_in_splits:
 
-  Boolean. If `TRUE` (default), includes the missing values (missing
-  text specified in `missing_text`) in the column after specifying
-  `split_by` and `strata_by`.
+  Logical. If `TRUE` (default), missing values in `split_by` /
+  `strata_by` columns are kept as an explicit level.
 
 - sort_categorical_variables_by:
 
-  String. Determines the sorting order for levels within categorical
-  variables.
-
-  - 'alphanumeric': Sorts levels alphabetically or numerically. For
-    custom sorting, use `factor(data, levels = c(level1, level2, ...))`.
-
-  - 'frequency': Sorts levels by their frequency (from highest to
-    lowest).
-
-  Defaults to 'alphanumeric'.
+  String. Level ordering for categorical variables: `"alphanumeric"`
+  (default) or `"frequency"`.
 
 - calc_percent_by:
 
-  String. Specifies how percentages are calculated for categorical
-  variables.
-
-  - 'column': Percentages are calculated down columns (sum to 100% per
-    column).
-
-  - 'row': Percentages are calculated across rows (sum to 100% per row,
-    useful for `split_by`).
-
-  - 'cell': Percentages are calculated based on the total number of
-    observations in the table.
-
-  Defaults to 'column' if `split_by` is not `NULL`, otherwise,
-  automatically sets to 'row'.
+  String. Percentage base for categorical variables: `"column"`
+  (default), `"row"`, or `"cell"`.
 
 - calc_col_percent_using:
 
-  String. Specifies how the percentages are to be calculated.
-
-  - 'n_in_column': Percentages are calculated based on the actual number
-    of data points appearing in the column.
-
-  - 'n_valid_in_column': Percentages are calculated based on the valid
-    (i.e., non missing) values.
-
-  Defaults to 'n_valid_in_column'. Note: This only applies when
-  'calc_percent_by = "column"'.
+  String. Denominator when `calc_percent_by = "column"`:
+  `"n_valid_in_column"` (default) or `"n_in_column"`.
 
 - add_inferential_pvalues:
 
-  Boolean. If `TRUE`, adds the common comparative statistical tests such
-  as t-tests, chi-square test, ANOVA, and their nonparametric
-  counterparts.
+  Logical. If `TRUE`, p-values are computed via
+  [`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md)
+  (continuous variables) and
+  [`run_assoc`](https://jllcalorio.github.io/pondeR/reference/run_assoc.md)
+  (categorical variables) and injected into the table. Requires
+  `split_by` to be non-`NULL` and `strata_by` to be `NULL`. Default is
+  `FALSE`.
 
-- force_statistical_test:
+- test_type_continuous:
 
-  List. A list of the format
-  `list("variable_name1" ~ "statistical_test1", ...)`, used to specify
-  the test for the specific variable. Below are the list of tests. See
-  type and enter ?gtsummary::tests for more details, and see
-  `tbl_summary() %>% add_p()` section.
+  String. Test strategy forwarded to
+  [`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md)
+  when `add_inferential_pvalues = TRUE`. One of `"auto"` (default),
+  `"parametric"`, or `"nonparametric"`. See
+  [`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md)
+  for details.
 
-  - 't.test': Perform t-test.
+- test_type_categorical:
 
-  - 'paired.t.test': Perform Paired t-test.
+  String. Test strategy forwarded to
+  [`run_assoc`](https://jllcalorio.github.io/pondeR/reference/run_assoc.md)
+  when `add_inferential_pvalues = TRUE`. One of `"auto"` (default),
+  `"chisq"`, or `"fisher"`. See
+  [`run_assoc`](https://jllcalorio.github.io/pondeR/reference/run_assoc.md)
+  for details.
 
-  - 'wilcox.test': Perform Wilcoxon rank-sum test/Mann-Whitney U test.
+- paired:
 
-  - 'paired.wilcox.test': Perform Paired Wilcoxon rank-sum test.
-
-  - 'oneway.test': Perform One-way Analysis of Variance (ANOVA).
-
-  - 'kruskal.test': Perform Kruskal-Wallis test.
-
-  - 'chisq.test': Perform chi-square test of independence.
-
-  - 'chisq.test.no.correct': Perform chi-square test of independence.
-    This specifies 'correct = FALSE'.
-
-  - 'fisher.test': Perform Fisher's exact test.
-
-  - 'mcnemar.test': Perform McNemar's test.
-
-  - 'mcnemar.test.wide': Perform McNemar's test.
-
-  - 'prop.test': Perform Test for equality of proportions.
-
-  - 'mood.test': Perform Mood two-sample test of scale.
-
-  - 'lme4': Perform random intercept logistic regression.
-
-  - 'ancova': Perform Analysis of Covariance (ANCOVA).
-
-  - 'emmeans': Perform Estimated Marginal Means or LS-means.
+  Logical. If `TRUE`, paired tests are used when computing p-values.
+  Forwarded to both
+  [`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md)
+  and
+  [`run_assoc`](https://jllcalorio.github.io/pondeR/reference/run_assoc.md).
+  Note that the descriptive statistics shown in the table body are
+  always unpaired summaries. Default is `FALSE`.
 
 - n_digits_pvalues:
 
-  Numeric. Default is 3. The number of digits of p-values if
-  `add_inferential_pvalues` is set to `TRUE`. This can be set to `NULL`
-  which tells the code to automatically format the p-values. If the
-  p-value \< 0.10, there will be a maximum of three decimal places,
-  otherwise, there will only be one.
+  Numeric or `NULL`. Decimal places for displayed p-values. Default is
+  `3`. Set to `NULL` for automatic formatting (up to 3 d.p. when \\p \<
+  0.10\\, otherwise 1 d.p.).
 
 - bold_significant_pvalues:
 
-  Boolean. If `TRUE` (default), automatically detects if
-  `add_inferential_pvalues = TRUE` then bolds the font of p-values under
-  0.05 (default) unless set in `bold_significant_pvalues_at`.
+  Logical. If `TRUE` (default), p-values below
+  `bold_significant_pvalues_at` are bolded.
 
 - bold_significant_pvalues_at:
 
-  Numeric. The threshold for `bold_significant_pvalues` to bold font if
-  significant.
+  Numeric. Significance threshold for bolding. Default is `0.05`.
 
 - header:
 
-  String. The header name for the 'Variable' column in the output table.
-  Defaults to 'Variable'.
+  String. Header for the variable-label column. Default is `"Variable"`.
 
 - bold_labels:
 
-  Boolean. If `TRUE` (default), variable labels in the table will be
-  bolded.
+  Logical. If `TRUE` (default), variable labels are bolded.
 
 - italicize_levels:
 
-  Boolean. If `TRUE` (default), categorical variable levels in the table
-  will be italicized.
+  Logical. If `TRUE` (default), categorical level labels are italicised.
 
 - clean_table:
 
-  Boolean. If `TRUE` (default), cells with a count of 0 are removed
-  (replaced with empty space) from the descriptive table, making it
-  cleaner.
+  Logical. If `TRUE` (default), cells containing a zero count (e.g.,
+  `0 (0.00%)`) are replaced with empty strings.
 
 - table_name:
 
-  String or NULL. The table name. Default is 'auto', where the table
-  name depends if the table is descriptive or inferential in nature (has
-  p-values), and automatically creates a table name. Set to `NULL` to
-  have no table name. Can accept a string that will be used as the table
-  name.
-
-- export_to_excel:
-
-  Boolean. If TRUE, exports the results to an Excel file. Defaults to
-  FALSE. This is currently not recommended as the output is not
-  formatted good.
-
-- export_to_html:
-
-  Boolean. If TRUE, exports the results to an HTML file. Defaults to
-  FALSE.
-
-- export_to_png:
-
-  Boolean. If TRUE, exports the results to a PNG file. Defaults to
-  FALSE.
-
-- export_to_pdf:
-
-  Boolean. If TRUE, exports the results to a PDF file. Defaults to
-  FALSE.
-
-- export_to_word:
-
-  Boolean. If TRUE, exports the results to a Word file. Defaults to
-  FALSE.
-
-- export_filename:
-
-  String. The file name of the exported file/s. Multiple exports can be
-  done by setting each to TRUE. The default is "Summary Results" and
-  will remain as it is if `export_filename = NULL` or
-  `export_filename = ""`.
+  String or `NULL`. Table title. `"auto"` (default) generates a title
+  automatically. `NULL` suppresses the title.
 
 ## Value
 
-A `gtsummary` table object (inherits from `gt_tbl`), representing the
-simple descriptive statistics.
+A `gt_tbl` object (via
+[`gtsummary::as_gt()`](https://www.danieldsjoberg.com/gtsummary/reference/as_gt.html))
+representing the descriptive (and optionally inferential) statistics
+table.
+
+## See also
+
+[`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md)
+for the continuous-variable test engine.
+[`run_assoc`](https://jllcalorio.github.io/pondeR/reference/run_assoc.md)
+for the categorical-variable test engine.
 
 ## Author
 
@@ -415,79 +264,73 @@ John Lennon L. Calorio
 
 ``` r
 if (FALSE) { # \dontrun{
-# Load necessary library
 library(gtsummary)
 library(dplyr)
-library(magrittr)
 
-# Create a sample dataframe
 set.seed(123)
 sample_df <- data.frame(
-  Age = sample(c(18:65, NA), 100,
-               replace = TRUE, prob = c(rep(1, 48), 5)),
-  Gender = sample(c("Male", "Female", NA), 100,
-                  replace = TRUE, prob = c(0.48, 0.48, 0.04)),
-  Education = sample(c("Elementary", "High School", "Bachelors", "Masters", NA), 100,
-                     replace = TRUE, prob = c(0.40, 0.30, 0.15, 0.10, 0.05)),
-  Income = sample(c(seq(5000, 40000, by = 5000), NA), 100,
-                  replace = TRUE, prob = c(rep(1, 8), 2)),
-  Smoker = sample(c(1, 0, NA), 100,
-                  replace = TRUE, prob = c(0.25, 0.65, 0.10)),
-  Region = sample(c("North", "South", "East", "West", NA), 100,
-                  replace = TRUE, prob = c(0.24, 0.24, 0.24, 0.24, .04))
+  Age       = sample(c(18:65, NA), 100, replace = TRUE,
+                     prob = c(rep(1, 48), 5)),
+  Gender    = sample(c("Male", "Female", NA), 100, replace = TRUE,
+                     prob = c(0.48, 0.48, 0.04)),
+  Education = sample(c("Elementary", "High School",
+                        "Bachelors", "Masters", NA), 100,
+                     replace = TRUE,
+                     prob = c(0.40, 0.30, 0.15, 0.10, 0.05)),
+  Income    = sample(c(seq(5000, 40000, by = 5000), NA), 100,
+                     replace = TRUE, prob = c(rep(1, 8), 2)),
+  Smoker    = sample(c(1, 0, NA), 100, replace = TRUE,
+                     prob = c(0.25, 0.65, 0.10)),
+  Region    = sample(c("North", "South", "East", "West", NA), 100,
+                     replace = TRUE,
+                     prob = c(0.24, 0.24, 0.24, 0.24, .04))
 )
 
-# Basic descriptive statistics
-# CORRECT: Piped data goes to 'df' argument automatically
-sample_df %>% run_summarytable()
+# Basic descriptive statistics (no grouping)
+sample_df |> run_summarytable()
 
-# INCORRECT: Causes an error because 'sample_df' is passed to 'summarize_what'
-# sample_df %>% run_summarytable(sample_df)
-
-# Descriptive statistics split by Gender, with custom header and labels
-sample_df %>%
+# Descriptive statistics split by Gender
+sample_df |>
   run_summarytable(
-    split_by = "Gender",
+    split_by        = "Gender",
     split_by_header = "Participant Gender",
-    rename_variables = list(Age ~ "Age (Years)", 
-                            Income ~ "Annual Income", 
+    rename_variables = list(Age    ~ "Age (Years)",
+                            Income ~ "Annual Income",
                             Smoker ~ "Smoking Status")
   )
 
-# Descriptive statistics with median and IQR for continuous, and count only for categorical
-sample_df %>%
+# Median and IQR for continuous variables
+sample_df |>
   run_summarytable(
-    continuous_statistics = "medianIQR",
+    continuous_statistics  = "medianIQR",
     categorical_statistics = "n",
-    n_digits_continuous = c(0, 0),
-    n_digits_categorical = c(0, 0)
+    n_digits_continuous    = c(0, 0),
+    n_digits_categorical   = c(0, 0)
   )
 
-# Force 'Smoker' to be continuous (though conceptually it's not, for demonstration)
-# And display missing always (with custom text), with bold labels and italicized levels
-sample_df %>%
+# Inferential p-values using run_diff (continuous) and run_assoc
+# (categorical), auto test selection
+sample_df |>
   run_summarytable(
-    force_continuous = "Smoker",
-    display_missing = "always",
-    missing_text = "Data Unavailable",
-    missing_stat = "n",
-    bold_labels = TRUE,
-    italicize_levels = TRUE
-  )
-
-# Sort categorical variables by frequency and calculate percentages by row
-# (not ideal, but for demonstration only)
-sample_df %>%
-  run_summarytable(
-    sort_categorical_variables_by = "frequency",
-    calc_percent_by = "row"
-  )
-
-# Perform common comparative statistical tests
-sample_df %>%
-  run_summarytable(
-    split_by = "Gender",
+    split_by                = "Gender",
     add_inferential_pvalues = TRUE
+  )
+
+# Force non-parametric tests for continuous variables
+sample_df |>
+  run_summarytable(
+    split_by                = "Gender",
+    add_inferential_pvalues = TRUE,
+    test_type_continuous    = "nonparametric",
+    test_type_categorical   = "fisher"
+  )
+
+# Paired inferential p-values (descriptive body remains unpaired)
+sample_df |>
+  run_summarytable(
+    split_by                = "Gender",
+    add_inferential_pvalues = TRUE,
+    paired                  = TRUE
   )
 } # }
 ```

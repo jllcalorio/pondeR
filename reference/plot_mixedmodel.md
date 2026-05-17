@@ -19,17 +19,17 @@ plot_mixedmodel(
   use_padj = TRUE,
   p_threshold = 0.05,
   estimate_threshold = 0,
-  label_top = 10L,
   label_features = NULL,
-  label_sig_only = TRUE,
+  minmax = NULL,
+  iqr_k = 1.5,
   label_size = 3,
   label_max_overlap = 20L,
   label_box = FALSE,
   label_color = "match",
   point_size = 2,
   point_size_sig = 2.5,
-  alpha = 0.4,
-  alpha_sig = 0.85,
+  alpha = 0.6,
+  label_sig_only = TRUE,
   color_up = "#D85A30",
   color_down = "#0072B2",
   color_ns = "#888780",
@@ -81,22 +81,23 @@ plot_mixedmodel(
   Numeric. Vertical dashed lines drawn at \\\pm\\`estimate_threshold`.
   Set to `0` to suppress. Default: `0` (no vertical lines).
 
-- label_top:
-
-  Integer. Number of top features to label per panel (by lowest adjusted
-  p-value). Labels are drawn with ggrepel if available, otherwise plain
-  `geom_text`. Default: `10`.
-
 - label_features:
 
   A character vector of specific feature names to label, regardless of
   significance rank. Combined with `label_top` (union). Default: `NULL`.
 
-- label_sig_only:
+- minmax:
 
-  Logical. If `TRUE`, only features that pass `p_threshold` are eligible
-  for `label_top` auto-labeling. Manual `label_features` are always
-  shown. Default: `TRUE`.
+  A numeric vector of length 2, e.g. `c(-0.02, 0.02)`. Features with
+  estimate \\\le\\ `minmax[1]` or \\\ge\\ `minmax[2]` are annotated.
+  Overrides automatic IQR-based annotation. Default: `NULL`.
+
+- iqr_k:
+
+  Numeric. IQR fence multiplier used for automatic annotation when both
+  `minmax` and `label_features` are `NULL`. Features beyond \\Q1 - k
+  \times IQR\\ or \\Q3 + k \times IQR\\ are labelled. Set to `Inf` to
+  disable automatic annotation entirely. Default: `1.5`.
 
 - label_size:
 
@@ -132,12 +133,14 @@ plot_mixedmodel(
 - alpha:
 
   Numeric in (0, 1\]. Transparency for non-significant points. Default:
-  `0.4`.
+  `0.6`.
 
-- alpha_sig:
+- label_sig_only:
 
-  Numeric in (0, 1\]. Transparency for significant points. Default:
-  `0.85`.
+  Logical. If `TRUE` (default), only features passing `p_threshold` are
+  eligible for `minmax` or IQR-based auto-annotation. Features in
+  `label_features` are always annotated regardless of this setting.
+  Default: `TRUE`.
 
 - color_up:
 
@@ -231,13 +234,6 @@ the sign of the estimate — useful for a single continuous predictor
 (e.g., age, time as numeric) where there is no conventional fold-change
 cutoff.
 
-**Labeling strategy**: Auto-labels (`label_top`) are selected within
-each facet panel independently, ranked by ascending p-value. If
-`label_sig_only = TRUE`, only features crossing `p_threshold` are
-eligible. Manual labels (`label_features`) are always drawn even if
-non-significant. Duplicate labels (a feature in both `label_top` and
-`label_features`) are deduplicated.
-
 **ggrepel**: If ggrepel is installed (strongly recommended for dense
 plots), it is used automatically. Install with
 `install.packages("ggrepel")`. If absent, `geom_text` is used with a
@@ -264,7 +260,6 @@ plot_mixedmodel(result)
 plot_mixedmodel(
   result,
   term           = "timepost",
-  label_top      = 5,
   label_features = c("glucose", "insulin"),
   color_up       = "#CC79A7",
   alpha          = 0.3,
@@ -275,7 +270,6 @@ plot_mixedmodel(
 # No auto-labels, only highlight manually specified features
 plot_mixedmodel(
   result,
-  label_top      = 0,
   label_features = c("glucose", "insulin", "PA O-28:1"),
   label_box      = TRUE,
   label_color    = "black"

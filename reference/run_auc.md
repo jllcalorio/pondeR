@@ -30,13 +30,17 @@ run_auc(
   plot_legend = "AUC (95% CI)",
   xlab = NULL,
   ylab = NULL,
-  linewidth = 1,
-  global_font_size = 20,
+  linewidth = 3,
+  global_font_size = 25,
   title_font_size = NULL,
   subtitle_font_size = NULL,
   xlab_font_size = NULL,
   ylab_font_size = NULL,
   inplot_font_size = NULL,
+  min_vip = 1,
+  up = 1.5,
+  down = 0.5,
+  p_value = 0.05,
   ...
 )
 ```
@@ -45,8 +49,12 @@ run_auc(
 
 - x:
 
-  A `data.frame`, `tibble`, or named `matrix` whose columns are the
-  candidate predictor variables to be evaluated.
+  A `data.frame`, `tibble`, named `matrix`, `run_DIpreprocess` object,
+  or a `list` of objects from the `run_*` ecosystem. If a list is
+  provided, it MUST contain a `run_DIpreprocess` object. Optional
+  inclusion of `run_pls`, `run_foldchange`, and/or `run_diff` objects
+  will trigger automatic feature filtering based on `min_vip`, `up`,
+  `down`, and `p_value` thresholds.
 
 - y:
 
@@ -188,12 +196,12 @@ run_auc(
 - linewidth:
 
   A positive numeric value controlling the ROC curve line width. Default
-  `1`.
+  `3`.
 
 - global_font_size:
 
   A positive numeric value setting the base font size for all plot text
-  elements. Default `20`. Derived sizes: title \\= 1.20 \times\\,
+  elements. Default `25`. Derived sizes: title \\= 1.20 \times\\,
   subtitle \\= 0.90 \times\\, axis labels / ticks \\= 1.00 \times\\.
 
 - title_font_size:
@@ -220,6 +228,30 @@ run_auc(
 
   Font size of the in-plot legend text (e.g., AUC labels in combined
   plots). Default `NULL` (derived from `global_font_size`).
+
+- min_vip:
+
+  A single numeric value specifying the minimum VIP score for features
+  to be considered. Only applied if a `run_pls` object is provided in
+  the `x` list. Default `1.0`.
+
+- up:
+
+  A single numeric value specifying the minimum fold change for
+  up-regulated features. Only applied if a `run_foldchange` object is
+  provided in the `x` list. Default `1.5`.
+
+- down:
+
+  A single numeric value specifying the maximum fold change for
+  down-regulated features. Only applied if a `run_foldchange` object is
+  provided in the `x` list. Default `0.5`.
+
+- p_value:
+
+  A single numeric value specifying the maximum acceptable p-value for
+  features. Only applied if a `run_diff` object is provided in the `x`
+  list. Default `0.05`.
 
 - ...:
 

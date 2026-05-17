@@ -32,10 +32,10 @@ plot_score(
   show_outliers = FALSE,
   label_outliers = "all",
   colors = NULL,
-  point_size = 3,
+  point_size = 10,
   point_alpha = 0.8,
   theme = "nature",
-  base_size = 11,
+  base_size = 30,
   font_family = "sans",
   axis_title_size = NULL,
   axis_text_size = NULL,
@@ -65,10 +65,10 @@ plot_score(
   show_outliers = FALSE,
   label_outliers = "all",
   colors = NULL,
-  point_size = 3,
+  point_size = 10,
   point_alpha = 0.8,
   theme = "nature",
-  base_size = 11,
+  base_size = 30,
   font_family = "sans",
   axis_title_size = NULL,
   axis_text_size = NULL,
@@ -223,7 +223,7 @@ plot_score(res, ...)
 
 - point_size:
 
-  Numeric. Size of points. Default: `3`.
+  Numeric. Size of points. Default: `10`.
 
 - point_alpha:
 
@@ -237,7 +237,7 @@ plot_score(res, ...)
 
 - base_size:
 
-  Numeric. Base font size for the theme (pts). Default: `11`.
+  Numeric. Base font size for the theme (pts). Default: `30`.
 
 - font_family:
 

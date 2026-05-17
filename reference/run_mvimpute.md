@@ -12,6 +12,7 @@ available in [`mice`](https://amices.org/mice/reference/mice.html)
 run_mvimpute(
   x,
   method = 0.2,
+  positive_only = TRUE,
   tune_sigma = 1,
   m = 5,
   maxit = 5,
@@ -32,10 +33,13 @@ run_mvimpute(
 
   Numeric or character. Controls the imputation strategy:
 
-  - **Numeric** — fraction of the smallest positive value per feature
+  - **Numeric** — fraction of the smallest observed value per feature
     used for deterministic imputation (e.g., `0.2` = 1/5th of the
-    smallest positive value). Recommended range: 0.01–0.5. Values \> 1
-    trigger a warning.
+    smallest value). By default (`positive_only = TRUE`), the minimum is
+    computed from strictly positive values only, which is the standard
+    MNAR convention in metabolomics. Set `positive_only = FALSE` to use
+    the global minimum including zeros and negative values. Recommended
+    range: 0.01–0.5. Values \> 1 trigger a warning.
 
   - **`"quantileregression"`** — uses the QRILC algorithm from the
     imputeLCMD package. Assumes Missing Not At Random (MNAR) data.
@@ -48,6 +52,18 @@ run_mvimpute(
     package. Controlled further by `m`, `maxit`, `seed`, and `...`.
 
   Default: `0.2` (1/5th of minimum, deterministic).
+
+- positive_only:
+
+  Logical. Only used when `method` is numeric. If `TRUE` (default), the
+  per-feature minimum is computed from strictly positive values only
+  (zeros and negatives are excluded), which is standard practice for
+  MNAR imputation in metabolomics where missing values represent
+  abundances below the detection limit. If `FALSE`, the global minimum
+  across all observed (non-NA) values is used, which may be appropriate
+  when features can legitimately be zero or negative (e.g.,
+  log-transformed or mean-centred data). Has no effect when `method` is
+  `"quantileregression"` or a mice method string.
 
 - tune_sigma:
 
@@ -111,8 +127,8 @@ A list with the following elements:
 
 - parameters:
 
-  List of parameters used, including method, tune_sigma (QRILC only),
-  and m/maxit/seed (mice only).
+  List of parameters used, including method, positive_only, tune_sigma
+  (QRILC only), and m/maxit/seed (mice only).
 
 - method_used:
 
@@ -123,12 +139,22 @@ A list with the following elements:
 **Missing Value Imputation Strategies:**
 
 1.  **Deterministic (fraction of minimum):** When `method` is numeric,
-    each missing value in a feature is replaced by the smallest strictly
-    positive value observed in that feature, multiplied by the specified
-    fraction. Zero and negative values are excluded when determining
-    this minimum. This assumes missing values represent low abundance
-    (MNAR — Missing Not At Random) and is standard practice in
-    metabolomics for values below the detection limit.
+    each missing value in a feature is replaced by a fraction of the
+    per-feature minimum, multiplied by the specified fraction. The
+    minimum is determined by `positive_only`:
+
+    - `positive_only = TRUE` (default): uses the smallest strictly
+      positive observed value per feature, excluding zeros and
+      negatives. This is standard in metabolomics for values below the
+      detection limit (MNAR — Missing Not At Random).
+
+    - `positive_only = FALSE`: uses the global minimum across all
+      observed (non-NA) values, including zeros and negatives. Suitable
+      for data that has been log-transformed or mean-centred.
+
+    If no valid minimum can be found (e.g., a feature is entirely NA or,
+    when `positive_only = TRUE`, has no positive values), a fallback of
+    `1e-9` is used.
 
 2.  **Quantile Regression (QRILC):** When
     `method = "quantileregression"`, uses the Quantile Regression
@@ -195,19 +221,22 @@ x <- matrix(abs(rnorm(100 * 50, mean = 100)), nrow = 100, ncol = 50)
 x[sample(length(x), 200)] <- NA
 colnames(x) <- paste0("Feature", 1:50)
 
-# 1. Deterministic imputation (1/5th of minimum per feature)
+# 1. Deterministic imputation (1/5th of minimum positive value per feature)
 result1 <- run_mvimpute(x, method = 0.2)
 
-# 2. Quantile regression imputation (QRILC)
-result2 <- run_mvimpute(x, method = "quantileregression", tune_sigma = 1)
+# 2. Deterministic imputation using global minimum (including zeros/negatives)
+result2 <- run_mvimpute(x, method = 0.2, positive_only = FALSE)
 
-# 3. Predictive mean matching via mice
-result3 <- run_mvimpute(x, method = "pmm", m = 5, maxit = 5, seed = 42)
+# 3. Quantile regression imputation (QRILC)
+result3 <- run_mvimpute(x, method = "quantileregression", tune_sigma = 1)
 
-# 4. Random forest imputation via mice
-result4 <- run_mvimpute(x, method = "rf", m = 5, maxit = 5, seed = 42)
+# 4. Predictive mean matching via mice
+result4 <- run_mvimpute(x, method = "pmm", m = 5, maxit = 5, seed = 42)
 
-# 5. Passing additional mice arguments via ...
-result5 <- run_mvimpute(x, method = "norm.boot", m = 10, printFlag = FALSE)
+# 5. Random forest imputation via mice
+result5 <- run_mvimpute(x, method = "rf", m = 5, maxit = 5, seed = 42)
+
+# 6. Passing additional mice arguments via ...
+result6 <- run_mvimpute(x, method = "norm.boot", m = 10, printFlag = FALSE)
 } # }
 ```

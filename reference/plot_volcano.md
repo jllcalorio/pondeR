@@ -30,14 +30,14 @@ plot_volcano(
   neglog10 = TRUE,
   h_color = NULL,
   v_color = NULL,
-  size = 2,
+  size = 5,
   alpha = 0.6,
   theme = "nature",
   plot_title = NULL,
   plot_subtitle = NULL,
   xlab = NULL,
   ylab = NULL,
-  global_font_size = 14,
+  global_font_size = 25,
   title_size = NULL,
   subtitle_size = NULL,
   xlab_size = NULL,
@@ -55,9 +55,46 @@ plot_volcano(
 
 - x:
 
-  A `data.frame`, `tibble`, or named `matrix` with one row per feature.
-  Must contain the columns named by `y` and `z`. Column names may
-  contain special characters.
+  A `data.frame`, `tibble`, or named `matrix` with one row per feature
+  (must contain the columns named by `y` and `z`), **or** a named `list`
+  containing the output of
+  [`run_foldchange()`](https://jllcalorio.github.io/pondeR/reference/run_foldchange.md)
+  and/or a multi-outcome
+  [`run_diff()`](https://jllcalorio.github.io/pondeR/reference/run_diff.md)
+  result (with `summary_table = TRUE`). Column names may contain special
+  characters.
+
+  **List input — supported combinations:**
+
+  `list(fc = <run_foldchange>, diff = <run_diff>)`
+
+  :   Both objects are supplied. Log2 fold changes are sourced from
+      [`run_foldchange()`](https://jllcalorio.github.io/pondeR/reference/run_foldchange.md)'s
+      `$summary_table` (requires `log2 = TRUE`, the default) and
+      p-values are sourced from
+      [`run_diff()`](https://jllcalorio.github.io/pondeR/reference/run_diff.md)'s
+      `$summary_table`, matched on feature name. When
+      [`run_foldchange()`](https://jllcalorio.github.io/pondeR/reference/run_foldchange.md)
+      produced more than one pairwise comparison, the `comparison`
+      column is automatically used as `group`, overlaying all
+      comparisons on a single plot with distinct colours. This is the
+      recommended usage.
+
+  `list(fc = <run_foldchange>)`
+
+  :   Fold-change object only. P-values are unavailable; all features
+      are classified as non-significant and the significance threshold
+      line is not meaningful. A warning is issued.
+
+  `list(diff = <run_diff>)`
+
+  :   Differential-analysis object only. Fold changes are set to 1
+      (\\\log_2 \text{FC} = 0\\) for all features; the x-axis is not
+      meaningful. A warning is issued.
+
+  When a list is supplied, the arguments `y`, `z`, `features`, and
+  `group` are set automatically and do not need to be specified by the
+  caller (though they can be overridden).
 
 - y:
 
@@ -153,7 +190,7 @@ plot_volcano(
 - size:
 
   A single positive numeric value controlling the point size. Default
-  `2`.
+  `5`.
 
 - alpha:
 
@@ -188,7 +225,7 @@ plot_volcano(
 - global_font_size:
 
   A positive numeric value setting the base font size for all text
-  elements. Default `14`.
+  elements. Default `25`.
 
 - title_size:
 

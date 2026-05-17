@@ -17,7 +17,7 @@ plot_dend(
   theme = "nature",
   title = NULL,
   subtitle = NULL,
-  global_font_size = 11,
+  global_font_size = 15,
   axis_title_size = NULL,
   axis_text_size = NULL,
   legend_title_size = NULL,
@@ -82,7 +82,7 @@ plot_dend(
 - global_font_size:
 
   A single positive numeric specifying the base font size in points.
-  Default `11`.
+  Default `15`.
 
 - axis_title_size:
 

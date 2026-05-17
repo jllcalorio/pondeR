@@ -24,6 +24,7 @@ run_pcoa(
   perms = 9999L,
   groups = NULL,
   p_adjust = "BH",
+  dispersion = FALSE,
   ...
 )
 ```
@@ -72,7 +73,7 @@ run_pcoa(
   A positive integer. Number of permutations for PERMANOVA. Passed as
   the `permutations` argument to
   [`adonis2`](https://vegandevs.github.io/vegan/reference/adonis.html).
-  Default: `9999`.
+  The same value is used when `dispersion = TRUE`. Default: `9999`.
 
 - groups:
 
@@ -87,6 +88,10 @@ run_pcoa(
   post-hoc testing. Passed to
   [`p.adjust`](https://rdrr.io/r/stats/p.adjust.html). Default: `"BH"`
   (Benjamini-Hochberg).
+
+- dispersion:
+
+  A boolean. If `TRUE`, also tests for homogeneity of group dispersions.
 
 - ...:
 
@@ -306,32 +311,27 @@ if (requireNamespace("vegan", quietly = TRUE) &&
 #>   PC4: 8.32%
 #>   PC5: 6.08%
 #> 
-#> Principal Coordinate Analysis Summary
-#> ============================================= 
+#> ======================================================= 
+#> Principal Coordinate Analysis — Summary
+#> ======================================================= 
+#> 
 #> Call:
 #>    run_pcoa(x = dune, method = "bray") 
 #> 
-#> Dissimilarity method : bray 
-#> Correction           : none 
-#> Observations (n)     : 20 
-#> Total axes           : 14 
+#> Dissimilarity method :  bray 
+#> Correction           :  none 
+#> Observations (n)     :  20 
+#> Total axes           :  14 
 #> 
-#> Eigenvalues and variance explained:
+#> Eigenvalues and variance explained (first 5 axes):
 #>  Axis Eigenvalue Variance_pct Cumulative_pct
-#>   PC1   1.716266       37.359         37.359
-#>   PC2   1.022398       22.255         59.615
-#>   PC3   0.461464       10.045         69.660
-#>   PC4   0.382249        8.321         77.980
-#>   PC5   0.279135        6.076         84.057
-#>   PC6   0.236631        5.151         89.207
-#>   PC7   0.169120        3.681         92.889
-#>   PC8   0.096245        2.095         94.984
-#>   PC9   0.074492        1.622         96.605
-#>  PC10   0.061712        1.343         97.949
-#>  PC11   0.054940        1.196         99.145
-#>  PC12   0.019174        0.417         99.562
-#>  PC13   0.016119        0.351         99.913
-#>  PC14   0.004001        0.087        100.000
+#>   PC1    1.71627       37.359         37.359
+#>   PC2    1.02240       22.255         59.615
+#>   PC3    0.46146       10.045         69.660
+#>   PC4    0.38225        8.321         77.980
+#>   PC5    0.27913        6.076         84.057
+#> 
+#> ======================================================= 
 #>      PC1      PC2      PC3 
 #> 37.35930 22.25533 10.04505 
 

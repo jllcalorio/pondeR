@@ -16,8 +16,8 @@ plot_heatmap(
   sig_threshold = 0.05,
   remove = NULL,
   theme = "nature",
-  title = NULL,
-  subtitle = NULL,
+  plot_title = NULL,
+  plot_subtitle = NULL,
   show_rlab = TRUE,
   show_clab = TRUE,
   top_n = NULL,
@@ -33,7 +33,7 @@ plot_heatmap(
   show_dend = FALSE,
   dend_row_width = 0.2,
   dend_col_height = 0.2,
-  global_font_size = 11,
+  global_font_size = 15,
   axis_title_size = NULL,
   axis_text_size = NULL,
   legend_title_size = NULL,
@@ -80,11 +80,11 @@ plot_heatmap(
   A single character string: `"nature"` (default), `"classic"`,
   `"minimal"`, or `"bw"`.
 
-- title:
+- plot_title:
 
   A single character string for the plot title. Default `NULL`.
 
-- subtitle:
+- plot_subtitle:
 
   A single character string for the plot subtitle. Default `NULL`.
 
@@ -170,7 +170,7 @@ plot_heatmap(
 - global_font_size:
 
   A single positive numeric specifying the base font size in points.
-  Default `11`.
+  Default `15`.
 
 - axis_title_size:
 

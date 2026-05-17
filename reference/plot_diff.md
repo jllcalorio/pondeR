@@ -28,10 +28,11 @@ plot_diff(
   plot_subtitle = NULL,
   xlab = NULL,
   ylab = NULL,
+  linewidth = 3,
   show_global_p = FALSE,
   global_p_position = NULL,
   global_p_x = NULL,
-  global_font_size = NULL,
+  global_font_size = 30,
   title_size = NULL,
   subtitle_size = NULL,
   xlab_size = NULL,
@@ -136,6 +137,11 @@ plot_diff(
 
   Character string or `NULL`. Y-axis label. Default is `NULL`.
 
+- linewidth:
+
+  Numeric. The width of the lines for the box/violin outlines and
+  statistical brackets. Default is 3.
+
 - show_global_p:
 
   Logical. If `TRUE`, annotates the plot with the omnibus p-value.
@@ -154,7 +160,7 @@ plot_diff(
 - global_font_size:
 
   Numeric or `NULL`. Base font size for proportional scaling of all text
-  elements. Default is `NULL`.
+  elements. Default is `30`.
 
 - title_size:
 

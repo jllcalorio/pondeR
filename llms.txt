@@ -264,6 +264,9 @@ until formally categorised.
 
   Print Method for `run_reduce` Objects
 
+- [`run_DIpreprocess()`](https://jllcalorio.github.io/pondeR/reference/run_DIpreprocess.md)
+  : Direct-Injection Metabolomics Preprocessing Pipeline
+
 - [`run_anthroindex()`](https://jllcalorio.github.io/pondeR/reference/run_anthroindex.md)
   : Compute WHO Anthropometric Z-Scores and Nutritional Status
 
@@ -300,6 +303,9 @@ until formally categorised.
 
 - [`run_mixedmodel()`](https://jllcalorio.github.io/pondeR/reference/run_mixedmodel.md)
   : Perform Linear Mixed-Effects Model Analysis
+
+- [`run_move_names()`](https://jllcalorio.github.io/pondeR/reference/run_move_names.md)
+  : Move Row or Column Names into the Data Area
 
 - [`run_mvimpute()`](https://jllcalorio.github.io/pondeR/reference/run_mvimpute.md)
   : Impute Missing Values in Metabolomics Data
