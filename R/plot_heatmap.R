@@ -25,9 +25,9 @@
 #' @param remove Level-exclusion list passed to \code{\link{run_correl}}.
 #' @param theme A single character string: \code{"nature"} (default),
 #'   \code{"classic"}, \code{"minimal"}, or \code{"bw"}.
-#' @param title A single character string for the plot title. Default
+#' @param plot_title A single character string for the plot title. Default
 #'   \code{NULL}.
-#' @param subtitle A single character string for the plot subtitle. Default
+#' @param plot_subtitle A single character string for the plot subtitle. Default
 #'   \code{NULL}.
 #' @param show_rlab Logical. Show row labels. Default \code{TRUE}.
 #' @param show_clab Logical. Show column labels. Default \code{TRUE}.
@@ -68,7 +68,7 @@
 #'   height of the column dendrogram panel when \code{show_dend = TRUE}.
 #'   Default \code{0.2}.
 #' @param global_font_size A single positive numeric specifying the base font
-#'   size in points. Default \code{11}.
+#'   size in points. Default \code{15}.
 #' @param axis_title_size Font size for axis titles. Defaults to
 #'   \code{global_font_size}.
 #' @param axis_text_size Font size for axis tick labels. Defaults to
@@ -121,8 +121,8 @@ plot_heatmap <- function(x,
                           sig_threshold      = 0.05,
                           remove             = NULL,
                           theme              = "nature",
-                          title              = NULL,
-                          subtitle           = NULL,
+                          plot_title         = NULL,
+                          plot_subtitle      = NULL,
                           show_rlab          = TRUE,
                           show_clab          = TRUE,
                           top_n              = NULL,
@@ -138,7 +138,7 @@ plot_heatmap <- function(x,
                           show_dend          = FALSE,
                           dend_row_width     = 0.2,
                           dend_col_height    = 0.2,
-                          global_font_size   = 11,
+                          global_font_size   = 15,
                           axis_title_size    = NULL,
                           axis_text_size     = NULL,
                           legend_title_size  = NULL,
@@ -179,10 +179,10 @@ plot_heatmap <- function(x,
       mark_x_alpha < 0 || mark_x_alpha > 1)
     stop("`mark_x_alpha` must be a numeric between 0 and 1.", call. = FALSE)
   
-  if (!is.null(title) && (!is.character(title) || length(title) != 1L))
-    stop("`title` must be a single character string or NULL.", call. = FALSE)
-  if (!is.null(subtitle) && (!is.character(subtitle) || length(subtitle) != 1L))
-    stop("`subtitle` must be a single character string or NULL.", call. = FALSE)
+  if (!is.null(plot_title) && (!is.character(plot_title) || length(plot_title) != 1L))
+    stop("`plot_title` must be a single character string or NULL.", call. = FALSE)
+  if (!is.null(plot_subtitle) && (!is.character(plot_subtitle) || length(plot_subtitle) != 1L))
+    stop("`plot_subtitle` must be a single character string or NULL.", call. = FALSE)
 
   if (!is.character(color) || length(color) != 3L)
     stop("`color` must be a character vector of length 3.", call. = FALSE)
@@ -355,8 +355,8 @@ plot_heatmap <- function(x,
     ggplot2::labs(
       x        = NULL,
       y        = NULL,
-      title    = title,
-      subtitle = subtitle
+      title    = plot_title,
+      subtitle = plot_subtitle
     )
 
   # Coefficient annotations

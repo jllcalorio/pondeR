@@ -11,8 +11,8 @@ plot_heatmap(
   sig_threshold = 0.05,
   remove = NULL,
   theme = "nature",
-  title = NULL,
-  subtitle = NULL,
+  plot_title = NULL,
+  plot_subtitle = NULL,
   show_rlab = TRUE,
   show_clab = TRUE,
   top_n = NULL,
@@ -60,10 +60,10 @@ correlations) or \code{"masked"} (set non-significant cells to
 \item{theme}{A single character string: \code{"nature"} (default),
 \code{"classic"}, \code{"minimal"}, or \code{"bw"}.}
 
-\item{title}{A single character string for the plot title. Default
+\item{plot_title}{A single character string for the plot title. Default
 \code{NULL}.}
 
-\item{subtitle}{A single character string for the plot subtitle. Default
+\item{plot_subtitle}{A single character string for the plot subtitle. Default
 \code{NULL}.}
 
 \item{show_rlab}{Logical. Show row labels. Default \code{TRUE}.}
