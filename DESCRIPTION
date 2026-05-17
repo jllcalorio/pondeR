@@ -40,6 +40,7 @@ Imports:
     logistf,
     magrittr,
     matrixStats,
+    methods,
     mice,
     mixOmics,
     moments,
@@ -67,8 +68,7 @@ Imports:
     utils,
     vegan,
     viridis,
-    vsn,
-    webshot2
+    vsn
 Suggests:
     data.table,
     knitr,
