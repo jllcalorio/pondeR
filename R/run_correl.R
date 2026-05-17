@@ -275,14 +275,14 @@
 #'
 #' @param x A data frame, tibble, or matrix whose columns are the variables
 #'   to correlate. Column names may contain special characters.
-#' @param y A single character string naming a column in \code{x} to use as
-#'   the primary variable. When both \code{y} and \code{z} are \code{NULL},
+#' @param y A character vector naming one or more columns in \code{x} to use as
+#'   primary variables. When both \code{y} and \code{z} are \code{NULL},
 #'   all pairwise correlations among numeric columns of \code{x} are computed.
-#'   When only \code{y} is supplied, correlations of \code{y} against all other
-#'   columns are returned.
+#'   When only \code{y} is supplied, correlations among variables in \code{y}
+#'   and between \code{y} and all other columns are returned.
 #' @param z A single character string naming a second column in \code{x}.
-#'   When supplied together with \code{y}, only the correlation between
-#'   \code{y} and \code{z} is computed.
+#'   When supplied together with \code{y}, correlations between each element of
+#'   \code{y} and \code{z} are computed.
 #' @param metadata A data frame with the same number of rows as \code{x}
 #'   containing sample-level metadata. Appended to the returned tidy tables
 #'   when provided but not used in correlation computation.
@@ -419,10 +419,12 @@ run_correl <- function(x,
   if (nrow(x) < 3L) stop("`x` must have at least 3 rows.", call. = FALSE)
 
   if (!is.null(y)) {
-    if (!is.character(y) || length(y) != 1L)
-      stop("`y` must be a single character string.", call. = FALSE)
-    if (!y %in% names(x))
-      stop("`y` ('", y, "') is not a column in `x`.", call. = FALSE)
+    if (!is.character(y))
+      stop("`y` must be a character vector.", call. = FALSE)
+    bad_y <- setdiff(y, names(x))
+    if (length(bad_y) > 0L)
+      stop("The following columns in `y` were not found in `x`: ",
+           paste0('"', bad_y, '"', collapse = ", "), call. = FALSE)
   }
   if (!is.null(z)) {
     if (!is.character(z) || length(z) != 1L)
@@ -431,8 +433,8 @@ run_correl <- function(x,
       stop("`z` ('", z, "') is not a column in `x`.", call. = FALSE)
     if (is.null(y))
       stop("`z` cannot be specified without `y`.", call. = FALSE)
-    if (identical(y, z))
-      stop("`y` and `z` must be different column names.", call. = FALSE)
+    if (z %in% y)
+      stop("`z` ('", z, "') must not be present in the `y` vector.", call. = FALSE)
   }
   if (!is.null(metadata)) {
     if (!is.data.frame(metadata))
@@ -548,14 +550,16 @@ run_correl <- function(x,
   col_names  <- names(x)
 
   pairs <- if (!is.null(y) && !is.null(z)) {
-    list(c(y, z))
-  } else if (!is.null(y)) {
-    others <- setdiff(col_names, y)
-    lapply(others, function(v) c(y, v))
+    lapply(y, function(v) c(v, z))
   } else {
-    nc    <- length(col_names)
+    # Pairwise combinations of all columns
     combs <- utils::combn(col_names, 2L, simplify = FALSE)
-    combs
+    if (!is.null(y)) {
+      # Filter to pairs where at least one variable is in y
+      Filter(function(p) any(p %in% y), combs)
+    } else {
+      combs
+    }
   }
 
   if (length(pairs) == 0L)
