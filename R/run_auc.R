@@ -6,8 +6,11 @@
 #' Wraps \code{pROC::roc()} to compute AUC and confidence intervals, and
 #' optionally produces publication-ready ROC plots via \pkg{ggplot2}.
 #'
-#' @param x A \code{data.frame}, \code{tibble}, or named \code{matrix} whose
-#'   columns are the candidate predictor variables to be evaluated.
+#' @param x A \code{data.frame}, \code{tibble}, named \code{matrix}, \code{run_DIpreprocess} object, 
+#'   or a \code{list} of objects from the \code{run_*} ecosystem. If a list is provided, it MUST contain 
+#'   a \code{run_DIpreprocess} object. Optional inclusion of \code{run_pls}, \code{run_foldchange}, 
+#'   and/or \code{run_diff} objects will trigger automatic feature filtering based on \code{min_vip}, 
+#'   \code{up}, \code{down}, and \code{p_value} thresholds.
 #' @param y A single character string naming the column in \code{x} that
 #'   contains the binary grouping variable (cases vs. controls). The column
 #'   may be categorical (\code{character} / \code{factor}) with exactly two
@@ -78,9 +81,9 @@
 #' @param ylab A single string for the y-axis label. Default \code{NULL}
 #'   renders \code{"Sensitivity (True Positive Rate)"}.
 #' @param linewidth A positive numeric value controlling the ROC curve line
-#'   width. Default \code{1}.
+#'   width. Default \code{3}.
 #' @param global_font_size A positive numeric value setting the base font size
-#'   for all plot text elements. Default \code{20}. Derived sizes:
+#'   for all plot text elements. Default \code{25}. Derived sizes:
 #'   title \eqn{= 1.20 \times}, subtitle \eqn{= 0.90 \times},
 #'   axis labels / ticks \eqn{= 1.00 \times}.
 #' @param title_font_size Override for the title font size. Default \code{NULL}
@@ -94,6 +97,14 @@
 #' @param inplot_font_size Font size of the in-plot legend text (e.g., AUC
 #'   labels in combined plots). Default \code{NULL} (derived from
 #'   \code{global_font_size}).
+#' @param min_vip A single numeric value specifying the minimum VIP score for features to be considered. 
+#'   Only applied if a \code{run_pls} object is provided in the \code{x} list. Default \code{1.0}.
+#' @param up A single numeric value specifying the minimum fold change for up-regulated features. 
+#'   Only applied if a \code{run_foldchange} object is provided in the \code{x} list. Default \code{1.5}.
+#' @param down A single numeric value specifying the maximum fold change for down-regulated features. 
+#'   Only applied if a \code{run_foldchange} object is provided in the \code{x} list. Default \code{0.5}.
+#' @param p_value A single numeric value specifying the maximum acceptable p-value for features. 
+#'   Only applied if a \code{run_diff} object is provided in the \code{x} list. Default \code{0.05}.
 #' @param ... Additional arguments forwarded to \code{pROC::roc()},
 #'   \code{pROC::auc()}, or \code{pROC::ci()}.
 #'
@@ -231,15 +242,120 @@ run_auc <- function(
     plot_legend        = "AUC (95% CI)",
     xlab               = NULL,
     ylab               = NULL,
-    linewidth          = 1,
-    global_font_size   = 20,
+    linewidth          = 3,
+    global_font_size   = 25,
     title_font_size    = NULL,
     subtitle_font_size = NULL,
     xlab_font_size     = NULL,
     ylab_font_size     = NULL,
     inplot_font_size   = NULL,
+    min_vip            = 1.0,
+    up                 = 1.5,
+    down               = 0.5,
+    p_value            = 0.05,
     ...
 ) {
+
+  # ---------------------------------------------------------------------------
+  # --- Integration with run_* Ecosystem & Feature Filtering ---
+  # ---------------------------------------------------------------------------
+  
+  # Check if x is a list of ensemble objects (must contain at least a DIpreprocess object)
+  is_ensemble <- is.list(x) && !is.data.frame(x) && 
+    any(vapply(x, function(obj) inherits(obj, "run_DIpreprocess"), logical(1L)))
+
+  if (is_ensemble) {
+    # Extract components from the list
+    di_obj   <- Filter(function(obj) inherits(obj, "run_DIpreprocess"), x)[[1]]
+    
+    pls_obj  <- Filter(function(obj) inherits(obj, "run_pls"), x)
+    pls_obj  <- if (length(pls_obj) > 0) pls_obj[[1]] else NULL
+    
+    fc_obj   <- Filter(function(obj) inherits(obj, "run_foldchange"), x)
+    fc_obj   <- if (length(fc_obj) > 0) fc_obj[[1]] else NULL
+    
+    # run_diff could be a single object, or a list of run_diff objects (multi-outcome)
+    diff_obj <- Filter(function(obj) inherits(obj, "run_diff") || 
+                                     (is.list(obj) && "summary_table" %in% names(obj)), x)
+    diff_obj <- if (length(diff_obj) > 0) diff_obj[[1]] else NULL
+
+    # Extract base data
+    target_meta <- if (!is.null(di_obj$metadata_merged)) di_obj$metadata_merged else di_obj$metadata
+    target_data <- if (!is.null(di_obj$data_nonpls_merged)) di_obj$data_nonpls_merged else di_obj$data_nonpls
+    
+    valid_features <- colnames(target_data)
+
+    # 1. VIP Filtering (from run_pls)
+    if (!is.null(pls_obj) && !is.null(min_vip)) {
+      if (!is.null(pls_obj$vip_scores)) {
+        vips <- pls_obj$vip_scores
+        pass_vip <- names(vips)[!is.na(vips) & vips >= min_vip]
+        valid_features <- intersect(valid_features, pass_vip)
+      } else {
+        warning("run_pls object provided but no VIP scores found. Skipping VIP filtering.", call. = FALSE)
+      }
+    }
+
+    # 2. Fold Change Filtering (from run_foldchange)
+    if (!is.null(fc_obj) && (!is.null(up) || !is.null(down))) {
+      if (!is.null(fc_obj$summary_table)) {
+        st <- fc_obj$summary_table
+        pass_fc <- st$feature[!is.na(st$fold_change) & 
+                              (st$fold_change >= up | st$fold_change <= down)]
+        valid_features <- intersect(valid_features, unique(pass_fc))
+      }
+    }
+
+    # 3. P-value Filtering (from run_diff)
+    if (!is.null(diff_obj) && !is.null(p_value)) {
+      pass_diff <- character(0)
+      
+      if (!is.null(diff_obj$summary_table)) {
+        # Handles run_diff multi-outcome with summary_table = TRUE
+        st <- diff_obj$summary_table
+        pass_diff <- st$outcome[!is.na(st$p_value) & st$p_value < p_value]
+        
+      } else if (inherits(diff_obj, "run_diff")) {
+        # Handles a single run_diff object
+        pval <- diff_obj$test_result$p.value
+        if (!is.null(pval) && !is.na(pval) && pval < p_value) {
+          pass_diff <- diff_obj$outcome
+        }
+        
+      } else if (is.list(diff_obj)) {
+        # Handles named list of run_diff objects without summary_table
+        for (nm in names(diff_obj)) {
+          if (inherits(diff_obj[[nm]], "run_diff")) {
+            pval <- diff_obj[[nm]]$test_result$p.value
+            if (!is.null(pval) && !is.na(pval) && pval < p_value) {
+              pass_diff <- c(pass_diff, nm)
+            }
+          }
+        }
+      }
+      valid_features <- intersect(valid_features, unique(pass_diff))
+    }
+
+    if (length(valid_features) == 0) {
+      stop("No features passed the combined filtering criteria (VIP, Fold Change, P-value).", call. = FALSE)
+    }
+
+    # Reconstruct data explicitly keeping only valid features
+    x <- cbind(target_meta, target_data[, valid_features, drop = FALSE])
+    
+    # Safely restrict include_cols parameter so AUROC operates strictly on the passed features
+    if (is.null(include_cols)) {
+      include_cols <- valid_features
+    } else {
+      include_cols <- intersect(include_cols, valid_features)
+    }
+    
+  } else if (inherits(x, "run_DIpreprocess")) {
+    # Fallback for standard single run_DIpreprocess object
+    target_meta <- if (!is.null(x$metadata_merged)) x$metadata_merged else x$metadata
+    target_data <- if (!is.null(x$data_nonpls_merged)) x$data_nonpls_merged else x$data_nonpls
+    x <- cbind(target_meta, target_data)
+  }
 
   # ---------------------------------------------------------------------------
   # 0.  Namespace helpers (avoid hard importing every symbol)
@@ -814,15 +930,14 @@ run_auc <- function(
     ## Complete-case AUC table for plotting decisions
     valid_auc <- auc_table[!is.na(auc_table$auc), ]
 
-    ## Round AUC to 2 d.p. for ranking/filtering, then sort descending
-    valid_auc$auc_rounded <- round(valid_auc$auc, 2L)
-    valid_auc <- valid_auc[order(valid_auc$auc_rounded, decreasing = TRUE), ]
+    ## Sort descending by raw AUC
+    valid_auc <- valid_auc[order(valid_auc$auc, decreasing = TRUE), ]
 
     ## Apply filters (operate on the already-sorted table)
     plot_pred_cols <- if (plot_spec$filter_type == "top_n") {
       utils::head(valid_auc$predictor, plot_spec$filter_val)
     } else if (plot_spec$filter_type == "auc_thresh") {
-      valid_auc$predictor[valid_auc$auc_rounded >= plot_spec$filter_val]
+      valid_auc$predictor[valid_auc$auc >= plot_spec$filter_val]
     } else {
       valid_auc$predictor        # already sorted descending
     }

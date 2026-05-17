@@ -25,19 +25,26 @@ run_auc(
   plot_legend = "AUC (95\% CI)",
   xlab = NULL,
   ylab = NULL,
-  linewidth = 1,
-  global_font_size = 20,
+  linewidth = 3,
+  global_font_size = 25,
   title_font_size = NULL,
   subtitle_font_size = NULL,
   xlab_font_size = NULL,
   ylab_font_size = NULL,
   inplot_font_size = NULL,
+  min_vip = 1,
+  up = 1.5,
+  down = 0.5,
+  p_value = 0.05,
   ...
 )
 }
 \arguments{
-\item{x}{A \code{data.frame}, \code{tibble}, or named \code{matrix} whose
-columns are the candidate predictor variables to be evaluated.}
+\item{x}{A \code{data.frame}, \code{tibble}, named \code{matrix}, \code{run_DIpreprocess} object,
+or a \code{list} of objects from the \code{run_*} ecosystem. If a list is provided, it MUST contain
+a \code{run_DIpreprocess} object. Optional inclusion of \code{run_pls}, \code{run_foldchange},
+and/or \code{run_diff} objects will trigger automatic feature filtering based on \code{min_vip},
+\code{up}, \code{down}, and \code{p_value} thresholds.}
 
 \item{y}{A single character string naming the column in \code{x} that
 contains the binary grouping variable (cases vs. controls). The column
@@ -128,10 +135,10 @@ renders \code{"1 - Specificity (False Positive Rate)"}.}
 renders \code{"Sensitivity (True Positive Rate)"}.}
 
 \item{linewidth}{A positive numeric value controlling the ROC curve line
-width. Default \code{1}.}
+width. Default \code{3}.}
 
 \item{global_font_size}{A positive numeric value setting the base font size
-for all plot text elements. Default \code{20}. Derived sizes:
+for all plot text elements. Default \code{25}. Derived sizes:
 title \eqn{= 1.20 \times}, subtitle \eqn{= 0.90 \times},
 axis labels / ticks \eqn{= 1.00 \times}.}
 
@@ -150,6 +157,18 @@ Default \code{NULL} (derived from \code{global_font_size}).}
 \item{inplot_font_size}{Font size of the in-plot legend text (e.g., AUC
 labels in combined plots). Default \code{NULL} (derived from
 \code{global_font_size}).}
+
+\item{min_vip}{A single numeric value specifying the minimum VIP score for features to be considered.
+Only applied if a \code{run_pls} object is provided in the \code{x} list. Default \code{1.0}.}
+
+\item{up}{A single numeric value specifying the minimum fold change for up-regulated features.
+Only applied if a \code{run_foldchange} object is provided in the \code{x} list. Default \code{1.5}.}
+
+\item{down}{A single numeric value specifying the maximum fold change for down-regulated features.
+Only applied if a \code{run_foldchange} object is provided in the \code{x} list. Default \code{0.5}.}
+
+\item{p_value}{A single numeric value specifying the maximum acceptable p-value for features.
+Only applied if a \code{run_diff} object is provided in the \code{x} list. Default \code{0.05}.}
 
 \item{...}{Additional arguments forwarded to \code{pROC::roc()},
 \code{pROC::auc()}, or \code{pROC::ci()}.}
