@@ -1490,14 +1490,14 @@ run_diff <- function(
               "Eta-squared calculated from standard ANOVA (Welch's ANOVA used for test).")
             aov(y ~ grp)
           } else fitted_model
-          es     <- effectsize::eta_squared(es_model, verbose = FALSE)
+          es     <- effectsize::eta_squared(es_model, ci = 0.95, verbose = FALSE)
           interp <- effectsize::interpret(es, rules = "field2013")
           list(estimate = es$Eta2, ci_low = es$CI_low, ci_high = es$CI_high,
                magnitude = as.character(interp$Interpretation), metric = "Eta-squared",
                interpretation = sprintf("Effect size: %s (%.3f)",
                                         as.character(interp$Interpretation), es$Eta2))
         } else {
-          es     <- effectsize::rank_epsilon_squared(x = y, groups = grp, verbose = FALSE)
+          es     <- effectsize::rank_epsilon_squared(x = y, groups = grp, ci = 0.95, verbose = FALSE)
           interp <- effectsize::interpret(es, rules = "field2013")
           list(estimate  = es$rank_epsilon_squared,
                ci_low    = if (!is.null(es$CI_low))  es$CI_low  else NA_real_,
@@ -2251,8 +2251,8 @@ summary.run_diff <- function(object, ...) {
           es     <- effectsize::cohens_d(
                       x         = y[grp == groups[1]],
                       y         = y[grp == groups[2]],
-                      #pooled_sd = !variance_violated,
-                      paired    = TRUE,
+                      pooled_sd = !variance_violated,
+                      paired    = is_paired_fam,
                       verbose   = FALSE
                     )
           interp <- effectsize::interpret(es, rules = "cohen1988")
@@ -2265,7 +2265,7 @@ summary.run_diff <- function(object, ...) {
           es     <- effectsize::rank_biserial(
                       x       = y[grp == groups[1]],
                       y       = y[grp == groups[2]],
-                      paired  = TRUE,
+                      paired  = is_paired_fam,
                       verbose = FALSE
                     )
           interp <- effectsize::interpret(es, rules = "funder2019")
@@ -2284,7 +2284,7 @@ summary.run_diff <- function(object, ...) {
               "Eta-squared calculated from standard ANOVA (Welch's ANOVA used for test).")
             stats::aov(y ~ grp)
           } else fitted_model
-          es     <- effectsize::eta_squared(es_model, verbose = FALSE)
+          es     <- effectsize::eta_squared(es_model, ci = 0.95, verbose = FALSE)
           interp <- effectsize::interpret(es, rules = "field2013")
           list(estimate  = es$Eta2,
                ci_low    = es$CI_low,
@@ -2292,7 +2292,7 @@ summary.run_diff <- function(object, ...) {
                magnitude = as.character(interp$Interpretation),
                metric    = "Eta-squared")
         } else {
-          es     <- effectsize::rank_epsilon_squared(x = y, groups = grp,
+          es     <- effectsize::rank_epsilon_squared(x = y, groups = grp, ci = 0.95,
                                                      verbose = FALSE)
           interp <- effectsize::interpret(es, rules = "field2013")
           list(estimate  = es$rank_epsilon_squared,
@@ -2475,6 +2475,37 @@ summary.run_diff <- function(object, ...) {
       sum(ph$significant, na.rm = TRUE) else NA_integer_
     total_ph <- if (!is.null(ph) && nrow(ph) > 0) nrow(ph) else NA_integer_
 
+    # ---- interpretation logic ----
+    interp_val <- "No significant difference"
+    if (!is.null(res) && !is.null(tr$p.value) && tr$p.value < test_alpha) {
+      if (!is.null(ph) && nrow(ph) > 0) {
+        sig_ph_interps <- ph$interpretation[ph$significant %in% TRUE &
+                                            ph$interpretation != "No significant difference between groups"]
+        if (length(sig_ph_interps) > 0) {
+          interp_val <- paste(sig_ph_interps, collapse = "; ")
+        } else {
+          interp_val <- "No significant difference in post hoc"
+        }
+      } else if (!is.null(ds) && nrow(ds) == 2 && "group" %in% names(ds)) {
+        gn <- as.character(ds$group)
+        if (isTRUE(res$parametric)) {
+          interp_val <- if (ds$mean[1] < ds$mean[2])
+            paste0(gn[1], " has lower mean than ", gn[2])
+          else
+            paste0(gn[1], " has higher mean than ", gn[2])
+        } else {
+          y_raw <- res$raw_data$outcome
+          g_raw <- res$raw_data$group
+          rks   <- rank(y_raw)
+          mr    <- tapply(rks, g_raw, mean)
+          if (mr[gn[1]] < mr[gn[2]])
+            interp_val <- paste0(gn[1], " tends to have smaller values than ", gn[2])
+          else
+            interp_val <- paste0(gn[1], " tends to have larger values than ", gn[2])
+        }
+      }
+    }
+
     # ---- per-group averages ----
     avg_vals <- stats::setNames(
       vector("list", length(avg_col_names)),
@@ -2513,6 +2544,7 @@ summary.run_diff <- function(object, ...) {
                                    tr$p.value < test_alpha else NA
     row$n_significant_posthoc <- n_sig_ph
     row$posthoc_pairs         <- total_ph
+    row$interpretation        <- interp_val
 
     row
   })
