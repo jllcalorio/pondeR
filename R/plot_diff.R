@@ -41,7 +41,8 @@
 #'   on the plot. Default is 0.05.
 #' @param colors Character vector of colors or \code{NULL} for automatic soft
 #'   colors. Default is \code{NULL}.
-#' @param plot_title Character string or \code{NULL}. Custom plot title.
+#' @param plot_title Character vector or \code{NULL}. Custom plot title(s). 
+#'   If a vector, it should match the length of variables being plotted. 
 #'   Default is \code{NULL}.
 #' @param plot_subtitle Character string or \code{NULL}. Custom subtitle. If
 #'   \code{NULL}, the test name is shown. Default is \code{NULL}.
@@ -319,7 +320,8 @@ plot_diff <- function(x,
   statistics        <- list()
   subgroup_analysis <- list()
 
-  for (var in plot_vars) {
+  for (i in seq_along(plot_vars)) {
+    var <- plot_vars[i]
     if (!is.numeric(x[[var]])) {
       warning(paste("Variable", var, "is not numeric. Skipping."))
       next
@@ -573,7 +575,15 @@ plot_diff <- function(x,
     # -------------------------------------------------------------------------
     # 6b. Labels
     # -------------------------------------------------------------------------
-    title_text    <- if (!is.null(plot_title))    plot_title    else paste(var, "by", group)
+    title_text <- if (!is.null(plot_title)) {
+      if (length(plot_title) == length(plot_vars)) {
+        plot_title[i]
+      } else {
+        plot_title[1L]
+      }
+    } else {
+      paste(var, "by", group)
+    }
     subtitle_text <- if (!is.null(plot_subtitle)) plot_subtitle else stat_results$test_used
     xlab_text     <- if (!is.null(xlab)) xlab else group
     ylab_text     <- if (!is.null(ylab)) ylab else var
@@ -737,7 +747,8 @@ plot_diff <- function(x,
         sg_significant_plots <- list()
         sg_statistics        <- list()
 
-        for (var in plot_vars) {
+        for (j in seq_along(plot_vars)) {
+          var <- plot_vars[j]
           if (!is.numeric(x_sub[[var]])) next
           grp_sub <- droplevels(as.factor(x_sub[[group]]))
           if (nlevels(grp_sub) < 2) {
@@ -764,8 +775,11 @@ plot_diff <- function(x,
               paired            = paired,
               test_alpha        = test_alpha,
               colors            = colors,
-              plot_title        = if (!is.null(plot_title)) plot_title else
-                                    sprintf("%s by %s\n[%s = %s]", var, group, sg_var, lvl),
+              plot_title        = if (!is.null(plot_title)) {
+                                    if (length(plot_title) == length(plot_vars)) plot_title[j] else plot_title[1L]
+                                  } else {
+                                    sprintf("%s by %s\n[%s = %s]", var, group, sg_var, lvl)
+                                  },
               plot_subtitle     = plot_subtitle,
               xlab              = xlab,
               ylab              = ylab,
