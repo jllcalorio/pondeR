@@ -2,12 +2,11 @@
 
 Fits regularized regression models — Ridge (alpha = 0), LASSO (alpha =
 1), or Elastic Net (0 \< alpha \< 1) — with k-fold cross-validation via
-[`cv.glmnet`](https://glmnet.stanford.edu/reference/cv.glmnet.html).
-Supports both categorical (binary and multinomial classification) and
-continuous (Gaussian regression) dependent variables. When multiple
-alpha values are supplied, all are evaluated on identical
-cross-validation folds and the best-performing model is returned
-alongside a comparison table.
+[`cv.glmnet`](https://rdrr.io/pkg/glmnet/man/cv.glmnet.html). Supports
+both categorical (binary and multinomial classification) and continuous
+(Gaussian regression) dependent variables. When multiple alpha values
+are supplied, all are evaluated on identical cross-validation folds and
+the best-performing model is returned alongside a comparison table.
 
 Unpenalized covariates (e.g., batch indicators, demographic confounders)
 can be included through the `not_penalized` argument; their coefficients
@@ -243,7 +242,7 @@ Perform Regularized Regression Analysis
 columns are appended to the feature matrix. A `penalty.factor` vector of
 length `ncol(x)` is set to `1` for all penalized predictors and `0` for
 unpenalized ones, and is passed to
-[`glmnet::cv.glmnet`](https://glmnet.stanford.edu/reference/cv.glmnet.html).
+[`glmnet::cv.glmnet`](https://rdrr.io/pkg/glmnet/man/cv.glmnet.html).
 
 **Cross-validation consistency:** Fold IDs are generated once (using
 `seed`) and reused across all tested alpha values, ensuring a fair,
