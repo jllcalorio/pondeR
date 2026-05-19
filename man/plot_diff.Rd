@@ -91,7 +91,8 @@ on the plot. Default is 0.05.}
 \item{colors}{Character vector of colors or \code{NULL} for automatic soft
 colors. Default is \code{NULL}.}
 
-\item{plot_title}{Character string or \code{NULL}. Custom plot title.
+\item{plot_title}{Character vector or \code{NULL}. Custom plot title(s).
+If a vector, it should match the length of variables being plotted.
 Default is \code{NULL}.}
 
 \item{plot_subtitle}{Character string or \code{NULL}. Custom subtitle. If
