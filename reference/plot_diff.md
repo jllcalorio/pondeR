@@ -122,7 +122,8 @@ plot_diff(
 
 - plot_title:
 
-  Character string or `NULL`. Custom plot title. Default is `NULL`.
+  Character vector or `NULL`. Custom plot title(s). If a vector, it
+  should match the length of variables being plotted. Default is `NULL`.
 
 - plot_subtitle:
 
