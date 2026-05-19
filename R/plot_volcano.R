@@ -2,7 +2,7 @@
 #  plot_volcano
 # =============================================================================
 
-#' @title Volcano Plot for Fold Change and P-value Data
+#' @title Volcano Plot for Fold Change and p-value Data
 #'
 #' @description
 #' Generates publication-quality volcano plots that visualise differential
@@ -32,7 +32,7 @@
 #'       \code{group}, overlaying all comparisons on a single plot with
 #'       distinct colours. This is the recommended usage.}
 #'     \item{\code{list(fc = <run_foldchange>)}}{
-#'       Fold-change object only. P-values are unavailable; all features are
+#'       Fold-change object only. p-values are unavailable; all features are
 #'       classified as non-significant and the significance threshold line is
 #'       not meaningful. A warning is issued.}
 #'     \item{\code{list(diff = <run_diff>)}}{
@@ -323,11 +323,11 @@ plot_volcano <- function(
         } else {
           warning("Could not locate a `$summary_table` with `p_value` and `outcome` ",
                   "columns in the supplied `run_diff` object. ",
-                  "P-values will be set to NA.", call. = FALSE)
+                  "p-values will be set to NA.", call. = FALSE)
         }
       } else {
         warning("No `run_diff` result was found in `x`. ",
-                "P-values are unavailable; the significance threshold line ",
+                "p-values are unavailable; the significance threshold line ",
                 "and up/down classification will not be meaningful.",
                 call. = FALSE)
         df_fc$pvalue <- 1   # ensures all points are classified NS
