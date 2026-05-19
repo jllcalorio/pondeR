@@ -77,12 +77,13 @@ has not been pre-scaled. Designed to match the structure of <code><a href="run_p
 
 <dl><dt id="arg-x">x<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
 <dd><p>Matrix or data frame. Numeric data with samples in rows and features in columns.
-Can be output from <code><a href="run_scale.html">run_scale()</a></code> or raw data (which will be scaled if <code>scale_method</code>
+Can be output from <code><a href="run_scale.html">run_scale()</a></code>, raw data (which will be scaled if <code>scale_method</code>, or from <code>run_DIpreprocess</code>.
 is specified).</p></dd>
 
 
 <dt id="arg-metadata">metadata<a class="anchor" aria-label="anchor" href="#arg-metadata"></a></dt>
-<dd><p>Data frame. Sample metadata with number of rows equal to nrow(x).
+<dd><p>Data frame. Sample metadata with number of rows equal to nrow(x). Ignored, even if supplied,
+when x is <code>run_DIpreprocess</code> class.
 Must contain columns for grouping and sample identifiers.</p></dd>
 
 

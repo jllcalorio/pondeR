@@ -4,12 +4,12 @@ feature (column) in x across ordered group levels. Group means are
 used as the basis of comparison. When log2 = TRUE the data are
 shifted so that all values are strictly positive before log-transformation.
 The function is designed to integrate seamlessly with run_diff() and
-plot_volcano()."><meta property="og:description" content="Computes pairwise fold changes (and optionally log2 fold changes) for each
+plot_volcano."><meta property="og:description" content="Computes pairwise fold changes (and optionally log2 fold changes) for each
 feature (column) in x across ordered group levels. Group means are
 used as the basis of comparison. When log2 = TRUE the data are
 shifted so that all values are strictly positive before log-transformation.
 The function is designed to integrate seamlessly with run_diff() and
-plot_volcano()."><link rel="preconnect" href="https://fonts.googleapis.com"></head><body>
+plot_volcano."><link rel="preconnect" href="https://fonts.googleapis.com"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -55,21 +55,24 @@ feature (column) in <code>x</code> across ordered group levels. Group means are
 used as the basis of comparison. When <code>log2 = TRUE</code> the data are
 shifted so that all values are strictly positive before log-transformation.
 The function is designed to integrate seamlessly with <code><a href="run_diff.html">run_diff()</a></code> and
-<code><a href="plot_volcano.html">plot_volcano()</a></code>.</p>
+<code><a href="plot_volcano.html">plot_volcano</a></code>.</p>
     </div>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">run_foldchange</span><span class="op">(</span></span>
 <span>  <span class="va">x</span>,</span>
-<span>  <span class="va">metadata</span>,</span>
-<span>  <span class="va">group</span>,</span>
+<span>  from <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"normalized"</span>, <span class="st">"corrected"</span>, <span class="st">"transformed"</span>, <span class="st">"scaled"</span><span class="op">)</span>,</span>
+<span>  metadata <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  group <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  arrange <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  filter <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  select <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  sort <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  log2 <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  eps <span class="op">=</span> <span class="fl">1e-08</span></span>
+<span>  eps <span class="op">=</span> <span class="fl">1e-08</span>,</span>
+<span>  up <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  down <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -83,16 +86,25 @@ columns are numeric features (variables) to be analysed. Column names may
 contain special characters.</p></dd>
 
 
+<dt id="arg-from">from<a class="anchor" aria-label="anchor" href="#arg-from"></a></dt>
+<dd><p>Character. Specifies which data processing stage to extract if
+<code>x</code> is a <code>run_DIpreprocess</code> object. Options are:
+<code>"corrected"</code> (drift/batch corrected), <code>"normalized"</code> (default),
+<code>"transformed"</code> (log/sqrt transformed), or <code>"scaled"</code>
+(final auto/pareto scaled data).</p></dd>
+
+
 <dt id="arg-metadata">metadata<a class="anchor" aria-label="anchor" href="#arg-metadata"></a></dt>
 <dd><p>A <code>data.frame</code>, <code>tibble</code>, or named <code>matrix</code>
 with the same number of rows as <code>x</code> and containing sample
-annotations. Must include the column specified by <code>group</code>.</p></dd>
+annotations. If <code>x</code> is a <code>run_DIpreprocess</code> object, this is
+optional and defaults to the internal metadata.</p></dd>
 
 
 <dt id="arg-group">group<a class="anchor" aria-label="anchor" href="#arg-group"></a></dt>
-<dd><p>A single character string naming the column in <code>metadata</code>
-that contains the grouping factor. Must have at least two distinct
-non-<code>NA</code> levels after optional filtering via <code>filter</code>.</p></dd>
+<dd><p>Character string naming the column in <code>metadata</code>
+that contains the grouping factor. If <code>x</code> is a <code>run_DIpreprocess</code>
+object, this is optional and defaults to the group column used in that step.</p></dd>
 
 
 <dt id="arg-arrange">arrange<a class="anchor" aria-label="anchor" href="#arg-arrange"></a></dt>
@@ -106,8 +118,8 @@ If <code>NULL</code> (default), levels are sorted alphanumerically.</p></dd>
 
 <dt id="arg-filter">filter<a class="anchor" aria-label="anchor" href="#arg-filter"></a></dt>
 <dd><p>An optional character vector of group levels to <em>exclude</em>
-before analysis. Rows whose <code>group</code> value appears in <code>filter</code>
-are dropped. Default <code>NULL</code> (no filtering).</p></dd>
+before analysis. If <code>x</code> is a <code>run_DIpreprocess</code> object, this
+defaults to the <code>qc_types</code> identified during preprocessing.</p></dd>
 
 
 <dt id="arg-select">select<a class="anchor" aria-label="anchor" href="#arg-select"></a></dt>
@@ -131,6 +143,19 @@ positive.</p></dd>
 <dd><p>A small positive numeric value. When <code>log2 = TRUE</code>, data are
 shifted so that the global minimum of <code>x</code> (after filtering and
 selection) becomes <code>eps</code>. Default <code>1e-8</code>.</p></dd>
+
+
+<dt id="arg-up">up<a class="anchor" aria-label="anchor" href="#arg-up"></a></dt>
+<dd><p>Numeric. Optional threshold for up-regulation. If supplied, a
+<code>"sig"</code> column is added to <code>summary_table</code> where features with
+<code>fold_change &gt;= up</code> are labelled <code>"Significant"</code>. Default <code>NULL</code>.</p></dd>
+
+
+<dt id="arg-down">down<a class="anchor" aria-label="anchor" href="#arg-down"></a></dt>
+<dd><p>Numeric. Optional threshold for down-regulation. If supplied,
+features with <code>fold_change &lt;= down</code> are labelled <code>"Significant"</code>
+in the <code>"sig"</code> column of <code>summary_table</code>. This value is compared
+against the raw fold change, not log2. Default <code>NULL</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -186,10 +211,14 @@ When <code>log2 = TRUE</code>, let \(m\) be the global minimum of the
 is added to every value when \(m \le 0\); otherwise no shift is applied
 (\(\delta = 0\)). Log2 fold changes are then computed from the shifted
 group means.</p>
-<p><strong>Integration with <code><a href="run_diff.html">run_diff()</a></code> and <code><a href="plot_volcano.html">plot_volcano()</a></code></strong><br>
+<p><strong>Integration with <code><a href="run_diff.html">run_diff</a></code> and <code><a href="plot_volcano.html">plot_volcano</a></code></strong><br>
 The returned list exposes <code>fc_table</code>, <code>log2fc_table</code>, and
 <code>shifted_data</code> in a consistent format that <code><a href="plot_volcano.html">plot_volcano()</a></code> can
 consume directly.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
+    <div class="dont-index"><p><code><a href="run_diff.html">run_diff</a></code>, <code><a href="plot_volcano.html">plot_volcano</a></code>, <code><a href="run_DIpreprocess.html">run_DIpreprocess</a></code></p></div>
     </div>
     <div class="section level2">
     <h2 id="author">Author<a class="anchor" aria-label="anchor" href="#author"></a></h2>

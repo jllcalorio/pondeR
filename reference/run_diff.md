@@ -8,24 +8,22 @@ sizes, and performs post-hoc tests when appropriate.
 
 When `outcome` is a character vector of length \> 1 and
 `summary_table = TRUE`, an additional `$summary_table` element is
-returned alongside the per-outcome list, providing a single tidy data
-frame that consolidates key results across all outcomes — useful for
-high-throughput screening (e.g., metabolomics, proteomics).
+returned alongside the per-outcome list.
 
 When `subgroup` is also specified and `summary_table = TRUE`, additional
-named elements are appended to the returned list, one per subgroup
-variable, each containing a named list of per-level summary tables. For
-example, with `subgroup = "Gender"`, the result will include
-`$summary_table_Gender`, and inside it `$summary_table_Gender$Male` and
-`$summary_table_Gender$Female`.
+named elements `$summary_table_<subgroup_var>` (one per subgroup
+variable) are appended; each is a named list of per-level summary
+tables, e.g. `$summary_table_Gender$Male`.
 
 ## Usage
 
 ``` r
 run_diff(
   x,
+  metadata = NULL,
   outcome,
   group = NULL,
+  filter = NULL,
   within = NULL,
   subject_id = NULL,
   paired = FALSE,
@@ -54,519 +52,183 @@ run_diff(
 
 - x:
 
-  A data frame containing the variables for analysis.
+  A data frame, or an object of class `"run_DIpreprocess"`. If a data
+  frame, it should contain only the numeric features/metabolites to be
+  analysed.
+
+- metadata:
+
+  A data frame containing sample-level metadata (e.g., grouping,
+  subgroups, subject IDs). Required if `x` is a data frame.
 
 - outcome:
 
-  A character string or character vector specifying the name(s) of the
-  numeric outcome variable(s). When a vector is supplied, the function
-  loops over each outcome and returns a named list of `"run_diff"`
-  objects. If `summary_table = TRUE`, an additional `$summary_table`
-  element is appended to the returned list (see `summary_table`).
+  A character string or character vector naming the numeric outcome
+  variable(s) found in `x`.
 
 - group:
 
-  A character string specifying the name of the grouping factor
-  variable.
+  A character string naming the grouping variable found in `metadata`.
+  May be `NULL` for pure within-subjects designs.
+
+- filter:
+
+  Optional character vector of levels in `group` to exclude from the
+  analysis. If `x` is a `run_DIpreprocess` object, defaults to the
+  identified QC types.
+
+- within:
+
+  Character vector of within-subject factor column name(s) found in
+  `metadata`. When supplied, `subject_id` must also be provided.
+  Triggers repeated-measures or mixed-ANOVA logic.
+
+- subject_id:
+
+  Character string naming the subject identifier column found in
+  `metadata`. Required when `within` is non-`NULL`.
 
 - paired:
 
-  A logical indicating whether the observations are paired. Default is
-  `FALSE`.
+  Logical; whether observations are paired. Default `FALSE`.
 
 - test_type:
 
-  A character string specifying the test strategy. Must be one of
-  `"auto"` (default), `"parametric"`, or `"nonparametric"`.
+  One of `"auto"` (default), `"parametric"`, or `"nonparametric"`.
 
 - normality_method:
 
-  Method for assessing normality: `"shapiro"` (Shapiro-Wilk test),
-  `"lilliefors"` (Lilliefors (Kolmogorov-Smirnov) test), or `"auto"`
-  (uses Shapiro-Wilk for n \< 50, Lilliefors for n \>= 50). Default is
-  `"auto"`.
+  One of `"auto"` (default), `"shapiro"`, or `"lilliefors"`.
 
 - alpha_normality:
 
-  Significance level for normality tests. Default is 0.05.
+  Significance level for normality tests. Default `0.05`.
 
 - alpha_variance:
 
-  Significance level for variance homogeneity tests. Default is 0.05.
+  Significance level for the variance-homogeneity test. Default `0.05`.
 
 - alpha_sphericity:
 
-  Significance level for sphericity tests. Default is 0.05.
+  Significance level for Mauchly's test. Default `0.05`.
 
 - type_sosquares:
 
-  Integer specifying the type of sums of squares for the ANOVA. Accepted
-  values are `1`, `2` (default), or `3`. Type 2 yields identical results
-  to type 1 for balanced designs but is more appropriate for unbalanced
-  designs. Type 3 matches output from commercial software such as SPSS.
-  Only used for RM and mixed ANOVA designs. See
-  [`anova_test`](https://rpkgs.datanovia.com/rstatix/reference/anova_test.html)
-  for details.
+  Integer (1, 2, or 3) specifying the sums-of-squares type for RM /
+  mixed ANOVA. Default `2`.
 
 - rm_effect_size:
 
-  Character vector specifying which effect size(s) to compute for RM and
-  mixed ANOVA designs. Accepted values are `"ges"` (generalized
-  eta-squared), `"pes"` (partial eta-squared, default), or
-  `c("ges", "pes")` for both. When both are requested, `"ges"` is used
-  as the primary metric reported in `$effect_size`. Only used for RM and
-  mixed ANOVA designs. See
-  [`anova_test`](https://rpkgs.datanovia.com/rstatix/reference/anova_test.html).
+  Character vector; one or both of `"ges"` (generalized eta-squared,
+  default) and `"pes"` (partial eta-squared). Generalized eta-squared is
+  the default because it is directly comparable across designs that
+  differ in the number of within- and between-subject factors. Use
+  `"pes"` when matching output from software such as SPSS. Specify
+  `c("ges", "pes")` to compute both; the first listed metric is treated
+  as primary. Applies only to RM / mixed ANOVA designs.
 
 - correction:
 
-  Character string specifying the sphericity correction method applied
-  to within-subject p-values when sphericity is violated. Passed to
-  [`get_anova_table`](https://rpkgs.datanovia.com/rstatix/reference/anova_test.html).
-  Accepted values are `"auto"` (default; applies Greenhouse-Geisser when
-  sphericity is violated), `"GG"` (always apply Greenhouse-Geisser),
-  `"HF"` (always apply Huynh-Feldt), or `"none"` (uncorrected). Only
-  used for RM and mixed ANOVA designs.
+  Sphericity correction: `"auto"` (default; applies Greenhouse-Geisser
+  when sphericity is violated), `"GG"`, `"HF"`, or `"none"`. Applies
+  only to RM / mixed ANOVA.
 
 - test_alpha:
 
-  Significance level for the final statistical test. Default is 0.05.
+  Significance level for the final test. Default `0.05`.
 
 - min_n_threshold:
 
-  Minimum sample size required per group. Default is 3.
+  Minimum per-group sample size. Default `3`.
 
 - calculate_effect_size:
 
-  Logical indicating whether to calculate effect sizes. Default is
-  `TRUE`.
+  Logical. Default `TRUE`.
 
 - perform_posthoc:
 
-  Logical indicating whether to perform post-hoc tests for \>2 groups.
-  Default is `TRUE`.
+  Logical. Default `TRUE`.
 
 - p_adjust_method:
 
-  The p-value adjustment method for post-hoc comparisons: `"holm"`,
-  `"hochberg"`, `"hommel"`, `"bonferroni"`, `"BH"`, `"BY"`, `"fdr"`,
-  `"none"`. Default is `"BH"`.
+  P-value adjustment method for post-hoc comparisons. Default `"BH"`.
 
 - group_order:
 
-  Character vector specifying the order of groups. If `NULL`, uses
-  factor levels in alphabetical order.
+  Optional character vector specifying group level order.
 
 - subgroup:
 
-  Character vector or `NULL`. Column name(s) in `x` to use for subgroup
-  analysis. Each must be a categorical column (factor or character) in
-  `x`. When specified, the full analysis is repeated independently for
-  each level of each subgroup column. Results are returned under
-  `$subgroup_analysis` in the output, nested as
-  `subgroup_var -> level -> run_diff result`. Default is `NULL`.
+  Optional character vector of column names in `metadata` for stratified
+  analysis.
 
 - summary_table:
 
-  Logical. Only relevant when `outcome` is a character vector of length
-  \> 1. If `TRUE`, a tidy summary data frame is constructed across all
-  outcomes and appended to the returned list as `$summary_table`. When
-  `subgroup` is also specified, additional per-subgroup summary table
-  lists are appended as `$summary_table_<subgroup_var>`, each containing
-  one data frame per level (e.g., `$summary_table_Gender$Male`). The
-  data frame contains one row per outcome with the following columns:
-  `outcome`, `test_used`, `statistic`, `df`, `p_value`,
-  `effect_size_metric`, `effect_size_estimate`, `effect_size_ci_low`,
-  `effect_size_ci_high`, `effect_size_magnitude`, `significant`,
-  `n_significant_posthoc` (number of significant post-hoc pairs; `NA`
-  for 2-group comparisons), and `posthoc_pairs` (total post-hoc pairs
-  tested; `NA` for 2-group comparisons). Default is `FALSE`.
+  Logical; when `outcome` has length \> 1 and `TRUE`, appends
+  `$summary_table` (and subgroup summary tables) to the returned list.
+  Default `FALSE`.
 
 - verbose:
 
-  A logical indicating whether to print detailed messages. Default is
-  `TRUE`.
+  Logical. Default `TRUE`.
 
 - num_cores:
 
-  Integer specifying the number of cores to use for parallel processing,
-  or the character string `"max"`. If `"max"`, the function uses the
-  number of available cores minus 2 (to reserve system resources), with
-  a minimum of 1. Default is 1. Supports both Windows and POSIX
-  (Mac/Linux) systems.
+  Integer or `"max"`. Default `1`.
 
 ## Value
 
-When `outcome` is a single string, returns a list of class `"run_diff"`
-containing:
+When `outcome` is a single string, a list of class `"run_diff"`
+containing: `test_used`, `test_result`, `effect_size`, `posthoc_result`,
+`assumptions`, `parametric`, `data_summary`, `outcome`, `group_var`,
+`within_vars` (RM only), `subject_id_var` (RM only), `anova_table` (RM
+only), `sphericity` (RM only), `sphericity_corrections` (RM only),
+`paired`, `test_type`, `test_alpha`, `subgroup_analysis`, `warnings`,
+`parameters`, `raw_data`.
 
-- test_used:
-
-  Character string of the statistical test performed.
-
-- test_result:
-
-  List containing results of the statistical test.
-
-- effect_size:
-
-  List containing effect size estimate, confidence interval, magnitude,
-  and interpretation.
-
-- posthoc_result:
-
-  Data frame of post-hoc pairwise comparisons (`NULL` if not
-  applicable). The `interpretation` column uses stochastic dominance
-  framing for non-parametric tests ("X tends to have larger/smaller
-  values than Y") and mean-based framing for parametric tests.
-
-- assumptions:
-
-  Data frame summarizing assumption check results.
-
-- data_summary:
-
-  Data frame with comprehensive descriptive statistics per group.
-
-- outcome:
-
-  Name of the outcome variable.
-
-- group_var:
-
-  Name of the group variable.
-
-- paired:
-
-  The paired setting used.
-
-- test_type:
-
-  The test_type strategy used.
-
-- test_alpha:
-
-  The significance level used.
-
-- subgroup_analysis:
-
-  Named list of subgroup results, nested as
-  `subgroup_var -> level -> run_diff result`. `NULL` if no subgroup
-  specified.
-
-- warnings:
-
-  Character vector of any warnings generated.
-
-- parameters:
-
-  List of all parameters used in the analysis.
-
-- raw_data:
-
-  Data frame containing the variables used.
-
-When `outcome` is a character vector of length \> 1, returns a named
-list where each element is a `"run_diff"` object for the corresponding
-outcome variable. If `summary_table = TRUE`, the list also contains:
-
-- `$summary_table` — overall tidy summary across all outcomes.
-
-- `$summary_table_<sg>` (one per subgroup variable `sg`) — a named list
-  of per-level summary tables, e.g. `$summary_table_Gender$Male`,
-  `$summary_table_Gender$Female`.
+When `outcome` is length \> 1, a named list of `"run_diff"` objects,
+optionally with `$summary_table` and `$summary_table_<sg>` elements.
 
 ## Details
 
 Automatic Statistical Comparison with Comprehensive Analysis
 
-The function follows a decision-making process to determine the most
-appropriate test:
+**Test Family Selection:** If `paired = FALSE`, independent groups are
+compared. With 2 groups an independent or paired two-sample test is
+chosen; with \> 2 groups an ANOVA-family test is used.
 
-**Test Family Selection:** If `paired = FALSE`, it compares independent
-groups. If there are 2 groups, it selects a two-sample test family. If
-there are more than 2 groups, it selects an ANOVA-family test.
+**Assumption Checking (`test_type = "auto"`):**
 
-**Assumption Checking (only for `test_type = "auto"`):**
+- **Normality:** Shapiro-Wilk (n \< 50) or Lilliefors (n ≥ 50) under
+  `"auto"`. Per-group for 2-group comparisons; on model residuals for \>
+  2 groups.
 
-- **Normality:** Assessed using the Shapiro-Wilk test for small samples
-  (n \< 50). For larger samples (n \>= 50), uses the Lilliefors
-  (Kolmogorov-Smirnov) test from the `nortest` package. For two groups,
-  each group is tested. For more than two groups, the normality of model
-  residuals is tested.
-
-- **Homogeneity of Variance:** For independent tests, assessed using
-  Levene's test from the `car` package. If `car` is not installed, falls
-  back to Bartlett's test.
+- **Homogeneity of Variance:** Levene's test (`car`); falls back to
+  Bartlett's test if `car` is unavailable.
 
 **Test Selection Logic (`test_type = "auto"`):**
 
-- **Independent Two-Sample:**
+- Independent two-sample: Mann-Whitney U (normality violated) → Welch's
+  t (variance violated) → Student's t.
 
-  - If normality is violated -\> Mann-Whitney U test (Wilcoxon
-    rank-sum).
+- Paired two-sample: Wilcoxon signed-rank (normality violated) → Paired
+  t.
 
-  - If normality is OK but variance is violated -\> Welch's t-test.
+- Independent \> 2 groups: Kruskal-Wallis (normality violated) → Welch's
+  ANOVA (variance violated) → One-way ANOVA.
 
-  - If both are OK -\> Student's t-test.
+**Post-Hoc Tests (\> 2 groups, significant omnibus):** Tukey HSD
+(ANOVA), Games-Howell (Welch's ANOVA), Dunn's test (Kruskal-Wallis),
+Pairwise t-test (RM / Mixed ANOVA).
 
-- **Paired Two-Sample:**
-
-  - If normality is violated -\> Wilcoxon signed-rank test.
-
-  - If normality is OK -\> Paired t-test.
-
-- **Independent ANOVA (\>2 groups):**
-
-  - If normality is violated -\> Kruskal-Wallis test.
-
-  - If normality is OK but variance violated -\> Welch's ANOVA.
-
-  - If both OK -\> One-way ANOVA.
-
-**Post-Hoc Tests:** For significant results with \>2 groups, appropriate
-post-hoc tests are automatically performed:
-
-- Tukey HSD for one-way ANOVA
-
-- Games-Howell for Welch's ANOVA
-
-- Dunn's test for Kruskal-Wallis
-
-**Effect Sizes:** The function automatically calculates appropriate
-effect sizes:
-
-- Cohen's d for t-tests
-
-- Rank-biserial correlation for Mann-Whitney U
-
-- Eta-squared for ANOVA
-
-- Epsilon-squared for Kruskal-Wallis
+**Effect Sizes:** Cohen's d / paired Cohen's d (t-tests), rank-biserial
+correlation (Wilcoxon/Mann-Whitney), eta-squared (ANOVA),
+epsilon-squared (Kruskal-Wallis), generalized or partial eta-squared (RM
+/ Mixed ANOVA).
 
 **Non-Parametric Interpretation (Stochastic Dominance):** For
-non-parametric tests, group comparisons are interpreted using stochastic
-dominance rather than median comparisons. The `interpretation` column in
-`posthoc_result` (and the 2-group case) reads "X tends to have
-larger/smaller values than Y", reflecting that the Wilcoxon /
-Mann-Whitney family tests whether one group's values tend to be
-systematically higher or lower than another's.
-
-## References
-
-Aaron Schlege, *Games-Howell Post-Hoc Test*.
-<https://rpubs.com/aaronsc32/games-howell-test>.
-
-Albers, C., & Lakens, D. (2018). *When power analyses based on pilot
-data are biased: Inaccurate effect size estimators and follow-up bias*.
-Journal of Experimental Social Psychology. URL
-<https://doi.org/10.1016/j.jesp.2017.09.004>
-
-Algina, J., Keselman, H. J., & Penfield, R. D. (2006). *Confidence
-intervals for an effect size when variances are not equal*. Journal of
-Modern Applied Statistical Methods, 5(1), 2. URL
-<https://jmasm.com/index.php/jmasm/article/view/222> FULL PDF
-<https://digitalcommons.wayne.edu/cgi/viewcontent.cgi?article=1256&context=jmasm>
-
-Allen, R. (2017). *Statistics and Experimental Design for Psychologists:
-A Model Comparison Approach*. World Scientific Publishing Company.
-
-Bache S, Wickham H (2022). **magrittr: A Forward-Pipe Operator for R**.
-doi:10.32614/CRAN.package.magrittr
-<https://doi.org/10.32614/CRAN.package.magrittr>, R package version
-2.0.3, <https://CRAN.R-project.org/package=magrittr>.
-
-Bartlett, M. S. (1937). *Properties of sufficiency and statistical
-tests*. Proceedings of the Royal Society of London Series A 160,
-268-282. doi:10.1098/rspa.1937.0109.
-
-Becker, R. A., Chambers, J. M. and Wilks, A. R. (1988) *The New S
-Language*. Wadsworth & Brooks/Cole.
-
-Benjamini, Y., and Hochberg, Y. (1995). *Controlling the false discovery
-rate: a practical and powerful approach to multiple testing*. Journal of
-the Royal Statistical Society Series B, 57, 289-300.
-doi:10.1111/j.2517-6161.1995.tb02031.x.
-
-Benjamini, Y., and Yekutieli, D. (2001). *The control of the false
-discovery rate in multiple testing under dependency*. Annals of
-Statistics, 29, 1165-1188. doi:10.1214/aos/1013699998.
-
-Ben-Shachar M, Ludecke D, Makowski D (2020). *effectsize: Estimation of
-Effect Size Indices and Standardized Parameters*. Journal of Open Source
-Software, 5(56), 2815. doi: 10.21105/joss.02815
-
-Chambers, J. M., Freeny, A and Heiberger, R. M. (1992) *Analysis of
-variance; designed experiments*. Chapter 5 of Statistical Models in S
-eds J. M. Chambers and T. J. Hastie, Wadsworth & Brooks/Cole.
-
-Chambers, J. M. and Hastie, T. J. (1992) *Statistical Models in S*.
-Wadsworth & Brooks/Cole.
-
-Cliff, N. (1993). *Dominance statistics: Ordinal analyses to answer
-ordinal questions*. Psychological bulletin, 114(3), 494.
-
-Cohen, J. (1988). *Statistical power analysis for the behavioral
-sciences (2nd Ed.)*. New York: Routledge.
-
-Cureton, E. E. (1956). *Rank-biserial correlation*. Psychometrika,
-21(3), 287-290.
-
-Dallal, G.E. and Wilkinson, L. (1986): *An analytic approximation to the
-distribution of Lilliefors' test for normality*. The American
-Statistician, 40, 294-296.
-
-David F. Bauer (1972). *Constructing confidence sets using rank
-statistics*. Journal of the American Statistical Association 67,
-687-690. doi:10.1080/01621459.1972.10481279.
-
-Delacre, M., Lakens, D., Ley, C., Liu, L., & Leys, C. (2021, May 7).
-*Why Hedges' g\*s based on the non-pooled standard deviation should be
-reported with Welch's t-test*. doi:10.31234/osf.io/tu6mp
-
-Dunn, O. J. (1964) *Multiple comparisons using rank sums Technometrics*,
-6(3):241-252.
-
-Eric Langford (2006) *Quartiles in Elementary Statistics*, Journal of
-Statistics Education 14 3; doi:10.1080/10691898.2006.11910589
-
-Fox, J. (2016) *Applied Regression Analysis and Generalized Linear
-Models*, Third Edition. Sage.
-
-Fox J, Weisberg S (2019). **An R Companion to Applied Regression**,
-Third edition. Sage, Thousand Oaks CA.
-<https://www.john-fox.ca/Companion/>.
-
-Glass, G. V. (1965). *A ranking variable analogue of biserial
-correlation: Implications for short-cut item analysis*. Journal of
-Educational Measurement, 2(1), 91-95.
-
-Gross J, Ligges U (2015). **nortest: Tests for Normality**.
-doi:10.32614/CRAN.package.nortest
-<https://doi.org/10.32614/CRAN.package.nortest>, R package version
-1.0-4, <https://CRAN.R-project.org/package=nortest>.
-
-Hedges, L. V. & Olkin, I. (1985). *Statistical methods for
-meta-analysis*. Orlando, FL: Academic Press.
-
-Hochberg, Y. (1988). *A sharper Bonferroni procedure for multiple tests
-of significance*. Biometrika, 75, 800-803. doi:10.2307/2336325
-
-Holm, S. (1979). *A simple sequentially rejective multiple test
-procedure. Scandinavian Journal of Statistics*, 6, 65-70.
-<https://www.jstor.org/stable/4615733>.
-
-Hommel, G. (1988). *A stagewise rejective multiple test procedure based
-on a modified Bonferroni test*. Biometrika, 75, 383-386.
-doi:10.2307/2336190.
-
-Hunter, J. E., & Schmidt, F. L. (2004). *Methods of meta-analysis:
-Correcting error and bias in research findings*. Sage.
-
-Hyndman, R. J. and Fan, Y. (1996) *Sample quantiles in statistical
-packages*, American Statistician 50, 361-365. doi:10.2307/2684934.
-
-Kassambara A (2023). **rstatix: Pipe-Friendly Framework for Basic
-Statistical Tests**. doi:10.32614/CRAN.package.rstatix
-<https://doi.org/10.32614/CRAN.package.rstatix>, R package version
-0.7.2, <https://CRAN.R-project.org/package=rstatix>.
-
-Kelley, T. (1935) *An unbiased correlation ratio measure*. Proceedings
-of the National Academy of Sciences. 21(9). 554-559.
-
-Kerby, D. S. (2014). *The simple difference formula: An approach to
-teaching nonparametric correlation*. Comprehensive Psychology, 3, 11-IT.
-
-King, B. M., & Minium, E. W. (2008). *Statistical reasoning in the
-behavioral sciences*. John Wiley & Sons Inc.
-
-Komsta L, Novomestky F (2022). **moments: Moments, Cumulants, Skewness,
-Kurtosis and Related Tests**. doi:10.32614/CRAN.package.moments
-<https://doi.org/10.32614/CRAN.package.moments>, R package version
-0.14.1, <https://CRAN.R-project.org/package=moments>.
-
-Makkonen, L. and Pajari, M. (2014) *Defining Sample Quantiles by the
-True Rank Probability*, Journal of Probability and Statistics; Hindawi
-Publ.Corp. doi:10.1155/2014/326579
-
-Myles Hollander and Douglas A. Wolfe (1973). *Nonparametric Statistical
-Methods*. New York: John Wiley & Sons. Pages 27-33 (one-sample), 68-75
-(two-sample). Or second edition (1999).
-
-Myles Hollander and Douglas A. Wolfe (1973), *Nonparametric Statistical
-Methods*. New York: John Wiley & Sons. Pages 115-120.
-
-Muller K, Wickham H (2025). **tibble: Simple Data Frames**.
-doi:10.32614/CRAN.package.tibble
-<https://doi.org/10.32614/CRAN.package.tibble>, R package version 3.3.0,
-<https://CRAN.R-project.org/package=tibble>.
-
-Olejnik, S., & Algina, J. (2003). *Generalized eta and omega squared
-statistics: measures of effect size for some common research designs*.
-Psychological methods, 8(4), 434.
-
-Patrick Royston (1982). *Algorithm AS 181: The W test for Normality*.
-Applied Statistics, 31, 176-180. doi:10.2307/2347986.
-
-Patrick Royston (1982). *An extension of Shapiro and Wilk's W test for
-normality to large samples*. Applied Statistics, 31, 115-124.
-doi:10.2307/2347973.
-
-Patrick Royston (1995). *Remark AS R94: A remark on Algorithm AS 181:
-The W test for normality*. Applied Statistics, 44, 547-551.
-doi:10.2307/2986146.
-
-Ruxton, G.D., and Beauchamp, G. (2008) *'Time for some a priori thinking
-about post hoc testing'*, Behavioral Ecology, 19(3), pp. 690-693. doi:
-10.1093/beheco/arn020.
-
-Sangseok Lee, Dong Kyu Lee. *What is the proper way to apply the
-multiple comparison test?*. Korean J Anesthesiol. 2018;71(5):353-360.
-
-Sarkar, S. (1998). *Some probability inequalities for ordered MTP2
-random variables: a proof of Simes conjecture*. Annals of Statistics,
-26, 494-504. doi:10.1214/aos/1013699998.
-
-Sarkar, S., and Chang, C. K. (1997). *The Simes method for multiple
-hypothesis testing with positively dependent test statistics*. Journal
-of the American Statistical Association, 92, 1601-1608.
-doi:10.2307/2965431.
-
-Shaffer, J. P. (1995). *Multiple hypothesis testing. Annual Review of
-Psychology*, 46, 561-584. doi:10.1146/annurev.ps.46.020195.003021.
-
-Steiger, J. H. (2004). *Beyond the F test: Effect size confidence
-intervals and tests of close fit in the analysis of variance and
-contrast analysis*. Psychological Methods, 9, 164-182.
-
-Stephens, M.A. (1974): *EDF statistics for goodness of fit and some
-comparisons*. Journal of the American Statistical Association, 69,
-730-737.
-
-Thode Jr., H.C. (2002): *Testing for Normality*. Marcel Dekker, New
-York.
-
-Tomczak, M., & Tomczak, E. (2014). *The need to report effect size
-estimates revisited*. An overview of some recommended measures of effect
-size.
-
-Wickham H, Averick M, Bryan J, Chang W, McGowan LD, Francois R,
-Grolemund G, Hayes A, Henry L, Hester J, Kuhn M, Pedersen TL, Miller E,
-Bache SM, Muller K, Ooms J, Robinson D, Seidel DP, Spinu V, Takahashi K,
-Vaughan D, Wilke C, Woo K, Yutani H (2019). *"Welcome to the
-tidyverse."* *Journal of Open Source Software*, *4*(43), 1686.
-doi:10.21105/joss.01686 <https://doi.org/10.21105/joss.01686>.
-
-Wicklin, R. (2017) *Sample quantiles: A comparison of 9 definitions*;
-SAS Blog.
-https://blogs.sas.com/content/iml/2017/05/24/definitions-sample-quantiles.htm
-
-Wright, S. P. (1992). *Adjusted P-values for simultaneous inference*.
-Biometrics, 48, 1005-1013. doi:10.2307/2532694.
-
-R Core Team (2025). **R: A Language and Environment for Statistical
-Computing**. R Foundation for Statistical Computing, Vienna, Austria.
-<https://www.R-project.org/>.
+non-parametric tests the `interpretation` column reads "X tends to have
+larger/smaller values than Y".
 
 ## Author
 
@@ -576,138 +238,28 @@ John Lennon L. Calorio
 
 ``` r
 if (FALSE) { # \dontrun{
-# --- Basic Usage with 3+ Groups ---
-data(iris)
-res_iris <- run_diff(x = iris, outcome = "Sepal.Length", group = "Species")
-print(res_iris)
-summary(res_iris)
+# --- 3+ Groups (auto) ---
+res_iris <- run_diff(iris, "Sepal.Length", "Species")
+print(res_iris); summary(res_iris)
 
-# --- Two-Sample Independent Comparison ---
-data(mtcars)
+# --- Two-sample independent ---
 mtcars$am <- factor(mtcars$am, labels = c("automatic", "manual"))
-res_mtcars <- run_diff(x = mtcars, outcome = "mpg", group = "am")
-print(res_mtcars)
+run_diff(mtcars, "mpg", "am")
 
-# --- Paired-Sample Comparison ---
-data(sleep)
-res_sleep <- run_diff(x = sleep, outcome = "extra", group = "group", paired = TRUE)
-summary(res_sleep)
+# --- Paired ---
+run_diff(sleep, "extra", "group", paired = TRUE)
 
-# --- Multi-outcome with summary table (e.g., metabolomics screening) ---
-data(iris)
+# --- Multi-outcome with summary table ---
 outcomes <- c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width")
-res_multi <- run_diff(
-  x             = iris,
-  outcome       = outcomes,
-  group         = "Species",
-  summary_table = TRUE,
-  verbose       = FALSE
-)
-# Access per-outcome results as usual
-print(res_multi$Sepal.Length)
-# Filter features with significant omnibus p-value
-sig_features <- res_multi$summary_table[res_multi$summary_table$significant, ]
-print(sig_features)
+res_multi <- run_diff(iris, outcomes, "Species",
+                      summary_table = TRUE, verbose = FALSE)
+res_multi$summary_table
 
-# --- Multi-outcome + subgroup summary tables ---
-# Suppose df has columns: metabolites..., "Disease", "Gender"
-res_sg <- run_diff(
-  x             = df,
-  outcome       = metabolite_cols,
-  group         = "Disease",
-  subgroup      = "Gender",
-  summary_table = TRUE,
-  verbose       = FALSE
-)
-# Overall summary table
-res_sg$summary_table
-# Per-subgroup summary tables
-res_sg$summary_table_Gender$Male
-res_sg$summary_table_Gender$Female
+# --- One-way RM ANOVA ---
+run_diff(df_long, "HeartRate", within = "Time", subject_id = "ID")
 
-# --- Forcing a Non-Parametric Test ---
-data(iris)
-res_iris_np <- run_diff(
-  x         = iris,
-  outcome   = "Sepal.Length",
-  group     = "Species",
-  test_type = "nonparametric"
-)
-print(res_iris_np)
-
-# --- Forcing a Parametric Test & Custom P-Value Adjustment ---
-data(ToothGrowth)
-ToothGrowth$dose <- as.factor(ToothGrowth$dose)
-res_tooth <- run_diff(
-  x               = ToothGrowth,
-  outcome         = "len",
-  group           = "dose",
-  test_type       = "parametric",
-  p_adjust_method = "bonferroni"
-)
-print(res_tooth$posthoc_result)
-
-# --- Custom Group Ordering ---
-data(PlantGrowth)
-res_plant <- run_diff(
-  x           = PlantGrowth,
-  outcome     = "weight",
-  group       = "group",
-  group_order = c("trt1", "ctrl", "trt2"),
-  verbose     = FALSE
-)
-print(res_plant$data_summary)
-
-# --- One-way Repeated Measures ANOVA ---
-# Does HeartRate change across time points (Pre, During, Post)?
-res_rm1 <- run_diff(
-  x          = df_long,
-  outcome    = "HeartRate",
-  within     = "Time",
-  subject_id = "ID",
-  verbose    = FALSE
-)
-print(res_rm1)
-summary(res_rm1)
-
-# --- Two-way Repeated Measures ANOVA ---
-# Does an outcome change across two within-subject factors?
-# Requires a dataset where subjects are measured under all combinations
-# of two within-subject factors (e.g., Time × Condition).
-# Create a minimal example with two within factors:
-set.seed(1)
-df_2rm <- data.frame(
-  id        = rep(paste0("S", 1:10), each = 6),
-  time      = rep(rep(c("T1", "T2", "T3"), each = 2), 10),
-  condition = rep(c("A", "B"), times = 30),
-  score     = rnorm(60, mean = 50, sd = 10)
-)
-res_rm2 <- run_diff(
-  x          = df_2rm,
-  outcome    = "score",
-  within     = c("time", "condition"),
-  subject_id = "id",
-  verbose    = FALSE
-)
-print(res_rm2)
-res_rm2$anova_table
-
-# --- Two-way Mixed ANOVA ---
-# Does HeartRate differ by Group (between) and Time (within),
-# and is there a Group x Time interaction?
-res_mixed <- run_diff(
-  x          = df_long,
-  outcome    = "HeartRate",
-  group      = "Group",
-  within     = "Time",
-  subject_id = "ID",
-  verbose    = FALSE
-)
-print(res_mixed)
-summary(res_mixed)
-# Full ANOVA table with all effects and GG-corrected p-values if needed:
-res_mixed$anova_table
-# Significant post-hoc pairs:
-res_mixed$posthoc_result[res_mixed$posthoc_result$significant %in% TRUE, ]
+# --- Mixed ANOVA ---
+run_diff(df_long, "HeartRate", group = "Group",
+         within = "Time", subject_id = "ID")
 } # }
 ```

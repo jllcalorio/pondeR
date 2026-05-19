@@ -279,6 +279,14 @@ A named list of class `run_DIpreprocess` containing:
 
 10. Common-feature harmonisation
 
+## Note
+
+**Zero Handling:** The pipeline automatically converts all `0` values in
+`x` to `NA` prior to analysis. This represents a strong, domain-specific
+assumption (common in mass spectrometry metabolomics) that zeros signify
+structural missingness (e.g., values below the limit of detection)
+rather than a true biological absence.
+
 ## References
 
 Kirwan, J.A., et al. (2013). *Analytical and Bioanalytical Chemistry*,

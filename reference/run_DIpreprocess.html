@@ -280,6 +280,14 @@ One of <code>"mean"</code>, <code>"median"</code>, <code>"none"</code>. Default:
 <li><p>Common-feature harmonisation</p></li>
 </ol></div>
     <div class="section level2">
+    <h2 id="note">Note<a class="anchor" aria-label="anchor" href="#note"></a></h2>
+    <p><strong>Zero Handling:</strong> The pipeline automatically converts all <code>0</code> values in
+<code>x</code> to <code>NA</code> prior to analysis. This represents a strong, domain-specific
+assumption (common in mass spectrometry metabolomics) that zeros signify structural
+missingness (e.g., values below the limit of detection) rather than a true biological
+absence.</p>
+    </div>
+    <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
     <p>Kirwan, J.A., et al. (2013). <em>Analytical and Bioanalytical Chemistry</em>, 405, 5147–5157.</p>
     </div>

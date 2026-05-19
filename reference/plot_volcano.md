@@ -1,4 +1,4 @@
-# Volcano Plot for Fold Change and P-value Data
+# Volcano Plot for Fold Change and p-value Data
 
 Generates publication-quality volcano plots that visualise differential
 features as a scatter of log2 fold change (x-axis) versus statistical
@@ -82,7 +82,7 @@ plot_volcano(
 
   `list(fc = <run_foldchange>)`
 
-  :   Fold-change object only. P-values are unavailable; all features
+  :   Fold-change object only. p-values are unavailable; all features
       are classified as non-significant and the significance threshold
       line is not meaningful. A warning is issued.
 

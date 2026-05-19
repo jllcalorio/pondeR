@@ -3,8 +3,9 @@
 Generates box plots or violin plots with statistical tests and pairwise
 comparisons. Automatically selects appropriate statistical tests based
 on assumptions, or allows manual specification. Statistical testing is
-performed internally via `.run_diff_single`, the unexported
-single-outcome engine that powers
+performed internally via
+[`.run_diff_single`](https://jllcalorio.github.io/pondeR/reference/dot-run_diff_single.md),
+the unexported single-outcome engine that powers
 [`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md).
 
 ## Usage

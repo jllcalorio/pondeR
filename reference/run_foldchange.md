@@ -8,21 +8,24 @@ log-transformation. The function is designed to integrate seamlessly
 with
 [`run_diff()`](https://jllcalorio.github.io/pondeR/reference/run_diff.md)
 and
-[`plot_volcano()`](https://jllcalorio.github.io/pondeR/reference/plot_volcano.md).
+[`plot_volcano`](https://jllcalorio.github.io/pondeR/reference/plot_volcano.md).
 
 ## Usage
 
 ``` r
 run_foldchange(
   x,
-  metadata,
-  group,
+  from = c("normalized", "corrected", "transformed", "scaled"),
+  metadata = NULL,
+  group = NULL,
   arrange = NULL,
   filter = NULL,
   select = NULL,
   sort = TRUE,
   log2 = TRUE,
-  eps = 1e-08
+  eps = 1e-08,
+  up = NULL,
+  down = NULL
 )
 ```
 
@@ -34,17 +37,25 @@ run_foldchange(
   features (variables) to be analysed. Column names may contain special
   characters.
 
+- from:
+
+  Character. Specifies which data processing stage to extract if `x` is
+  a `run_DIpreprocess` object. Options are: `"corrected"` (drift/batch
+  corrected), `"normalized"` (default), `"transformed"` (log/sqrt
+  transformed), or `"scaled"` (final auto/pareto scaled data).
+
 - metadata:
 
   A `data.frame`, `tibble`, or named `matrix` with the same number of
-  rows as `x` and containing sample annotations. Must include the column
-  specified by `group`.
+  rows as `x` and containing sample annotations. If `x` is a
+  `run_DIpreprocess` object, this is optional and defaults to the
+  internal metadata.
 
 - group:
 
-  A single character string naming the column in `metadata` that
-  contains the grouping factor. Must have at least two distinct non-`NA`
-  levels after optional filtering via `filter`.
+  Character string naming the column in `metadata` that contains the
+  grouping factor. If `x` is a `run_DIpreprocess` object, this is
+  optional and defaults to the group column used in that step.
 
 - arrange:
 
@@ -58,8 +69,8 @@ run_foldchange(
 - filter:
 
   An optional character vector of group levels to *exclude* before
-  analysis. Rows whose `group` value appears in `filter` are dropped.
-  Default `NULL` (no filtering).
+  analysis. If `x` is a `run_DIpreprocess` object, this defaults to the
+  `qc_types` identified during preprocessing.
 
 - select:
 
@@ -83,6 +94,19 @@ run_foldchange(
   A small positive numeric value. When `log2 = TRUE`, data are shifted
   so that the global minimum of `x` (after filtering and selection)
   becomes `eps`. Default `1e-8`.
+
+- up:
+
+  Numeric. Optional threshold for up-regulation. If supplied, a `"sig"`
+  column is added to `summary_table` where features with
+  `fold_change >= up` are labelled `"Significant"`. Default `NULL`.
+
+- down:
+
+  Numeric. Optional threshold for down-regulation. If supplied, features
+  with `fold_change <= down` are labelled `"Significant"` in the `"sig"`
+  column of `summary_table`. This value is compared against the raw fold
+  change, not log2. Default `NULL`.
 
 ## Value
 
@@ -144,13 +168,19 @@ to every value when \\m \le 0\\; otherwise no shift is applied (\\\delta
 means.
 
 **Integration with
-[`run_diff()`](https://jllcalorio.github.io/pondeR/reference/run_diff.md)
+[`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md)
 and
-[`plot_volcano()`](https://jllcalorio.github.io/pondeR/reference/plot_volcano.md)**  
+[`plot_volcano`](https://jllcalorio.github.io/pondeR/reference/plot_volcano.md)**  
 The returned list exposes `fc_table`, `log2fc_table`, and `shifted_data`
 in a consistent format that
 [`plot_volcano()`](https://jllcalorio.github.io/pondeR/reference/plot_volcano.md)
 can consume directly.
+
+## See also
+
+[`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md),
+[`plot_volcano`](https://jllcalorio.github.io/pondeR/reference/plot_volcano.md),
+[`run_DIpreprocess`](https://jllcalorio.github.io/pondeR/reference/run_DIpreprocess.md)
 
 ## Author
 

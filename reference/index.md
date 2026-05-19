@@ -54,7 +54,7 @@ multivariate data exploration.
 Standalone plotting functions for volcano plots and other figures.
 
 - [`plot_volcano()`](https://jllcalorio.github.io/pondeR/reference/plot_volcano.md)
-  : Volcano Plot for Fold Change and P-value Data
+  : Volcano Plot for Fold Change and p-value Data
 
 ## Data Pre-processing
 
@@ -125,6 +125,47 @@ Utility functions for data management, relabelling, and S3 methods.
 
 - [`summary(`*`<run_diff>`*`)`](https://jllcalorio.github.io/pondeR/reference/summary.run_diff.md)
   : Summary method for run_diff objects
+
+- [`.assumption_row()`](https://jllcalorio.github.io/pondeR/reference/dot-assumption_row.md)
+  : Build the standard assumptions data frame row from a normality
+  result
+
+- [`.build_posthoc_df()`](https://jllcalorio.github.io/pondeR/reference/dot-build_posthoc_df.md)
+  : Build a standardised post-hoc result data frame
+
+- [`.build_summary_table()`](https://jllcalorio.github.io/pondeR/reference/dot-build_summary_table.md)
+  : Build a summary_table data frame from a list of run_diff objects
+
+- [`.check_normality()`](https://jllcalorio.github.io/pondeR/reference/dot-check_normality.md)
+  : Check normality of a numeric vector
+
+- [`.check_variance()`](https://jllcalorio.github.io/pondeR/reference/dot-check_variance.md)
+  : Run variance-homogeneity test (Levene or Bartlett fallback)
+
+- [`.compute_effect_size()`](https://jllcalorio.github.io/pondeR/reference/dot-compute_effect_size.md)
+  : Compute the appropriate effect size for a classical run_diff result
+
+- [`.format_df()`](https://jllcalorio.github.io/pondeR/reference/dot-format_df.md)
+  : Format a degrees-of-freedom string consistently across test types
+
+- [`.parallel_normality()`](https://jllcalorio.github.io/pondeR/reference/dot-parallel_normality.md)
+  : Run normality checks in parallel (or sequentially)
+
+- [`.run_diff_single()`](https://jllcalorio.github.io/pondeR/reference/dot-run_diff_single.md)
+  : Internal single-outcome run_diff for plot_diff
+
+- [`.run_independent_anova()`](https://jllcalorio.github.io/pondeR/reference/dot-run_independent_anova.md)
+  : Execute an independent ANOVA-family test
+
+- [`.run_independent_two_sample()`](https://jllcalorio.github.io/pondeR/reference/dot-run_independent_two_sample.md)
+  : Execute an independent two-sample test
+
+- [`.run_paired_two_sample()`](https://jllcalorio.github.io/pondeR/reference/dot-run_paired_two_sample.md)
+  : Execute a paired two-sample test
+
+- [`.run_rm_anova()`](https://jllcalorio.github.io/pondeR/reference/dot-run_rm_anova.md)
+  : Execute RM or mixed ANOVA and return a full run_diff-compatible
+  result list
 
 ## Other
 
@@ -203,7 +244,7 @@ until formally categorised.
   : Plot PCA Scree Plot
 
 - [`plot_volcano()`](https://jllcalorio.github.io/pondeR/reference/plot_volcano.md)
-  : Volcano Plot for Fold Change and P-value Data
+  : Volcano Plot for Fold Change and p-value Data
 
 - [`print(`*`<plot_volcano>`*`)`](https://jllcalorio.github.io/pondeR/reference/print.plot_volcano.md)
   :

@@ -11,7 +11,7 @@ publication-ready ROC plots via ggplot2.
 ``` r
 run_auc(
   x,
-  y,
+  y = NULL,
   remove = NULL,
   metadata = NULL,
   set_control = NULL,
@@ -39,7 +39,7 @@ run_auc(
   inplot_font_size = NULL,
   min_vip = 1,
   up = 1.5,
-  down = 0.5,
+  down = 0.6,
   p_value = 0.05,
   ...
 )
@@ -62,15 +62,20 @@ run_auc(
   binary grouping variable (cases vs. controls). The column may be
   categorical (`character` / `factor`) with exactly two levels after
   optional removal via `remove`, or numeric containing only `0`
-  (control) and `1` (case) after optional removal.
+  (control) and `1` (case) after optional removal. If `x` is a
+  `run_DIpreprocess` object or a list containing one, `y` will default
+  to `x$parameters$group_col` if not explicitly provided.
 
 - remove:
 
   Optional. A vector of values to remove from `y` before analysis, used
-  to reduce a multi-level variable down to exactly two groups. May be a
-  character vector (for categorical `y`), a numeric vector (for numeric
-  `y`), or a mixed list. Ignored when `y` already contains exactly two
-  categories or only `0`/`1` values. Default `NULL`.
+  to reduce a multi-level variable down to exactly two. If `x` is a
+  `run_DIpreprocess` object or a list containing one, `remove` will
+  default to `x$parameters$qc_types` if not explicitly provided. May be
+  a character vector (for categorical `y`), groups. May be a character
+  vector (for categorical `y`), a numeric vector (for numeric `y`), or a
+  mixed list. Ignored when `y` already contains exactly two categories
+  or only `0`/`1` values. Default `NULL`.
 
 - metadata:
 
@@ -239,13 +244,15 @@ run_auc(
 
   A single numeric value specifying the minimum fold change for
   up-regulated features. Only applied if a `run_foldchange` object is
-  provided in the `x` list. Default `1.5`.
+  provided in the `x` list. Default is in its `params$up`. When `x` is
+  `data.frame`, `tibble`, named `matrix`, the default is `1.5`.
 
 - down:
 
   A single numeric value specifying the maximum fold change for
   down-regulated features. Only applied if a `run_foldchange` object is
-  provided in the `x` list. Default `0.5`.
+  provided in the `x` list. Default is in its `params$down`. When `x` is
+  `data.frame`, `tibble`, named `matrix`, the default is `0.6`.
 
 - p_value:
 
@@ -365,6 +372,7 @@ res2 <- run_auc(
   plot        = "none",
   compute_ci  = FALSE
 )
+#> Moving non-numeric columns to metadata (predictors must be numeric): status
 print(res2$auc_table)
 #>   predictor       auc ci_lower ci_upper ci_level direction n_cases n_controls
 #> 1   score_1 0.5257453       NA       NA     0.95         >      36         41

@@ -13,7 +13,7 @@ plot_beforeafter(
   x,
   y,
   metadata,
-  plot_what,
+  plot_what = NULL,
   col_injection = "InjectionSequence",
   col_batch = "Batch",
   col_group = "Group",
@@ -57,8 +57,10 @@ plot_beforeafter(
 
 - plot_what:
 
-  Character vector. Column names in `x` and `y` to be plotted. All
-  values must be present in both data frames. This argument is required.
+  Character vector or `NULL`. Column names from `x` to be plotted. If
+  `NULL` (default), the function will randomly select up to 6 feature
+  names from `x`. If `x` has fewer than 6 features, all available
+  features will be plotted. This argument is required.
 
 - col_injection:
 
