@@ -6,8 +6,10 @@
 \usage{
 run_diff(
   x,
+  metadata = NULL,
   outcome,
   group = NULL,
+  filter = NULL,
   within = NULL,
   subject_id = NULL,
   paired = FALSE,
@@ -32,19 +34,30 @@ run_diff(
 )
 }
 \arguments{
-\item{x}{A data frame, or an object of class \code{"run_DIpreprocess"}.}
+\item{x}{A data frame, or an object of class \code{"run_DIpreprocess"}.
+If a data frame, it should contain only the numeric features/metabolites
+to be analysed.}
+
+\item{metadata}{A data frame containing sample-level metadata (e.g.,
+grouping, subgroups, subject IDs). Required if \code{x} is a data frame.}
 
 \item{outcome}{A character string or character vector naming the numeric
-outcome variable(s).}
+outcome variable(s) found in \code{x}.}
 
-\item{group}{A character string naming the between-subjects grouping
-variable. May be \code{NULL} for pure within-subjects designs.}
+\item{group}{A character string naming the grouping variable found in
+\code{metadata}. May be \code{NULL} for pure within-subjects designs.}
 
-\item{within}{Character vector of within-subject factor column name(s).
+\item{filter}{Optional character vector of levels in \code{group} to exclude
+from the analysis. If \code{x} is a \code{run_DIpreprocess} object,
+defaults to the identified QC types.}
+
+\item{within}{Character vector of within-subject factor column name(s)
+found in \code{metadata}.
 When supplied, \code{subject_id} must also be provided. Triggers
 repeated-measures or mixed-ANOVA logic.}
 
-\item{subject_id}{Character string naming the subject identifier column.
+\item{subject_id}{Character string naming the subject identifier column
+found in \code{metadata}.
 Required when \code{within} is non-\code{NULL}.}
 
 \item{paired}{Logical; whether observations are paired. Default \code{FALSE}.}
@@ -93,8 +106,8 @@ Default \code{"BH"}.}
 
 \item{group_order}{Optional character vector specifying group level order.}
 
-\item{subgroup}{Optional character vector of subgroup column names for
-stratified analysis.}
+\item{subgroup}{Optional character vector of column names in \code{metadata}
+for stratified analysis.}
 
 \item{summary_table}{Logical; when \code{outcome} has length > 1 and
 \code{TRUE}, appends \code{$summary_table} (and subgroup summary tables)
