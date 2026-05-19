@@ -14,10 +14,15 @@
 #' @param y A single character string naming the column in \code{x} that
 #'   contains the binary grouping variable (cases vs. controls). The column
 #'   may be categorical (\code{character} / \code{factor}) with exactly two
-#'   levels after optional removal via \code{remove}, or numeric containing
-#'   only \code{0} (control) and \code{1} (case) after optional removal.
+#'   levels after optional removal via \code{remove}, or numeric containing only
+#'   \code{0} (control) and \code{1} (case) after optional removal. If \code{x}
+#'   is a \code{run_DIpreprocess} object or a list containing one, \code{y} will
+#'   default to \code{x$parameters$group_col} if not explicitly provided.
 #' @param remove Optional. A vector of values to remove from \code{y} before
-#'   analysis, used to reduce a multi-level variable down to exactly two
+#'   analysis, used to reduce a multi-level variable down to exactly two. If
+#'   \code{x} is a \code{run_DIpreprocess} object or a list containing one,
+#'   \code{remove} will default to \code{x$parameters$qc_types} if not
+#'   explicitly provided. May be a character vector (for categorical \code{y}),
 #'   groups. May be a character vector (for categorical \code{y}), a numeric
 #'   vector (for numeric \code{y}), or a mixed list. Ignored when \code{y}
 #'   already contains exactly two categories or only \code{0}/\code{1} values.
@@ -100,9 +105,13 @@
 #' @param min_vip A single numeric value specifying the minimum VIP score for features to be considered. 
 #'   Only applied if a \code{run_pls} object is provided in the \code{x} list. Default \code{1.0}.
 #' @param up A single numeric value specifying the minimum fold change for up-regulated features. 
-#'   Only applied if a \code{run_foldchange} object is provided in the \code{x} list. Default \code{1.5}.
-#' @param down A single numeric value specifying the maximum fold change for down-regulated features. 
-#'   Only applied if a \code{run_foldchange} object is provided in the \code{x} list. Default \code{0.5}.
+#'   Only applied if a \code{run_foldchange} object is provided in the \code{x} list.
+#'   Default is in its `params$up`. When `x` is \code{data.frame}, \code{tibble}, named \code{matrix},
+#'   the default is \code{1.5}.
+#' @param down A single numeric value specifying the maximum fold change for down-regulated features.
+#'   Only applied if a \code{run_foldchange} object is provided in the \code{x} list.
+#'   Default is in its `params$down`. When `x` is \code{data.frame}, \code{tibble}, named \code{matrix},
+#'   the default is \code{0.6}.
 #' @param p_value A single numeric value specifying the maximum acceptable p-value for features. 
 #'   Only applied if a \code{run_diff} object is provided in the \code{x} list. Default \code{0.05}.
 #' @param ... Additional arguments forwarded to \code{pROC::roc()},
@@ -223,7 +232,7 @@
 #' @export
 run_auc <- function(
     x,
-    y,
+    y                  = NULL,
     remove             = NULL,
     metadata           = NULL,
     set_control        = NULL,
@@ -251,10 +260,12 @@ run_auc <- function(
     inplot_font_size   = NULL,
     min_vip            = 1.0,
     up                 = 1.5,
-    down               = 0.5,
+    down               = 0.6,
     p_value            = 0.05,
     ...
 ) {
+
+  mc <- match.call(expand.dots = FALSE) # Capture call here to check for explicitly passed arguments
 
   # ---------------------------------------------------------------------------
   # --- Integration with run_* Ecosystem & Feature Filtering ---
@@ -268,6 +279,16 @@ run_auc <- function(
     # Extract components from the list
     di_obj   <- Filter(function(obj) inherits(obj, "run_DIpreprocess"), x)[[1]]
     
+    # Auto-detect y from DIpreprocess metadata if missing
+    if (is.null(y) && !is.null(di_obj$parameters$group_col)) {
+      y <- di_obj$parameters$group_col
+    }
+
+    # Auto-set 'remove' from qc_types if not explicitly provided
+    if (!("remove" %in% names(mc)) && !is.null(di_obj$parameters$qc_types)) {
+      remove <- eval(di_obj$parameters$qc_types)
+    }
+
     pls_obj  <- Filter(function(obj) inherits(obj, "run_pls"), x)
     pls_obj  <- if (length(pls_obj) > 0) pls_obj[[1]] else NULL
     
@@ -282,7 +303,22 @@ run_auc <- function(
     # Extract base data
     target_meta <- if (!is.null(di_obj$metadata_merged)) di_obj$metadata_merged else di_obj$metadata
     target_data <- if (!is.null(di_obj$data_nonpls_merged)) di_obj$data_nonpls_merged else di_obj$data_nonpls
-    
+    if (!is.null(metadata)) target_meta <- cbind(metadata, target_meta)
+
+    # Auto-set 'up' and 'down' from run_foldchange if not explicitly provided
+    if (!is.null(fc_obj)) {
+      if (!("up" %in% names(mc))) {
+        if (!is.null(fc_obj$params$up)) {
+          up <- fc_obj$params$up
+        }
+      }
+      if (!("down" %in% names(mc))) {
+        if (!is.null(fc_obj$params$down)) {
+          down <- fc_obj$params$down
+        }
+      }
+    }
+
     valid_features <- colnames(target_data)
 
     # 1. VIP Filtering (from run_pls)
@@ -306,7 +342,7 @@ run_auc <- function(
       }
     }
 
-    # 3. P-value Filtering (from run_diff)
+    # 3. p-value Filtering (from run_diff)
     if (!is.null(diff_obj) && !is.null(p_value)) {
       pass_diff <- character(0)
       
@@ -337,11 +373,18 @@ run_auc <- function(
     }
 
     if (length(valid_features) == 0) {
-      stop("No features passed the combined filtering criteria (VIP, Fold Change, P-value).", call. = FALSE)
+      active <- character(0)
+      if (!is.null(pls_obj))  active <- c(active, "VIP")
+      if (!is.null(fc_obj))   active <- c(active, "Fold Change")
+      if (!is.null(diff_obj)) active <- c(active, "p-value")
+
+      warning("No features passed the combined filtering criteria (", 
+              paste(active, collapse = ", "), "). Returning empty results.", call. = FALSE)
     }
 
     # Reconstruct data explicitly keeping only valid features
-    x <- cbind(target_meta, target_data[, valid_features, drop = FALSE])
+    metadata <- target_meta
+    x <- cbind(metadata, target_data[, valid_features, drop = FALSE])
     
     # Safely restrict include_cols parameter so AUROC operates strictly on the passed features
     if (is.null(include_cols)) {
@@ -354,7 +397,38 @@ run_auc <- function(
     # Fallback for standard single run_DIpreprocess object
     target_meta <- if (!is.null(x$metadata_merged)) x$metadata_merged else x$metadata
     target_data <- if (!is.null(x$data_nonpls_merged)) x$data_nonpls_merged else x$data_nonpls
-    x <- cbind(target_meta, target_data)
+    if (!is.null(metadata)) target_meta <- cbind(metadata, target_meta)
+
+    # Auto-detect y if missing
+    if (is.null(y) && !is.null(x$parameters$group_col)) {
+      y <- x$parameters$group_col
+    }
+
+    metadata <- target_meta
+    x <- cbind(metadata, target_data)
+  } else if (is.data.frame(x) || is.matrix(x)) {
+    # For plain data.frame or matrix: separate metadata automatically
+    if (is.matrix(x)) x <- as.data.frame(x)
+    
+    # Identify numeric vs non-numeric columns
+    is_num <- vapply(x, is.numeric, logical(1L))
+    non_num_cols <- names(x)[!is_num]
+
+    if (length(non_num_cols) > 0) {
+      message("Moving non-numeric columns to metadata (predictors must be numeric): ",
+              paste(non_num_cols, collapse = ", "))
+    }
+    
+    # Move non-numeric columns to metadata
+    target_meta <- x[, !is_num, drop = FALSE]
+    target_data <- x[, is_num, drop = FALSE]
+    
+    # Merge with existing metadata if provided
+    if (!is.null(metadata)) target_meta <- cbind(metadata, target_meta)
+    
+    # Update metadata and x (re-bind so y is accessible)
+    metadata <- target_meta
+    x        <- cbind(metadata, target_data)
   }
 
   # ---------------------------------------------------------------------------
@@ -393,7 +467,7 @@ run_auc <- function(
   # ---------------------------------------------------------------------------
   # 2.  Validate y
   # ---------------------------------------------------------------------------
-  if (missing(y) || is.null(y)) {
+  if (is.null(y)) {
     stop("`y` is required. Provide the column name in `x` that contains the grouping variable.",
          call. = FALSE)
   }
@@ -528,14 +602,11 @@ run_auc <- function(
       stop("`include_cols` must be a character or integer vector.", call. = FALSE)
     }
   } else {
-    pred_cols <- setdiff(all_cols, y)
+    pred_cols <- setdiff(all_cols, c(y, colnames(metadata)))
   }
 
   if (length(pred_cols) == 0L) {
-    stop(
-      "No predictor columns remain after excluding `y` (\"", y, "\") and applying `include_cols`. ",
-      "Ensure at least one predictor column is selected.", call. = FALSE
-    )
+    warning("No predictor columns remain for analysis.", call. = FALSE)
   }
 
   # ---------------------------------------------------------------------------
@@ -839,17 +910,32 @@ run_auc <- function(
   # ---------------------------------------------------------------------------
   # 13.  Build AUC summary table
   # ---------------------------------------------------------------------------
-  auc_table <- data.frame(
-    predictor  = pred_cols,
-    auc        = auc_vec,
-    ci_lower   = ci_lower,
-    ci_upper   = ci_upper,
-    ci_level   = ci_level,
-    direction  = dir_used,
-    n_cases    = n_cases,
-    n_controls = n_controls,
-    stringsAsFactors = FALSE
-  )
+  if (length(pred_cols) == 0L) {
+    # If no predictors, return an empty data frame with the correct structure
+    auc_table <- data.frame(
+      predictor  = character(0),
+      auc        = numeric(0),
+      ci_lower   = numeric(0),
+      ci_upper   = numeric(0),
+      ci_level   = numeric(0),
+      direction  = character(0),
+      n_cases    = numeric(0),
+      n_controls = numeric(0),
+      stringsAsFactors = FALSE
+    )
+  } else {
+    auc_table <- data.frame(
+      predictor  = pred_cols,
+      auc        = auc_vec,
+      ci_lower   = ci_lower,
+      ci_upper   = ci_upper,
+      ci_level   = ci_level,
+      direction  = dir_used,
+      n_cases    = n_cases,
+      n_controls = n_controls,
+      stringsAsFactors = FALSE
+    )
+  }
 
   # ---------------------------------------------------------------------------
   # 14.  AUC label formatter (smart decimal / sci-notation)
@@ -1151,26 +1237,34 @@ run_auc <- function(
   # ---------------------------------------------------------------------------
   # 20.  Assemble return value
   # ---------------------------------------------------------------------------
-  result <- structure(
-    list(
-      roc_list  = roc_list,
-      auc_table = auc_table,
-      plots     = plots_out,
-      params    = list(
-        y           = y,
-        set_control = if (!is_numeric_y) ctrl_label else NULL,
-        remove      = remove,
-        include_cols = pred_cols,
-        direction   = direction,
-        compute_auc = compute_auc,
-        compute_ci  = compute_ci,
-        ci_level    = ci_level,
-        n_cases     = n_cases,
-        n_controls  = n_controls,
-        call        = match.call()
-      )
+  result <- list(
+    roc_list  = roc_list,
+    auc_table = auc_table,
+    plots     = plots_out,
+    n_cases    = n_cases,
+    n_controls = n_controls,
+    params    = list(
+      y                  = y,
+      remove             = remove,
+      metadata           = metadata,
+      set_control        = if (!is_numeric_y) ctrl_label else NULL,
+      include_cols       = include_cols,
+      include_rows       = include_rows,
+      direction          = direction,
+      compute_auc        = compute_auc,
+      compute_ci         = compute_ci,
+      ci_level           = ci_level,
+      plot               = plot,
+      theme              = theme,
+      min_vip            = min_vip,
+      up                 = up,
+      down               = down,
+      p_value            = p_value,
+      call               = match.call()
     )
   )
+
+  class(result) <- c("run_auc", "list")
 
   result
 }
@@ -1193,24 +1287,37 @@ run_auc <- function(
 #' @export
 print.run_auc <- function(x, ...) {
   cat("── run_auc results ─────────────────────────────────────────\n")
+
+  # Get counts from the result object
+  n_cases    <- if (!is.null(x$n_cases)) x$n_cases else 0
+  n_controls <- if (!is.null(x$n_controls)) x$n_controls else 0
+
   cat(sprintf(
     "  Response : %s  |  Cases: %d  |  Controls: %d\n",
-    x$params$y, x$params$n_cases, x$params$n_controls
+    x$params$y, n_cases, n_controls
   ))
+  
   if (!is.null(x$params$set_control)) {
     cat(sprintf("  Control  : \"%s\"\n", x$params$set_control))
   }
+  
   cat(sprintf(
     "  CI level : %.0f%%   |  Direction: %s\n",
     x$params$ci_level * 100, x$params$direction
   ))
-  cat("\n  AUC Table:\n")
+
   tbl <- x$auc_table
-  tbl$auc      <- round(tbl$auc,      4)
-  tbl$ci_lower <- round(tbl$ci_lower, 4)
-  tbl$ci_upper <- round(tbl$ci_upper, 4)
-  print(tbl[, c("predictor", "auc", "ci_lower", "ci_upper", "direction")],
-        row.names = FALSE)
+  if (nrow(tbl) > 0) {
+    cat("\n  AUC Table:\n")
+    tbl$auc      <- round(tbl$auc,      4)
+    tbl$ci_lower <- round(tbl$ci_lower, 4)
+    tbl$ci_upper <- round(tbl$ci_upper, 4)
+    print(tbl[, c("predictor", "auc", "ci_lower", "ci_upper", "direction")],
+          row.names = FALSE)
+  } else {
+    cat("\n  Status: No features passed the filtering criteria.\n")
+  }
+
   if (!is.null(x$plots) && length(x$plots) > 0L) {
     cat(sprintf("\n  Plots stored: %s\n", paste(names(x$plots), collapse = ", ")))
   }

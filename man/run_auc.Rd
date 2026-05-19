@@ -6,7 +6,7 @@
 \usage{
 run_auc(
   x,
-  y,
+  y = NULL,
   remove = NULL,
   metadata = NULL,
   set_control = NULL,
@@ -34,7 +34,7 @@ run_auc(
   inplot_font_size = NULL,
   min_vip = 1,
   up = 1.5,
-  down = 0.5,
+  down = 0.6,
   p_value = 0.05,
   ...
 )
@@ -49,11 +49,16 @@ and/or \code{run_diff} objects will trigger automatic feature filtering based on
 \item{y}{A single character string naming the column in \code{x} that
 contains the binary grouping variable (cases vs. controls). The column
 may be categorical (\code{character} / \code{factor}) with exactly two
-levels after optional removal via \code{remove}, or numeric containing
-only \code{0} (control) and \code{1} (case) after optional removal.}
+levels after optional removal via \code{remove}, or numeric containing only
+\code{0} (control) and \code{1} (case) after optional removal. If \code{x}
+is a \code{run_DIpreprocess} object or a list containing one, \code{y} will
+default to \code{x$parameters$group_col} if not explicitly provided.}
 
 \item{remove}{Optional. A vector of values to remove from \code{y} before
-analysis, used to reduce a multi-level variable down to exactly two
+analysis, used to reduce a multi-level variable down to exactly two. If
+\code{x} is a \code{run_DIpreprocess} object or a list containing one,
+\code{remove} will default to \code{x$parameters$qc_types} if not
+explicitly provided. May be a character vector (for categorical \code{y}),
 groups. May be a character vector (for categorical \code{y}), a numeric
 vector (for numeric \code{y}), or a mixed list. Ignored when \code{y}
 already contains exactly two categories or only \code{0}/\code{1} values.
@@ -162,10 +167,14 @@ labels in combined plots). Default \code{NULL} (derived from
 Only applied if a \code{run_pls} object is provided in the \code{x} list. Default \code{1.0}.}
 
 \item{up}{A single numeric value specifying the minimum fold change for up-regulated features.
-Only applied if a \code{run_foldchange} object is provided in the \code{x} list. Default \code{1.5}.}
+Only applied if a \code{run_foldchange} object is provided in the \code{x} list.
+Default is in its \code{params$up}. When \code{x} is \code{data.frame}, \code{tibble}, named \code{matrix},
+the default is \code{1.5}.}
 
 \item{down}{A single numeric value specifying the maximum fold change for down-regulated features.
-Only applied if a \code{run_foldchange} object is provided in the \code{x} list. Default \code{0.5}.}
+Only applied if a \code{run_foldchange} object is provided in the \code{x} list.
+Default is in its \code{params$down}. When \code{x} is \code{data.frame}, \code{tibble}, named \code{matrix},
+the default is \code{0.6}.}
 
 \item{p_value}{A single numeric value specifying the maximum acceptable p-value for features.
 Only applied if a \code{run_diff} object is provided in the \code{x} list. Default \code{0.05}.}
