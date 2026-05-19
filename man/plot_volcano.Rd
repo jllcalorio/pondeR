@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_volcano.R
 \name{plot_volcano}
 \alias{plot_volcano}
-\title{Volcano Plot for Fold Change and P-value Data}
+\title{Volcano Plot for Fold Change and p-value Data}
 \usage{
 plot_volcano(
   x,
