@@ -17,7 +17,7 @@ run_diff(
   alpha_variance = 0.05,
   alpha_sphericity = 0.05,
   type_sosquares = 2,
-  rm_effect_size = "pes",
+  rm_effect_size = "ges",
   correction = "auto",
   test_alpha = 0.05,
   min_n_threshold = 3,
