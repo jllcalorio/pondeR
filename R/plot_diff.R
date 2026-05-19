@@ -193,18 +193,19 @@ plot_diff <- function(x,
   # ---------------------------------------------------------------------------
   # 0. Package checks
   # ---------------------------------------------------------------------------
-  .check_pkg <- function(pkg) {
-    if (!requireNamespace(pkg, quietly = TRUE)) {
-      message(sprintf("Package '%s' not installed. Attempting to install...", pkg))
-      tryCatch(
-        install.packages(pkg, repos = "https://cran.r-project.org"),
-        error = function(e) stop(sprintf("Failed to install '%s': %s", pkg, e$message))
-      )
-      if (!requireNamespace(pkg, quietly = TRUE))
-        stop(sprintf("Package '%s' could not be loaded after installation.", pkg))
-    }
-  }
-  lapply(c("ggpubr", "dplyr", "ggplot2", "ggrepel", "rstatix"), .check_pkg)
+  missing_pkgs <- Filter(
+    function(pkg) !requireNamespace(pkg, quietly = TRUE),
+    c("ggpubr", "dplyr", "ggplot2", "ggrepel", "rstatix")
+  )
+  if (length(missing_pkgs) > 0)
+    stop(
+      "The following packages are required but not installed: ",
+      paste(missing_pkgs, collapse = ", "),
+      ".\nInstall them with: install.packages(",
+      paste0('c("', paste(missing_pkgs, collapse = '", "'), '")'),
+      ")",
+      call. = FALSE
+    )
 
   # ---------------------------------------------------------------------------
   # 1. Font size resolution
