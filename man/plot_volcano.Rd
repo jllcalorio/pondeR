@@ -61,7 +61,7 @@ comparison, the \code{comparison} column is automatically used as
 \code{group}, overlaying all comparisons on a single plot with
 distinct colours. This is the recommended usage.}
 \item{\code{list(fc = <run_foldchange>)}}{
-Fold-change object only. P-values are unavailable; all features are
+Fold-change object only. p-values are unavailable; all features are
 classified as non-significant and the significance threshold line is
 not meaningful. A warning is issued.}
 \item{\code{list(diff = <run_diff>)}}{
