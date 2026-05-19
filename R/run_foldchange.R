@@ -1,7 +1,3 @@
-# =============================================================================
-#  run_foldchange
-# =============================================================================
-
 #' @title Fold Change Analysis Across Groups
 #'
 #' @description
@@ -10,17 +6,23 @@
 #' used as the basis of comparison. When \code{log2 = TRUE} the data are
 #' shifted so that all values are strictly positive before log-transformation.
 #' The function is designed to integrate seamlessly with \code{run_diff()} and
-#' \code{plot_volcano()}.
+#' \code{\link{plot_volcano}}.
 #'
 #' @param x A \code{data.frame}, \code{tibble}, or named \code{matrix} whose
 #'   columns are numeric features (variables) to be analysed. Column names may
 #'   contain special characters.
+#' @param from Character. Specifies which data processing stage to extract if
+#'   \code{x} is a \code{run_DIpreprocess} object. Options are:
+#'   \code{"corrected"} (drift/batch corrected), \code{"normalized"} (default),
+#'   \code{"transformed"} (log/sqrt transformed), or \code{"scaled"}
+#'   (final auto/pareto scaled data).
 #' @param metadata A \code{data.frame}, \code{tibble}, or named \code{matrix}
 #'   with the same number of rows as \code{x} and containing sample
-#'   annotations. Must include the column specified by \code{group}.
-#' @param group A single character string naming the column in \code{metadata}
-#'   that contains the grouping factor. Must have at least two distinct
-#'   non-\code{NA} levels after optional filtering via \code{filter}.
+#'   annotations. If \code{x} is a \code{run_DIpreprocess} object, this is
+#'   optional and defaults to the internal metadata.
+#' @param group Character string naming the column in \code{metadata}
+#'   that contains the grouping factor. If \code{x} is a \code{run_DIpreprocess}
+#'   object, this is optional and defaults to the group column used in that step.
 #' @param arrange An optional character vector listing \emph{all} levels of
 #'   \code{group} (after filtering) in the desired comparison order. Fold
 #'   changes are computed for all pairwise combinations taken left-to-right:
@@ -28,8 +30,8 @@
 #'   \code{c("A", "B", "C")} yields A_vs_B, A_vs_C, and B_vs_C.
 #'   If \code{NULL} (default), levels are sorted alphanumerically.
 #' @param filter An optional character vector of group levels to \emph{exclude}
-#'   before analysis. Rows whose \code{group} value appears in \code{filter}
-#'   are dropped. Default \code{NULL} (no filtering).
+#'   before analysis. If \code{x} is a \code{run_DIpreprocess} object, this
+#'   defaults to the \code{qc_types} identified during preprocessing.
 #' @param select An optional character vector of column names in \code{x} to
 #'   include in the analysis. Default \code{NULL} uses all columns of \code{x}.
 #' @param sort Logical. If \code{TRUE} (default), each fold-change column in
@@ -41,6 +43,13 @@
 #' @param eps A small positive numeric value. When \code{log2 = TRUE}, data are
 #'   shifted so that the global minimum of \code{x} (after filtering and
 #'   selection) becomes \code{eps}. Default \code{1e-8}.
+#' @param up Numeric. Optional threshold for up-regulation. If supplied, a
+#'   \code{"sig"} column is added to \code{summary_table} where features with
+#'   \code{fold_change >= up} are labelled \code{"Significant"}. Default \code{NULL}.
+#' @param down Numeric. Optional threshold for down-regulation. If supplied,
+#'   features with \code{fold_change <= down} are labelled \code{"Significant"}
+#'   in the \code{"sig"} column of \code{summary_table}. This value is compared
+#'   against the raw fold change, not log2. Default \code{NULL}.
 #'
 #' @details
 #' \strong{Fold change computation}\cr
@@ -57,7 +66,7 @@
 #' (\eqn{\delta = 0}). Log2 fold changes are then computed from the shifted
 #' group means.
 #'
-#' \strong{Integration with \code{run_diff()} and \code{plot_volcano()}}\cr
+#' \strong{Integration with \code{\link{run_diff}} and \code{\link{plot_volcano}}}\cr
 #' The returned list exposes \code{fc_table}, \code{log2fc_table}, and
 #' \code{shifted_data} in a consistent format that \code{plot_volcano()} can
 #' consume directly.
@@ -130,26 +139,53 @@
 #' res3 <- run_foldchange(x = xsc, metadata = meta_sc, group = "group")
 #' print(res3$fc_table)
 #'
+#' @seealso \code{\link{run_diff}}, \code{\link{plot_volcano}}, \code{\link{run_DIpreprocess}}
 #' @author John Lennon L. Calorio
 #' @export
 run_foldchange <- function(
     x,
-    metadata,
-    group,
+    from     = c("normalized", "corrected", "transformed", "scaled"),
+    metadata = NULL,
+    group    = NULL,
     arrange  = NULL,
     filter   = NULL,
     select   = NULL,
     sort     = TRUE,
     log2     = TRUE,
-    eps      = 1e-8
+    eps      = 1e-8,
+    up       = NULL,
+    down     = NULL
 ) {
 
   # --- Integration with run_DIpreprocess ---
   if (inherits(x, "run_DIpreprocess")) {
-    if (missing(metadata) || is.null(metadata)) {
+    from <- match.arg(from)
+
+    # 1. Resolve data stage
+    x_data <- switch(
+      from,
+      "corrected"   = x$data_corrected,
+      "normalized"  = x$data_normalized,
+      "transformed" = x$data_transformed,
+      "scaled"      = x$data_nonpls
+    )
+
+    if (is.null(x_data)) {
+      stop(sprintf("Requested data stage '%s' not found in the 'run_DIpreprocess' object.", from), call. = FALSE)
+    }
+
+    # 2. Resolve metadata, group, and filter
+    if (is.null(metadata)) {
       metadata <- if (!is.null(x$metadata_merged)) x$metadata_merged else x$metadata
     }
-    x <- if (!is.null(x$data_nonpls_merged)) x$data_nonpls_merged else x$data_nonpls
+    if (is.null(group)) {
+      group <- x$parameters$group_col
+    }
+    if (is.null(filter)) {
+      filter <- eval(x$parameters$qc_types)
+    }
+
+    x <- x_data
   }
 
   # ---------------------------------------------------------------------------
@@ -213,6 +249,15 @@ run_foldchange <- function(
 
   if (!is.numeric(eps) || length(eps) != 1L || is.na(eps) || eps <= 0)
     stop("`eps` must be a single positive numeric value.", call. = FALSE)
+
+  if (!is.null(up)) {
+    if (!is.numeric(up) || length(up) != 1L)
+      stop("`up` must be a single numeric value.", call. = FALSE)
+  }
+  if (!is.null(down)) {
+    if (!is.numeric(down) || length(down) != 1L)
+      stop("`down` must be a single numeric value.", call. = FALSE)
+  }
 
   # ---------------------------------------------------------------------------
   # 4.  Apply filter (exclude group levels)
@@ -418,19 +463,26 @@ run_foldchange <- function(
       ifelse(fc_col > 1, "Up", ifelse(fc_col < 1, "Down", "Unchanged"))
     )
 
-    data.frame(
+    df <- data.frame(
       comparison   = lbl,
       feature      = feat_cols,
       mean_num     = mean_num,
       mean_den     = mean_den,
       fold_change  = fc_col,
       log2_fc      = l2fc_col,
-      abs_fc       = abs(fc_col),
-      abs_log2_fc  = abs(l2fc_col),
       regulation   = regulation,
       stringsAsFactors = FALSE,
       row.names    = NULL
     )
+
+    if (!is.null(up) || !is.null(down)) {
+      is_sig <- rep(FALSE, n_feat)
+      if (!is.null(up))   is_sig <- is_sig | (!is.na(fc_col) & fc_col >= up)
+      if (!is.null(down)) is_sig <- is_sig | (!is.na(fc_col) & fc_col <= down)
+      df$sig <- ifelse(is_sig, "Significant", "Not significant")
+    }
+
+    df
   })
 
   # Rename mean columns to carry group names
@@ -448,7 +500,7 @@ run_foldchange <- function(
   if (sort && n_comp >= 1L) {
     summary_table <- summary_table[
       order(summary_table$comparison,
-            summary_table$abs_fc,
+            abs(summary_table$fold_change),
             decreasing = c(FALSE, TRUE),
             method = "radix"), ,
       drop = FALSE
@@ -469,6 +521,11 @@ run_foldchange <- function(
       shift         = shift_delta,
       group_means   = group_means_df,
       comparisons   = comp_labels,
+      stats         = list(
+        n_feat   = n_feat,
+        n_groups = n_lvl,
+        n_comp   = n_comp
+      ),
       params        = list(
         group    = group,
         arrange  = lvl_order,
@@ -477,12 +534,11 @@ run_foldchange <- function(
         sort     = sort,
         log2     = log2,
         eps      = eps,
-        n_feat   = n_feat,
-        n_groups = n_lvl,
-        n_comp   = n_comp
+        up       = up,
+        down     = down
       )
     ),
-  class = "run_foldchange"
+  class = c("run_foldchange", "list")
   )
 }
 
@@ -499,9 +555,9 @@ run_foldchange <- function(
 #' @export
 print.run_foldchange <- function(x, ...) {
   cat("── run_foldchange results ──────────────────────────────────\n")
-  cat(sprintf("  Features   : %d\n",  x$params$n_feat))
+  cat(sprintf("  Features   : %d\n",  x$stats$n_feat))
   cat(sprintf("  Groups     : %d  (%s)\n",
-              x$params$n_groups, paste(x$params$arrange, collapse = " > ")))
+              x$stats$n_groups, paste(x$params$arrange, collapse = " > ")))
   cat(sprintf("  Comparisons: %s\n",  paste(x$comparisons, collapse = ", ")))
   cat(sprintf("  log2 FC    : %s\n",  x$params$log2))
   if (x$params$log2 && x$shift != 0)

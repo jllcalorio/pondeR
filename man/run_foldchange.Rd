@@ -6,14 +6,17 @@
 \usage{
 run_foldchange(
   x,
-  metadata,
-  group,
+  from = c("normalized", "corrected", "transformed", "scaled"),
+  metadata = NULL,
+  group = NULL,
   arrange = NULL,
   filter = NULL,
   select = NULL,
   sort = TRUE,
   log2 = TRUE,
-  eps = 1e-08
+  eps = 1e-08,
+  up = NULL,
+  down = NULL
 )
 }
 \arguments{
@@ -21,13 +24,20 @@ run_foldchange(
 columns are numeric features (variables) to be analysed. Column names may
 contain special characters.}
 
+\item{from}{Character. Specifies which data processing stage to extract if
+\code{x} is a \code{run_DIpreprocess} object. Options are:
+\code{"corrected"} (drift/batch corrected), \code{"normalized"} (default),
+\code{"transformed"} (log/sqrt transformed), or \code{"scaled"}
+(final auto/pareto scaled data).}
+
 \item{metadata}{A \code{data.frame}, \code{tibble}, or named \code{matrix}
 with the same number of rows as \code{x} and containing sample
-annotations. Must include the column specified by \code{group}.}
+annotations. If \code{x} is a \code{run_DIpreprocess} object, this is
+optional and defaults to the internal metadata.}
 
-\item{group}{A single character string naming the column in \code{metadata}
-that contains the grouping factor. Must have at least two distinct
-non-\code{NA} levels after optional filtering via \code{filter}.}
+\item{group}{Character string naming the column in \code{metadata}
+that contains the grouping factor. If \code{x} is a \code{run_DIpreprocess}
+object, this is optional and defaults to the group column used in that step.}
 
 \item{arrange}{An optional character vector listing \emph{all} levels of
 \code{group} (after filtering) in the desired comparison order. Fold
@@ -37,8 +47,8 @@ changes are computed for all pairwise combinations taken left-to-right:
 If \code{NULL} (default), levels are sorted alphanumerically.}
 
 \item{filter}{An optional character vector of group levels to \emph{exclude}
-before analysis. Rows whose \code{group} value appears in \code{filter}
-are dropped. Default \code{NULL} (no filtering).}
+before analysis. If \code{x} is a \code{run_DIpreprocess} object, this
+defaults to the \code{qc_types} identified during preprocessing.}
 
 \item{select}{An optional character vector of column names in \code{x} to
 include in the analysis. Default \code{NULL} uses all columns of \code{x}.}
@@ -54,6 +64,15 @@ positive.}
 \item{eps}{A small positive numeric value. When \code{log2 = TRUE}, data are
 shifted so that the global minimum of \code{x} (after filtering and
 selection) becomes \code{eps}. Default \code{1e-8}.}
+
+\item{up}{Numeric. Optional threshold for up-regulation. If supplied, a
+\code{"sig"} column is added to \code{summary_table} where features with
+\code{fold_change >= up} are labelled \code{"Significant"}. Default \code{NULL}.}
+
+\item{down}{Numeric. Optional threshold for down-regulation. If supplied,
+features with \code{fold_change <= down} are labelled \code{"Significant"}
+in the \code{"sig"} column of \code{summary_table}. This value is compared
+against the raw fold change, not log2. Default \code{NULL}.}
 }
 \value{
 A named list containing:
@@ -85,7 +104,7 @@ feature (column) in \code{x} across ordered group levels. Group means are
 used as the basis of comparison. When \code{log2 = TRUE} the data are
 shifted so that all values are strictly positive before log-transformation.
 The function is designed to integrate seamlessly with \code{run_diff()} and
-\code{plot_volcano()}.
+\code{\link{plot_volcano}}.
 }
 \details{
 \strong{Fold change computation}\cr
@@ -102,7 +121,7 @@ is added to every value when \eqn{m \le 0}; otherwise no shift is applied
 (\eqn{\delta = 0}). Log2 fold changes are then computed from the shifted
 group means.
 
-\strong{Integration with \code{run_diff()} and \code{plot_volcano()}}\cr
+\strong{Integration with \code{\link{run_diff}} and \code{\link{plot_volcano}}}\cr
 The returned list exposes \code{fc_table}, \code{log2fc_table}, and
 \code{shifted_data} in a consistent format that \code{plot_volcano()} can
 consume directly.
@@ -152,6 +171,9 @@ meta_sc <- data.frame(group = rep(c("Healthy", "Disease"), each = 30))
 res3 <- run_foldchange(x = xsc, metadata = meta_sc, group = "group")
 print(res3$fc_table)
 
+}
+\seealso{
+\code{\link{run_diff}}, \code{\link{plot_volcano}}, \code{\link{run_DIpreprocess}}
 }
 \author{
 John Lennon L. Calorio
