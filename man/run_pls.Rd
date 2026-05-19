@@ -22,10 +22,11 @@ run_pls(
 }
 \arguments{
 \item{x}{Matrix or data frame. Numeric data with samples in rows and features in columns.
-Can be output from \code{run_scale()} or raw data (which will be scaled if \code{scale_method}
+Can be output from \code{run_scale()}, raw data (which will be scaled if \code{scale_method}, or from \code{run_DIpreprocess}.
 is specified).}
 
-\item{metadata}{Data frame. Sample metadata with number of rows equal to nrow(x).
+\item{metadata}{Data frame. Sample metadata with number of rows equal to nrow(x). Ignored, even if supplied,
+when x is \code{run_DIpreprocess} class.
 Must contain columns for grouping and sample identifiers.}
 
 \item{method}{Character. The PLS method to use. Options are \code{"oplsda"} (default),

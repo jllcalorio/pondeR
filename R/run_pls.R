@@ -6,10 +6,11 @@
 #' Optionally applies scaling and transformation before analysis if the input data
 #' has not been pre-scaled. Designed to match the structure of `run_pca()`.
 #'
-#' @param x Matrix or data frame. Numeric data with samples in rows and features in columns.
-#'   Can be output from `run_scale()` or raw data (which will be scaled if `scale_method`
+#' @param x Matrix or data frame. Numeric data with samples in rows and features in columns. 
+#'   Can be output from `run_scale()`, raw data (which will be scaled if `scale_method`, or from `run_DIpreprocess`.
 #'   is specified).
-#' @param metadata Data frame. Sample metadata with number of rows equal to nrow(x).
+#' @param metadata Data frame. Sample metadata with number of rows equal to nrow(x). Ignored, even if supplied, 
+#'   when x is `run_DIpreprocess` class.
 #'   Must contain columns for grouping and sample identifiers.
 #' @param method Character. The PLS method to use. Options are `"oplsda"` (default),
 #'   `"plsda"`, or `"splsda"`.
