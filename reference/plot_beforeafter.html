@@ -65,7 +65,7 @@ to a user-defined reference group (e.g., QC samples).</p>
 <span>  col_injection <span class="op">=</span> <span class="st">"InjectionSequence"</span>,</span>
 <span>  col_batch <span class="op">=</span> <span class="st">"Batch"</span>,</span>
 <span>  col_group <span class="op">=</span> <span class="st">"Group"</span>,</span>
-<span>  col_qc_label <span class="op">=</span> <span class="st">"QC"</span>,</span>
+<span>  col_qc_label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"QC"</span>, <span class="st">"SQC"</span>, <span class="st">"EQC"</span><span class="op">)</span>,</span>
 <span>  x_label <span class="op">=</span> <span class="st">"Before"</span>,</span>
 <span>  y_label <span class="op">=</span> <span class="st">"After"</span>,</span>
 <span>  log_transform <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -91,7 +91,8 @@ to a user-defined reference group (e.g., QC samples).</p>
 <dl><dt id="arg-x">x<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
 <dd><p>A <code>data.frame</code>, <code>tibble</code>, or <code>matrix</code> representing
 the data <em>before</em> the transformation. Rows are samples; columns are
-features. Column names may contain special characters.</p></dd>
+features. Column names may contain special characters. Input can be
+a <code>link{run_DIpreprocess}</code> class.</p></dd>
 
 
 <dt id="arg-y">y<a class="anchor" aria-label="anchor" href="#arg-y"></a></dt>
@@ -116,25 +117,29 @@ all available features will be plotted. This argument is required.</p></dd>
 <dt id="arg-col-injection">col_injection<a class="anchor" aria-label="anchor" href="#arg-col-injection"></a></dt>
 <dd><p>Character. Name of the column in <code>metadata</code>
 containing the injection sequence (numeric order of runs).
-Default is <code>"InjectionSequence"</code>.</p></dd>
+Default is <code>"InjectionSequence"</code>. If <code>run_DIpreprocess</code> class,
+value is automatically taken from <code>$parameters$injection_col</code>.</p></dd>
 
 
 <dt id="arg-col-batch">col_batch<a class="anchor" aria-label="anchor" href="#arg-col-batch"></a></dt>
 <dd><p>Character. Name of the column in <code>metadata</code>
-containing batch identifiers. Default is <code>"Batch"</code>.</p></dd>
+containing batch identifiers. Default is <code>"Batch"</code>. If <code>run_DIpreprocess</code> class,
+value is automatically taken from <code>$parameters$batch_col</code>.</p></dd>
 
 
 <dt id="arg-col-group">col_group<a class="anchor" aria-label="anchor" href="#arg-col-group"></a></dt>
 <dd><p>Character. Name of the column in <code>metadata</code>
 containing sample group labels (e.g., <code>"QC"</code>, <code>"Sample"</code>).
-Default is <code>"Group"</code>.</p></dd>
+Default is <code>"Group"</code>. If <code>run_DIpreprocess</code> class,
+value is automatically taken from <code>$parameters$group_col</code>.</p></dd>
 
 
 <dt id="arg-col-qc-label">col_qc_label<a class="anchor" aria-label="anchor" href="#arg-col-qc-label"></a></dt>
-<dd><p>Character. The value in the <code>col_group</code> column
+<dd><p>Character vector. The value(s) in the <code>col_group</code> column
 that identifies the reference group for LOESS trend fitting (typically
-QC samples). If <code>NULL</code>, no LOESS line is drawn. Default is
-<code>"QC"</code>.</p></dd>
+QC samples). Can be a vector like <code>c("SQC", "EQC")</code>. If <code>NULL</code>,
+no LOESS line is drawn. Default is <code>c("QC", "SQC", "EQC")</code>. If <code>run_DIpreprocess</code> class,
+value is automatically taken from <code>$parameters$qc_types</code>.</p></dd>
 
 
 <dt id="arg-x-label">x_label<a class="anchor" aria-label="anchor" href="#arg-x-label"></a></dt>

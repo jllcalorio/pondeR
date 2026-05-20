@@ -17,7 +17,7 @@ plot_beforeafter(
   col_injection = "InjectionSequence",
   col_batch = "Batch",
   col_group = "Group",
-  col_qc_label = "QC",
+  col_qc_label = c("QC", "SQC", "EQC"),
   x_label = "Before",
   y_label = "After",
   log_transform = TRUE,
@@ -42,7 +42,8 @@ plot_beforeafter(
 
   A `data.frame`, `tibble`, or `matrix` representing the data *before*
   the transformation. Rows are samples; columns are features. Column
-  names may contain special characters.
+  names may contain special characters. Input can be a
+  `link{run_DIpreprocess}` class.
 
 - y:
 
@@ -65,23 +66,31 @@ plot_beforeafter(
 - col_injection:
 
   Character. Name of the column in `metadata` containing the injection
-  sequence (numeric order of runs). Default is `"InjectionSequence"`.
+  sequence (numeric order of runs). Default is `"InjectionSequence"`. If
+  `run_DIpreprocess` class, value is automatically taken from
+  `$parameters$injection_col`.
 
 - col_batch:
 
   Character. Name of the column in `metadata` containing batch
-  identifiers. Default is `"Batch"`.
+  identifiers. Default is `"Batch"`. If `run_DIpreprocess` class, value
+  is automatically taken from `$parameters$batch_col`.
 
 - col_group:
 
   Character. Name of the column in `metadata` containing sample group
-  labels (e.g., `"QC"`, `"Sample"`). Default is `"Group"`.
+  labels (e.g., `"QC"`, `"Sample"`). Default is `"Group"`. If
+  `run_DIpreprocess` class, value is automatically taken from
+  `$parameters$group_col`.
 
 - col_qc_label:
 
-  Character. The value in the `col_group` column that identifies the
-  reference group for LOESS trend fitting (typically QC samples). If
-  `NULL`, no LOESS line is drawn. Default is `"QC"`.
+  Character vector. The value(s) in the `col_group` column that
+  identifies the reference group for LOESS trend fitting (typically QC
+  samples). Can be a vector like `c("SQC", "EQC")`. If `NULL`, no LOESS
+  line is drawn. Default is `c("QC", "SQC", "EQC")`. If
+  `run_DIpreprocess` class, value is automatically taken from
+  `$parameters$qc_types`.
 
 - x_label:
 

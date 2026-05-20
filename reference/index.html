@@ -38,9 +38,9 @@
     </div>
 
     <div class="section level2">
-      <h2 id="descriptive-statistics">Descriptive Statistics<a class="anchor" aria-label="anchor" href="#descriptive-statistics"></a></h2>
+      <h2 id="direct-injection-metabolomics-preprocessing-pipeline">Direct-Injection Metabolomics Preprocessing Pipeline<a class="anchor" aria-label="anchor" href="#direct-injection-metabolomics-preprocessing-pipeline"></a></h2>
 
-      <div class="section-desc"><p>Functions for generating publication-ready summary and descriptive statistics tables.</p></div>
+      <div class="section-desc"><p>Function for running a sequential preprocessing pipeline for metabolomics data by orchestrating the individual run_* functions of pondeR, as summarized below:</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -49,21 +49,79 @@
 
       <dl><dt>
 
-          <code><a href="run_anthroindex.html">run_anthroindex()</a></code>
+          <code><a href="run_filtermissing.html">run_filtermissing()</a></code>
 
         </dt>
-        <dd>Compute WHO Anthropometric Z-Scores and Nutritional Status</dd>
+        <dd>Filter Features by Missing Value Threshold</dd>
 
         <dt>
+
+          <code><a href="run_mvimpute.html">run_mvimpute()</a></code>
+
+        </dt>
+        <dd>Impute Missing Values in Metabolomics Data</dd>
+
+        <dt>
+
+          <code><a href="run_driftBatchCorrect.html">run_driftBatchCorrect()</a></code>
+
+        </dt>
+        <dd>Correct Signal Drift and Batch Effects Using QC Samples</dd>
+
+        <dt>
+
+          <code><a href="run_normalize.html">run_normalize()</a></code>
+
+        </dt>
+        <dd>Normalize Metabolomics Data</dd>
+
+        <dt>
+
+          <code><a href="run_transform.html">run_transform()</a></code>
+
+        </dt>
+        <dd>Transform Metabolomics Data</dd>
+
+        <dt>
+
+          <code><a href="run_scale.html">run_scale()</a></code>
+
+        </dt>
+        <dd>Scale Metabolomics Data</dd>
+
+        <dt>
+
+          <code><a href="run_filterRSD.html">run_filterRSD()</a></code>
+
+        </dt>
+        <dd>Filter Features by Relative Standard Deviation in QC Samples</dd>
+      </dl></div><div class="section level2">
+      <h2 id="summarizing-data-checking-distributions">Summarizing Data &amp; Checking Distributions<a class="anchor" aria-label="anchor" href="#summarizing-data-checking-distributions"></a></h2>
+
+      <div class="section-desc"><p>Functions for generating publication-ready summary tables, anthropometric indices according to WHO standards, and testing for normality or skewness.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
 
           <code><a href="run_summarytable.html">run_summarytable()</a></code>
 
         </dt>
         <dd>Performs Descriptive Statistics on a Dataframe</dd>
-      </dl></div><div class="section level2">
-      <h2 id="group-comparisons">Group Comparisons<a class="anchor" aria-label="anchor" href="#group-comparisons"></a></h2>
 
-      <div class="section-desc"><p>Functions for comparing groups via parametric and non-parametric tests, with automatic test selection and effect-size reporting.</p></div>
+        <dt>
+
+          <code><a href="run_anthroindex.html">run_anthroindex()</a></code>
+
+        </dt>
+        <dd>Compute WHO Anthropometric Z-Scores and Nutritional Status</dd>
+      </dl></div><div class="section level2">
+      <h2 id="comparing-groups-identifying-associations">Comparing Groups &amp; Identifying Associations<a class="anchor" aria-label="anchor" href="#comparing-groups-identifying-associations"></a></h2>
+
+      <div class="section-desc"><p>Methods for detecting differences between cohorts, calculating fold changes, and testing statistical associations.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -86,6 +144,13 @@
 
         <dt>
 
+          <code><a href="run_assoc.html">run_assoc()</a></code>
+
+        </dt>
+        <dd>Automatic Statistical Comparison for Categorical Variables</dd>
+
+        <dt>
+
           <code><a href="run_foldchange.html">run_foldchange()</a></code>
 
         </dt>
@@ -93,14 +158,35 @@
 
         <dt>
 
-          <code><a href="run_assoc.html">run_assoc()</a></code>
+          <code><a href="plot_volcano.html">plot_volcano()</a></code>
 
         </dt>
-        <dd>Automatic Statistical Comparison for Categorical Variables</dd>
-      </dl></div><div class="section level2">
-      <h2 id="regression-classification">Regression &amp; Classification<a class="anchor" aria-label="anchor" href="#regression-classification"></a></h2>
+        <dd>Volcano Plot for Fold Change and p-value Data</dd>
 
-      <div class="section-desc"><p>Logistic regression and AUC/AUROC analysis functions with publication-ready outputs and optional Firth correction.</p></div>
+        <dt>
+
+          <code><a href="run_correl.html">run_correl()</a></code>
+
+        </dt>
+        <dd>Perform Correlation Analysis</dd>
+
+        <dt>
+
+          <code><a href="plot_heatmap.html">plot_heatmap()</a></code>
+
+        </dt>
+        <dd>Plot a Correlation Heatmap</dd>
+
+        <dt>
+
+          <code><a href="plot_dend.html">plot_dend()</a></code>
+
+        </dt>
+        <dd>Plot a Hierarchical Clustering Dendrogram</dd>
+      </dl></div><div class="section level2">
+      <h2 id="predictive-modeling-classification">Predictive Modeling &amp; Classification<a class="anchor" aria-label="anchor" href="#predictive-modeling-classification"></a></h2>
+
+      <div class="section-desc"><p>Regularized regression (Ridge, LASSO, and Elastic Net), Linear Mixed-Effect Model, Logistic regression analysis and performance evaluation (AUC/AUROC) with automated bias correction options.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -108,6 +194,27 @@
 
 
       <dl><dt>
+
+          <code><a href="run_regreg.html">run_regreg()</a></code>
+
+        </dt>
+        <dd>Regularized Regression with Cross-Validation (Ridge, Elastic Net, LASSO)</dd>
+
+        <dt>
+
+          <code><a href="run_mixedmodel.html">run_mixedmodel()</a></code>
+
+        </dt>
+        <dd>Perform Linear Mixed-Effects Model Analysis</dd>
+
+        <dt>
+
+          <code><a href="plot_mixedmodel.html">plot_mixedmodel()</a></code>
+
+        </dt>
+        <dd>Plot Results from a Linear Mixed-Effects Model Analysis</dd>
+
+        <dt>
 
           <code><a href="run_logreg.html">run_logreg()</a></code>
 
@@ -121,9 +228,9 @@
         </dt>
         <dd>Comprehensive Area Under the ROC Curve (AUROC) Analysis</dd>
       </dl></div><div class="section level2">
-      <h2 id="dimensionality-reduction">Dimensionality Reduction<a class="anchor" aria-label="anchor" href="#dimensionality-reduction"></a></h2>
+      <h2 id="multivariate-exploration-and-discrimination">Multivariate Exploration and Discrimination<a class="anchor" aria-label="anchor" href="#multivariate-exploration-and-discrimination"></a></h2>
 
-      <div class="section-desc"><p>PCA-based dimensionality reduction, scree plots, and score plots for multivariate data exploration.</p></div>
+      <div class="section-desc"><p>Dimensionality reduction and visualization tools for simplified exploration of complex datasets.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -139,10 +246,17 @@
 
         <dt>
 
-          <code><a href="run_reduce.html">run_reduce()</a></code>
+          <code><a href="run_pls.html">run_pls()</a></code>
 
         </dt>
-        <dd>Reduce Multiple Data Frames by Common or Unique Column/Row Names</dd>
+        <dd>Perform Partial Least Squares (PLS) Analysis</dd>
+
+        <dt>
+
+          <code><a href="run_pcoa.html">run_pcoa()</a></code>
+
+        </dt>
+        <dd>Principal Coordinate Analysis (PCoA) with Optional PERMANOVA and Post-hoc</dd>
 
         <dt>
 
@@ -157,10 +271,17 @@
 
         </dt>
         <dd>Scores Plot for Multivariate Ordination Results</dd>
-      </dl></div><div class="section level2">
-      <h2 id="visualisation">Visualisation<a class="anchor" aria-label="anchor" href="#visualisation"></a></h2>
 
-      <div class="section-desc"><p>Standalone plotting functions for volcano plots and other figures.</p></div>
+        <dt>
+
+          <code><a href="run_reduce.html">run_reduce()</a></code>
+
+        </dt>
+        <dd>Reduce Multiple Data Frames by Common or Unique Column/Row Names</dd>
+      </dl></div><div class="section level2">
+      <h2 id="data-cleaning-quality-control">Data Cleaning &amp; Quality Control<a class="anchor" aria-label="anchor" href="#data-cleaning-quality-control"></a></h2>
+
+      <div class="section-desc"><p>Filtering features based on missingness, variance, or RSD thresholds.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -168,57 +289,6 @@
 
 
       <dl><dt>
-
-          <code><a href="plot_volcano.html">plot_volcano()</a></code>
-
-        </dt>
-        <dd>Volcano Plot for Fold Change and p-value Data</dd>
-      </dl></div><div class="section level2">
-      <h2 id="data-pre-processing">Data Pre-processing<a class="anchor" aria-label="anchor" href="#data-pre-processing"></a></h2>
-
-      <div class="section-desc"><p>Metabolomics-focused data pre-processing utilities including imputation, normalisation, filtering, scaling, and batch correction.</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="run_mvimpute.html">run_mvimpute()</a></code>
-
-        </dt>
-        <dd>Impute Missing Values in Metabolomics Data</dd>
-
-        <dt>
-
-          <code><a href="run_normalize.html">run_normalize()</a></code>
-
-        </dt>
-        <dd>Normalize Metabolomics Data</dd>
-
-        <dt>
-
-          <code><a href="run_scale.html">run_scale()</a></code>
-
-        </dt>
-        <dd>Scale Metabolomics Data</dd>
-
-        <dt>
-
-          <code><a href="run_transform.html">run_transform()</a></code>
-
-        </dt>
-        <dd>Transform Metabolomics Data</dd>
-
-        <dt>
-
-          <code><a href="run_filterRSD.html">run_filterRSD()</a></code>
-
-        </dt>
-        <dd>Filter Features by Relative Standard Deviation in QC Samples</dd>
-
-        <dt>
 
           <code><a href="run_filtermissing.html">run_filtermissing()</a></code>
 
@@ -234,10 +304,141 @@
 
         <dt>
 
+          <code><a href="run_filterRSD.html">run_filterRSD()</a></code>
+
+        </dt>
+        <dd>Filter Features by Relative Standard Deviation in QC Samples</dd>
+      </dl></div><div class="section level2">
+      <h2 id="missing-value-imputation">Missing Value Imputation<a class="anchor" aria-label="anchor" href="#missing-value-imputation"></a></h2>
+
+      <div class="section-desc"><p>Addressing missing data using various imputation algorithms.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="run_mvimpute.html">run_mvimpute()</a></code>
+
+        </dt>
+        <dd>Impute Missing Values in Metabolomics Data</dd>
+      </dl></div><div class="section level2">
+      <h2 id="data-normalization-transformation-and-scaling">Data Normalization, Transformation, and Scaling<a class="anchor" aria-label="anchor" href="#data-normalization-transformation-and-scaling"></a></h2>
+
+      <div class="section-desc"><p>Transforming and scaling data to ensure comparability across samples.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="run_normalize.html">run_normalize()</a></code>
+
+        </dt>
+        <dd>Normalize Metabolomics Data</dd>
+
+        <dt>
+
+          <code><a href="run_transform.html">run_transform()</a></code>
+
+        </dt>
+        <dd>Transform Metabolomics Data</dd>
+
+        <dt>
+
+          <code><a href="run_scale.html">run_scale()</a></code>
+
+        </dt>
+        <dd>Scale Metabolomics Data</dd>
+      </dl></div><div class="section level2">
+      <h2 id="signal-drift-and-batch-effects-correction">Signal Drift and Batch Effects Correction<a class="anchor" aria-label="anchor" href="#signal-drift-and-batch-effects-correction"></a></h2>
+
+      <div class="section-desc"><p>Correcting for technical variation and instrument signal drift.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
           <code><a href="run_driftBatchCorrect.html">run_driftBatchCorrect()</a></code>
 
         </dt>
         <dd>Correct Signal Drift and Batch Effects Using QC Samples</dd>
+      </dl></div><div class="section level2">
+      <h2 id="plotting-functions-of-two-data-frames">Plotting Functions of Two Data Frames<a class="anchor" aria-label="anchor" href="#plotting-functions-of-two-data-frames"></a></h2>
+
+      <div class="section-desc"><p>Plots two data frames at a time, can be before and after implementing a method.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="plot_beforeafter.html">plot_beforeafter()</a></code>
+
+        </dt>
+        <dd>Plot Pairwise Before-and-After Comparison for Selected Features</dd>
+
+        <dt>
+
+          <code><a href="plot_dist_beforeafter.html">plot_dist_beforeafter()</a></code>
+
+        </dt>
+        <dd>Plot Distribution Comparison Before and After Data Transformation</dd>
+      </dl></div><div class="section level2">
+      <h2 id="other-plotting-functions">Other Plotting Functions<a class="anchor" aria-label="anchor" href="#other-plotting-functions"></a></h2>
+
+      <div class="section-desc"><p>Other functions to plot metabolomics and metagenomics data.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="plot_meanmap.html">plot_meanmap()</a></code>
+
+        </dt>
+        <dd>Mean Intensity Heatmap with Hierarchical Clustering Dendrogram</dd>
+
+        <dt>
+
+          <code><a href="plot_multi_y.html">plot_multi_y()</a></code>
+
+        </dt>
+        <dd>Plot Multiple Variables on Primary and Secondary Y Axes</dd>
+      </dl></div><div class="section level2">
+      <h2 id="export-functions">Export Functions<a class="anchor" aria-label="anchor" href="#export-functions"></a></h2>
+
+      <div class="section-desc"><p>Functions export data frames to Excel/CSV files and figure to PNGs, etc.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="save_excel.html">save_excel()</a></code>
+
+        </dt>
+        <dd>Save Data Frames, Tibbles, or Matrices to an Excel File</dd>
+
+        <dt>
+
+          <code><a href="save_plots.html">save_plots()</a></code>
+
+        </dt>
+        <dd>Save Plots to Image or Vector Files</dd>
       </dl></div><div class="section level2">
       <h2 id="utilities-helpers">Utilities &amp; Helpers<a class="anchor" aria-label="anchor" href="#utilities-helpers"></a></h2>
 
@@ -254,6 +455,41 @@
 
         </dt>
         <dd>Recode and Factorize a Column</dd>
+
+        <dt>
+
+          <code><a href="run_move_names.html">run_move_names()</a></code>
+
+        </dt>
+        <dd>Move Row or Column Names into the Data Area</dd>
+
+        <dt>
+
+          <code><a href="run_randomize.html">run_randomize()</a></code>
+
+        </dt>
+        <dd>Randomize a Data Frame, Matrix, or Vector</dd>
+
+        <dt>
+
+          <code><a href="get_groupsizes.html">get_groupsizes()</a></code>
+
+        </dt>
+        <dd>Inspect Group Sample Sizes That May Trigger CV Fold Reduction in <code><a href="../reference/run_regreg.html">run_regreg()</a></code></dd>
+
+        <dt>
+
+          <code><a href="get_removed_samples.html">get_removed_samples()</a></code>
+
+        </dt>
+        <dd>Get Samples Removed by <code><a href="../reference/run_regreg.html">run_regreg()</a></code> Due to Missing Covariate Data</dd>
+
+        <dt>
+
+          <code><a href="get_sigfeatures.html">get_sigfeatures()</a></code>
+
+        </dt>
+        <dd>Get Features with Non-Zero Coefficients from a Regularized Regression Result</dd>
 
         <dt>
 

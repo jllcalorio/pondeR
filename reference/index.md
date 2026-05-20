@@ -1,82 +1,160 @@
 # Package index
 
-## Descriptive Statistics
+## Direct-Injection Metabolomics Preprocessing Pipeline
 
-Functions for generating publication-ready summary and descriptive
-statistics tables.
+Function for running a sequential preprocessing pipeline for
+metabolomics data by orchestrating the individual run\_\* functions of
+pondeR, as summarized below:
 
-- [`run_anthroindex()`](https://jllcalorio.github.io/pondeR/reference/run_anthroindex.md)
-  : Compute WHO Anthropometric Z-Scores and Nutritional Status
+- [`run_filtermissing()`](https://jllcalorio.github.io/pondeR/reference/run_filtermissing.md)
+  : Filter Features by Missing Value Threshold
+- [`run_mvimpute()`](https://jllcalorio.github.io/pondeR/reference/run_mvimpute.md)
+  : Impute Missing Values in Metabolomics Data
+- [`run_driftBatchCorrect()`](https://jllcalorio.github.io/pondeR/reference/run_driftBatchCorrect.md)
+  : Correct Signal Drift and Batch Effects Using QC Samples
+- [`run_normalize()`](https://jllcalorio.github.io/pondeR/reference/run_normalize.md)
+  : Normalize Metabolomics Data
+- [`run_transform()`](https://jllcalorio.github.io/pondeR/reference/run_transform.md)
+  : Transform Metabolomics Data
+- [`run_scale()`](https://jllcalorio.github.io/pondeR/reference/run_scale.md)
+  : Scale Metabolomics Data
+- [`run_filterRSD()`](https://jllcalorio.github.io/pondeR/reference/run_filterRSD.md)
+  : Filter Features by Relative Standard Deviation in QC Samples
+
+## Summarizing Data & Checking Distributions
+
+Functions for generating publication-ready summary tables,
+anthropometric indices according to WHO standards, and testing for
+normality or skewness.
+
 - [`run_summarytable()`](https://jllcalorio.github.io/pondeR/reference/run_summarytable.md)
   : Performs Descriptive Statistics on a Dataframe
+- [`run_anthroindex()`](https://jllcalorio.github.io/pondeR/reference/run_anthroindex.md)
+  : Compute WHO Anthropometric Z-Scores and Nutritional Status
 
-## Group Comparisons
+## Comparing Groups & Identifying Associations
 
-Functions for comparing groups via parametric and non-parametric tests,
-with automatic test selection and effect-size reporting.
+Methods for detecting differences between cohorts, calculating fold
+changes, and testing statistical associations.
 
 - [`run_diff()`](https://jllcalorio.github.io/pondeR/reference/run_diff.md)
   : Automatic Statistical Comparison with Comprehensive Analysis
 - [`plot_diff()`](https://jllcalorio.github.io/pondeR/reference/plot_diff.md)
   : Create Box or Violin Plots with Statistical Comparisons
-- [`run_foldchange()`](https://jllcalorio.github.io/pondeR/reference/run_foldchange.md)
-  : Fold Change Analysis Across Groups
 - [`run_assoc()`](https://jllcalorio.github.io/pondeR/reference/run_assoc.md)
   : Automatic Statistical Comparison for Categorical Variables
+- [`run_foldchange()`](https://jllcalorio.github.io/pondeR/reference/run_foldchange.md)
+  : Fold Change Analysis Across Groups
+- [`plot_volcano()`](https://jllcalorio.github.io/pondeR/reference/plot_volcano.md)
+  : Volcano Plot for Fold Change and p-value Data
+- [`run_correl()`](https://jllcalorio.github.io/pondeR/reference/run_correl.md)
+  : Perform Correlation Analysis
+- [`plot_heatmap()`](https://jllcalorio.github.io/pondeR/reference/plot_heatmap.md)
+  : Plot a Correlation Heatmap
+- [`plot_dend()`](https://jllcalorio.github.io/pondeR/reference/plot_dend.md)
+  : Plot a Hierarchical Clustering Dendrogram
 
-## Regression & Classification
+## Predictive Modeling & Classification
 
-Logistic regression and AUC/AUROC analysis functions with
-publication-ready outputs and optional Firth correction.
+Regularized regression (Ridge, LASSO, and Elastic Net), Linear
+Mixed-Effect Model, Logistic regression analysis and performance
+evaluation (AUC/AUROC) with automated bias correction options.
 
+- [`run_regreg()`](https://jllcalorio.github.io/pondeR/reference/run_regreg.md)
+  : Regularized Regression with Cross-Validation (Ridge, Elastic Net,
+  LASSO)
+- [`run_mixedmodel()`](https://jllcalorio.github.io/pondeR/reference/run_mixedmodel.md)
+  : Perform Linear Mixed-Effects Model Analysis
+- [`plot_mixedmodel()`](https://jllcalorio.github.io/pondeR/reference/plot_mixedmodel.md)
+  : Plot Results from a Linear Mixed-Effects Model Analysis
 - [`run_logreg()`](https://jllcalorio.github.io/pondeR/reference/run_logreg.md)
   : Perform Binary Logistic Regression (Standard or Firth-Corrected)
   with Iterative Feature Combinations
 - [`run_auc()`](https://jllcalorio.github.io/pondeR/reference/run_auc.md)
   : Comprehensive Area Under the ROC Curve (AUROC) Analysis
 
-## Dimensionality Reduction
+## Multivariate Exploration and Discrimination
 
-PCA-based dimensionality reduction, scree plots, and score plots for
-multivariate data exploration.
+Dimensionality reduction and visualization tools for simplified
+exploration of complex datasets.
 
 - [`run_pca()`](https://jllcalorio.github.io/pondeR/reference/run_pca.md)
   : Perform Principal Component Analysis
-- [`run_reduce()`](https://jllcalorio.github.io/pondeR/reference/run_reduce.md)
-  : Reduce Multiple Data Frames by Common or Unique Column/Row Names
+- [`run_pls()`](https://jllcalorio.github.io/pondeR/reference/run_pls.md)
+  : Perform Partial Least Squares (PLS) Analysis
+- [`run_pcoa()`](https://jllcalorio.github.io/pondeR/reference/run_pcoa.md)
+  : Principal Coordinate Analysis (PCoA) with Optional PERMANOVA and
+  Post-hoc
 - [`plot_scree()`](https://jllcalorio.github.io/pondeR/reference/plot_scree.md)
   : Plot PCA Scree Plot
 - [`plot_score()`](https://jllcalorio.github.io/pondeR/reference/plot_score.md)
   : Scores Plot for Multivariate Ordination Results
+- [`run_reduce()`](https://jllcalorio.github.io/pondeR/reference/run_reduce.md)
+  : Reduce Multiple Data Frames by Common or Unique Column/Row Names
 
-## Visualisation
+## Data Cleaning & Quality Control
 
-Standalone plotting functions for volcano plots and other figures.
+Filtering features based on missingness, variance, or RSD thresholds.
 
-- [`plot_volcano()`](https://jllcalorio.github.io/pondeR/reference/plot_volcano.md)
-  : Volcano Plot for Fold Change and p-value Data
-
-## Data Pre-processing
-
-Metabolomics-focused data pre-processing utilities including imputation,
-normalisation, filtering, scaling, and batch correction.
-
-- [`run_mvimpute()`](https://jllcalorio.github.io/pondeR/reference/run_mvimpute.md)
-  : Impute Missing Values in Metabolomics Data
-- [`run_normalize()`](https://jllcalorio.github.io/pondeR/reference/run_normalize.md)
-  : Normalize Metabolomics Data
-- [`run_scale()`](https://jllcalorio.github.io/pondeR/reference/run_scale.md)
-  : Scale Metabolomics Data
-- [`run_transform()`](https://jllcalorio.github.io/pondeR/reference/run_transform.md)
-  : Transform Metabolomics Data
-- [`run_filterRSD()`](https://jllcalorio.github.io/pondeR/reference/run_filterRSD.md)
-  : Filter Features by Relative Standard Deviation in QC Samples
 - [`run_filtermissing()`](https://jllcalorio.github.io/pondeR/reference/run_filtermissing.md)
   : Filter Features by Missing Value Threshold
 - [`run_filtervariance()`](https://jllcalorio.github.io/pondeR/reference/run_filtervariance.md)
   : Filter Features by Low Variance
+- [`run_filterRSD()`](https://jllcalorio.github.io/pondeR/reference/run_filterRSD.md)
+  : Filter Features by Relative Standard Deviation in QC Samples
+
+## Missing Value Imputation
+
+Addressing missing data using various imputation algorithms.
+
+- [`run_mvimpute()`](https://jllcalorio.github.io/pondeR/reference/run_mvimpute.md)
+  : Impute Missing Values in Metabolomics Data
+
+## Data Normalization, Transformation, and Scaling
+
+Transforming and scaling data to ensure comparability across samples.
+
+- [`run_normalize()`](https://jllcalorio.github.io/pondeR/reference/run_normalize.md)
+  : Normalize Metabolomics Data
+- [`run_transform()`](https://jllcalorio.github.io/pondeR/reference/run_transform.md)
+  : Transform Metabolomics Data
+- [`run_scale()`](https://jllcalorio.github.io/pondeR/reference/run_scale.md)
+  : Scale Metabolomics Data
+
+## Signal Drift and Batch Effects Correction
+
+Correcting for technical variation and instrument signal drift.
+
 - [`run_driftBatchCorrect()`](https://jllcalorio.github.io/pondeR/reference/run_driftBatchCorrect.md)
   : Correct Signal Drift and Batch Effects Using QC Samples
+
+## Plotting Functions of Two Data Frames
+
+Plots two data frames at a time, can be before and after implementing a
+method.
+
+- [`plot_beforeafter()`](https://jllcalorio.github.io/pondeR/reference/plot_beforeafter.md)
+  : Plot Pairwise Before-and-After Comparison for Selected Features
+- [`plot_dist_beforeafter()`](https://jllcalorio.github.io/pondeR/reference/plot_dist_beforeafter.md)
+  : Plot Distribution Comparison Before and After Data Transformation
+
+## Other Plotting Functions
+
+Other functions to plot metabolomics and metagenomics data.
+
+- [`plot_meanmap()`](https://jllcalorio.github.io/pondeR/reference/plot_meanmap.md)
+  : Mean Intensity Heatmap with Hierarchical Clustering Dendrogram
+- [`plot_multi_y()`](https://jllcalorio.github.io/pondeR/reference/plot_multi_y.md)
+  : Plot Multiple Variables on Primary and Secondary Y Axes
+
+## Export Functions
+
+Functions export data frames to Excel/CSV files and figure to PNGs, etc.
+
+- [`save_excel()`](https://jllcalorio.github.io/pondeR/reference/save_excel.md)
+  : Save Data Frames, Tibbles, or Matrices to an Excel File
+- [`save_plots()`](https://jllcalorio.github.io/pondeR/reference/save_plots.md)
+  : Save Plots to Image or Vector Files
 
 ## Utilities & Helpers
 
@@ -84,6 +162,29 @@ Utility functions for data management, relabelling, and S3 methods.
 
 - [`run_relabel()`](https://jllcalorio.github.io/pondeR/reference/run_relabel.md)
   : Recode and Factorize a Column
+
+- [`run_move_names()`](https://jllcalorio.github.io/pondeR/reference/run_move_names.md)
+  : Move Row or Column Names into the Data Area
+
+- [`run_randomize()`](https://jllcalorio.github.io/pondeR/reference/run_randomize.md)
+  : Randomize a Data Frame, Matrix, or Vector
+
+- [`get_groupsizes()`](https://jllcalorio.github.io/pondeR/reference/get_groupsizes.md)
+  :
+
+  Inspect Group Sample Sizes That May Trigger CV Fold Reduction in
+  [`run_regreg()`](https://jllcalorio.github.io/pondeR/reference/run_regreg.md)
+
+- [`get_removed_samples()`](https://jllcalorio.github.io/pondeR/reference/get_removed_samples.md)
+  :
+
+  Get Samples Removed by
+  [`run_regreg()`](https://jllcalorio.github.io/pondeR/reference/run_regreg.md)
+  Due to Missing Covariate Data
+
+- [`get_sigfeatures()`](https://jllcalorio.github.io/pondeR/reference/get_sigfeatures.md)
+  : Get Features with Non-Zero Coefficients from a Regularized
+  Regression Result
 
 - [`print(`*`<plot_volcano>`*`)`](https://jllcalorio.github.io/pondeR/reference/print.plot_volcano.md)
   :
