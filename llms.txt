@@ -126,22 +126,10 @@ enhance its capabilities and ease of use. Stay tuned for updates!
 
 Function for running a sequential preprocessing pipeline for
 metabolomics data by orchestrating the individual run\_\* functions of
-pondeR, as summarized below:
+pondeR.
 
-- [`run_filtermissing()`](https://jllcalorio.github.io/pondeR/reference/run_filtermissing.md)
-  : Filter Features by Missing Value Threshold
-- [`run_mvimpute()`](https://jllcalorio.github.io/pondeR/reference/run_mvimpute.md)
-  : Impute Missing Values in Metabolomics Data
-- [`run_driftBatchCorrect()`](https://jllcalorio.github.io/pondeR/reference/run_driftBatchCorrect.md)
-  : Correct Signal Drift and Batch Effects Using QC Samples
-- [`run_normalize()`](https://jllcalorio.github.io/pondeR/reference/run_normalize.md)
-  : Normalize Metabolomics Data
-- [`run_transform()`](https://jllcalorio.github.io/pondeR/reference/run_transform.md)
-  : Transform Metabolomics Data
-- [`run_scale()`](https://jllcalorio.github.io/pondeR/reference/run_scale.md)
-  : Scale Metabolomics Data
-- [`run_filterRSD()`](https://jllcalorio.github.io/pondeR/reference/run_filterRSD.md)
-  : Filter Features by Relative Standard Deviation in QC Samples
+- [`run_DIpreprocess()`](https://jllcalorio.github.io/pondeR/reference/run_DIpreprocess.md)
+  : Direct-Injection Metabolomics Preprocessing Pipeline
 
 ## Summarizing Data & Checking Distributions
 
@@ -220,10 +208,10 @@ Filtering features based on missingness, variance, or RSD thresholds.
 
 - [`run_filtermissing()`](https://jllcalorio.github.io/pondeR/reference/run_filtermissing.md)
   : Filter Features by Missing Value Threshold
-- [`run_filtervariance()`](https://jllcalorio.github.io/pondeR/reference/run_filtervariance.md)
-  : Filter Features by Low Variance
 - [`run_filterRSD()`](https://jllcalorio.github.io/pondeR/reference/run_filterRSD.md)
   : Filter Features by Relative Standard Deviation in QC Samples
+- [`run_filtervariance()`](https://jllcalorio.github.io/pondeR/reference/run_filtervariance.md)
+  : Filter Features by Low Variance
 
 ## Missing Value Imputation
 

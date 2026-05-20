@@ -40,7 +40,7 @@
     <div class="section level2">
       <h2 id="direct-injection-metabolomics-preprocessing-pipeline">Direct-Injection Metabolomics Preprocessing Pipeline<a class="anchor" aria-label="anchor" href="#direct-injection-metabolomics-preprocessing-pipeline"></a></h2>
 
-      <div class="section-desc"><p>Function for running a sequential preprocessing pipeline for metabolomics data by orchestrating the individual run_* functions of pondeR, as summarized below:</p></div>
+      <div class="section-desc"><p>Function for running a sequential preprocessing pipeline for metabolomics data by orchestrating the individual run_* functions of pondeR.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -49,52 +49,10 @@
 
       <dl><dt>
 
-          <code><a href="run_filtermissing.html">run_filtermissing()</a></code>
+          <code><a href="run_DIpreprocess.html">run_DIpreprocess()</a></code>
 
         </dt>
-        <dd>Filter Features by Missing Value Threshold</dd>
-
-        <dt>
-
-          <code><a href="run_mvimpute.html">run_mvimpute()</a></code>
-
-        </dt>
-        <dd>Impute Missing Values in Metabolomics Data</dd>
-
-        <dt>
-
-          <code><a href="run_driftBatchCorrect.html">run_driftBatchCorrect()</a></code>
-
-        </dt>
-        <dd>Correct Signal Drift and Batch Effects Using QC Samples</dd>
-
-        <dt>
-
-          <code><a href="run_normalize.html">run_normalize()</a></code>
-
-        </dt>
-        <dd>Normalize Metabolomics Data</dd>
-
-        <dt>
-
-          <code><a href="run_transform.html">run_transform()</a></code>
-
-        </dt>
-        <dd>Transform Metabolomics Data</dd>
-
-        <dt>
-
-          <code><a href="run_scale.html">run_scale()</a></code>
-
-        </dt>
-        <dd>Scale Metabolomics Data</dd>
-
-        <dt>
-
-          <code><a href="run_filterRSD.html">run_filterRSD()</a></code>
-
-        </dt>
-        <dd>Filter Features by Relative Standard Deviation in QC Samples</dd>
+        <dd>Direct-Injection Metabolomics Preprocessing Pipeline</dd>
       </dl></div><div class="section level2">
       <h2 id="summarizing-data-checking-distributions">Summarizing Data &amp; Checking Distributions<a class="anchor" aria-label="anchor" href="#summarizing-data-checking-distributions"></a></h2>
 
@@ -297,17 +255,17 @@
 
         <dt>
 
-          <code><a href="run_filtervariance.html">run_filtervariance()</a></code>
-
-        </dt>
-        <dd>Filter Features by Low Variance</dd>
-
-        <dt>
-
           <code><a href="run_filterRSD.html">run_filterRSD()</a></code>
 
         </dt>
         <dd>Filter Features by Relative Standard Deviation in QC Samples</dd>
+
+        <dt>
+
+          <code><a href="run_filtervariance.html">run_filtervariance()</a></code>
+
+        </dt>
+        <dd>Filter Features by Low Variance</dd>
       </dl></div><div class="section level2">
       <h2 id="missing-value-imputation">Missing Value Imputation<a class="anchor" aria-label="anchor" href="#missing-value-imputation"></a></h2>
 
