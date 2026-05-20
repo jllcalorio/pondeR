@@ -1,12 +1,81 @@
-# pondeR
+# pondeR: Statistical Analysis Made Easier
 
-`pondeR` is a simple and powerful collection of R functions that provide highly customizable function arguments for generating publication-ready descriptive and inferential statistics tables using the `gtsummary` framework.
+`pondeR` is an R package providing a curated collection of functions for generating publication-ready descriptive and inferential statistics tables and figures — with minimal coding overhead. It is built upon the robust `gtsummary` framework and leverages the power of the `tidyverse`.
 
-Upcoming functions will be added to the `pondeR` package, which contain specific parameters
-that enable users to skip the coding and just specify what they want. 
+This package aims to make statistical analysis more accessible for everyone, ensuring transparency in analytical methods and providing a consistent template for results.
 
-This is part of my goal to make statistical analysis a little bit easy for everyone. Also, to make my analyses transparent in terms of how I performed the analyses, and to have a template of my results.
+## Key Features
 
-Huge thanks to [The R Project for Statistical Computing](https://www.r-project.org/about.html), [Positron](https://positron.posit.co/), [RStudio](https://posit.co/download/rstudio-desktop/), the developers of the [gtsummary](https://www.danieldsjoberg.com/gtsummary/), [dplyr](https://dplyr.tidyverse.org/), [ggplot2](https://ggplot2.tidyverse.org/), everything in the [tidyverse](https://www.tidyverse.org/) package, and all the dependencies I fail to mention.
+`pondeR` offers a comprehensive suite of tools for various stages of data analysis, particularly focused on metabolomics data preprocessing and general statistical reporting:
 
-More functions to come!
+*   **Direct-Injection Metabolomics Preprocessing Pipeline**: Orchestrates a sequential preprocessing pipeline for metabolomics data by combining individual `pondeR` functions for filtering, imputation, batch correction, normalization, transformation, and scaling.
+*   **Summarizing Data & Checking Distributions**: Generate publication-ready summary tables, calculate anthropometric indices according to WHO standards, and test for normality or skewness.
+*   **Comparing Groups & Identifying Associations**: Provides methods for detecting differences between cohorts, calculating fold changes, and testing statistical associations. Includes plotting functions like volcano plots and heatmaps.
+*   **Predictive Modeling & Classification**: Offers tools for regularized regression (Ridge, LASSO, Elastic Net), Linear Mixed-Effect Models, and Logistic regression analysis with performance evaluation (AUC/AUROC) and automated bias correction options.
+*   **Multivariate Exploration and Discrimination**: Features dimensionality reduction and visualization tools (PCA, PLS, PCoA) for simplified exploration of complex datasets, including scree and score plots.
+*   **Data Cleaning & Quality Control**: Functions for filtering features based on missingness, variance, or RSD thresholds.
+*   **Missing Value Imputation**: Addresses missing data using various imputation algorithms.
+*   **Data Normalization, Transformation, and Scaling**: Transforms and scales data to ensure comparability across samples.
+*   **Signal Drift and Batch Effects Correction**: Corrects for technical variation and instrument signal drift.
+*   **Plotting Functions**: A variety of plotting utilities, including before-and-after comparisons, distribution plots, mean maps, and multi-Y plots for metabolomics and metagenomics data.
+*   **Export Functions**: Easily export data frames to Excel/CSV files and figures to PNGs.
+*   **Utilities & Helpers**: A collection of utility functions for data management, relabelling, randomization, and retrieving group sizes or significant features.
+
+## Installation
+
+You can install the development version of `pondeR` directly from GitHub:
+
+```R
+# Install devtools if you haven't already
+if (!requireNamespace("devtools", quietly = TRUE)) {
+  install.packages("devtools")
+}
+
+devtools::install_github("jllcalorio/pondeR")
+```
+
+## Quick Start
+
+Here's a quick example of how to generate a descriptive summary table using `pondeR` (assuming you have a data frame named `my_data`):
+
+```R
+library(pondeR)
+library(dplyr) # Often useful with gtsummary-based packages
+
+# Example data (replace with your actual data)
+my_data <- tibble::tibble(
+  age = rnorm(100, 30, 5),
+  gender = sample(c("Male", "Female"), 100, replace = TRUE),
+  treatment = sample(c("A", "B", "C"), 100, replace = TRUE),
+  score = runif(100, 0, 100)
+)
+
+# Generate a summary table
+my_data %>%
+  run_summarytable(
+    # Specify variables and grouping if needed
+    include = c(age, gender, score),
+    by = treatment
+  )
+```
+*(Note: The exact arguments for `run_summarytable` may vary. Please refer to the package documentation for detailed usage.)*
+
+## Contributing
+
+We welcome contributions to `pondeR`! Please review our Code of Conduct before contributing.
+
+## Reporting Bugs
+
+If you encounter any bugs or have feature requests, please open an issue on our GitHub Issues page.
+
+## License
+
+This project is licensed under the MIT License.
+
+## Acknowledgements
+
+Huge thanks to The R Project for Statistical Computing, Positron, RStudio, the developers of the gtsummary, dplyr, ggplot2, everything in the tidyverse package, and all the dependencies I fail to mention. Your work makes `pondeR` possible.
+
+## Future Development
+
+More functions are continuously being added to `pondeR` to further enhance its capabilities and ease of use. Stay tuned for updates!
