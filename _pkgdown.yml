@@ -63,16 +63,9 @@ reference:
   - title: "Direct-Injection Metabolomics Preprocessing Pipeline"
     desc: >
       Function for running a sequential preprocessing pipeline for metabolomics data by
-      orchestrating the individual run_* functions of pondeR, as summarized below:
+      orchestrating the individual run_* functions of pondeR.
     contents:
-      - starts_with("run_filtermissing")
-      - starts_with("run_mvimpute")
-      - starts_with("run_driftBatchCorrect")
-      - starts_with("run_normalize")
-      - starts_with("run_transform")
-      - starts_with("run_scale")
-      - starts_with("run_filterRSD")
-      - starts_with("run_variancefilter")
+      - starts_with("run_DIpreprocess")
 
   - title: "Summarizing Data & Checking Distributions"
     desc: >
@@ -126,8 +119,8 @@ reference:
     desc: "Filtering features based on missingness, variance, or RSD thresholds."
     contents:
       - starts_with("run_filtermissing")
-      - starts_with("run_filtervariance")
       - starts_with("run_filterRSD")
+      - starts_with("run_filtervariance")
 
   - title: "Missing Value Imputation"
     desc: "Addressing missing data using various imputation algorithms."
