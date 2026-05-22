@@ -18,7 +18,7 @@ run_assoc(
   test_type = c("auto", "chisq", "fisher"),
   expected_freq_threshold = 5,
   continuity_correction = TRUE,
-  fisher_simulate = TRUE,
+  fisher_simulate = FALSE,
   test_alpha = 0.05,
   calculate_association = TRUE,
   perform_posthoc = TRUE,
@@ -86,7 +86,7 @@ run_assoc(
 
   A logical indicating whether to use Monte Carlo simulation for
   Fisher's Exact Test p-values. Recommended for tables larger than 2x2.
-  Default is `TRUE`.
+  Default is `FALSE`.
 
 - test_alpha:
 

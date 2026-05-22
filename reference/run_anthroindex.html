@@ -122,6 +122,14 @@ WHO classification thresholds.</p>
 <span>  subscapularskinfold_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  subscapularskinfold_unit <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mm"</span>, <span class="st">"cm"</span>, <span class="st">"m"</span>, <span class="st">"ft"</span>, <span class="st">"in"</span><span class="op">)</span>,</span>
 <span>  oedema_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  merge_obese <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  merge_wasted <span class="op">=</span> <span class="va">merge_obese</span>,</span>
+<span>  merge_malnourished <span class="op">=</span> <span class="va">merge_obese</span>,</span>
+<span>  merge_underweight <span class="op">=</span> <span class="va">merge_obese</span>,</span>
+<span>  merge_stunted <span class="op">=</span> <span class="va">merge_obese</span>,</span>
+<span>  merge_thinness <span class="op">=</span> <span class="va">merge_obese</span>,</span>
+<span>  status_col_name <span class="op">=</span> <span class="st">"Nutritional Status"</span>,</span>
+<span>  simplify <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  return <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"wfa"</span>, <span class="st">"hfa"</span>, <span class="st">"wfh"</span>, <span class="st">"bmifa"</span>, <span class="st">"hcfa"</span>, <span class="st">"acfa"</span>, <span class="st">"tsfa"</span>, <span class="st">"ssfa"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -246,6 +254,55 @@ the bilateral pitting oedema variable in <code>x</code>. Valid cell values are
 <code>"Y"</code>, or <code>"1"</code> (oedema present).</p></dd>
 
 
+<dt id="arg-merge-obese">merge_obese<a class="anchor" aria-label="anchor" href="#arg-merge-obese"></a></dt>
+<dd><p>Logical. When <code>TRUE</code>, combines all stages of Obesity
+("Stage 1 Obesity", "Stage 2 Obesity", "Stage 3 Obesity", and "Obesity")
+into just <code>"Obese"</code>. Defaults to <code>FALSE</code>.</p></dd>
+
+
+<dt id="arg-merge-wasted">merge_wasted<a class="anchor" aria-label="anchor" href="#arg-merge-wasted"></a></dt>
+<dd><p>Logical. When <code>TRUE</code>, combines all categories of
+wasted (<code>"Severely wasted"</code>, <code>"Moderately wasted"</code>) into just
+<code>"Wasted"</code>. Defaults to the value of <code>merge_obese</code>.</p></dd>
+
+
+<dt id="arg-merge-malnourished">merge_malnourished<a class="anchor" aria-label="anchor" href="#arg-merge-malnourished"></a></dt>
+<dd><p>Logical. When <code>TRUE</code>, combines <code>"Severe acute malnutrition"</code>
+and <code>"Moderate acute malnutrition"</code> into just <code>"Malnourished"</code>.
+Defaults to the value of <code>merge_obese</code>.</p></dd>
+
+
+<dt id="arg-merge-underweight">merge_underweight<a class="anchor" aria-label="anchor" href="#arg-merge-underweight"></a></dt>
+<dd><p>Logical. When <code>TRUE</code>, combines <code>"Severely underweight"</code>
+and <code>"Moderately underweight"</code> into just <code>"Underweight"</code>.
+Defaults to the value of <code>merge_obese</code>.</p></dd>
+
+
+<dt id="arg-merge-stunted">merge_stunted<a class="anchor" aria-label="anchor" href="#arg-merge-stunted"></a></dt>
+<dd><p>Logical. When <code>TRUE</code>, combines <code>"Severely stunted"</code>
+and <code>"Moderately stunted"</code> into just <code>"Stunted"</code>.
+Defaults to the value of <code>merge_obese</code>.</p></dd>
+
+
+<dt id="arg-merge-thinness">merge_thinness<a class="anchor" aria-label="anchor" href="#arg-merge-thinness"></a></dt>
+<dd><p>Logical. When <code>TRUE</code>, combines all categories of
+thinness (<code>"Severe thinness"</code>, <code>"Thinness"</code>, <code>"Moderate and severe thinness"</code>)
+into just <code>"Thinness"</code>. Defaults to the value of <code>merge_obese</code>.</p></dd>
+
+
+<dt id="arg-status-col-name">status_col_name<a class="anchor" aria-label="anchor" href="#arg-status-col-name"></a></dt>
+<dd><p>A single character string specifying the name of the
+column to be created for the WHO nutritional status classification.
+Defaults to <code>"Nutritional Status"</code>.</p></dd>
+
+
+<dt id="arg-simplify">simplify<a class="anchor" aria-label="anchor" href="#arg-simplify"></a></dt>
+<dd><p>Logical. When <code>TRUE</code> (default), excludes additional
+flag and auxiliary z-score columns (e.g., <code>fbmi</code>, <code>zbmia</code>,
+<code>sbmi</code>) from the result, keeping only supporting columns and the
+primary <code>z_score</code>.</p></dd>
+
+
 <dt id="arg-return">return<a class="anchor" aria-label="anchor" href="#arg-return"></a></dt>
 <dd><p>A character string or vector specifying which anthropometric
 indices to compute. One or more of: <code>"wfa"</code>, <code>"hfa"</code>,
@@ -268,8 +325,10 @@ and from <span class="pkg">anthroplus</span> (<code>zbfa</code>) for ages 5–&l
 \(\geq\) 20 years, <code>z_score</code> is <code>NA</code> (classification uses
 raw BMI instead).</p></li>
 <li><p>Additional flag and auxiliary columns for the index (e.g.,
-<code>fbmi</code>, <code>zbmia</code>, <code>sbmi</code>).</p></li>
-<li><p><code>Nutritional Status</code> — a character column with the WHO
+<code>fbmi</code>, <code>zbmia</code>, <code>sbmi</code>). These are omitted if
+<code>simplify = TRUE</code>.</p></li>
+<li><p>Nutritional Status — a character column (named via
+<code>status_col_name</code>) containing the WHO
 classification label based on z-score (ages &lt; 20 years) or raw BMI
 (ages \(\geq\) 20 years, BMIFA only).</p></li>
 </ol><p>If a single index is requested via <code>return</code>, the object is returned
@@ -345,7 +404,7 @@ skipped. Required columns per index:</p><ul><li><p><code>wfa</code>   — <code>
 
 <div class="section">
 <h4 id="birth-to-years">Birth to 5 years<a class="anchor" aria-label="anchor" href="#birth-to-years"></a></h4>
-<table class="table table"><tr><td>Nutritional status</td><td>Index</td><td>Threshold</td></tr><tr><td>Obese</td><td>WFH or BMIFA</td><td>&gt; +3 SD</td></tr><tr><td>Overweight</td><td>WFH or BMIFA</td><td>&gt; +2 SD and \(\leq\) +3 SD</td></tr><tr><td>Normal</td><td>WFH or BMIFA</td><td>\(\geq\) \(-\)2 SD and \(\leq\) +2 SD</td></tr><tr><td>Moderately wasted</td><td>WFH</td><td>\(\leq\) \(-\)2 SD and \(\geq\) \(-\)3 SD</td></tr><tr><td>Severely wasted</td><td>WFH</td><td>&lt; \(-\)3 SD</td></tr><tr><td>Moderate acute malnutrition</td><td>BMIFA or ACFA</td><td>\(\leq\) \(-\)2 SD and \(\geq\) \(-\)3 SD</td></tr><tr><td>Severe acute malnutrition</td><td>BMIFA or ACFA</td><td>&lt; \(-\)3 SD</td></tr><tr><td>Moderately underweight</td><td>WFA</td><td>&lt; \(-\)2 SD and \(\geq\) \(-\)3 SD</td></tr><tr><td>Severely underweight</td><td>WFA</td><td>&lt; \(-\)3 SD</td></tr><tr><td>Normal</td><td>WFA</td><td>\(\geq\) \(-\)2 SD</td></tr><tr><td>Moderately stunted</td><td>HFA</td><td>\(\leq\) \(-\)2 SD and \(\geq\) \(-\)3 SD</td></tr><tr><td>Severely stunted</td><td>HFA</td><td>&lt; \(-\)3 SD</td></tr><tr><td>Normal</td><td>HFA</td><td>&gt; \(-\)2 SD</td></tr><tr><td>Normal</td><td>ACFA</td><td>&gt; \(-\)2 SD</td></tr></table></div>
+<table class="table table"><tr><td>Nutritional status</td><td>Index</td><td>Threshold</td></tr><tr><td>Obese</td><td>WFH or BMIFA</td><td>&gt; +3 SD</td></tr><tr><td>Overweight</td><td>WFH or BMIFA</td><td>&gt; +2 SD and \(\leq\) +3 SD</td></tr><tr><td>Normal</td><td>WFH or BMIFA</td><td>\(\geq\) \(-\)2 SD and \(\leq\) +2 SD</td></tr><tr><td>Moderately wasted</td><td>WFH</td><td>\(\leq\) \(-\)2 SD and \(\geq\) \(-\)3 SD</td></tr><tr><td>Severely wasted</td><td>WFH</td><td>&lt; \(-\)3 SD</td></tr><tr><td>Moderately acute malnourished</td><td>BMIFA or ACFA</td><td>\(\leq\) \(-\)2 SD and \(\geq\) \(-\)3 SD</td></tr><tr><td>Severely acute malnourished</td><td>BMIFA or ACFA</td><td>&lt; \(-\)3 SD</td></tr><tr><td>Moderately underweight</td><td>WFA</td><td>&lt; \(-\)2 SD and \(\geq\) \(-\)3 SD</td></tr><tr><td>Severely underweight</td><td>WFA</td><td>&lt; \(-\)3 SD</td></tr><tr><td>Normal</td><td>WFA</td><td>\(\geq\) \(-\)2 SD</td></tr><tr><td>Moderately stunted</td><td>HFA</td><td>\(\leq\) \(-\)2 SD and \(\geq\) \(-\)3 SD</td></tr><tr><td>Severely stunted</td><td>HFA</td><td>&lt; \(-\)3 SD</td></tr><tr><td>Normal</td><td>HFA</td><td>&gt; \(-\)2 SD</td></tr><tr><td>Normal</td><td>ACFA</td><td>&gt; \(-\)2 SD</td></tr></table></div>
 
 <div class="section">
 <h4 id="-to-years-bmi-for-age-only">5 to 19 years — BMI-for-age only<a class="anchor" aria-label="anchor" href="#-to-years-bmi-for-age-only"></a></h4>

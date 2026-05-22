@@ -51,6 +51,14 @@ run_anthroindex(
   subscapularskinfold_col = NULL,
   subscapularskinfold_unit = c("mm", "cm", "m", "ft", "in"),
   oedema_col = NULL,
+  merge_obese = FALSE,
+  merge_wasted = merge_obese,
+  merge_malnourished = merge_obese,
+  merge_underweight = merge_obese,
+  merge_stunted = merge_obese,
+  merge_thinness = merge_obese,
+  status_col_name = "Nutritional Status",
+  simplify = TRUE,
   return = c("wfa", "hfa", "wfh", "bmifa", "hcfa", "acfa", "tsfa", "ssfa")
 )
 ```
@@ -163,6 +171,54 @@ run_anthroindex(
   `"N"`, or `"2"` (no oedema) and `"y"`, `"Y"`, or `"1"` (oedema
   present).
 
+- merge_obese:
+
+  Logical. When `TRUE`, combines all stages of Obesity ("Stage 1
+  Obesity", "Stage 2 Obesity", "Stage 3 Obesity", and "Obesity") into
+  just `"Obese"`. Defaults to `FALSE`.
+
+- merge_wasted:
+
+  Logical. When `TRUE`, combines all categories of wasted
+  (`"Severely wasted"`, `"Moderately wasted"`) into just `"Wasted"`.
+  Defaults to the value of `merge_obese`.
+
+- merge_malnourished:
+
+  Logical. When `TRUE`, combines `"Severe acute malnutrition"` and
+  `"Moderate acute malnutrition"` into just `"Malnourished"`. Defaults
+  to the value of `merge_obese`.
+
+- merge_underweight:
+
+  Logical. When `TRUE`, combines `"Severely underweight"` and
+  `"Moderately underweight"` into just `"Underweight"`. Defaults to the
+  value of `merge_obese`.
+
+- merge_stunted:
+
+  Logical. When `TRUE`, combines `"Severely stunted"` and
+  `"Moderately stunted"` into just `"Stunted"`. Defaults to the value of
+  `merge_obese`.
+
+- merge_thinness:
+
+  Logical. When `TRUE`, combines all categories of thinness
+  (`"Severe thinness"`, `"Thinness"`, `"Moderate and severe thinness"`)
+  into just `"Thinness"`. Defaults to the value of `merge_obese`.
+
+- status_col_name:
+
+  A single character string specifying the name of the column to be
+  created for the WHO nutritional status classification. Defaults to
+  `"Nutritional Status"`.
+
+- simplify:
+
+  Logical. When `TRUE` (default), excludes additional flag and auxiliary
+  z-score columns (e.g., `fbmi`, `zbmia`, `sbmi`) from the result,
+  keeping only supporting columns and the primary `z_score`.
+
 - return:
 
   A character string or vector specifying which anthropometric indices
@@ -188,11 +244,12 @@ The columns are ordered as follows:
     years, `z_score` is `NA` (classification uses raw BMI instead).
 
 4.  Additional flag and auxiliary columns for the index (e.g., `fbmi`,
-    `zbmia`, `sbmi`).
+    `zbmia`, `sbmi`). These are omitted if `simplify = TRUE`.
 
-5.  `Nutritional Status` — a character column with the WHO
-    classification label based on z-score (ages \< 20 years) or raw BMI
-    (ages \\\geq\\ 20 years, BMIFA only).
+5.  Nutritional Status — a character column (named via
+    `status_col_name`) containing the WHO classification label based on
+    z-score (ages \< 20 years) or raw BMI (ages \\\geq\\ 20 years, BMIFA
+    only).
 
 If a single index is requested via `return`, the object is returned
 directly. If multiple indices are requested, a named `list` of such
@@ -270,23 +327,23 @@ is silently skipped. Required columns per index:
 
 #### Birth to 5 years
 
-|                             |               |                                           |
-|-----------------------------|---------------|-------------------------------------------|
-| Nutritional status          | Index         | Threshold                                 |
-| Obese                       | WFH or BMIFA  | \> +3 SD                                  |
-| Overweight                  | WFH or BMIFA  | \> +2 SD and \\\leq\\ +3 SD               |
-| Normal                      | WFH or BMIFA  | \\\geq\\ \\-\\2 SD and \\\leq\\ +2 SD     |
-| Moderately wasted           | WFH           | \\\leq\\ \\-\\2 SD and \\\geq\\ \\-\\3 SD |
-| Severely wasted             | WFH           | \< \\-\\3 SD                              |
-| Moderate acute malnutrition | BMIFA or ACFA | \\\leq\\ \\-\\2 SD and \\\geq\\ \\-\\3 SD |
-| Severe acute malnutrition   | BMIFA or ACFA | \< \\-\\3 SD                              |
-| Moderately underweight      | WFA           | \< \\-\\2 SD and \\\geq\\ \\-\\3 SD       |
-| Severely underweight        | WFA           | \< \\-\\3 SD                              |
-| Normal                      | WFA           | \\\geq\\ \\-\\2 SD                        |
-| Moderately stunted          | HFA           | \\\leq\\ \\-\\2 SD and \\\geq\\ \\-\\3 SD |
-| Severely stunted            | HFA           | \< \\-\\3 SD                              |
-| Normal                      | HFA           | \> \\-\\2 SD                              |
-| Normal                      | ACFA          | \> \\-\\2 SD                              |
+|                               |               |                                           |
+|-------------------------------|---------------|-------------------------------------------|
+| Nutritional status            | Index         | Threshold                                 |
+| Obese                         | WFH or BMIFA  | \> +3 SD                                  |
+| Overweight                    | WFH or BMIFA  | \> +2 SD and \\\leq\\ +3 SD               |
+| Normal                        | WFH or BMIFA  | \\\geq\\ \\-\\2 SD and \\\leq\\ +2 SD     |
+| Moderately wasted             | WFH           | \\\leq\\ \\-\\2 SD and \\\geq\\ \\-\\3 SD |
+| Severely wasted               | WFH           | \< \\-\\3 SD                              |
+| Moderately acute malnourished | BMIFA or ACFA | \\\leq\\ \\-\\2 SD and \\\geq\\ \\-\\3 SD |
+| Severely acute malnourished   | BMIFA or ACFA | \< \\-\\3 SD                              |
+| Moderately underweight        | WFA           | \< \\-\\2 SD and \\\geq\\ \\-\\3 SD       |
+| Severely underweight          | WFA           | \< \\-\\3 SD                              |
+| Normal                        | WFA           | \\\geq\\ \\-\\2 SD                        |
+| Moderately stunted            | HFA           | \\\leq\\ \\-\\2 SD and \\\geq\\ \\-\\3 SD |
+| Severely stunted              | HFA           | \< \\-\\3 SD                              |
+| Normal                        | HFA           | \> \\-\\2 SD                              |
+| Normal                        | ACFA          | \> \\-\\2 SD                              |
 
 #### 5 to 19 years — BMI-for-age only
 

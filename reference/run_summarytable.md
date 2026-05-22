@@ -24,6 +24,7 @@ run_summarytable(
   x,
   summarize_what = NULL,
   split_by = NULL,
+  filter = NULL,
   split_by_header = NULL,
   strata_by = NULL,
   rename_variables = NULL,
@@ -37,7 +38,7 @@ run_summarytable(
   display_missing = "ifany",
   missing_text = "No data/missing",
   missing_stat = "n_percent",
-  include_missing_in_splits = TRUE,
+  include_missing_in_splits = FALSE,
   sort_categorical_variables_by = "alphanumeric",
   calc_percent_by = "column",
   calc_col_percent_using = "n_valid_in_column",
@@ -49,6 +50,7 @@ run_summarytable(
   bold_significant_pvalues = TRUE,
   bold_significant_pvalues_at = 0.05,
   header = "Variable",
+  show_n_header = TRUE,
   bold_labels = TRUE,
   italicize_levels = TRUE,
   clean_table = TRUE,
@@ -73,6 +75,12 @@ run_summarytable(
   String. A column name in `x` (must be categorical with at least 2
   unique levels) by which to stratify the table. Required when
   `add_inferential_pvalues = TRUE`. Default is `NULL`.
+
+- filter:
+
+  Optional character vector of levels in `split_by` to exclude from the
+  analysis. If `x` is a `run_DIpreprocess` object, defaults to the
+  identified QC types.
 
 - split_by_header:
 
@@ -149,8 +157,8 @@ run_summarytable(
 
 - include_missing_in_splits:
 
-  Logical. If `TRUE` (default), missing values in `split_by` /
-  `strata_by` columns are kept as an explicit level.
+  Logical. If `TRUE`, missing values in `split_by` / `strata_by` columns
+  are kept as an explicit level. Defaults to `FALSE`.
 
 - sort_categorical_variables_by:
 
@@ -160,7 +168,9 @@ run_summarytable(
 - calc_percent_by:
 
   String. Percentage base for categorical variables: `"column"`
-  (default), `"row"`, or `"cell"`.
+  (default), `"row"`, `"cell"`, or `"total"`. `"total"` calculates
+  percentages based on the total number of samples, study participants,
+  or simply number of rows in `x`.
 
 - calc_col_percent_using:
 
@@ -223,6 +233,11 @@ run_summarytable(
 - header:
 
   String. Header for the variable-label column. Default is `"Variable"`.
+
+- show_n_header:
+
+  Logical. When `TRUE` (default), appends the total sample size to the
+  `header` (e.g., "Variable (N = 100)").
 
 - bold_labels:
 
