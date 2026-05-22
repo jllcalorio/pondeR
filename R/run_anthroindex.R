@@ -271,7 +271,11 @@
 
 #' @keywords internal
 .anth_add_status <- function(df, index, age_months, sex_int,
-                              weight_kg, height_cm) {
+                              weight_kg, height_cm,
+                              merge_obese, merge_wasted, merge_malnourished,
+                              merge_underweight, merge_stunted,
+                              merge_thinness,
+                              status_col_name) {
   # Map each index to:
   #   zcol_anthro  — column from anthro_zscores()    (valid for 0-<5 yr)
   #   zcol_plus    — column from anthroplus_zscores() (valid for 5-<20 yr)
@@ -292,7 +296,7 @@
 
   if (is.null(zcol) || !zcol %in% names(df)) {
     df[["z_score"]]           <- NA_real_
-    df[["Nutritional Status"]] <- NA_character_
+    df[[status_col_name]] <- NA_character_
     return(df)
   }
 
@@ -344,7 +348,7 @@
     if (!index %in% c("hcfa", "tsfa", "ssfa"))
       message(
         "No WHO z-score reference is available for index '", index,
-        "' for ages 5-19 years. 'Nutritional Status' will be NA for those rows."
+        "' for ages 5-19 years. '", status_col_name, "' will be NA for those rows."
       )
   }
 
@@ -355,8 +359,8 @@
     } else {
       warning(
         "Adult BMI classification (age \u2265 20 years) requires the computed ",
-        "BMI column 'cbmi' from anthro_zscores(). Column not found; ",
-        "'Nutritional Status' will be NA for these rows.",
+        "BMI column 'cbmi' from anthro_zscores(). Column not found; '",
+        status_col_name, "' will be NA for these rows.",
         call. = FALSE
       )
     }
@@ -366,10 +370,30 @@
   if (index %in% c("hcfa", "tsfa", "ssfa") && !all(is.na(z)))
     message(
       "No WHO nutritional status classification is currently available for '",
-      index, "'. 'Nutritional Status' will be NA."
+      index, "'. '", status_col_name, "' will be NA."
     )
+  
+  # ---- Apply classification merges if requested ---------------------------
+  if (merge_obese) {
+    status[status %in% c("Stage 1 Obesity", "Stage 2 Obesity", "Stage 3 Obesity", "Obesity")] <- "Obese"
+  }
+  if (merge_wasted) {
+    status[status %in% c("Severely wasted", "Moderately wasted")] <- "Wasted"
+  }
+  if (merge_malnourished) {
+    status[status %in% c("Severe acute malnutrition", "Moderate acute malnutrition")] <- "Malnourished"
+  }
+  if (merge_underweight) {
+    status[status %in% c("Severely underweight", "Moderately underweight")] <- "Underweight"
+  }
+  if (merge_stunted) {
+    status[status %in% c("Severely stunted", "Moderately stunted")] <- "Stunted"
+  }
+  if (merge_thinness) {
+    status[status %in% c("Severe thinness", "Thinness", "Moderate and severe thinness")] <- "Thinness"
+  }
 
-  df[["Nutritional Status"]] <- status
+  df[[status_col_name]] <- status
   df
 }
 
@@ -459,6 +483,31 @@
 #'   the bilateral pitting oedema variable in \code{x}. Valid cell values are
 #'   \code{"n"}, \code{"N"}, or \code{"2"} (no oedema) and \code{"y"},
 #'   \code{"Y"}, or \code{"1"} (oedema present).
+#' @param merge_obese Logical. When \code{TRUE}, combines all stages of Obesity 
+#'   ("Stage 1 Obesity", "Stage 2 Obesity", "Stage 3 Obesity", and "Obesity") 
+#'   into just \code{"Obese"}. Defaults to \code{FALSE}.
+#' @param merge_wasted Logical. When \code{TRUE}, combines all categories of 
+#'   wasted (\code{"Severely wasted"}, \code{"Moderately wasted"}) into just 
+#'   \code{"Wasted"}. Defaults to the value of \code{merge_obese}.
+#' @param merge_malnourished Logical. When \code{TRUE}, combines \code{"Severe acute malnutrition"} 
+#'   and \code{"Moderate acute malnutrition"} into just \code{"Malnourished"}. 
+#'   Defaults to the value of \code{merge_obese}.
+#' @param merge_underweight Logical. When \code{TRUE}, combines \code{"Severely underweight"} 
+#'   and \code{"Moderately underweight"} into just \code{"Underweight"}. 
+#'   Defaults to the value of \code{merge_obese}.
+#' @param merge_stunted Logical. When \code{TRUE}, combines \code{"Severely stunted"} 
+#'   and \code{"Moderately stunted"} into just \code{"Stunted"}. 
+#'   Defaults to the value of \code{merge_obese}.
+#' @param merge_thinness Logical. When \code{TRUE}, combines all categories of 
+#'   thinness (\code{"Severe thinness"}, \code{"Thinness"}, \code{"Moderate and severe thinness"}) 
+#'   into just \code{"Thinness"}. Defaults to the value of \code{merge_obese}.
+#' @param status_col_name A single character string specifying the name of the
+#'   column to be created for the WHO nutritional status classification.
+#'   Defaults to \code{"Nutritional Status"}.
+#' @param simplify Logical. When \code{TRUE} (default), excludes additional
+#'   flag and auxiliary z-score columns (e.g., \code{fbmi}, \code{zbmia},
+#'   \code{sbmi}) from the result, keeping only supporting columns and the
+#'   primary \code{z_score}.
 #' @param return A character string or vector specifying which anthropometric
 #'   indices to compute. One or more of: \code{"wfa"}, \code{"hfa"},
 #'   \code{"wfh"}, \code{"bmifa"}, \code{"hcfa"}, \code{"acfa"},
@@ -528,8 +577,8 @@
 #' | Normal | WFH or BMIFA | \eqn{\geq} \eqn{-}2 SD and \eqn{\leq} +2 SD |
 #' | Moderately wasted | WFH | \eqn{\leq} \eqn{-}2 SD and \eqn{\geq} \eqn{-}3 SD |
 #' | Severely wasted | WFH | < \eqn{-}3 SD |
-#' | Moderate acute malnutrition | BMIFA or ACFA | \eqn{\leq} \eqn{-}2 SD and \eqn{\geq} \eqn{-}3 SD |
-#' | Severe acute malnutrition | BMIFA or ACFA | < \eqn{-}3 SD |
+#' | Moderately acute malnourished | BMIFA or ACFA | \eqn{\leq} \eqn{-}2 SD and \eqn{\geq} \eqn{-}3 SD |
+#' | Severely acute malnourished | BMIFA or ACFA | < \eqn{-}3 SD |
 #' | Moderately underweight | WFA | < \eqn{-}2 SD and \eqn{\geq} \eqn{-}3 SD |
 #' | Severely underweight | WFA | < \eqn{-}3 SD |
 #' | Normal | WFA | \eqn{\geq} \eqn{-}2 SD |
@@ -586,8 +635,10 @@
 #'     \eqn{\geq} 20 years, \code{z_score} is \code{NA} (classification uses
 #'     raw BMI instead).
 #'   \item Additional flag and auxiliary columns for the index (e.g.,
-#'     \code{fbmi}, \code{zbmia}, \code{sbmi}).
-#'   \item \code{Nutritional Status} — a character column with the WHO
+#'     \code{fbmi}, \code{zbmia}, \code{sbmi}). These are omitted if 
+#'     \code{simplify = TRUE}.
+#'   \item Nutritional Status — a character column (named via 
+#'     \code{status_col_name}) containing the WHO 
 #'     classification label based on z-score (ages < 20 years) or raw BMI
 #'     (ages \eqn{\geq} 20 years, BMIFA only).
 #' }
@@ -736,6 +787,14 @@ run_anthroindex <- function(
     subscapularskinfold_col  = NULL,
     subscapularskinfold_unit = c("mm", "cm", "m", "ft", "in"),
     oedema_col               = NULL,
+    merge_obese              = FALSE,
+    merge_wasted             = merge_obese,
+    merge_malnourished       = merge_obese,
+    merge_underweight        = merge_obese,
+    merge_stunted            = merge_obese,
+    merge_thinness           = merge_obese,
+    status_col_name          = "Nutritional Status",
+    simplify                 = TRUE,
     return = c("wfa", "hfa", "wfh", "bmifa", "hcfa", "acfa", "tsfa", "ssfa")
 ) {
 
@@ -789,6 +848,12 @@ run_anthroindex <- function(
     v <- optional_cols[[nm]]
     if (!is.null(v)) .chk_col(nm, v, x)
   }
+
+  if (!is.character(status_col_name) || length(status_col_name) != 1L)
+    stop("'status_col_name' must be a single character string.", call. = FALSE)
+
+  if (!is.logical(simplify) || length(simplify) != 1L)
+    stop("'simplify' must be a single logical value.", call. = FALSE)
 
   # ---- 3. Match unit arguments --------------------------------------------
   age_unit                 <- match.arg(age_unit)
@@ -987,6 +1052,15 @@ run_anthroindex <- function(
 
   for (idx in return_feasible) {
     keep   <- intersect(c(common_cols, col_map[[idx]]), names(zscores_all))
+    
+    if (simplify) {
+      drops <- c("fwei", "zweia", "sweig", "flen", "zlena", "slen",
+                 "fwfl", "zwfla", "swfl", "fbmi", "zbmia", "sbmi",
+                 "fhc",  "zhca",  "shc",  "fac",  "zaca",  "sac",
+                 "fts",  "ztsa",  "sts",  "fss",  "zssa",  "sss")
+      keep <- setdiff(keep, drops)
+    }
+
     df_idx <- cbind(x, zscores_all[, keep, drop = FALSE])
 
     df_idx <- .anth_add_status(
@@ -995,7 +1069,14 @@ run_anthroindex <- function(
       age_months = age_months,
       sex_int    = sex_int,
       weight_kg  = if (!is.null(weight_kg)) weight_kg else rep(NA_real_, n),
-      height_cm  = if (!is.null(height_cm)) height_cm else rep(NA_real_, n)
+      height_cm  = if (!is.null(height_cm)) height_cm else rep(NA_real_, n),
+      merge_obese        = merge_obese,
+      merge_wasted       = merge_wasted,
+      merge_malnourished = merge_malnourished,
+      merge_underweight  = merge_underweight,
+      merge_stunted      = merge_stunted,
+      merge_thinness     = merge_thinness,
+      status_col_name    = status_col_name
     )
 
     results[[idx]] <- df_idx

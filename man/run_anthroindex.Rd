@@ -25,6 +25,14 @@ run_anthroindex(
   subscapularskinfold_col = NULL,
   subscapularskinfold_unit = c("mm", "cm", "m", "ft", "in"),
   oedema_col = NULL,
+  merge_obese = FALSE,
+  merge_wasted = merge_obese,
+  merge_malnourished = merge_obese,
+  merge_underweight = merge_obese,
+  merge_stunted = merge_obese,
+  merge_thinness = merge_obese,
+  status_col_name = "Nutritional Status",
+  simplify = TRUE,
   return = c("wfa", "hfa", "wfh", "bmifa", "hcfa", "acfa", "tsfa", "ssfa")
 )
 }
@@ -105,6 +113,39 @@ the bilateral pitting oedema variable in \code{x}. Valid cell values are
 \code{"n"}, \code{"N"}, or \code{"2"} (no oedema) and \code{"y"},
 \code{"Y"}, or \code{"1"} (oedema present).}
 
+\item{merge_obese}{Logical. When \code{TRUE}, combines all stages of Obesity
+("Stage 1 Obesity", "Stage 2 Obesity", "Stage 3 Obesity", and "Obesity")
+into just \code{"Obese"}. Defaults to \code{FALSE}.}
+
+\item{merge_wasted}{Logical. When \code{TRUE}, combines all categories of
+wasted (\code{"Severely wasted"}, \code{"Moderately wasted"}) into just
+\code{"Wasted"}. Defaults to the value of \code{merge_obese}.}
+
+\item{merge_malnourished}{Logical. When \code{TRUE}, combines \code{"Severe acute malnutrition"}
+and \code{"Moderate acute malnutrition"} into just \code{"Malnourished"}.
+Defaults to the value of \code{merge_obese}.}
+
+\item{merge_underweight}{Logical. When \code{TRUE}, combines \code{"Severely underweight"}
+and \code{"Moderately underweight"} into just \code{"Underweight"}.
+Defaults to the value of \code{merge_obese}.}
+
+\item{merge_stunted}{Logical. When \code{TRUE}, combines \code{"Severely stunted"}
+and \code{"Moderately stunted"} into just \code{"Stunted"}.
+Defaults to the value of \code{merge_obese}.}
+
+\item{merge_thinness}{Logical. When \code{TRUE}, combines all categories of
+thinness (\code{"Severe thinness"}, \code{"Thinness"}, \code{"Moderate and severe thinness"})
+into just \code{"Thinness"}. Defaults to the value of \code{merge_obese}.}
+
+\item{status_col_name}{A single character string specifying the name of the
+column to be created for the WHO nutritional status classification.
+Defaults to \code{"Nutritional Status"}.}
+
+\item{simplify}{Logical. When \code{TRUE} (default), excludes additional
+flag and auxiliary z-score columns (e.g., \code{fbmi}, \code{zbmia},
+\code{sbmi}) from the result, keeping only supporting columns and the
+primary \code{z_score}.}
+
 \item{return}{A character string or vector specifying which anthropometric
 indices to compute. One or more of: \code{"wfa"}, \code{"hfa"},
 \code{"wfh"}, \code{"bmifa"}, \code{"hcfa"}, \code{"acfa"},
@@ -127,8 +168,10 @@ and from \pkg{anthroplus} (\code{zbfa}) for ages 5–< 20 years. For ages
 \eqn{\geq} 20 years, \code{z_score} is \code{NA} (classification uses
 raw BMI instead).
 \item Additional flag and auxiliary columns for the index (e.g.,
-\code{fbmi}, \code{zbmia}, \code{sbmi}).
-\item \code{Nutritional Status} — a character column with the WHO
+\code{fbmi}, \code{zbmia}, \code{sbmi}). These are omitted if
+\code{simplify = TRUE}.
+\item Nutritional Status — a character column (named via
+\code{status_col_name}) containing the WHO
 classification label based on z-score (ages < 20 years) or raw BMI
 (ages \eqn{\geq} 20 years, BMIFA only).
 }
@@ -234,8 +277,8 @@ skipped. Required columns per index:
    Normal \tab WFH or BMIFA \tab \eqn{\geq} \eqn{-}2 SD and \eqn{\leq} +2 SD \cr
    Moderately wasted \tab WFH \tab \eqn{\leq} \eqn{-}2 SD and \eqn{\geq} \eqn{-}3 SD \cr
    Severely wasted \tab WFH \tab < \eqn{-}3 SD \cr
-   Moderate acute malnutrition \tab BMIFA or ACFA \tab \eqn{\leq} \eqn{-}2 SD and \eqn{\geq} \eqn{-}3 SD \cr
-   Severe acute malnutrition \tab BMIFA or ACFA \tab < \eqn{-}3 SD \cr
+   Moderately acute malnourished \tab BMIFA or ACFA \tab \eqn{\leq} \eqn{-}2 SD and \eqn{\geq} \eqn{-}3 SD \cr
+   Severely acute malnourished \tab BMIFA or ACFA \tab < \eqn{-}3 SD \cr
    Moderately underweight \tab WFA \tab < \eqn{-}2 SD and \eqn{\geq} \eqn{-}3 SD \cr
    Severely underweight \tab WFA \tab < \eqn{-}3 SD \cr
    Normal \tab WFA \tab \eqn{\geq} \eqn{-}2 SD \cr
