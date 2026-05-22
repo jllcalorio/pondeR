@@ -23,6 +23,9 @@
 #' @param split_by String. A column name in \code{x} (must be categorical with
 #'   at least 2 unique levels) by which to stratify the table. Required when
 #'   \code{add_inferential_pvalues = TRUE}. Default is \code{NULL}.
+#' @param filter Optional character vector of levels in \code{split_by} to 
+#'   exclude from the analysis. If \code{x} is a \code{run_DIpreprocess} 
+#'   object, defaults to the identified QC types.
 #' @param split_by_header String. Display header for the \code{split_by}
 #'   variable. Defaults to the value of \code{split_by}.
 #' @param strata_by String. A column name in \code{x} (must be categorical
@@ -63,13 +66,14 @@
 #'   \code{"No data/missing"}.
 #' @param missing_stat String. Format for missing-value counts: one of
 #'   \code{"n_percent"} (default), \code{"n"}, \code{"percent"}.
-#' @param include_missing_in_splits Logical. If \code{TRUE} (default),
+#' @param include_missing_in_splits Logical. If \code{TRUE},
 #'   missing values in \code{split_by} / \code{strata_by} columns are kept as
-#'   an explicit level.
+#'   an explicit level. Defaults to \code{FALSE}.
 #' @param sort_categorical_variables_by String. Level ordering for categorical
 #'   variables: \code{"alphanumeric"} (default) or \code{"frequency"}.
 #' @param calc_percent_by String. Percentage base for categorical variables:
-#'   \code{"column"} (default), \code{"row"}, or \code{"cell"}.
+#'   \code{"column"} (default), \code{"row"}, \code{"cell"}, or \code{"total"}.
+#'   \code{"total"} calculates percentages based on the total number of samples, study participants, or simply number of rows in `x`.
 #' @param calc_col_percent_using String. Denominator when
 #'   \code{calc_percent_by = "column"}: \code{"n_valid_in_column"} (default)
 #'   or \code{"n_in_column"}.
@@ -100,6 +104,8 @@
 #'   bolding. Default is \code{0.05}.
 #' @param header String. Header for the variable-label column. Default is
 #'   \code{"Variable"}.
+#' @param show_n_header Logical. When \code{TRUE} (default), appends the total
+#'   sample size to the \code{header} (e.g., "Variable (N = 100)").
 #' @param bold_labels Logical. If \code{TRUE} (default), variable labels are
 #'   bolded.
 #' @param italicize_levels Logical. If \code{TRUE} (default), categorical
@@ -199,6 +205,7 @@ run_summarytable <- function(
     x,
     summarize_what                = NULL,
     split_by                      = NULL,
+    filter                        = NULL,
     split_by_header               = NULL,
     strata_by                     = NULL,
     rename_variables              = NULL,
@@ -212,7 +219,7 @@ run_summarytable <- function(
     display_missing               = "ifany",
     missing_text                  = "No data/missing",
     missing_stat                  = "n_percent",
-    include_missing_in_splits     = TRUE,
+    include_missing_in_splits     = FALSE,
     sort_categorical_variables_by = "alphanumeric",
     calc_percent_by               = "column",
     calc_col_percent_using        = "n_valid_in_column",
@@ -224,6 +231,7 @@ run_summarytable <- function(
     bold_significant_pvalues      = TRUE,
     bold_significant_pvalues_at   = 0.05,
     header                        = "Variable",
+    show_n_header                 = TRUE,
     bold_labels                   = TRUE,
     italicize_levels              = TRUE,
     clean_table                   = TRUE,
@@ -233,7 +241,34 @@ run_summarytable <- function(
   # ---------------------------------------------------------------------------
   # 0. Coerce input to data frame
   # ---------------------------------------------------------------------------
+  if (inherits(x, "run_DIpreprocess")) {
+    if (is.null(filter)) filter <- eval(x$parameters$qc_types)
+    if (is.null(split_by)) split_by <- x$parameters$group_col
+    
+    target_meta <- if (!is.null(x$metadata_merged)) x$metadata_merged else x$metadata
+    target_data <- if (!is.null(x$data_nonpls_merged)) x$data_nonpls_merged else x$data_nonpls
+    x <- cbind(target_meta, target_data)
+  }
+
   x <- as.data.frame(x)
+
+  if (!is.null(split_by) && !is.null(filter)) {
+    if (!split_by %in% names(x)) stop(paste0("Split variable '", split_by, "' not found."))
+    keep_rows <- !as.character(x[[split_by]]) %in% filter
+    x <- x[keep_rows, , drop = FALSE]
+  }
+
+  # Filter by NAs in split/strata if they are not to be included in the analysis.
+  # This ensures the total N (header and denominators) is consistent throughout.
+  if (!include_missing_in_splits) {
+    if (!is.null(split_by))  x <- x[!is.na(x[[split_by]]), , drop = FALSE]
+    if (!is.null(strata_by)) x <- x[!is.na(x[[strata_by]]), , drop = FALSE]
+  }
+
+  # Add N to header if requested
+  if (isTRUE(show_n_header)) {
+    header <- sprintf("%s (N = %d)", header, dim(x)[1])
+  }
 
   # Match engine test-type arguments early so bad values error immediately
   test_type_continuous  <- match.arg(test_type_continuous)
@@ -414,7 +449,7 @@ run_summarytable <- function(
     stop(paste0("'sort_categorical_variables_by' must be one of: ",
                 paste(valid_sort, collapse = ", "), "."))
 
-  valid_pct <- c("column", "row", "cell")
+  valid_pct <- c("column", "row", "cell", "total")
   if (!calc_percent_by %in% valid_pct)
     stop(paste0("'calc_percent_by' must be one of: ",
                 paste(valid_pct, collapse = ", "), "."))
@@ -433,6 +468,8 @@ run_summarytable <- function(
     stop("'bold_significant_pvalues' must be TRUE or FALSE.")
   if (!is.numeric(bold_significant_pvalues_at))
     stop("'bold_significant_pvalues_at' must be numeric.")
+  if (!is.logical(show_n_header) || length(show_n_header) != 1)
+    stop("'show_n_header' must be TRUE or FALSE.")
   if (!is.logical(bold_labels) || length(bold_labels) != 1)
     stop("'bold_labels' must be TRUE or FALSE.")
   if (!is.logical(italicize_levels) || length(italicize_levels) != 1)
@@ -468,41 +505,60 @@ run_summarytable <- function(
     }
   }
 
+  # Keep a clean copy of the data for inferential tests (run_diff/run_assoc)
+  # so that missing values transformed into levels for % calculation aren't
+  # treated as real categories in statistical tests.
+  x_clean <- x
+
   # ---------------------------------------------------------------------------
-  # 10. Missing-value handling for split/strata columns
+  # 10. Missing-value handling for total/column denominators
   # ---------------------------------------------------------------------------
-  if (include_missing_in_splits) {
-    if (calc_percent_by == "column") {
-      if (calc_col_percent_using == "n_in_column") {
-        if (add_inferential_pvalues) {
-          warning("`calc_col_percent_using = 'n_in_column'` is ignored when ",
-                  "`add_inferential_pvalues = TRUE`. Using 'n_valid_in_column'.")
-          calc_col_percent_using <- "n_valid_in_column"
-        } else {
-          x <- x |>
-            dplyr::mutate(dplyr::across(
-              dplyr::where(is.character) | dplyr::where(is.factor),
-              ~ forcats::fct_explicit_na(factor(.), na_level = missing_text)
-            ))
-        }
-      }
+  use_total_denom <- (calc_percent_by == "total") || 
+                     (calc_percent_by == "column" && calc_col_percent_using == "n_in_column")
+  
+  # Handle warning for inferential p-values with total column denominators
+  if (use_total_denom && add_inferential_pvalues && calc_percent_by == "column") {
+    warning("`calc_col_percent_using = 'n_in_column'` is ignored when `add_inferential_pvalues = TRUE`.")
+    calc_col_percent_using <- "n_valid_in_column"
+    use_total_denom <- (calc_percent_by == "total") # Recalculate flag
+  }
+
+  if (use_total_denom) {
+    # Identify categorical columns to convert NAs to levels.
+    # This ensures gtsummary includes them in the denominator (total N).
+    is_cat_check <- function(v_name) {
+      col <- x[[v_name]]
+      if (v_name %in% force_continuous) return(FALSE)
+      if (v_name %in% force_categorical) return(TRUE)
+      if (is.character(col) || is.factor(col)) return(TRUE)
+      # Heuristic for numeric columns gtsummary would treat as categorical
+      if (is.numeric(col) && length(unique(stats::na.omit(col))) < 10) return(TRUE)
+      FALSE
     }
-  } else {
-    exclude_cols <- unique(c(split_by, strata_by)) |> purrr::compact()
-    if (calc_percent_by == "column" &&
-        calc_col_percent_using == "n_in_column") {
-      if (add_inferential_pvalues) {
-        warning("`calc_col_percent_using = 'n_in_column'` is ignored when ",
-                "`add_inferential_pvalues = TRUE`. Using 'n_valid_in_column'.")
-        calc_col_percent_using <- "n_valid_in_column"
-      } else {
-        x <- x |>
-          dplyr::mutate(dplyr::across(
-            (dplyr::where(is.character) | dplyr::where(is.factor)) &
-              !dplyr::any_of(exclude_cols),
-            ~ forcats::fct_explicit_na(factor(.), na_level = missing_text)
-          ))
-      }
+    
+    to_convert <- summarize_what[vapply(summarize_what, is_cat_check, logical(1))]
+    
+    # Also include grouping variables if missing values should be explicit columns
+    if (include_missing_in_splits) {
+      to_convert <- unique(c(to_convert, split_by, strata_by)) |> purrr::compact()
+    }
+    
+    if (length(to_convert) > 0) {
+      x <- x |>
+        dplyr::mutate(dplyr::across(
+          dplyr::all_of(to_convert),
+          ~ forcats::fct_na_value_to_level(factor(.), level = missing_text)
+        ))
+    }
+  } else if (include_missing_in_splits) {
+    # Only grouping variables need conversion if they aren't using total denom
+    to_convert <- unique(c(split_by, strata_by)) |> purrr::compact()
+    if (length(to_convert) > 0) {
+      x <- x |>
+        dplyr::mutate(dplyr::across(
+          dplyr::all_of(to_convert),
+          ~ forcats::fct_na_value_to_level(factor(.), level = missing_text)
+        ))
     }
   }
 
@@ -645,7 +701,7 @@ run_summarytable <- function(
       missing_stat = gts_missing_stat,
       sort         = list(gtsummary::all_categorical() ~
                             sort_categorical_variables_by),
-      percent      = calc_percent_by
+      percent      = ifelse(calc_percent_by == "total", "cell", calc_percent_by)
     ) |>
       gtsummary::modify_header(label = paste0("**", header, "**"))
   }
@@ -672,6 +728,91 @@ run_summarytable <- function(
         gtsummary::all_stat_cols() ~
           paste0("**", split_by_header, "**")
       )
+  }
+
+  # ---------------------------------------------------------------------------
+  # 18.5 Re-calculate missing row percentages
+  # ---------------------------------------------------------------------------
+  # Ensure the 'No data/missing' row respects calc_percent_by and 
+  # calc_col_percent_using. This is primarily for continuous variables or 
+  # categorical variables where NAs were not converted to levels.
+  if (display_missing != "no" && is.null(strata_by)) {
+    total_n <- dim(x)[1]
+    
+    # Identify groups and their sizes
+    if (!is.null(split_by)) {
+      # Respect gtsummary ordering (factor levels or frequency)
+      grp_factor <- factor(x[[split_by]])
+      if (sort_categorical_variables_by == "frequency") {
+        grp_factor <- forcats::fct_infreq(grp_factor)
+      }
+      grp_lvls <- levels(grp_factor)
+      grp_ns   <- as.numeric(table(grp_factor)[grp_lvls])
+    } else {
+      grp_lvls <- NULL
+      grp_ns   <- total_n
+    }
+
+    # Pre-calculate missing counts per variable per group
+    vars_with_missing <- unique(result_table$table_body$variable[result_table$table_body$row_type == "missing"])
+    
+    miss_counts_map <- list()
+    for (v in vars_with_missing) {
+      if (is.null(split_by)) {
+        miss_counts_map[[v]] <- sum(is.na(x[[v]]))
+      } else {
+        counts <- tapply(is.na(x[[v]]), grp_factor, sum)
+        # Handle potential NA groups or missing levels
+        counts[is.na(counts)] <- 0
+        miss_counts_map[[v]] <- counts[grp_lvls]
+      }
+    }
+
+    result_table <- result_table |>
+      gtsummary::modify_table_body(function(tb) {
+        stat_cols <- names(tb)[grep("^stat_", names(tb))]
+        
+        for (col_nm in stat_cols) {
+          # Map stat_X to group index
+          idx <- if (is.null(split_by)) 1 else as.numeric(sub("stat_", "", col_nm))
+          if (is.na(idx) || idx > length(grp_ns)) next
+          
+          denom_group <- grp_ns[idx]
+          
+          tb[[col_nm]] <- purrr::imap_chr(tb[[col_nm]], function(cell, i) {
+            if (is.na(cell) || !nzchar(cell) || tb$row_type[i] != "missing") return(cell)
+            
+            var_nm <- tb$variable[i]
+            n_miss <- if (is.null(split_by)) miss_counts_map[[var_nm]] else miss_counts_map[[var_nm]][idx]
+            if (is.na(n_miss)) n_miss <- 0
+            
+            # Determine denominator based on parameters
+            final_denom <- if (calc_percent_by == "total") {
+              total_n
+            } else if (calc_percent_by == "column") {
+              if (calc_col_percent_using == "n_in_column") denom_group else denom_group - n_miss
+            } else {
+              denom_group
+            }
+            
+            if (is.na(final_denom) || final_denom <= 0) return(cell)
+            
+            p_val <- (n_miss / final_denom) * 100
+            dig   <- if (!is.null(n_digits_categorical)) n_digits_categorical[2] else 2
+            p_str <- formatC(p_val, digits = dig, format = "f")
+            
+            # Reconstruct string based on existing content
+            if (grepl("\\(", cell)) {
+              return(sprintf("%d (%s%%)", n_miss, p_str))
+            } else if (grepl("%", cell)) {
+              return(sprintf("%s%%", p_str))
+            } else {
+              return(as.character(n_miss))
+            }
+          })
+        }
+        tb
+      })
   }
 
   # bold_labels / italicize_levels
@@ -751,7 +892,7 @@ run_summarytable <- function(
       if (!is.null(force_continuous) && var_nm %in% force_continuous) return(TRUE)
       if (!is.null(force_categorical) && var_nm %in% force_categorical) return(FALSE)
       rows <- tb_body[tb_body$variable == var_nm, ]
-      if (nrow(rows) == 0) return(FALSE)
+      if (dim(rows)[1] == 0) return(FALSE)
       isTRUE(rows$var_type[1] == "continuous")
     }
 
@@ -791,9 +932,11 @@ run_summarytable <- function(
         # ---- run_diff -------------------------------------------------------
         engine_result <- tryCatch({
           run_diff(
-            x                     = x,
+            x                     = x_clean[, var_nm, drop = FALSE],
+            metadata              = x_clean,
             outcome               = var_nm,
             group                 = split_by,
+            filter                = NULL, # already filtered globally
             paired                = paired,
             test_type             = test_type_continuous,
             verbose               = FALSE
@@ -818,7 +961,7 @@ run_summarytable <- function(
       } else {
         # ---- run_assoc -------------------------------------------------------
         # Ensure the variable is factor/character before calling run_assoc
-        x_assoc <- x
+        x_assoc <- x_clean
         if (!is.factor(x_assoc[[var_nm]]) &&
             !is.character(x_assoc[[var_nm]])) {
           x_assoc[[var_nm]] <- as.factor(x_assoc[[var_nm]])
@@ -878,7 +1021,7 @@ run_summarytable <- function(
         if (!"p.value" %in% names(tb))
           tb$p.value <- NA_character_
 
-        for (i in seq_len(nrow(tb))) {
+        for (i in seq_len(dim(tb)[1])) {
           var_nm   <- tb$variable[i]
           row_type <- tb$row_type[i]
           if (row_type != "label") next
@@ -936,7 +1079,7 @@ run_summarytable <- function(
 
       tb_body2 <- result_table[["_data"]]
       if (!is.null(tb_body2)) {
-        sig_rows <- which(vapply(seq_len(nrow(tb_body2)), function(i) {
+        sig_rows <- which(vapply(seq_len(dim(tb_body2)[1]), function(i) {
           var_nm <- tb_body2$variable[i]
           if (is.null(var_nm) || !var_nm %in% label_vars) return(FALSE)
           pv <- num_p_map[var_nm]
@@ -1025,8 +1168,8 @@ run_summarytable <- function(
   }
 
   # ---------------------------------------------------------------------------
-  # 21. Final message and return
+  # 21. Return
   # ---------------------------------------------------------------------------
-  message("\nThe analysis has been completed.")
+
   result_table
 }

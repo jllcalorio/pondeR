@@ -8,6 +8,7 @@ run_summarytable(
   x,
   summarize_what = NULL,
   split_by = NULL,
+  filter = NULL,
   split_by_header = NULL,
   strata_by = NULL,
   rename_variables = NULL,
@@ -21,7 +22,7 @@ run_summarytable(
   display_missing = "ifany",
   missing_text = "No data/missing",
   missing_stat = "n_percent",
-  include_missing_in_splits = TRUE,
+  include_missing_in_splits = FALSE,
   sort_categorical_variables_by = "alphanumeric",
   calc_percent_by = "column",
   calc_col_percent_using = "n_valid_in_column",
@@ -33,6 +34,7 @@ run_summarytable(
   bold_significant_pvalues = TRUE,
   bold_significant_pvalues_at = 0.05,
   header = "Variable",
+  show_n_header = TRUE,
   bold_labels = TRUE,
   italicize_levels = TRUE,
   clean_table = TRUE,
@@ -49,6 +51,10 @@ analysis. When \code{NULL} (default), all columns except those named in
 \item{split_by}{String. A column name in \code{x} (must be categorical with
 at least 2 unique levels) by which to stratify the table. Required when
 \code{add_inferential_pvalues = TRUE}. Default is \code{NULL}.}
+
+\item{filter}{Optional character vector of levels in \code{split_by} to
+exclude from the analysis. If \code{x} is a \code{run_DIpreprocess}
+object, defaults to the identified QC types.}
 
 \item{split_by_header}{String. Display header for the \code{split_by}
 variable. Defaults to the value of \code{split_by}.}
@@ -103,15 +109,16 @@ genuinely non-zero are displayed in scientific notation (e.g.,
 \item{missing_stat}{String. Format for missing-value counts: one of
 \code{"n_percent"} (default), \code{"n"}, \code{"percent"}.}
 
-\item{include_missing_in_splits}{Logical. If \code{TRUE} (default),
+\item{include_missing_in_splits}{Logical. If \code{TRUE},
 missing values in \code{split_by} / \code{strata_by} columns are kept as
-an explicit level.}
+an explicit level. Defaults to \code{FALSE}.}
 
 \item{sort_categorical_variables_by}{String. Level ordering for categorical
 variables: \code{"alphanumeric"} (default) or \code{"frequency"}.}
 
 \item{calc_percent_by}{String. Percentage base for categorical variables:
-\code{"column"} (default), \code{"row"}, or \code{"cell"}.}
+\code{"column"} (default), \code{"row"}, \code{"cell"}, or \code{"total"}.
+\code{"total"} calculates percentages based on the total number of samples, study participants, or simply number of rows in \code{x}.}
 
 \item{calc_col_percent_using}{String. Denominator when
 \code{calc_percent_by = "column"}: \code{"n_valid_in_column"} (default)
@@ -151,6 +158,9 @@ bolding. Default is \code{0.05}.}
 
 \item{header}{String. Header for the variable-label column. Default is
 \code{"Variable"}.}
+
+\item{show_n_header}{Logical. When \code{TRUE} (default), appends the total
+sample size to the \code{header} (e.g., "Variable (N = 100)").}
 
 \item{bold_labels}{Logical. If \code{TRUE} (default), variable labels are
 bolded.}
