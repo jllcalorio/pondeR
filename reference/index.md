@@ -278,6 +278,9 @@ until formally categorised.
   : Get Features with Non-Zero Coefficients from a Regularized
   Regression Result
 
+- [`get_volcanodata()`](https://jllcalorio.github.io/pondeR/reference/get_volcanodata.md)
+  : Get Volcano Plot Data
+
 - [`has_inf()`](https://jllcalorio.github.io/pondeR/reference/has_inf.md)
   : Check if an Object Contains Infinite Values
 

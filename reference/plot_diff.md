@@ -265,6 +265,11 @@ A list containing:
 
 Create Box or Violin Plots with Statistical Comparisons
 
+## See also
+
+[`run_DIpreprocess`](https://jllcalorio.github.io/pondeR/reference/run_DIpreprocess.md),
+[`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md)
+
 ## Author
 
 John Lennon L. Calorio

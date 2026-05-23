@@ -193,6 +193,10 @@ Kaiser, H.F. (1960). The application of electronic computers to factor
 analysis. *Educational and Psychological Measurement*, 20(1), 141–151.
 [doi:10.1177/001316446002000116](https://doi.org/10.1177/001316446002000116)
 
+## See also
+
+[`run_pca`](https://jllcalorio.github.io/pondeR/reference/run_pca.md)
+
 ## Author
 
 John Lennon L. Calorio

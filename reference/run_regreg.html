@@ -60,7 +60,7 @@ estimated freely while all other predictors remain subject to regularization."><
     <div class="ref-description section level2">
     <p>Fits regularized regression models — Ridge (alpha = 0), LASSO (alpha = 1), or
 Elastic Net (0 &lt; alpha &lt; 1) — with k-fold cross-validation via
-<code><a href="https://glmnet.stanford.edu/reference/cv.glmnet.html" class="external-link">cv.glmnet</a></code>. Supports both categorical (binary and multinomial
+<code><a href="https://rdrr.io/pkg/glmnet/man/cv.glmnet.html" class="external-link">cv.glmnet</a></code>. Supports both categorical (binary and multinomial
 classification) and continuous (Gaussian regression) dependent variables.
 When multiple alpha values are supplied, all are evaluated on identical
 cross-validation folds and the best-performing model is returned alongside
@@ -286,7 +286,7 @@ The feature matrix is taken from <code>x</code>. If <code>not_penalized</code> c
 belonging to <code>metadata</code> are provided, those columns are appended to the
 feature matrix. A <code>penalty.factor</code> vector of length <code>ncol(x)</code> is set to
 <code>1</code> for all penalized predictors and <code>0</code> for unpenalized ones, and is
-passed to <code><a href="https://glmnet.stanford.edu/reference/cv.glmnet.html" class="external-link">glmnet::cv.glmnet</a></code>.</p>
+passed to <code><a href="https://rdrr.io/pkg/glmnet/man/cv.glmnet.html" class="external-link">glmnet::cv.glmnet</a></code>.</p>
 <p><strong>Cross-validation consistency:</strong>
 Fold IDs are generated once (using <code>seed</code>) and reused across all tested alpha
 values, ensuring a fair, apple-to-apple comparison of regularization paths.</p>

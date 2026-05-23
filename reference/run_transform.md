@@ -169,6 +169,10 @@ using the variance stabilising generalised logarithm transformation.
 *BMC Bioinformatics*, 8, 234.
 [doi:10.1186/1471-2105-8-234](https://doi.org/10.1186/1471-2105-8-234)
 
+## See also
+
+[`run_DIpreprocess`](https://jllcalorio.github.io/pondeR/reference/run_DIpreprocess.md)
+
 ## Author
 
 John Lennon L. Calorio

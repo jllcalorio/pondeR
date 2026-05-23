@@ -329,6 +329,13 @@ bottom-right inside the plot area by default.
 This function requires pROC (\\\ge\\ 1.18) and ggplot2 (\\\ge\\ 3.4).
 Both are listed as `Imports` in the package `DESCRIPTION` file.
 
+## See also
+
+[`run_DIpreprocess`](https://jllcalorio.github.io/pondeR/reference/run_DIpreprocess.md),
+[`run_pls`](https://jllcalorio.github.io/pondeR/reference/run_pls.md),
+[`run_foldchange`](https://jllcalorio.github.io/pondeR/reference/run_foldchange.md),
+[`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md)
+
 ## Author
 
 John Lennon L. Calorio

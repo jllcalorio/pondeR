@@ -291,6 +291,13 @@ A named list with elements:
 
   A list of all resolved parameter values.
 
+## See also
+
+[`run_foldchange`](https://jllcalorio.github.io/pondeR/reference/run_foldchange.md),
+[`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md),
+[`get_volcanodata`](https://jllcalorio.github.io/pondeR/reference/get_volcanodata.md),
+[`run_DIpreprocess`](https://jllcalorio.github.io/pondeR/reference/run_DIpreprocess.md)
+
 ## Author
 
 John Lennon L. Calorio

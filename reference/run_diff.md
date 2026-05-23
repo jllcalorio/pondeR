@@ -230,6 +230,12 @@ epsilon-squared (Kruskal-Wallis), generalized or partial eta-squared (RM
 non-parametric tests the `interpretation` column reads "X tends to have
 larger/smaller values than Y".
 
+## See also
+
+[`run_DIpreprocess`](https://jllcalorio.github.io/pondeR/reference/run_DIpreprocess.md),
+[`run_summarytable`](https://jllcalorio.github.io/pondeR/reference/run_summarytable.md),
+[`get_volcanodata`](https://jllcalorio.github.io/pondeR/reference/get_volcanodata.md)
+
 ## Author
 
 John Lennon L. Calorio

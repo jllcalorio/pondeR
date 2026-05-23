@@ -180,6 +180,10 @@ The function renders the combined plot to the active graphics device and
 also returns a named list so individual panels can be extracted,
 re-styled, or exported independently.
 
+## See also
+
+[`run_DIpreprocess`](https://jllcalorio.github.io/pondeR/reference/run_DIpreprocess.md)
+
 ## Author
 
 John Lennon L. Calorio

@@ -79,9 +79,6 @@ plot_score(
   verbose = TRUE
 )
 
-# Default S3 method
-plot_score(res, ...)
-
 # S3 method for class 'run_pcoa'
 plot_score(
   res,
@@ -389,6 +386,12 @@ analysis: taking the magic away. *Journal of Chemometrics*, 28(4),
 Okabe, M., & Ito, K. (2002). *Color Universal Design (CUD): How to make
 figures and presentations that are friendly to colorblind people*.
 <https://jfly.uni-koeln.de/color/>
+
+## See also
+
+[`run_DIpreprocess`](https://jllcalorio.github.io/pondeR/reference/run_DIpreprocess.md),
+[`run_pca`](https://jllcalorio.github.io/pondeR/reference/run_pca.md),
+[`run_pls`](https://jllcalorio.github.io/pondeR/reference/run_pls.md)
 
 ## Author
 

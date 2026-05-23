@@ -224,6 +224,11 @@ dendrogram above the heatmap. Arguments accepted by
 (e.g. `agglomeration_method`, `line_color`) are forwarded automatically
 via `...`.
 
+## See also
+
+[`run_correl`](https://jllcalorio.github.io/pondeR/reference/run_correl.md),
+[`plot_dend`](https://jllcalorio.github.io/pondeR/reference/plot_dend.md)
+
 ## Author
 
 John Lennon L. Calorio

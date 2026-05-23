@@ -210,6 +210,10 @@ signal batch correction for metabolomics datasets.
 [doi:10.18129/B9.bioc.pmp](https://doi.org/10.18129/B9.bioc.pmp) , R
 package version 1.20.0, <https://bioconductor.org/packages/pmp>.
 
+## See also
+
+[`run_DIpreprocess`](https://jllcalorio.github.io/pondeR/reference/run_DIpreprocess.md)
+
 ## Author
 
 John Lennon L. Calorio

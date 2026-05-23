@@ -219,6 +219,10 @@ P-values are adjusted using `p_adjust_method`.
 
 - **Odds Ratio (paired)** for 2x2 paired (McNemar's) tables.
 
+## See also
+
+[`run_summarytable`](https://jllcalorio.github.io/pondeR/reference/run_summarytable.md)
+
 ## Author
 
 John Lennon L. Calorio

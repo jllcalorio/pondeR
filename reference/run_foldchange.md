@@ -180,6 +180,7 @@ can consume directly.
 
 [`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md),
 [`plot_volcano`](https://jllcalorio.github.io/pondeR/reference/plot_volcano.md),
+[`get_volcanodata`](https://jllcalorio.github.io/pondeR/reference/get_volcanodata.md),
 [`run_DIpreprocess`](https://jllcalorio.github.io/pondeR/reference/run_DIpreprocess.md)
 
 ## Author
