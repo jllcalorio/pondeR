@@ -245,6 +245,13 @@ run_summarytable <- function(
     if (is.null(filter)) filter <- eval(x$parameters$qc_types)
     if (is.null(split_by)) split_by <- x$parameters$group_col
     
+    # Inform user if QC types are being automatically filtered
+    if (!is.null(filter) && length(filter) > 0) {
+      message(sprintf("`run_DIpreprocess` object detected. Automatically filtering out samples with '%s' in '%s'. To include these samples, explicitly set `filter = NULL`.",
+                      paste(filter, collapse = ", "), split_by))
+    }
+    
+    
     target_meta <- if (!is.null(x$metadata_merged)) x$metadata_merged else x$metadata
     target_data <- if (!is.null(x$data_nonpls_merged)) x$data_nonpls_merged else x$data_nonpls
     x <- cbind(target_meta, target_data)
