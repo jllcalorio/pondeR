@@ -146,6 +146,9 @@ for Univariate and OPLS Statistical Analyses. Journal of Proteome Research, 14(8
 Rohart F, Gautier B, Singh A, Lê Cao K-A. (2017) mixOmics: An R package for 'omics feature selection
 and multiple data integration. PLoS Comput Biol 13(11): e1005752.
 }
+\seealso{
+\code{\link{run_DIpreprocess}}
+}
 \author{
 John Lennon L. Calorio
 }

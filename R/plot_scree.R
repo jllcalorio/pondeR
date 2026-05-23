@@ -38,6 +38,8 @@
 #'
 #' @return A `ggplot2` object.
 #'
+#' @seealso \code{\link{run_pca}}
+#' 
 #' @details
 #' **Scree Plot Interpretation:**
 #'

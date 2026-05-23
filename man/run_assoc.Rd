@@ -180,6 +180,9 @@ print(res_chisq)
 }
 
 }
+\seealso{
+\code{\link{run_summarytable}}
+}
 \author{
 John Lennon L. Calorio
 }

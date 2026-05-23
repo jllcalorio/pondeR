@@ -442,6 +442,11 @@ Centers for Disease Control and Prevention (CDC). About Adult BMI:
 BMI categories. Atlanta: CDC.
 \url{https://www.cdc.gov/bmi/adult-calculator/bmi-categories.html}
 }
+\seealso{
+\code{\link{run_summarytable}},
+\code{\link{anthro::anthro_zscores}},
+\code{\link{anthroplus::anthroplus_zscores}}
+}
 \author{
 John Lennon L. Calorio
 }

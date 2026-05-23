@@ -765,6 +765,12 @@
 #' \url{https://www.cdc.gov/bmi/adult-calculator/bmi-categories.html}
 #'
 #' @author John Lennon L. Calorio
+#' 
+#' @seealso 
+#' \code{\link{run_summarytable}}, 
+#' \code{\link{anthro::anthro_zscores}}, 
+#' \code{\link{anthroplus::anthroplus_zscores}}
+#' 
 #' @export
 run_anthroindex <- function(
     x,

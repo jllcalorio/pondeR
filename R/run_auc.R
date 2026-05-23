@@ -229,6 +229,8 @@
 #' @importFrom stats setNames
 #' @importFrom utils head
 #'
+#' @seealso \code{\link{run_DIpreprocess}}, \code{\link{run_pls}}, \code{\link{run_foldchange}}, \code{\link{run_diff}}
+#' 
 #' @export
 run_auc <- function(
     x,

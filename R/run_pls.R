@@ -84,6 +84,8 @@
 #'
 #' @importFrom stats var
 #' 
+#' @seealso \code{\link{run_DIpreprocess}}
+#' 
 #' @export
 #'
 #' @examples

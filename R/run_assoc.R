@@ -112,6 +112,8 @@
 #'
 #' @author John Lennon L. Calorio
 #'
+#' @seealso \code{\link{run_summarytable}}
+#' 
 #' @examples
 #' \dontrun{
 #' # --- Example 1: 2x2 Independent Test (Auto -> Chi-square) ---

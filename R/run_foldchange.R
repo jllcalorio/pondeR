@@ -138,9 +138,11 @@
 #'
 #' res3 <- run_foldchange(x = xsc, metadata = meta_sc, group = "group")
 #' print(res3$fc_table)
-#'
-#' @seealso \code{\link{run_diff}}, \code{\link{plot_volcano}}, \code{\link{run_DIpreprocess}}
+#' 
+#' @seealso \code{\link{run_diff}}, \code{\link{plot_volcano}}, \code{\link{get_volcanodata}}, \code{\link{run_DIpreprocess}}
+#' 
 #' @author John Lennon L. Calorio
+#' 
 #' @export
 run_foldchange <- function(
     x,

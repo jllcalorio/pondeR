@@ -172,6 +172,9 @@ van den Berg, R.A., Hoefsloot, H.C., Westerhuis, J.A., Smilde, A.K., & van der W
 Centering, scaling, and transformations: improving the biological information content of
 metabolomics data. BMC Genomics, 7, 142. \doi{10.1186/1471-2164-7-142}
 }
+\seealso{
+\code{\link{run_DIpreprocess}}
+}
 \author{
 John Lennon L. Calorio
 }

@@ -4,8 +4,8 @@
 \alias{plot_score}
 \alias{plot_score.run_pca}
 \alias{plot_score.run_pls}
-\alias{plot_score.default}
 \alias{plot_score.run_pcoa}
+\alias{plot_score.default}
 \title{Scores Plot for Multivariate Ordination Results}
 \usage{
 plot_score(res, ...)
@@ -73,8 +73,6 @@ plot_score(res, ...)
   zoom = 1,
   verbose = TRUE
 )
-
-\method{plot_score}{default}(res, ...)
 
 \method{plot_score}{run_pcoa}(
   res,
@@ -359,6 +357,9 @@ taking the magic away. \emph{Journal of Chemometrics}, 28(4), 213–225.
 Okabe, M., & Ito, K. (2002). \emph{Color Universal Design (CUD): How to make figures
 and presentations that are friendly to colorblind people}.
 \url{https://jfly.uni-koeln.de/color/}
+}
+\seealso{
+\code{\link{run_DIpreprocess}}, \code{\link{run_pca}}, \code{\link{run_pls}}
 }
 \author{
 John Lennon L. Calorio

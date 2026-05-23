@@ -181,6 +181,9 @@ plot_heatmap(mtcars, show_coef = TRUE, mark_x = TRUE)
 plot_heatmap(mtcars, show_dend = TRUE)
 
 }
+\seealso{
+\code{\link{run_correl}}, \code{\link{plot_dend}}
+}
 \author{
 John Lennon L. Calorio
 }

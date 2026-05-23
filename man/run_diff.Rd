@@ -216,6 +216,9 @@ run_diff(df_long, "HeartRate", group = "Group",
 }
 
 }
+\seealso{
+\code{\link{run_DIpreprocess}}, \code{\link{run_summarytable}}, \code{\link{get_volcanodata}}
+}
 \author{
 John Lennon L. Calorio
 }

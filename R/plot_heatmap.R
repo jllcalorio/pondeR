@@ -114,6 +114,9 @@
 #' plot_heatmap(mtcars, show_dend = TRUE)
 #'
 #' @author John Lennon L. Calorio
+#' 
+#' @seealso \code{\link{run_correl}}, \code{\link{plot_dend}}
+#' 
 #' @export
 plot_heatmap <- function(x,
                           method             = "auto",

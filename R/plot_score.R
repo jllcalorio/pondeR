@@ -147,6 +147,8 @@
 #' @importFrom ggrepel geom_label_repel
 #' @importFrom stats mahalanobis cov qt qnorm
 #'
+#' @seealso \code{\link{run_DIpreprocess}}, \code{\link{run_pca}}, \code{\link{run_pls}}
+#' 
 #' @export
 #'
 #' @examples
@@ -217,7 +219,7 @@
 #' }
 #' 
 plot_score <- function(res, ...) UseMethod("plot_score")
-
+#'
 #' @rdname plot_score
 #' @export
 plot_score.run_pca <- function(
@@ -712,16 +714,6 @@ plot_score.run_pca <- function(
 #' @rdname plot_score
 #' @export
 plot_score.run_pls <- plot_score.run_pca
-
-#' @rdname plot_score
-#' @export
-plot_score.default <- function(res, ...) {
-  stop(
-    "'res' must be output from run_pca() or run_pls().\n",
-    sprintf("Got object of class: %s\n", paste(class(res), collapse = ", ")),
-    "Solution: Pass the result of run_pca() or run_pls() directly."
-  )
-}
 
 # ==============================================================================
 # HELPER FUNCTIONS FOR OUTLIER DETECTION

@@ -1042,6 +1042,8 @@
 #'
 #' @author John Lennon L. Calorio
 #'
+#' @seealso \code{\link{run_DIpreprocess}}, \code{\link{run_summarytable}}, \code{\link{get_volcanodata}}
+#' 
 #' @examples
 #' \dontrun{
 #' # --- 3+ Groups (auto) ---

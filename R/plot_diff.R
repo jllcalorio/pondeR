@@ -111,6 +111,8 @@
 #' @import dplyr
 #' @import ggplot2
 #' @importFrom ggrepel geom_text_repel
+#' 
+#' @seealso \code{\link{run_DIpreprocess}}, \code{\link{run_diff}}
 #'
 #' @examples
 #' \dontrun{
