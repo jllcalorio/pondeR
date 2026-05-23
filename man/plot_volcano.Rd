@@ -267,6 +267,9 @@ res3 <- plot_volcano(
 print(res3$plots[[1]])
 
 }
+\seealso{
+\code{\link{run_foldchange}}, \code{\link{run_diff}}, \code{\link{get_volcanodata}}, \code{\link{run_DIpreprocess}}
+}
 \author{
 John Lennon L. Calorio
 }

@@ -200,6 +200,7 @@
 #'   theme_light theme_dark theme element_text element_blank scale_y_reverse
 #'   guide_legend
 #' @importFrom ggrepel geom_text_repel
+#' @seealso \code{\link{run_foldchange}}, \code{\link{run_diff}}, \code{\link{get_volcanodata}}, \code{\link{run_DIpreprocess}}
 #' @export
 plot_volcano <- function(
     x,
@@ -271,119 +272,50 @@ plot_volcano <- function(
        any(vapply(x, function(el) inherits(el, c("run_foldchange", "run_diff")),
                   logical(1L))))) {
 
-    # ---- locate the two component objects ------------------------------------
-    fc_obj   <- NULL
+    # Delegate to get_volcanodata to handle merging and matching.
+    # This ensures consistency between the plot and standalone data extraction.
+    v_args <- list(filter = FALSE)
+    if (!missing(up))   v_args$up   <- up
+    if (!missing(down)) v_args$down <- down
+    if (!missing(pval)) v_args$pval <- pval
+    
+    # Call get_volcanodata with the objects in x
+    v_data <- do.call(get_volcanodata, c(if (is.list(x) && !inherits(x, "run_foldchange")) x else list(x), v_args))
+    
+    # Inherit thresholds back for vertical/horizontal plot lines
+    fc_obj <- NULL
     diff_obj <- NULL
-
-    if (inherits(x, "run_foldchange")) {
-      # User passed a bare run_foldchange result
-      fc_obj <- x
-    } else {
-      for (el in x) {
-        if (inherits(el, "run_foldchange") && is.null(fc_obj))  fc_obj   <- el
-        if (inherits(el, "run_diff")       && is.null(diff_obj)) diff_obj <- el
-      }
-      # run_diff multi-outcome path returns a plain named list whose elements
-      # are run_diff objects; detect that case via $summary_table
-      if (is.null(diff_obj)) {
-        for (el in x) {
-          if (is.list(el) && !is.null(el$summary_table) &&
-              is.data.frame(el$summary_table) &&
-              "p_value" %in% names(el$summary_table)) {
-            diff_obj <- el
-            break
-          }
-        }
-      }
+    objs <- if (is.list(x) && !inherits(x, "run_foldchange")) x else list(x)
+    for (o in objs) {
+      if (inherits(o, "run_foldchange")) fc_obj <- o
+      if (inherits(o, "run_diff") || (is.list(o) && !is.null(o$summary_table))) diff_obj <- o
     }
 
-    # ---- build the flat data frame from run_foldchange ----------------------
-    if (!is.null(fc_obj)) {
-      if (is.null(fc_obj$summary_table))
-        stop("The `run_foldchange` object has no `$summary_table`. ",
-             "Re-run `run_foldchange()` with default arguments.", call. = FALSE)
-      if (!fc_obj$params$log2)
-        stop("plot_volcano requires log2 fold changes. ",
-             "Re-run `run_foldchange()` with `log2 = TRUE` (the default).",
-             call. = FALSE)
+    if (missing(up))   up   <- fc_obj$params$up   %||% 1.5
+    if (missing(down)) down <- fc_obj$params$down %||% 0.5
+    if (missing(pval)) {
+      pval <- diff_obj$params$p_value %||% diff_obj$params$pval %||% 
+              diff_obj$params$adj_pval %||% 0.05
+    }
 
-      df_fc <- fc_obj$summary_table
-      # Rename to internal sentinel names
-      df_fc$log2fc  <- df_fc$log2_fc
-      df_fc$pvalue  <- NA_real_    # filled in below if diff_obj is available
-
-      # ---- merge p-values from run_diff summary_table -----------------------
-      if (!is.null(diff_obj)) {
-        st <- if (!is.null(diff_obj$summary_table)) diff_obj$summary_table
-              else NULL
-        if (!is.null(st) && "p_value" %in% names(st) && "outcome" %in% names(st)) {
-          # Match on feature == outcome
-          idx          <- match(df_fc$feature, st$outcome)
-          df_fc$pvalue <- st$p_value[idx]
-        } else {
-          warning("Could not locate a `$summary_table` with `p_value` and `outcome` ",
-                  "columns in the supplied `run_diff` object. ",
-                  "p-values will be set to NA.", call. = FALSE)
-        }
-      } else {
-        warning("No `run_diff` result was found in `x`. ",
-                "p-values are unavailable; the significance threshold line ",
-                "and up/down classification will not be meaningful.",
-                call. = FALSE)
-        df_fc$pvalue <- 1   # ensures all points are classified NS
-      }
-
-      # ---- set plot_volcano arguments that the caller did not supply --------
-      # Only override when the caller left these at their defaults / NULL
-      if (missing(y) || is.null(y) || !y %in% names(df_fc))
-        y <- "log2fc"
-      if (missing(z) || is.null(z) || !z %in% names(df_fc))
-        z <- "pvalue"
-      if (missing(features) || is.null(features))
-        features <- "feature"
-
-      # When multiple comparisons exist, expose them as the `group` column so
-      # the caller gets per-comparison colouring automatically — but only when
-      # `group` was not already specified by the caller.
-      n_comps <- length(unique(df_fc$comparison))
-      if ((missing(group) || is.null(group)) && n_comps > 1L)
+    # Resolve column mapping
+    if (missing(y) || is.null(y)) {
+      # Prefer raw fold_change because plot_volcano takes log2 internally in Step 13
+      y <- if ("fold_change" %in% names(v_data)) "fold_change" else "log2_fc"
+    }
+    if (missing(z) || is.null(z)) {
+      z <- "p_value_used"
+    }
+    if (missing(features) || is.null(features)) {
+      features <- "feature"
+    }
+    if ((missing(group) || is.null(group)) && "comparison" %in% names(v_data)) {
+      if (length(unique(v_data$comparison)) > 1L) {
         group <- "comparison"
-
-      # ---- the input validation note about y containing raw FC -------------
-      # run_foldchange$summary_table$log2_fc already contains log2 values.
-      # plot_volcano's default behaviour expects `y` to hold RAW fold changes
-      # and applies log2() internally (step 13).  We have already-log2 values,
-      # so we exponentiate them back to raw FC to undo plot_volcano's internal
-      # log2 step — OR we add a sentinel column that holds the raw FC and use
-      # that as `y`.
-      #
-      # Simplest: expose raw fold_change as `y` and keep log2_fc only for
-      # reference.  plot_volcano will log2-transform fold_change internally.
-      if (y == "log2fc" && "fold_change" %in% names(df_fc)) {
-        y <- "fold_change"   # raw FC → plot_volcano takes log2 internally
       }
-
-      x <- df_fc   # replace `x` with the flat data frame
-
-    } else if (!is.null(diff_obj)) {
-      # ---- run_diff only (no fold-change object) ----------------------------
-      warning("No `run_foldchange` result found. Fold changes will be set to 1 ",
-              "(log2 FC = 0) for all features; the x-axis is not meaningful.",
-              call. = FALSE)
-      st <- if (!is.null(diff_obj$summary_table)) diff_obj$summary_table else NULL
-      if (is.null(st) || !"p_value" %in% names(st))
-        stop("The `run_diff` object has no usable `$summary_table`.", call. = FALSE)
-
-      st$fold_change <- 1
-      st$pvalue      <- st$p_value
-      if (missing(y) || is.null(y)) y        <- "fold_change"
-      if (missing(z) || is.null(z)) z        <- "pvalue"
-      if (missing(features) || is.null(features)) features <- "outcome"
-      x <- st
-    } else {
-      stop("The list supplied to `x` contains no recognisable `run_foldchange` ",
-           "or `run_diff` object.", call. = FALSE)
     }
+
+    x <- v_data
   }   # end preprocessing block
 
   # ---------------------------------------------------------------------------
