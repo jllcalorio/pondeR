@@ -461,7 +461,7 @@
 #'
 #' @return A list of class \code{"run_diff"}.
 #' @keywords internal
-.run_rm_anova <- function(x, outcome, group, within, subject_id,
+.run_rm_anova <- function(x, metadata, outcome, group, within, subject_id,
                           test_family,
                           normality_method, alpha_normality,
                           alpha_sphericity,
@@ -470,9 +470,9 @@
                           verbose, warnings_list, parameters) {
 
   # ---- 0.  Build analysis data frame ----------------------------------------
-  key_cols <- unique(c(subject_id, within, outcome,
-                       if (!is.null(group)) group))
-  df_rm    <- x[, key_cols, drop = FALSE]
+  # Merge outcome from numeric x and factor columns from metadata
+  df_rm <- metadata[, unique(c(subject_id, within, if (!is.null(group)) group)), drop = FALSE]
+  df_rm[[outcome]] <- x[[outcome]]
 
   for (wf in within) df_rm[[wf]] <- as.factor(df_rm[[wf]])
   if (!is.null(group)) df_rm[[group]] <- as.factor(df_rm[[group]])
@@ -1192,7 +1192,7 @@ run_diff <- function(
       results[["summary_table"]] <- .build_summary_table(results, outcome, test_alpha)
 
       if (!is.null(subgroup)) {
-        for (sg in subgroup) {
+        for (sg in subgroup) { # Subgroup analysis for multi-outcome summary table
           sg_levels <- if (is.factor(metadata[[sg]])) {
             levels(droplevels(as.factor(metadata[[sg]])))
           } else {
@@ -1221,440 +1221,41 @@ run_diff <- function(
   }
 
   # ===========================================================================
-  #  Single-outcome path
+  #  Single-outcome path - now calls .run_diff_single
   # ===========================================================================
 
-  # --- 1. Input validation & preparation -------------------------------------
-  test_type        <- match.arg(test_type)
-  normality_method <- match.arg(normality_method)
-  warnings_list    <- character(0)
-
-  if (!is.logical(summary_table) || length(summary_table) != 1L)
-    stop("'summary_table' must be a single logical value (TRUE or FALSE).")
-
-  # Validate subgroup
-  if (!is.null(subgroup)) {
-    if (!is.character(subgroup))
-      stop("'subgroup' must be a character vector of column names.")
-    missing_sg <- setdiff(subgroup, names(metadata))
-    if (length(missing_sg) > 0)
-      stop(paste("Subgroup column(s) not found in 'metadata':",
-                 paste(missing_sg, collapse = ", ")))
-    non_cat <- subgroup[sapply(subgroup, function(s)
-      is.numeric(metadata[[s]]) && !is.factor(metadata[[s]]))]
-    if (length(non_cat) > 0)
-      stop(paste("Subgroup column(s) must be categorical:",
-                 paste(non_cat, collapse = ", ")))
-  }
-
-  # Validate RM parameters
-  if (!type_sosquares %in% c(1L, 2L, 3L))
-    stop("'type_sosquares' must be 1, 2, or 3.")
-  type_sosquares <- as.integer(type_sosquares)
-
-  if (!all(rm_effect_size %in% c("ges", "pes")))
-    stop("'rm_effect_size' must be \"ges\", \"pes\", or c(\"ges\", \"pes\").")
-  rm_effect_size <- intersect(c("ges", "pes"), rm_effect_size)  # canonical order
-
-  correction <- match.arg(correction, c("auto", "GG", "HF", "none"))
-
-  is_rm_design    <- !is.null(within)
-  is_mixed_design <- is_rm_design && !is.null(group)   # kept for potential future use
-
-  if (is_rm_design) {
-    if (!requireNamespace("rstatix", quietly = TRUE))
-      stop("Package 'rstatix' is required for RM/mixed ANOVA. ",
-           "Install with: install.packages('rstatix')")
-    if (is.null(subject_id))
-      stop("'subject_id' must be specified for RM/mixed ANOVA designs.")
-    if (!is.character(within) || length(within) < 1)
-      stop("'within' must be a character vector of within-subject column name(s).")
-    missing_w <- setdiff(within, names(metadata))
-    if (length(missing_w) > 0)
-      stop(paste("Within-subject column(s) not found in 'metadata':",
-                 paste(missing_w, collapse = ", ")))
-    if (!subject_id %in% names(metadata))
-      stop(paste0("subject_id column '", subject_id, "' not found in 'metadata'."))
-  }
-
-  # Resolve num_cores
-  avail_cores <- tryCatch(parallel::detectCores(), error = function(e) 1L)
-  if (is.na(avail_cores)) avail_cores <- 1L
-  if (identical(num_cores, "max")) {
-    num_cores <- max(1L, avail_cores - 2L)
-    if (verbose)
-      message(sprintf("Parallel: using 'max' setting (%d cores, 2 reserved).", num_cores))
-  } else if (is.numeric(num_cores)) {
-    if (num_cores < 1 || num_cores > avail_cores || num_cores %% 1 != 0)
-      stop(sprintf("'num_cores' must be an integer between 1 and %d, or \"max\".",
-                   avail_cores))
-    num_cores <- as.integer(num_cores)
-    if (num_cores > 1 && verbose)
-      message(sprintf("Parallel: using %d cores.", num_cores))
-  } else {
-    stop("Invalid 'num_cores'. Must be an integer or \"max\".")
-  }
-
-  # Validate outcome / group
-  if (!is.data.frame(x)) stop("'x' must be a data frame.")
-  if (!outcome %in% names(x))
-    stop(paste0("Outcome variable '", outcome, "' not found in 'x'."))
-  if (!is.null(group) && !group %in% names(metadata))
-    stop(paste0("Group variable '", group, "' not found in 'metadata'."))
-
-  y <- x[[outcome]]
-  if (!is.numeric(y)) stop("Outcome variable must be numeric.")
-
-  if (!is.null(group)) {
-    grp <- as.factor(metadata[[group]])
-    if (!is.null(group_order)) {
-      if (!all(group_order %in% levels(grp))) {
-        stop("'group_order' contains levels not present in the grouping column.")
-      }
-      grp <- factor(grp, levels = group_order)
-    }
-    cc <- stats::complete.cases(y, grp)
-    if (sum(!cc) > 0) {
-      msg           <- sprintf("Removing %d rows with missing values.", sum(!cc))
-      warnings_list <- c(warnings_list, msg)
-      if (verbose) message(msg)
-    }
-    y   <- y[cc]
-    grp <- if (length(cc) == length(grp)) droplevels(grp[cc]) else grp # handle subsetting
-    
-    # Sync metadata if needed for RM
-    metadata_cc <- metadata[cc, , drop = FALSE]
-    
-    if (nlevels(grp) < 2)
-      stop("Grouping factor must have at least 2 levels after removing missing values.")
-    groups   <- levels(grp)
-    n_groups <- length(groups)
-    group_ns <- table(grp)
-    min_n    <- min(group_ns)
-  } else {
-    if (!is_rm_design) {
-       stop("A grouping variable must be provided via 'group' for independent comparisons.")
-    }
-    # Pure RM design — dummy grouping for internal consistency
-    grp      <- factor(rep("all", length(y)))
-    groups   <- levels(grp)
-    n_groups <- 1L
-    group_ns <- table(grp)
-    min_n    <- length(y)
-    metadata_cc <- metadata
-  }
-
-  if (verbose && !is_rm_design) {
-    message("\n=== Auto Compare Analysis ===")
-    message(sprintf("Outcome: %s | Group: %s | Paired: %s", outcome, group, paired))
-    message(sprintf("Number of groups: %d", n_groups))
-    message(sprintf("Sample sizes: %s",
-                    paste(names(group_ns), "=", group_ns, collapse = ", ")))
-    message(sprintf("Test Type: %s", test_type))
-  }
-
-  # --- 2. Test-family determination ------------------------------------------
-  if (is_rm_design) {
-    has_between <- !is.null(group) && 
-                   group %in% names(metadata_cc) && 
-                   length(unique(na.omit(as.character(metadata_cc[[group]])))) > 1
-                   
-    test_family <- if (length(within) >= 1 && has_between) {
-      "mixed_anova"
-    } else if (length(within) >= 2) {
-      "two_way_rm_anova"
-    } else {
-      "one_way_rm_anova"
-    }
-  } else if (n_groups == 2) {
-    test_family <- if (paired) "paired_two_sample" else "independent_two_sample"
-  } else {
-    test_family <- if (paired) "repeated_measures_anova" else "independent_anova"
-  }
-
-  # Build the parameters list used across RM/non-RM branches
-  parameters <- list(
-    test_type             = test_type,
-    normality_method      = normality_method,
-    alpha_normality       = alpha_normality,
-    alpha_variance        = alpha_variance,
-    alpha_sphericity      = alpha_sphericity,
-    type_sosquares        = type_sosquares,
-    rm_effect_size        = rm_effect_size,
-    correction            = correction,
-    test_alpha            = test_alpha,
-    min_n_threshold       = min_n_threshold,
+  # All parameters are already validated and x/metadata are filtered.
+  # Just need to pass them to .run_diff_single.
+  result <- .run_diff_single(
+    x = x,
+    metadata = metadata,
+    outcome = outcome,
+    group = group,
+    filter = filter, # Pass filter for consistency, though .run_diff_single doesn't use it directly
+    within = within,
+    subject_id = subject_id,
+    paired = paired,
+    test_type = test_type,
+    normality_method = normality_method,
+    alpha_normality = alpha_normality,
+    alpha_variance = alpha_variance,
+    alpha_sphericity = alpha_sphericity,
+    type_sosquares = type_sosquares,
+    rm_effect_size = rm_effect_size,
+    correction = correction,
+    test_alpha = test_alpha,
+    min_n_threshold = min_n_threshold,
     calculate_effect_size = calculate_effect_size,
-    perform_posthoc       = perform_posthoc,
-    p_adjust_method       = p_adjust_method,
-    group_order           = group_order,
-    filter                = filter,
-    subgroup              = subgroup,
-    within                = within,
-    subject_id            = subject_id,
-    paired                = paired
+    perform_posthoc = perform_posthoc,
+    p_adjust_method = p_adjust_method,
+    group_order = group_order,
+    subgroup = subgroup,
+    verbose = verbose,
+    num_cores = num_cores
   )
 
-  # --- RM / Mixed ANOVA early-return -----------------------------------------
-  if (test_family %in% c("one_way_rm_anova", "two_way_rm_anova", "mixed_anova")) {
-    return(.run_rm_anova(
-      x = x, metadata = metadata, outcome = outcome, group = group, within = within,
-      subject_id = subject_id, test_family = test_family,
-      normality_method = normality_method, alpha_normality = alpha_normality,
-      alpha_sphericity = alpha_sphericity,
-      type_sosquares = type_sosquares, rm_effect_size = rm_effect_size,
-      correction = correction, test_alpha = test_alpha,
-      perform_posthoc = perform_posthoc, p_adjust_method = p_adjust_method,
-      verbose = verbose, warnings_list = warnings_list,
-      parameters = parameters
-    ))
-  }
-
-  # --- 3. Assumption checks (classical designs) ------------------------------
-  assumptions <- data.frame(
-    check = character(), result = character(),
-    p_value = numeric(), decision = character(),
-    stringsAsFactors = FALSE
-  )
-
-  assumptions <- rbind(assumptions, data.frame(
-    check    = "Minimum sample size",
-    result   = sprintf("Min n = %d", min_n),
-    p_value  = NA_real_,
-    decision = ifelse(min_n >= min_n_threshold, "PASS", "WARNING"),
-    stringsAsFactors = FALSE
-  ))
-  if (min_n < min_n_threshold) {
-    msg           <- sprintf("Warning: Min sample size (%d) below threshold (%d).",
-                             min_n, min_n_threshold)
-    warnings_list <- c(warnings_list, msg)
-    if (verbose) message(msg)
-  }
-
-  normality_violated <- FALSE
-  variance_violated  <- FALSE
-
-  if (test_type == "auto") {
-    # Normality
-    if (n_groups == 2) {
-      norm_results <- .parallel_normality(
-        groups, y, grp, normality_method, alpha_normality, num_cores
-      )
-      for (nr in norm_results) {
-        if (inherits(nr, "try-error")) { if (verbose) warning("A parallel worker failed."); next }
-        warnings_list <- c(warnings_list, nr$warnings_list)
-        assumptions   <- rbind(assumptions,
-                               .assumption_row(nr$label, nr$method, nr$p_value, nr$violated))
-        if (nr$violated) normality_violated <- TRUE
-      }
-    } else {
-      fit <- stats::lm(y ~ grp)
-      nr  <- .check_normality(fit$residuals, NULL, normality_method,
-                              alpha_normality, warnings_list)
-      warnings_list <- nr$warnings_list
-      nr$label      <- "Normality of residuals"
-      assumptions   <- rbind(assumptions,
-                             .assumption_row(nr$label, nr$method, nr$p_value, nr$violated))
-      if (nr$violated) normality_violated <- TRUE
-    }
-
-    # Variance homogeneity
-    if (!paired) {
-      vc            <- .check_variance(y, grp, alpha_variance, verbose, warnings_list)
-      warnings_list <- vc$warnings_list
-      variance_violated <- vc$violated
-      assumptions   <- rbind(assumptions, data.frame(
-        check    = "Homogeneity of variance",
-        result   = vc$test_name,
-        p_value  = vc$p_value,
-        decision = if (vc$violated) "VIOLATED" else "OK",
-        stringsAsFactors = FALSE
-      ))
-    }
-  }
-
-  # --- 4. Select and execute test --------------------------------------------
-  test_exec <- switch(
-    test_family,
-    independent_two_sample = .run_independent_two_sample(
-      y, groups, grp, normality_violated, variance_violated,
-      test_type, warnings_list
-    ),
-    paired_two_sample = .run_paired_two_sample(
-      y, groups, grp, normality_violated, test_type, warnings_list
-    ),
-    independent_anova = .run_independent_anova(
-      y, grp, normality_violated, variance_violated, test_type, warnings_list
-    ),
-    stop(sprintf("Unsupported test family: '%s'.", test_family))
-  )
-
-  test_used     <- test_exec$test_used
-  test_result   <- test_exec$test_result
-  fitted_model  <- test_exec$fitted_model
-  parametric_used <- test_exec$parametric
-  warnings_list <- test_exec$warnings_list
-
-  # --- 5. Effect size --------------------------------------------------------
-  es_out        <- .compute_effect_size(
-    y, grp, groups, test_family, parametric_used,
-    variance_violated, fitted_model, warnings_list
-  )
-  effect_size_result <- es_out$result
-  warnings_list      <- es_out$warnings_list
-
-  # --- 6. Post-hoc -----------------------------------------------------------
-  posthoc_result <- NULL
-
-  if (perform_posthoc && n_groups > 2 &&
-      !is.null(test_result) && test_result$p.value < test_alpha &&
-      requireNamespace("rstatix", quietly = TRUE)) {
-
-    posthoc_result <- tryCatch({
-      td <- tibble::tibble(y = y, grp = grp)
-      ph <- NULL
-
-      if (test_used %in% c("One-way ANOVA", "One-way ANOVA (forced)")) {
-        ph <- rstatix::tukey_hsd(td, y ~ grp)
-        ph <- .build_posthoc_df(ph, "Tukey HSD", y, grp, group_ns, groups,
-                                parametric_used, test_alpha, p_adjust_method)
-      } else if (test_used == "Welch's ANOVA") {
-        ph <- rstatix::games_howell_test(td, y ~ grp)
-        ph <- .build_posthoc_df(ph, "Games-Howell", y, grp, group_ns, groups,
-                                parametric_used, test_alpha, p_adjust_method)
-      } else if (test_used %in% c("Kruskal-Wallis test", "Kruskal-Wallis test (forced)")) {
-        ph <- rstatix::dunn_test(td, y ~ grp, p.adjust.method = p_adjust_method)
-        ph <- .build_posthoc_df(ph, "Dunn's test", y, grp, group_ns, groups,
-                                parametric_used, test_alpha, p_adjust_method)
-      }
-      ph
-    }, error = function(e) {
-      msg           <- paste("Could not perform post-hoc test:", e$message)
-      warnings_list <<- c(warnings_list, msg)
-      if (verbose) message(msg)
-      NULL
-    })
-  }
-
-  # --- 7. Data summary -------------------------------------------------------
-  dg <- droplevels(grp)
-  data_summary <- data.frame(
-    group  = levels(dg),
-    n      = as.numeric(table(dg)),
-    mean   = as.numeric(tapply(y, dg, mean)),
-    sd     = as.numeric(tapply(y, dg, stats::sd)),
-    se     = as.numeric(tapply(y, dg,
-               function(v) stats::sd(v) / sqrt(length(v)))),
-    median = as.numeric(tapply(y, dg, stats::median)),
-    q25    = as.numeric(tapply(y, dg, function(v) stats::quantile(v, 0.25))),
-    q75    = as.numeric(tapply(y, dg, function(v) stats::quantile(v, 0.75))),
-    min    = as.numeric(tapply(y, dg, min)),
-    max    = as.numeric(tapply(y, dg, max)),
-    row.names = NULL
-  )
-  if (requireNamespace("moments", quietly = TRUE)) {
-    data_summary$skewness <- as.numeric(tapply(y, dg, moments::skewness))
-    data_summary$kurtosis <- as.numeric(tapply(y, dg, moments::kurtosis))
-  }
-
-  # --- 8. Verbose output -----------------------------------------------------
-  if (verbose) {
-    message("\n--- Test Results ---")
-    message(sprintf("Test Selected: %s", test_used))
-    message(sprintf("Test statistic: %.4f", test_result$statistic[[1]]))
-    if (test_result$p.value < 0.001) message("P-value: < 0.001") else
-      message(sprintf("P-value: %.4f", test_result$p.value))
-    if (!is.null(effect_size_result))
-      message(sprintf("%s", effect_size_result$interpretation))
-    if (test_result$p.value < test_alpha)
-      message(sprintf("Significant difference detected (p < %.2f) ***", test_alpha))
-    else
-      message(sprintf("No significant difference (p >= %.2f)", test_alpha))
-    if (!is.null(posthoc_result)) {
-      message(sprintf("\n--- Post-Hoc (%s) ---",
-                      unique(posthoc_result$posthoc_test)))
-      message(sprintf("Significant pairwise differences: %d / %d",
-                      sum(posthoc_result$significant, na.rm = TRUE),
-                      nrow(posthoc_result)))
-    }
-  }
-
-  # --- 9. Subgroup analysis --------------------------------------------------
-  subgroup_analysis <- NULL
-
-  if (!is.null(subgroup)) {
-    subgroup_analysis <- list()
-    for (sg_var in subgroup) {
-      sg_levels <- if (is.factor(metadata[[sg_var]])) {
-        levels(droplevels(as.factor(metadata[[sg_var]])))
-      } else {
-        sort(unique(na.omit(as.character(metadata[[sg_var]]))))
-      }
-      sg_var_results <- list()
-      for (lvl in sg_levels) {
-        x_sub   <- x[as.character(metadata[[sg_var]]) == lvl, , drop = FALSE]
-        meta_sub <- metadata[as.character(metadata[[sg_var]]) == lvl, , drop = FALSE]
-        if (nrow(x_sub) == 0) {
-          warning(paste0("Subgroup '", sg_var, "' level '", lvl,
-                         "' has no observations. Skipping."))
-          next
-        }
-        grp_sub <- droplevels(as.factor(meta_sub[[group]]))
-        if (nlevels(grp_sub) < 2) {
-          warning(paste0("Subgroup '", sg_var, "' = '", lvl,
-                         "': fewer than 2 group levels. Skipping."))
-          next
-        }
-        sg_result <- tryCatch(
-          run_diff(
-            x = x_sub, metadata = meta_sub, outcome = outcome, group = group, filter = filter,
-            within = within, subject_id = subject_id, paired = paired,
-            test_type = test_type, normality_method = normality_method,
-            alpha_normality = alpha_normality, alpha_variance = alpha_variance,
-            alpha_sphericity = alpha_sphericity,
-            type_sosquares = type_sosquares, rm_effect_size = rm_effect_size,
-            correction = correction, test_alpha = test_alpha,
-            min_n_threshold = min_n_threshold,
-            calculate_effect_size = calculate_effect_size,
-            perform_posthoc = perform_posthoc, p_adjust_method = p_adjust_method,
-            group_order = group_order, verbose = verbose, num_cores = num_cores,
-            summary_table = FALSE, subgroup = NULL
-          ),
-          error = function(e) {
-            warning(paste0("run_diff failed for subgroup '", sg_var, "' = '", lvl,
-                           "': ", e$message), call. = FALSE)
-            NULL
-          }
-        )
-        if (!is.null(sg_result)) sg_var_results[[lvl]] <- sg_result
-      }
-      subgroup_analysis[[sg_var]] <- sg_var_results
-    }
-  }
-
-  # --- 10. Return object -----------------------------------------------------
-  result <- list(
-    test_used         = test_used,
-    test_result       = test_result,
-    effect_size       = effect_size_result,
-    posthoc_result    = posthoc_result,
-    assumptions       = assumptions,
-    parametric        = parametric_used,
-    data_summary      = data_summary,
-    outcome           = outcome,
-    group_var         = group,
-    paired            = paired,
-    test_type         = test_type,
-    test_alpha        = test_alpha,
-    subgroup_analysis = subgroup_analysis,
-    warnings          = warnings_list,
-    parameters        = parameters,
-    raw_data          = tibble::tibble(outcome = y, group = grp)
-  )
-  class(result) <- c("run_diff", "list")
-  result
+  return(result)
 }
-
 
 # =============================================================================
 #  SECTION 7 — S3 methods
@@ -1821,41 +1422,84 @@ summary.run_diff <- function(object, ...) {
 #' @keywords internal
 .run_diff_single <- function(
     x,
+    metadata              = NULL,
     outcome,
-    group,
+    group                 = NULL,
+    filter                = NULL,
+    within                = NULL,
+    subject_id            = NULL,
     paired                = FALSE,
     test_type             = c("auto", "parametric", "nonparametric"),
     normality_method      = c("auto", "shapiro", "lilliefors"),
     alpha_normality       = 0.05,
     alpha_variance        = 0.05,
+    alpha_sphericity      = 0.05,
+    type_sosquares        = 2,
+    rm_effect_size        = "ges",
+    correction            = "auto",
     test_alpha            = 0.05,
     min_n_threshold       = 3,
     calculate_effect_size = TRUE,
     perform_posthoc       = TRUE,
     p_adjust_method       = "BH",
     group_order           = NULL,
+    subgroup              = NULL,
     verbose               = FALSE,
     num_cores             = 1L
 ) {
-  test_type        <- match.arg(test_type)
-  normality_method <- match.arg(normality_method)
-  warnings_list    <- character(0)
+  # --- 1. Initialization & Validation ----------------------------------------
+  if (is.null(metadata)) metadata <- x
+  test_type         <- match.arg(test_type)
+  normality_method  <- match.arg(normality_method)
+  warnings_list     <- character(0)
+  
+  # Capture parameters for return object
+  parameters <- list(
+    test_type = test_type, normality_method = normality_method,
+    alpha_normality = alpha_normality, alpha_variance = alpha_variance,
+    alpha_sphericity = alpha_sphericity, type_sosquares = type_sosquares,
+    rm_effect_size = rm_effect_size, correction = correction,
+    test_alpha = test_alpha, p_adjust_method = p_adjust_method,
+    paired = paired, subgroup = subgroup
+  )
 
-  avail_cores <- parallel::detectCores()
+  avail_cores <- tryCatch(parallel::detectCores(), error = function(e) 1L)
   if (is.na(avail_cores)) avail_cores <- 1L
   num_cores <- if (identical(num_cores, "max")) max(1L, avail_cores - 2L) else as.integer(num_cores)
 
-  if (!is.data.frame(x))     stop("'x' must be a data frame.")
-  if (!outcome %in% names(x)) stop(sprintf("Outcome '%s' not found.", outcome))
-  if (!group   %in% names(x)) stop(sprintf("Group '%s' not found.", group))
+  if (!is.data.frame(x)) stop("'x' must be a data frame.")
+  if (!outcome %in% names(x)) stop(paste0("Outcome variable '", outcome, "' not found in 'x'."))
+  if (!is.null(group) && !group %in% names(metadata))
+    stop(paste0("Group variable '", group, "' not found in 'metadata'."))
 
+  # --- 2. Design Logic (RM vs Classical) -------------------------------------
+  is_rm_design <- !is.null(within)
+  
+  if (is_rm_design) {
+    test_family <- if (!is.null(group) && length(unique(na.omit(as.character(metadata[[group]])))) > 1)
+      "mixed_anova" else "one_way_rm_anova"
+    
+    return(.run_rm_anova(
+      x = x, metadata = metadata, outcome = outcome, group = group, within = within,
+      subject_id = subject_id, test_family = test_family,
+      normality_method = normality_method, alpha_normality = alpha_normality,
+      alpha_sphericity = alpha_sphericity, type_sosquares = type_sosquares,
+      rm_effect_size = rm_effect_size, correction = correction,
+      test_alpha = test_alpha, perform_posthoc = perform_posthoc,
+      p_adjust_method = p_adjust_method, verbose = verbose,
+      warnings_list = warnings_list, parameters = parameters
+    ))
+  }
+
+  # --- 3. Classical Path -----------------------------------------------------
   y   <- x[[outcome]]
-  grp <- as.factor(x[[group]])
   if (!is.numeric(y)) stop("Outcome variable must be numeric.")
-
+  
+  if (is.null(group)) stop("A grouping variable must be provided via 'group'.")
+  grp <- as.factor(metadata[[group]])
+  
   if (!is.null(group_order)) {
-    if (!all(group_order %in% levels(grp)))
-      stop("'group_order' contains levels not present in the data.")
+    if (!all(group_order %in% levels(grp))) stop("'group_order' levels not present in metadata.")
     grp <- factor(grp, levels = group_order)
   }
 
@@ -1870,6 +1514,7 @@ summary.run_diff <- function(object, ...) {
   if (nlevels(grp) < 2)
     stop("Grouping factor must have at least 2 levels after removing missing values.")
 
+  metadata_cc <- metadata[cc, , drop = FALSE]
   groups   <- levels(grp)
   n_groups <- length(groups)
   group_ns <- table(grp)
@@ -1994,7 +1639,32 @@ summary.run_diff <- function(object, ...) {
     row.names = NULL
   )
 
-  list(
+  # --- 4. Subgroup Analysis --------------------------------------------------
+  subgroup_results <- NULL
+  if (!is.null(subgroup)) {
+    subgroup_results <- list()
+    for (sg_var in subgroup) {
+      sg_levels <- sort(unique(na.omit(as.character(metadata[[sg_var]]))))
+      lvl_list  <- list()
+      for (lvl in sg_levels) {
+        idx <- as.character(metadata[[sg_var]]) == lvl
+        if (sum(idx, na.rm = TRUE) < 2) next
+        # Recursive call to run_diff to handle potential multi-outcome logic if needed, 
+        # but passing subgroup = NULL to terminate recursion.
+        lvl_list[[lvl]] <- tryCatch({
+          run_diff(
+            x = x[idx, , drop = FALSE], metadata = metadata[idx, , drop = FALSE],
+            outcome = outcome, group = group, paired = paired, test_type = test_type,
+            test_alpha = test_alpha, subgroup = NULL, summary_table = FALSE, verbose = FALSE
+          )
+        }, error = function(e) NULL)
+      }
+      subgroup_results[[sg_var]] <- lvl_list
+    }
+  }
+
+  # --- 5. Final Result Object ------------------------------------------------
+  res <- list(
     test_used          = test_used,
     test_result        = test_result,
     effect_size        = es_result,
@@ -2008,15 +1678,21 @@ summary.run_diff <- function(object, ...) {
     data_summary       = data_summary,
     outcome            = outcome,
     group_var          = group,
+    within_vars        = within,
+    subject_id_var     = subject_id,
     groups             = groups,
     n_groups           = n_groups,
     group_ns           = group_ns,
     paired             = paired,
     test_type          = test_type,
     test_alpha         = test_alpha,
+    subgroup_analysis  = subgroup_results,
     warnings           = warnings_list,
+    parameters         = parameters,
     raw_data           = tibble::tibble(outcome = y, group = grp)
   )
+  class(res) <- c("run_diff", "list")
+  res
 }
 
 
@@ -2045,7 +1721,7 @@ summary.run_diff <- function(object, ...) {
       all_groups <- union(all_groups, as.character(res$data_summary$group))
   }
   avg_col_names <- if (length(all_groups) > 0)
-    paste0("average_", all_groups) else character(0)
+    paste0("mean_", all_groups) else character(0)
 
   tbl_rows <- lapply(outcome_names, function(oc) {
     res <- results_list[[oc]]
@@ -2117,12 +1793,18 @@ summary.run_diff <- function(object, ...) {
       }
     }
 
+    # Significance stars
+    p_signif <- ifelse(is.null(tr$p.value), NA_character_,
+                ifelse(tr$p.value < 0.001, "***",
+                ifelse(tr$p.value < 0.01,  "**",
+                ifelse(tr$p.value < 0.05,  "*", "ns"))))
+
     # Per-group averages
     avg_vals <- stats::setNames(
       vector("list", length(avg_col_names)), avg_col_names
     )
     for (cn in avg_col_names) {
-      grp_label    <- sub("^average_", "", cn)
+      grp_label    <- sub("^mean_", "", cn)
       avg_vals[[cn]] <- if (!is.null(ds) && grp_label %in% ds$group)
         ds$mean[ds$group == grp_label] else NA_real_
     }
@@ -2133,6 +1815,7 @@ summary.run_diff <- function(object, ...) {
       statistic        = if (!is.null(tr$statistic)) as.numeric(tr$statistic[[1]]) else NA_real_,
       df               = df_val,
       p_value          = if (!is.null(tr$p.value)) tr$p.value else NA_real_,
+      p_signif         = p_signif,
       stringsAsFactors = FALSE
     )
     for (cn in avg_col_names) row[[cn]] <- as.numeric(avg_vals[[cn]])
