@@ -8,6 +8,7 @@ plot_diff(
   x,
   outcome,
   group,
+  metadata = NULL,
   plot_vars = NULL,
   plot_type = "boxplot",
   test_type = NULL,
@@ -54,6 +55,9 @@ specified.}
 
 \item{group}{Character string specifying the column name for the grouping
 variable.}
+
+\item{metadata}{A data frame containing metadata (e.g., grouping variables).
+If \code{NULL}, \code{x} is used as metadata. Default is \code{NULL}.}
 
 \item{plot_vars}{Character vector specifying column name(s) for numeric
 variables to plot. If \code{NULL} (default), uses the value of

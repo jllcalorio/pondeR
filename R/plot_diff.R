@@ -15,6 +15,8 @@
 #'   specified.
 #' @param group Character string specifying the column name for the grouping
 #'   variable.
+#' @param metadata A data frame containing metadata (e.g., grouping variables).
+#'   If \code{NULL}, \code{x} is used as metadata. Default is \code{NULL}.
 #' @param plot_vars Character vector specifying column name(s) for numeric
 #'   variables to plot. If \code{NULL} (default), uses the value of
 #'   \code{outcome}.
@@ -156,6 +158,7 @@
 plot_diff <- function(x,
                       outcome,
                       group,
+                      metadata          = NULL,
                       plot_vars         = NULL,
                       plot_type         = "boxplot",
                       test_type         = NULL,
@@ -271,16 +274,21 @@ plot_diff <- function(x,
   # ---------------------------------------------------------------------------
   if (!is.data.frame(x))
     stop("'x' must be a data frame.")
-  if (!all(c(outcome, group) %in% names(x)))
-    stop("Outcome or group variable not found in x.")
+
+  if (is.null(metadata)) metadata <- x
+
+  if (!all(outcome %in% names(x)))
+    stop("Outcome variable not found in x.")
+  if (!group %in% names(metadata))
+    stop("Group variable not found in metadata.")
 
   if (!is.null(subgroup)) {
     if (!is.character(subgroup))
       stop("'subgroup' must be a character vector of column names.")
-    missing_sg <- setdiff(subgroup, names(x))
+    missing_sg <- setdiff(subgroup, names(metadata))
     if (length(missing_sg) > 0)
-      stop(paste("Subgroup column(s) not found in data:", paste(missing_sg, collapse = ", ")))
-    non_cat <- subgroup[sapply(subgroup, function(s) is.numeric(x[[s]]) && !is.factor(x[[s]]))]
+      stop(paste("Subgroup column(s) not found in metadata:", paste(missing_sg, collapse = ", ")))
+    non_cat <- subgroup[sapply(subgroup, function(s) is.numeric(metadata[[s]]) && !is.factor(metadata[[s]]))]
     if (length(non_cat) > 0)
       stop(paste("Subgroup column(s) must be categorical:", paste(non_cat, collapse = ", ")))
   }
@@ -293,7 +301,7 @@ plot_diff <- function(x,
   # ---------------------------------------------------------------------------
   # 5. Internal stat engine (calls the unexported helper directly)
   # ---------------------------------------------------------------------------
-  .get_stats <- function(data_in, var) {
+  .get_stats <- function(data_in, meta_in, var) {
     res <- NULL
     tryCatch({
       res <- .run_diff_single(
@@ -305,9 +313,18 @@ plot_diff <- function(x,
         paired                = paired,
         test_alpha            = test_alpha,
         calculate_effect_size = TRUE,
-        perform_posthoc       = TRUE,
+        perform_posthoc       = TRUE, # plot_diff always performs post-hoc for brackets
         group_order           = group_order,
-        verbose               = FALSE
+        verbose               = FALSE,
+        # Parameters for .run_diff_single that plot_diff doesn't directly control
+        metadata              = meta_in,
+        within                = NULL,
+        subject_id            = NULL,
+        alpha_sphericity      = 0.05,
+        type_sosquares        = 2,
+        rm_effect_size        = "ges",
+        correction            = "auto",
+        subgroup              = NULL # Prevent infinite recursion
       )
     }, error = function(e) {
       warning(sprintf("Statistical test failed for '%s': %s", var, e$message), call. = FALSE)
@@ -330,7 +347,7 @@ plot_diff <- function(x,
       next
     }
 
-    stat_results <- .get_stats(x, var)
+    stat_results <- .get_stats(x, metadata, var)
     if (is.null(stat_results)) next
 
     n_groups        <- stat_results$n_groups
@@ -524,9 +541,12 @@ plot_diff <- function(x,
     colnames(plot_data) <- c(safe_var, safe_group)
 
     if (!is.null(sample_id)) {
-      if (!sample_id %in% names(x))
-        stop(paste("Sample ID variable", sample_id, "not found in data."))
-      plot_data[[sample_id]] <- x[[sample_id]][stats::complete.cases(x[c(var, group)])]
+      target_df <- if (sample_id %in% names(metadata)) metadata else x
+      if (!sample_id %in% names(target_df))
+        stop(paste("Sample ID variable", sample_id, "not found in data or metadata."))
+      
+      keep <- stats::complete.cases(x[[var]], metadata[[group]])
+      plot_data[[sample_id]] <- target_df[[sample_id]][keep]
     }
 
     y_max      <- max(plot_data[[safe_var]], na.rm = TRUE)
@@ -612,7 +632,6 @@ plot_diff <- function(x,
     } else {
       ggpubr::ggviolin(plot_data, x = safe_group, y = safe_var,
                       color = safe_group, fill = safe_group, palette = plot_colors,
-                      add = "boxplot", add.params = list(fill = "white"),
                       linewidth = linewidth,
                       add = "boxplot", add.params = list(fill = "white", size = linewidth),
                       order = group_order, ...)
@@ -729,16 +748,19 @@ plot_diff <- function(x,
   # ---------------------------------------------------------------------------
   if (!is.null(subgroup)) {
     for (sg_var in subgroup) {
-      sg_levels <- if (is.factor(x[[sg_var]])) {
-        levels(droplevels(as.factor(x[[sg_var]])))
+      sg_levels <- if (is.factor(metadata[[sg_var]])) {
+        levels(droplevels(as.factor(metadata[[sg_var]])))
       } else {
-        sort(unique(na.omit(as.character(x[[sg_var]]))))
+        sort(unique(na.omit(as.character(metadata[[sg_var]]))))
       }
 
       sg_var_results <- list()
 
       for (lvl in sg_levels) {
-        x_sub <- x[as.character(x[[sg_var]]) == lvl, , drop = FALSE]
+        # Filter indices based on subgroup variable in metadata
+        sub_idx      <- which(as.character(metadata[[sg_var]]) == lvl)
+        x_sub        <- x[sub_idx, , drop = FALSE]
+        metadata_sub <- metadata[sub_idx, , drop = FALSE]
 
         if (nrow(x_sub) == 0) {
           warning(sprintf("Subgroup '%s' level '%s' has no observations. Skipping.",
@@ -753,14 +775,14 @@ plot_diff <- function(x,
         for (j in seq_along(plot_vars)) {
           var <- plot_vars[j]
           if (!is.numeric(x_sub[[var]])) next
-          grp_sub <- droplevels(as.factor(x_sub[[group]]))
+          grp_sub <- droplevels(as.factor(metadata_sub[[group]]))
           if (nlevels(grp_sub) < 2) {
             warning(sprintf("Subgroup '%s' = '%s': '%s' has <2 group levels. Skipping.",
                             sg_var, lvl, var))
             next
           }
 
-          sg_stat <- .get_stats(x_sub, var)
+          sg_stat <- .get_stats(x_sub, metadata_sub, var)
           if (is.null(sg_stat)) next
 
           sg_plot_result <- tryCatch({
@@ -768,6 +790,7 @@ plot_diff <- function(x,
               x                 = x_sub,
               outcome           = var,
               group             = group,
+              metadata          = metadata_sub,
               plot_vars         = var,
               plot_type         = plot_type,
               test_type         = if (is.null(test_type)) "auto" else test_type,
