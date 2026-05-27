@@ -1,14 +1,15 @@
 # ──────────────────────────────────────────────────────────────────────────────
 # pkgdown.yaml
 # Automatically builds and deploys the pondeR pkgdown site to GitHub Pages
-# whenever you push to the main branch (or manually trigger it).
+# once per month ONLY if there were commits in the previous 30 days.
+# Manual runs are still allowed from the Actions tab.
 # ──────────────────────────────────────────────────────────────────────────────
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  # Run monthly: midnight UTC on the 1st day of each month
+  schedule:
+    - cron: '0 0 1 * *'
+
   # Allow manual runs from the Actions tab
   workflow_dispatch:
 
@@ -19,29 +20,70 @@ permissions:
   contents: write
 
 jobs:
-  pkgdown:
+  check:
     runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.recent_commits.outputs.skip }}
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
+      - name: Check for recent commits
+        id: recent_commits
+        run: |
+          commits=$(git log --since="30 days ago" --oneline | wc -l)
+          echo "Commits in last 30 days: $commits"
+          if [ "$commits" -eq 0 ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
 
+  pkgdown:
+    needs: check
+    if: needs.check.outputs.skip == 'false'
+    runs-on: ubuntu-latest
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-
     steps:
       # 1. Check out the repository
       - name: Checkout repository
         uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
 
-      # 2. Set up Pandoc (needed for vignette rendering)
+      # 2. Check whether there were commits in the last 30 days
+      - name: Check for recent commits
+        id: recent_commits
+        run: |
+          commits=$(git log --since="30 days ago" --oneline | wc -l)
+
+          echo "Commits in last 30 days: $commits"
+
+          if [ "$commits" -eq 0 ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      # 3. Stop workflow if no recent commits
+      - name: Stop if no recent commits
+        if: steps.recent_commits.outputs.skip == 'true'
+        run: |
+          echo "No commits in the last 30 days. Skipping pkgdown build."
+          exit 0
+
+      # 4. Set up Pandoc
       - name: Install Pandoc
         uses: r-lib/actions/setup-pandoc@v2.7.1
 
-      # 3. Set up R
+      # 5. Set up R
       - name: Set up R
         uses: r-lib/actions/setup-r@v2.11.3
         with:
-          use-public-rspm: true   # fast binary packages from Posit Public Package Manager
+          use-public-rspm: true
 
-      # 4. Install system libraries required by some pondeR dependencies
-      #    (BiocParallel / vsn / imputeLCMD pull in C/Fortran libs)
+      # 6. Install system dependencies
       - name: Install system dependencies
         run: |
           sudo apt-get update -y
@@ -60,7 +102,7 @@ jobs:
             libgmp-dev \
             libmpfr-dev
 
-      # 5. Install R package dependencies (reads DESCRIPTION automatically)
+      # 7. Install R dependencies
       - name: Install R dependencies
         uses: r-lib/actions/setup-r-dependencies@v2.3.0
         with:
@@ -69,31 +111,41 @@ jobs:
             any::BiocManager
           needs: website
 
-      # 6. Install Bioconductor packages that CRAN rspm doesn't serve
+      # 8. Install Bioconductor dependencies
       - name: Install Bioconductor dependencies
         run: |
           Rscript -e "
             if (!requireNamespace('BiocManager', quietly = TRUE))
               install.packages('BiocManager')
+
             BiocManager::install(
-              c('BiocParallel', 'imputeLCMD', 'matrixStats',
-                'pmp', 'sva', 'vsn'),
-              ask = FALSE, update = FALSE
+              c(
+                'BiocParallel',
+                'imputeLCMD',
+                'matrixStats',
+                'pmp',
+                'sva',
+                'vsn'
+              ),
+              ask = FALSE,
+              update = FALSE
             )
           "
 
-      # 7. Install pondeR itself
+      # 9. Install pondeR
       - name: Install pondeR
         run: R CMD INSTALL .
 
-      # 8. Build the pkgdown site
+      # 10. Build pkgdown site
       - name: Build site
-        run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE)
+        run: pkgdown::build_site_github_pages(
+          new_process = FALSE,
+          install = FALSE
+        )
         shell: Rscript {0}
 
-      # 8. Deploy to the gh-pages branch
+      # 11. Deploy to gh-pages
       - name: Deploy to GitHub Pages
-        if: github.event_name != 'pull_request'
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           clean: true
