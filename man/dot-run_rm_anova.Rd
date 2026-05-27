@@ -6,6 +6,7 @@
 \usage{
 .run_rm_anova(
   x,
+  metadata,
   outcome,
   group,
   within,
