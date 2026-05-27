@@ -12,9 +12,14 @@ run_correl(
   remove = NULL,
   method = "auto",
   force_test = NULL,
+  no_kendall = FALSE,
+  remove_y = TRUE,
   sig_threshold = 0.05,
   normality_method = "auto",
   alpha_normality = 0.05,
+  interpretation = NULL,
+  summary_table_only = FALSE,
+  method_in_row = TRUE,
   verbose = FALSE,
   ...
 )
@@ -63,6 +68,17 @@ If a pair appears more than once, the last entry takes precedence with
 a warning. Pairs not listed here are analyzed using the global
 \code{method}. Default \code{NULL} (no overrides).}
 
+\item{no_kendall}{Logical. If \code{TRUE}, the automatic method selection
+avoids Kendall's tau and uses Spearman's rho instead when assumptions for
+Pearson's are violated and sample size is small or ties are frequent.
+Note that specific tests provided in \code{force_test} take precedence.
+Default \code{FALSE}.}
+
+\item{remove_y}{Logical. If \code{TRUE}, correlations between variables
+within the \code{y} vector are excluded, focusing the analysis only
+on \code{y} vs. other variables.
+Default \code{TRUE}.}
+
 \item{sig_threshold}{A single numeric value in \code{(0, 1)} specifying
 the significance threshold for p-values. Correlations with
 \code{p >= sig_threshold} are masked in the masked table. Default
@@ -77,13 +93,26 @@ Shapiro-Wilk for \eqn{n < 50} and Lilliefors otherwise.}
 the significance threshold used internally for normality and variance
 tests when \code{method = "auto"}. Default \code{0.05}.}
 
+\item{interpretation}{Character string or \code{NULL}. If not \code{NULL} and
+\code{summary_table_only = TRUE}, adds a qualitative interpretation column
+based on \code{"psychology"}, \code{"politics"}, or \code{"medicine"}
+thresholds. Default \code{NULL}.}
+
+\item{summary_table_only}{Logical. If \code{TRUE}, returns only a single
+data frame with all result columns. Default is \code{FALSE}.}
+
+\item{method_in_row}{Logical. When summary_table_only = TRUE and
+method_in_row = FALSE, the method column is removed.
+Instead, correlation estimates are converted to strings with
+alphabetical superscripts. Default \code{TRUE}.}
+
 \item{verbose}{Logical. When \code{TRUE}, diagnostic messages about
 assumption checks and method selection are printed. Default \code{FALSE}.}
 
 \item{...}{Additional arguments passed to \code{\link[stats]{cor.test}}.}
 }
 \value{
-A named list of class \code{"pondeR_correl"} with the following
+A named list of class \code{"run_correl"} with the following
 elements:
 \describe{
 \item{\code{correlations}}{A tidy data frame of pairwise correlation
@@ -132,7 +161,47 @@ Normality is assessed via Shapiro-Wilk (\eqn{n < 50}) or Lilliefors
 Levene's test (requires \pkg{car}) with Bartlett's test as fallback.
 
 Confidence intervals for Cramer's V and polychoric/polyserial correlations
-are not available and are returned as \code{NA}.
+are not available and are returned as \code{NA}. When \code{summary_table_only = TRUE},
+the function returns a flat data frame instead of the structured list.
+
+\strong{Interpretation thresholds} (\code{interpretation}):
+
+\emph{Psychology}:
+\tabular{ll}{
+\strong{Absolute Correlation} \tab \strong{Interpretation} \cr
+1.0 \tab Perfect \cr
+0.7 to < 1.0 \tab Strong \cr
+0.4 to < 0.7 \tab Moderate \cr
+0.1 to < 0.4 \tab Weak \cr
+< 0.1 \tab Zero \cr
+}
+
+\emph{Politics}:
+\tabular{ll}{
+\strong{Absolute Correlation} \tab \strong{Interpretation} \cr
+1.0 \tab Perfect \cr
+0.7 to < 1.0 \tab Very Strong \cr
+0.4 to < 0.7 \tab Strong \cr
+0.3 to < 0.4 \tab Moderate \cr
+0.2 to < 0.3 \tab Weak \cr
+0.1 to < 0.2 \tab Negligible \cr
+< 0.1 \tab None \cr
+}
+
+\emph{Medicine}:
+\tabular{ll}{
+\strong{Absolute Correlation} \tab \strong{Interpretation} \cr
+1.0 \tab Perfect \cr
+0.8 to < 1.0 \tab Very Strong \cr
+0.6 to < 0.8 \tab Moderate \cr
+0.3 to < 0.6 \tab Fair \cr
+0.1 to < 0.3 \tab Poor \cr
+< 0.1 \tab None \cr
+}
+
+\emph{Categorical (Phi and Cramer's V)}:
+\tabular{ll}{
+\strong{Value} \tab \strong{Interpretation} \cr0.25 \tab Very strong \cr0.15 \tab Strong \cr0.10 \tab Moderate \cr0.05 \tab Weak \cr0 to 0.05 \tab No or very weak \cr}
 }
 \examples{
 ## Basic pairwise correlations (all numeric columns)
@@ -158,6 +227,11 @@ res$correlations
 res$p_values
 res$correlations_masked
 
+}
+\references{
+Akoglu H. User's guide to correlation coefficients. Turk J Emerg Med.
+2018 Aug 7;18(3):91-93. doi: 10.1016/j.tjem.2018.08.001. PMID: 30191186;
+PMCID: PMC6107969.
 }
 \author{
 John Lennon L. Calorio
