@@ -84,6 +84,7 @@ reference:
       - starts_with("run_diff")
       - starts_with("plot_diff")
       - starts_with("run_assoc")
+      - starts_with("run_single_assoc")
       - starts_with("run_foldchange")
       - starts_with("plot_volcano")
       - starts_with("run_correl")
