@@ -39,6 +39,7 @@ Imports:
     lmerTest,
     logistf,
     magrittr,
+    MASS,
     matrixStats,
     methods,
     mice,
