@@ -81,11 +81,11 @@ name \code{"History"} becomes \code{"History_"}, and duplicates get a
 \code{" (N)"} suffix (up to \code{" (999)"}, hence the 25-character base
 limit).
 
-\strong{Single vs. multi-object behaviour.}  When \code{x} is a single
-tabular object, the supplied \code{filename} is used exactly (after
-sanitisation).  When \code{x} is a list with multiple elements, the
-\code{filename} argument is ignored and each element's name is used as
-its sheet name; the workbook file is named after the list variable.
+\strong{Filename priority.}  The \code{filename} argument is prioritized
+unless it is left as the default \code{"output"}.  If \code{filename} is
+\code{"output"} and \code{x} is a list (or a pondeR result containing
+multiple tables), the function automatically uses the variable name of
+\code{x} as the filename for convenience.
 
 \strong{pondeR result objects.}  Objects whose class starts with
 \code{run_} (e.g. \code{run_auc}, \code{run_diff}) are unpacked

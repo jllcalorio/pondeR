@@ -204,11 +204,11 @@ if (!exists("%||%", mode = "function")) {
 #' \code{" (N)"} suffix (up to \code{" (999)"}, hence the 25-character base
 #' limit).
 #'
-#' \strong{Single vs. multi-object behaviour.}  When \code{x} is a single
-#' tabular object, the supplied \code{filename} is used exactly (after
-#' sanitisation).  When \code{x} is a list with multiple elements, the
-#' \code{filename} argument is ignored and each element's name is used as
-#' its sheet name; the workbook file is named after the list variable.
+#' \strong{Filename priority.}  The \code{filename} argument is prioritized
+#' unless it is left as the default \code{"output"}.  If \code{filename} is
+#' \code{"output"} and \code{x} is a list (or a pondeR result containing
+#' multiple tables), the function automatically uses the variable name of
+#' \code{x} as the filename for convenience.
 #'
 #' \strong{pondeR result objects.}  Objects whose class starts with
 #' \code{run_} (e.g. \code{run_auc}, \code{run_diff}) are unpacked
@@ -322,7 +322,7 @@ save_excel <- function(
   if (.is_tabular(x)) {
     # --- Single tabular object: honour filename ---
     sheets <- stats::setNames(list(as.data.frame(x)), base_name)
-    use_filename <- base_name          # final workbook base name
+    use_filename <- if (base_name == "output") x_name_safe else base_name
 
   } else if (.is_ponder_result(x)) {
     # --- pondeR result: unpack tables, use filename ---
@@ -331,7 +331,7 @@ save_excel <- function(
       stop("The pondeR result object contains no tabular data to export.",
            call. = FALSE)
     sheets <- coerce_list(tbls)
-    use_filename <- base_name
+    use_filename <- if (base_name == "output") x_name_safe else base_name
 
   } else if (is.list(x)) {
     if (!length(x)) {
@@ -407,12 +407,8 @@ save_excel <- function(
     }
     sheets <- coerce_list(expanded)
 
-    # For multi-element lists: ignore filename, use x's variable name
-    if (length(sheets) > 1L) {
-      use_filename <- x_name_safe
-    } else {
-      use_filename <- base_name
-    }
+    # Prioritize provided filename over variable name fallback
+    use_filename <- if (base_name == "output") x_name_safe else base_name
 
   } else {
     stop(paste0(
