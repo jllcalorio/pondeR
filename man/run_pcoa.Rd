@@ -99,7 +99,14 @@ variable name), and \code{perms} (integer, number of permutations used).
 \code{NULL} when PERMANOVA was not requested.}
 \item{\code{pairwise_adonis}}{When \code{groups} is specified: the full
 result table from \code{OmicFlow::pairwise_adonis}.}
+\item{\code{betadisper}}{When \code{dispersion = TRUE} and PERMANOVA is
+requested: the output from \code{\link[vegan]{betadisper}}.}
+\item{\code{permdisp}}{When \code{dispersion = TRUE} and PERMANOVA is
+requested: the output from \code{\link[vegan]{permutest}} on the
+betadisper result.}
 \item{\code{call}}{The matched function call.}
+\item{\code{p_adjust}}{Character. The p-value adjustment method used for
+pairwise comparisons.}
 }
 }
 \description{
