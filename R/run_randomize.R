@@ -22,6 +22,13 @@
 #'   \code{p = 1}, i.e., all rows shuffled). Mutually exclusive with \code{n}.
 #'   When \code{per_group} is supplied without an explicit \code{n}/\code{p}
 #'   inside the list, this top-level value is used as the fallback.
+#' @param per A character string specifying the randomization strategy for 
+#'   data frames, matrices, or tibbles. 
+#'   \itemize{
+#'     \item \strong{"all"} (default): Will randomize all of the items in the data frame. Any value can be placed anywhere in the randomized data frame.
+#'     \item \strong{"row"}: Will randomize the items row-wise. The randomization is done for each row independently.
+#'     \item \strong{"col"}: Will randomize the items column-wise. The randomization is done for each column independently.
+#'   }
 #' @param per_group An optional list of per-group sampling specs controlling
 #'   stratified sampling. Each element must follow one of two forms:
 #'   \itemize{
@@ -287,6 +294,7 @@ run_randomize <- function(
     x,
     n               = NULL,
     p               = NULL,
+    per             = c("all", "row", "col"),
     per_group       = NULL,
     joint           = TRUE,
     joint_behaviour = "cascading",
@@ -334,6 +342,9 @@ run_randomize <- function(
     return(x)
   }
 
+  # Validate 'per'
+  per <- match.arg(per)
+  
   mat_colnames <- NULL
   mat_mode     <- NULL
   if (is_mat) {
@@ -489,6 +500,23 @@ run_randomize <- function(
         }
       }
     }
+  }
+
+  # ── 7.5 Dimension-wise randomization ─────────────────────────────────────────
+  if (!is_vec) {
+    m <- as.matrix(x)
+    if (per == "row") {
+      # Randomize the items row-wise
+      for (i in seq_len(nrow(m))) m[i, ] <- m[i, sample.int(ncol(m))]
+    } else if (per == "col") {
+      # Randomize the items column-wise
+      for (j in seq_len(ncol(m))) m[, j] <- m[sample.int(nrow(m)), j]
+    } else if (per == "all") {
+      # Randomize all of the items in the data frame
+      m[] <- sample(m)
+    }
+    # Assign back to preserve structure/class
+    x[] <- as.data.frame(m, stringsAsFactors = FALSE)
   }
 
   # ── 8. Execute sampling ───────────────────────────────────────────────────────

@@ -8,6 +8,7 @@ run_randomize(
   x,
   n = NULL,
   p = NULL,
+  per = c("all", "row", "col"),
   per_group = NULL,
   joint = TRUE,
   joint_behaviour = "cascading",
@@ -32,6 +33,14 @@ of rows (or elements) to return. Defaults to \code{NULL} (equivalent to
 \code{p = 1}, i.e., all rows shuffled). Mutually exclusive with \code{n}.
 When \code{per_group} is supplied without an explicit \code{n}/\code{p}
 inside the list, this top-level value is used as the fallback.}
+
+\item{per}{A character string specifying the randomization strategy for
+data frames, matrices, or tibbles.
+\itemize{
+\item \strong{"all"} (default): Will randomize all of the items in the data frame. Any value can be placed anywhere in the randomized data frame.
+\item \strong{"row"}: Will randomize the items row-wise. The randomization is done for each row independently.
+\item \strong{"col"}: Will randomize the items column-wise. The randomization is done for each column independently.
+}}
 
 \item{per_group}{An optional list of per-group sampling specs controlling
 stratified sampling. Each element must follow one of two forms:
