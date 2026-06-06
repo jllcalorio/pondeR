@@ -7,19 +7,21 @@
 #' optionally restricting the display to the top or bottom \code{limit}
 #' features by \emph{total} abundance and collapsing the remainder into an
 #' \code{"Others"} category. Samples may be shown individually or aggregated
-#' by a grouping variable using the mean or median. Both horizontal and
-#' vertical orientations are supported, along with full control over colours,
-#' fonts, legend layout, and axis labels. Column names containing spaces or
-#' special characters are fully supported.
+#' by a grouping variable by summing raw counts per group before normalising.
+#' Both horizontal and vertical orientations are supported, along with full
+#' control over colours, fonts, legend layout, and axis labels. Column names
+#' containing spaces or special characters are fully supported. When plotting
+#' individual samples, bracket annotations can be drawn beneath (or beside)
+#' the bars to visually group samples by a metadata variable.
 #'
 #' @param x A \code{data.frame}, \code{tibble}, or \code{matrix} with named
 #'   columns representing features (e.g., taxa, metabolites). Rows are samples;
 #'   columns are features. Column names may contain spaces and special
-#'   characters. \strong{When \code{group_aggregate = NULL} and
+#'   characters. \strong{When \code{group_aggregate = FALSE} and
 #'   \code{ignore_normalization = FALSE}}, \code{x} is expected to already
 #'   contain row-wise relative abundances (each row summing to 1). A warning
-#'   is issued for any column whose sum is not 0 or 1, indicating that
-#'   column-wise relative abundance normalisation may not have been applied.
+#'   is issued for any row whose sum is not 0 or 1, indicating that row-wise
+#'   relative abundance normalisation may not have been applied.
 #' @param metadata A \code{data.frame} containing sample-level metadata. Must
 #'   have the same number of rows as \code{x}; row order is assumed to
 #'   correspond to \code{x}.
@@ -38,9 +40,9 @@
 #'   \code{"low"} (lowest total abundance first — selects bottom \code{limit}).
 #'   \strong{Note:} \code{"high"} and \code{"low"} rank by column totals and
 #'   are meaningful only when \code{x} contains raw counts or intensities
-#'   (row sums not already 0 or 1). If normalised data is detected, a
-#'   warning is issued and \code{sort} is ignored. When using ranked sorting,
-#'   supply raw count data and set \code{normalize_to_relabund = TRUE}.
+#'   (row sums not already 0 or 1). If normalised data is detected, a warning
+#'   is issued and \code{sort} is ignored. When using ranked sorting, supply
+#'   raw count data and set \code{normalize_to_relabund = TRUE}.
 #' @param others_position Character or \code{NULL}. Where to place the
 #'   \code{"Others"} category in the legend/stack order. \code{NULL} (default)
 #'   treats \code{"Others"} according to \code{sort}. \code{"first"} forces it
@@ -50,20 +52,18 @@
 #'   the function searches for \code{"UID"}, \code{"ID"}, or \code{"SampleID"}
 #'   (case-insensitive) in \code{metadata}. An error is raised if none are
 #'   found.
-#' @param group_aggregate Character or \code{NULL}. If \code{"mean"} or
-#'   \code{"median"}, \code{show_x_as} is treated as a grouping variable and
-#'   raw feature values in \code{x} are aggregated per group before normalising
-#'   to relative abundances. \strong{Assumes \code{x} contains raw
-#'   (unnormalised) data.} See \code{normalize_to_relabund}. If \code{NULL}
-#'   (default), each row in \code{x} is an individual sample and \code{x}
-#'   must already contain row-wise relative abundances (unless
-#'   \code{ignore_normalization = TRUE}).
-#' @param normalize_to_relabund Logical. Relevant when \code{group_aggregate}
-#'   is non-\code{NULL} or \code{sort} is \code{"high"}/\code{"low"}. If
-#'   \code{TRUE} (default), \code{run_normalize(method = "col_rel_abundance")}
-#'   is applied to \code{x} before aggregation or ranking. Set to \code{FALSE}
-#'   if \code{x} is already appropriately normalised. Ignored when
-#'   \code{ignore_normalization = TRUE}.
+#' @param group_aggregate Logical. If \code{TRUE}, \code{show_x_as} is treated
+#'   as a grouping variable and raw feature values in \code{x} are summed per
+#'   group before normalising to relative abundances. \strong{Assumes \code{x}
+#'   contains raw (unnormalised) data.} If \code{FALSE} (default), each row in
+#'   \code{x} is treated as an individual sample. Cannot be \code{TRUE}
+#'   simultaneously with \code{group_brackets}.
+#' @param normalize_to_relabund Logical. Relevant when \code{group_aggregate =
+#'   TRUE} or \code{sort} is \code{"high"}/\code{"low"}. If \code{TRUE}
+#'   (default), row-wise relative abundance normalisation is applied to \code{x}
+#'   via \code{run_normalize(method = "row_rel_abundance")} before aggregation
+#'   or ranking. Set to \code{FALSE} if \code{x} is already appropriately
+#'   normalised. Ignored when \code{ignore_normalization = TRUE}.
 #' @param ignore_normalization Logical. If \code{TRUE}, all normalisation checks
 #'   and pre-normalisation steps are bypassed and \code{x} is plotted as
 #'   supplied. Default is \code{FALSE}. \strong{Note:} Setting this to
@@ -75,9 +75,16 @@
 #'   gives an explicit sequence. \code{"alphanumeric"} sorts lexicographically.
 #'   \code{NULL} (default) preserves natural order of appearance in
 #'   \code{metadata}.
+#' @param group_brackets A formula or \code{NULL}. Draws bracket annotations
+#'   beneath (or beside, when \code{abundance_in_y = FALSE}) the bars to
+#'   visually group individual samples by a metadata variable. Specify as a
+#'   one-sided formula of the form \code{GroupCol ~ c("Level1", "Level2")},
+#'   where \code{GroupCol} is a column in \code{metadata} and the right-hand
+#'   side gives the display order of the groups. \strong{Cannot be used when
+#'   \code{group_aggregate = TRUE}.} Default is \code{NULL}.
 #' @param angle Numeric or \code{NULL}. Rotation angle (0--360 degrees) for
 #'   sample/group tick labels. \code{NULL} (default): \code{0} when
-#'   \code{group_aggregate} is non-\code{NULL}, \code{45} otherwise.
+#'   \code{group_aggregate = TRUE}, \code{45} otherwise.
 #' @param abundance_in_y Logical. If \code{TRUE} (default), relative abundance
 #'   is on the y-axis and samples/groups are on the x-axis. If \code{FALSE},
 #'   axes are flipped: relative abundance on the x-axis, samples/groups on the
@@ -92,6 +99,9 @@
 #' @param italicize_legend_items Logical. Render legend labels in italic.
 #'   Requires \code{ggtext}; falls back to \code{element_text(face = "italic")}
 #'   with a warning. Default \code{FALSE}.
+#' @param exclude_unknown Logical. If \code{TRUE}, any feature whose name is
+#'   exactly \code{"unknown"} (case-insensitive) is omitted from the plot
+#'   entirely. Default is \code{FALSE}.
 #' @param exclude_others Logical. If \code{TRUE}, the \code{"Others"} category
 #'   is omitted from the plot entirely. Default \code{FALSE}.
 #' @param unknown_before_others Logical. If \code{TRUE} (default), any feature
@@ -138,11 +148,23 @@
 #' by total are retained instead.
 #'
 #' \strong{Normalisation flow.} When \code{ignore_normalization = FALSE} and
-#' \code{normalize_to_relabund = TRUE}, row-relative abundance is applied
-#' via \code{run_normalize(method = "row_rel_abundance")} before any aggregation
-#' or ranking. Row-wise proportions are then computed so each bar sums to 100\%. When
-#' \code{ignore_normalization = TRUE}, the data are plotted as supplied and the
-#' y-axis label should be interpreted accordingly.
+#' \code{normalize_to_relabund = TRUE}, row-relative abundance is applied via
+#' \code{run_normalize(method = "row_rel_abundance")} before any aggregation or
+#' ranking. Row-wise proportions are then computed so each bar sums to 100\%.
+#' When \code{ignore_normalization = TRUE}, the data are plotted as supplied
+#' and the y-axis label should be interpreted accordingly.
+#'
+#' \strong{Group aggregation.} When \code{group_aggregate = TRUE}, all rows
+#' belonging to the same level of \code{show_x_as} are summed (raw counts),
+#' and the result is then normalised to row-wise relative abundances. This is
+#' incompatible with \code{group_brackets}.
+#'
+#' \strong{Group brackets.} When \code{group_brackets} is supplied (and
+#' \code{group_aggregate = FALSE}), bracket annotations are drawn below each
+#' set of sample bars that belong to the same group, with the group label
+#' centred beneath the bracket. The formula right-hand side controls both
+#' which groups appear and their left-to-right order. Any group present in
+#' \code{metadata} but absent from the right-hand side is appended at the end.
 #'
 #' \strong{Legend reversal when flipped.} When \code{abundance_in_y = FALSE},
 #' \code{coord_flip()} causes the stack to render left-to-right. The legend
@@ -170,7 +192,7 @@
 #'   Group    = rep(c("Control", "Treatment"), each = n / 2L)
 #' )
 #'
-#' # --- Pipeline: col_rel_abundance → CLR → plot as-is ---
+#' # --- Pipeline: col_rel_abundance -> CLR -> plot as-is ---
 #' norm_out <- run_normalize(counts, meta, method = "col_rel_abundance",
 #'                           verbose = FALSE)
 #' clr_out  <- run_transform(norm_out$data, method = "clr")
@@ -183,12 +205,12 @@
 #'   plot_title           = "Gut Microbiome (CLR-transformed)"
 #' )
 #'
-#' # --- Group-aggregated from raw counts, bold title ---
+#' # --- Group-aggregated from raw counts (group_aggregate = TRUE) ---
 #' plot_relabund(
 #'   x               = counts,
 #'   metadata        = meta,
 #'   show_x_as       = "Group",
-#'   group_aggregate = "mean",
+#'   group_aggregate = TRUE,
 #'   order           = c("Treatment", "Control"),
 #'   limit           = 8L,
 #'   sort            = "high",
@@ -196,12 +218,26 @@
 #'   legend_title    = "Phylum"
 #' )
 #'
-#' # --- Horizontal bars ---
+#' # --- Individual samples with group brackets (group_aggregate = FALSE) ---
+#' plot_relabund(
+#'   x                = counts,
+#'   metadata         = meta,
+#'   show_x_as        = "SampleID",
+#'   group_aggregate  = FALSE,
+#'   group_brackets   = Group ~ c("Control", "Treatment"),
+#'   limit            = 8L,
+#'   sort             = "high",
+#'   plot_title       = "Relative Abundance by Sample",
+#'   legend_title     = "Phylum"
+#' )
+#'
+#' # --- Horizontal bars, individual samples, group brackets ---
 #' plot_relabund(
 #'   x                     = counts,
 #'   metadata              = meta,
-#'   show_x_as             = "Group",
-#'   group_aggregate       = "mean",
+#'   show_x_as             = "SampleID",
+#'   group_aggregate       = FALSE,
+#'   group_brackets        = Group ~ c("Control", "Treatment"),
 #'   limit                 = 6L,
 #'   exclude_others        = FALSE,
 #'   unknown_before_others = TRUE,
@@ -225,16 +261,18 @@ plot_relabund <- function(
     sort                   = NULL,
     others_position        = NULL,
     show_x_as              = NULL,
-    group_aggregate        = NULL,
+    group_aggregate        = FALSE,
     normalize_to_relabund  = TRUE,
     ignore_normalization   = FALSE,
     order                  = NULL,
+    group_brackets         = NULL,
     angle                  = NULL,
     abundance_in_y         = TRUE,
     legend_position        = NULL,
     legend_nrow            = NULL,
     legend_ncol            = NULL,
     italicize_legend_items = FALSE,
+    exclude_unknown        = FALSE,
     exclude_others         = FALSE,
     unknown_before_others  = TRUE,
     theme                  = "nature",
@@ -342,6 +380,36 @@ plot_relabund <- function(
   # ---------------------------------------------------------------------------
   # 5. Validate remaining scalar arguments
   # ---------------------------------------------------------------------------
+
+  # --- group_brackets: single authoritative validation block ---
+  if (!is.null(group_brackets)) {
+    if (isTRUE(group_aggregate))
+      stop("'group_brackets' can only be used when 'group_aggregate' is FALSE (plotting individual samples).")
+
+    if (inherits(group_brackets, "formula")) {
+      gb_formula <- group_brackets
+    } else if (is.list(group_brackets) &&
+               length(group_brackets) > 0L &&
+               inherits(group_brackets[[1L]], "formula")) {
+      gb_formula <- group_brackets[[1L]]
+    } else {
+      stop("'group_brackets' must be a formula (e.g., Group ~ c('Control', 'Case')) or a list containing one.")
+    }
+
+    gb_lhs <- all.vars(gb_formula[[2L]])
+    if (length(gb_lhs) != 1L)
+      stop("The left-hand side of 'group_brackets' must specify exactly one column name.")
+    gb_col <- gb_lhs
+
+    if (!gb_col %in% names(metadata))
+      stop("Column '", gb_col, "' specified in 'group_brackets' not found in 'metadata'.")
+
+    gb_rhs <- eval(gb_formula[[3L]], envir = parent.frame())
+    if (!is.character(gb_rhs) && !is.factor(gb_rhs))
+      stop("The right-hand side of 'group_brackets' must evaluate to a character or factor vector.")
+    gb_rhs <- as.character(gb_rhs)
+  }
+
   if (!is.null(limit)) {
     .check_pos_int(limit, "limit")
     limit <- as.integer(limit)
@@ -367,15 +435,10 @@ plot_relabund <- function(
       stop("'others_position' must be 'first', 'last', or NULL.")
   }
 
-  if (!is.null(group_aggregate)) {
-    if (!is.character(group_aggregate) || length(group_aggregate) != 1L ||
-        !group_aggregate %in% c("mean", "median"))
-      stop("'group_aggregate' must be 'mean', 'median', or NULL.")
-  }
-
-  for (lname in c("normalize_to_relabund", "ignore_normalization",
-                  "abundance_in_y", "italicize_legend_items",
-                  "exclude_others", "unknown_before_others")) {
+  for (lname in c("group_aggregate", "normalize_to_relabund",
+                  "ignore_normalization", "abundance_in_y",
+                  "italicize_legend_items", "exclude_others",
+                  "unknown_before_others")) {
     val <- get(lname)
     if (!is.logical(val) || length(val) != 1L)
       stop("'", lname, "' must be a single logical value (TRUE or FALSE).")
@@ -386,8 +449,9 @@ plot_relabund <- function(
       stop("'order' must be a character vector, 'alphanumeric', or NULL.")
   }
 
+  # angle default: 0 when aggregating by group, 45 for individual samples
   if (is.null(angle)) {
-    angle <- if (!is.null(group_aggregate)) 0L else 45L
+    angle <- if (isTRUE(group_aggregate)) 0L else 45L
   } else {
     if (!is.numeric(angle) || length(angle) != 1L || is.na(angle))
       stop("'angle' must be a single numeric value (0-360) or NULL.")
@@ -439,7 +503,7 @@ plot_relabund <- function(
                            abs(row_sums_check - 1) < .Machine$double.eps^0.5)
 
   if (!ignore_normalization) {
-    if (is.null(group_aggregate)) {
+    if (!isTRUE(group_aggregate)) {
       not_norm_rows <- which(!(row_sums_check == 0 |
                                  abs(row_sums_check - 1) < .Machine$double.eps^0.5))
       if (length(not_norm_rows) > 0L)
@@ -465,12 +529,12 @@ plot_relabund <- function(
   }
 
   # ---------------------------------------------------------------------------
-  # 7. Optional pre-normalisation (col_rel_abundance)
+  # 7. Optional pre-normalisation (row_rel_abundance)
   # ---------------------------------------------------------------------------
   needs_prenorm <- !ignore_normalization &&
     normalize_to_relabund &&
     !already_normed &&
-    (!is.null(group_aggregate) ||
+    (isTRUE(group_aggregate) ||
        (!is.null(sort) && sort %in% c("high", "low")))
 
   if (needs_prenorm) {
@@ -492,7 +556,6 @@ plot_relabund <- function(
         verbose  = FALSE
       )
       x <- as.data.frame(norm_result$data, check.names = FALSE)
-      col_sums <- colSums(x, na.rm = TRUE)
       message(
         "Row-wise relative abundance normalisation applied via ",
         "run_normalize() before aggregation/ranking."
@@ -505,12 +568,11 @@ plot_relabund <- function(
   # ---------------------------------------------------------------------------
   group_var <- as.character(metadata[[show_x_as]])
 
-  if (!is.null(group_aggregate)) {
-    agg_fun    <- if (group_aggregate == "mean") base::mean else stats::median
+  if (isTRUE(group_aggregate)) {
     grp_levels <- unique(group_var)
     agg_mat    <- do.call(rbind, lapply(grp_levels, function(g) {
       rows <- which(group_var == g)
-      vapply(x[rows, , drop = FALSE], agg_fun, numeric(1L), na.rm = TRUE)
+      vapply(x[rows, , drop = FALSE], base::sum, numeric(1L), na.rm = TRUE)
     }))
     x           <- as.data.frame(agg_mat, check.names = FALSE)
     colnames(x) <- x_cols
@@ -520,45 +582,58 @@ plot_relabund <- function(
   n_samples <- nrow(x)
 
   # ---------------------------------------------------------------------------
-  # 9. Feature selection by total abundance
-  #    "high" / NULL / "alphanumeric" → top `limit` by total (descending)
-  #    "low"                          → bottom `limit` by total (ascending)
+  # 9. Feature selection by total abundance & handling sort = "low"
   # ---------------------------------------------------------------------------
-  col_totals <- colSums(x, na.rm = TRUE)   # rank by TOTAL, not mean
+  col_totals <- colSums(x, na.rm = TRUE)
   n_features <- length(col_totals)
   has_others <- FALSE
 
   if (!is.null(limit) && limit < n_features) {
     if (!is.null(sort) && sort == "low") {
-      # Bottom `limit` lowest-total features
-      selected_idx <- order(col_totals, decreasing = FALSE)[seq_len(limit)]
+      selected_idx      <- base::order(col_totals, decreasing = FALSE)[seq_len(limit)]
+      selected_features <- x_cols[selected_idx]
+
+      row_sums_full                      <- rowSums(x, na.rm = TRUE)
+      row_sums_full[row_sums_full == 0]  <- NA
+      rel_full <- x / row_sums_full
+
+      rel_x         <- rel_full[, selected_features, drop = FALSE]
+      row_sums_sub  <- rowSums(rel_x, na.rm = TRUE)
+      row_sums_sub[row_sums_sub == 0] <- NA
+      rel_x         <- rel_x / row_sums_sub
+
+      message("With sort = 'low', selected low-abundance features have been re-normalised to 100% among themselves to maximize visibility.")
+      has_others <- FALSE
     } else {
-      # Top `limit` highest-total features (default / "high" / "alphanumeric")
-      selected_idx <- order(col_totals, decreasing = TRUE)[seq_len(limit)]
-    }
-    selected_features <- x_cols[selected_idx]
-    other_cols        <- setdiff(x_cols, selected_features)
+      selected_idx      <- base::order(col_totals, decreasing = TRUE)[seq_len(limit)]
+      selected_features <- x_cols[selected_idx]
+      other_cols        <- setdiff(x_cols, selected_features)
 
-    # Row-wise relative abundances on full data first, then extract
-    row_sums_full <- rowSums(x, na.rm = TRUE)
-    row_sums_full[row_sums_full == 0] <- NA
-    rel_full <- x / row_sums_full
+      row_sums_full                     <- rowSums(x, na.rm = TRUE)
+      row_sums_full[row_sums_full == 0] <- NA
+      rel_full <- x / row_sums_full
 
-    rel_x      <- rel_full[, selected_features, drop = FALSE]
-    others_vec <- rowSums(rel_full[, other_cols, drop = FALSE], na.rm = TRUE)
+      rel_x      <- rel_full[, selected_features, drop = FALSE]
+      others_vec <- rowSums(rel_full[, other_cols, drop = FALSE], na.rm = TRUE)
 
-    if (!exclude_others) {
-      rel_x[["Others"]] <- others_vec
-      has_others <- TRUE
+      if (!exclude_others) {
+        rel_x[["Others"]] <- others_vec
+        has_others <- TRUE
+      }
     }
   } else {
-    # No limit or limit == n_features: normalise all columns
-    row_sums_full <- rowSums(x, na.rm = TRUE)
+    row_sums_full                     <- rowSums(x, na.rm = TRUE)
     row_sums_full[row_sums_full == 0] <- NA
     rel_x <- x / row_sums_full
   }
 
-  # Warn if any row is entirely NA after normalisation
+  # --- Apply exclude_unknown ---
+  if (exclude_unknown) {
+    unknown_cols <- colnames(rel_x)[tolower(colnames(rel_x)) == "unknown"]
+    if (length(unknown_cols) > 0L)
+      rel_x <- rel_x[, !colnames(rel_x) %in% unknown_cols, drop = FALSE]
+  }
+
   all_na_rows <- which(rowSums(!is.na(rel_x)) == 0L)
   if (length(all_na_rows) > 0L)
     warning(
@@ -567,8 +642,7 @@ plot_relabund <- function(
       "(possible zero-sum rows)."
     )
 
-  feat_names    <- colnames(rel_x)
-  feat_totals   <- col_totals[feat_names[feat_names != "Others"]]
+  feat_names  <- colnames(rel_x)
 
   # ---------------------------------------------------------------------------
   # 10. Fill level ordering
@@ -576,7 +650,6 @@ plot_relabund <- function(
   non_others <- feat_names[feat_names != "Others"]
 
   fill_levels_base <- if (is.null(sort)) {
-    # Preserve original column order of x, restricted to selected features
     x_cols[x_cols %in% non_others]
   } else if (sort == "alphanumeric") {
     base::sort(non_others)
@@ -586,29 +659,19 @@ plot_relabund <- function(
     names(base::sort(col_totals[non_others], decreasing = FALSE))
   }
 
-  # --- unknown_before_others: exact whole-name match, case-insensitive ---
   if (unknown_before_others) {
-    unknown_hits <- fill_levels_base[tolower(fill_levels_base) == "unknown"]
-    if (length(unknown_hits) > 0L) {
-      fill_levels_base <- fill_levels_base[
-        tolower(fill_levels_base) != "unknown"
-      ]
-      # Will be inserted at the correct position below
-    }
+    unknown_hits     <- fill_levels_base[tolower(fill_levels_base) == "unknown"]
+    fill_levels_base <- fill_levels_base[tolower(fill_levels_base) != "unknown"]
   } else {
     unknown_hits <- character(0L)
   }
 
-  # Assemble final fill levels
   fill_levels <- if (has_others) {
-    # [non-unknown features] + [unknowns] + ["Others"]
     c(fill_levels_base, unknown_hits, "Others")
   } else {
-    # No Others → unknowns go last
     c(fill_levels_base, unknown_hits)
   }
 
-  # --- others_position override (applied after unknown placement) ---
   if (has_others && !is.null(others_position)) {
     fill_levels <- fill_levels[fill_levels != "Others"]
     fill_levels <- if (others_position == "first") {
@@ -618,37 +681,74 @@ plot_relabund <- function(
     }
   }
 
-  # Safety: keep only names that actually exist in rel_x
   fill_levels <- fill_levels[fill_levels %in% colnames(rel_x)]
 
   # ---------------------------------------------------------------------------
   # 11. X-axis ordering
   # ---------------------------------------------------------------------------
-  if (!is.null(order) && !identical(order, "alphanumeric")) {
-    missing_lev <- setdiff(order, group_var)
-    if (length(missing_lev) > 0L)
-      warning("Value(s) in 'order' not found in '", show_x_as, "': ",
-              paste(missing_lev, collapse = ", "), ". Ignored.")
-    order <- order[order %in% group_var]
-    extra_lev <- setdiff(group_var, order)
-    if (length(extra_lev) > 0L) {
-      warning("Sample/group label(s) not in 'order' will be appended: ",
-              paste(extra_lev, collapse = ", "), ".")
-      order <- c(order, extra_lev)
+  if (!is.null(group_brackets)) {
+    current_grp_values <- unique(as.character(metadata[[gb_col]]))
+    expected_order     <- gb_rhs[gb_rhs %in% current_grp_values]
+    missing_from_rhs   <- setdiff(current_grp_values, expected_order)
+
+    if (length(missing_from_rhs) > 0L)
+      expected_order <- c(expected_order, missing_from_rhs)
+
+    sample_groups_natural <- as.character(metadata[[gb_col]])
+    runs_natural          <- rle(sample_groups_natural)
+
+    if (identical(runs_natural$values, expected_order)) {
+      if (!is.null(order) && !identical(order, "alphanumeric")) {
+        missing_lev <- setdiff(order, group_var)
+        if (length(missing_lev) > 0L)
+          warning("Value(s) in 'order' not found in '", show_x_as, "': ",
+                  paste(missing_lev, collapse = ", "), ". Ignored.")
+        order     <- order[order %in% group_var]
+        extra_lev <- setdiff(group_var, order)
+        if (length(extra_lev) > 0L) {
+          warning("Sample/group label(s) not in 'order' will be appended: ",
+                  paste(extra_lev, collapse = ", "), ".")
+          order <- c(order, extra_lev)
+        }
+        x_levels <- order
+      } else if (identical(order, "alphanumeric")) {
+        x_levels <- base::sort(unique(group_var))
+      } else {
+        x_levels <- unique(group_var)
+      }
+    } else {
+      # Reorder samples so groups are contiguous per gb_rhs sequence
+      sample_order_idx <- base::order(                    # explicit base::order — avoids collision with `order` param
+        match(as.character(metadata[[gb_col]]), expected_order)
+      )
+      x_levels <- unique(as.character(metadata[[show_x_as]])[sample_order_idx])
     }
-    x_levels <- order
-  } else if (identical(order, "alphanumeric")) {
-    x_levels <- base::sort(unique(group_var))
+
   } else {
-    x_levels <- unique(group_var)
+    if (!is.null(order) && !identical(order, "alphanumeric")) {
+      missing_lev <- setdiff(order, group_var)
+      if (length(missing_lev) > 0L)
+        warning("Value(s) in 'order' not found in '", show_x_as, "': ",
+                paste(missing_lev, collapse = ", "), ". Ignored.")
+      order     <- order[order %in% group_var]
+      extra_lev <- setdiff(group_var, order)
+      if (length(extra_lev) > 0L) {
+        warning("Sample/group label(s) not in 'order' will be appended: ",
+                paste(extra_lev, collapse = ", "), ".")
+        order <- c(order, extra_lev)
+      }
+      x_levels <- order
+    } else if (identical(order, "alphanumeric")) {
+      x_levels <- base::sort(unique(group_var))
+    } else {
+      x_levels <- unique(group_var)
+    }
   }
 
   # ---------------------------------------------------------------------------
   # 12. Build long-format data frame — manual pivot (supports special chars)
   # ---------------------------------------------------------------------------
-  # Use integer indices to avoid any column-name mangling
   n_feats  <- length(feat_names)
-  n_groups <- length(x_levels)
 
   long_sample  <- rep(group_var,       times = n_feats)
   long_feature <- rep(feat_names, each = n_samples)
@@ -658,14 +758,13 @@ plot_relabund <- function(
   )
 
   long_df <- data.frame(
-    .sample   = factor(long_sample,  levels = x_levels),
-    .feature  = factor(long_feature, levels = fill_levels),
+    .sample    = factor(long_sample,  levels = x_levels),
+    .feature   = factor(long_feature, levels = fill_levels),
     .abundance = long_abund,
     stringsAsFactors = FALSE,
-    check.names = FALSE
+    check.names      = FALSE
   )
 
-  # Drop NAs introduced by zero-sum rows (geom_bar will warn otherwise)
   long_df <- long_df[!is.na(long_df[[".abundance"]]), , drop = FALSE]
 
   # ---------------------------------------------------------------------------
@@ -731,9 +830,6 @@ plot_relabund <- function(
   if (is.null(legend_position))
     legend_position <- if (abundance_in_y) "top" else "right"
 
-  # When flipped (abundance_in_y = FALSE), coord_flip renders the stack
-  # left-to-right. Reverse fill_levels for scale_fill_manual so the legend
-  # reads top-to-bottom matching the visual top-to-bottom of the stacked bars.
   fill_levels_legend <- if (!abundance_in_y) rev(fill_levels) else fill_levels
   fill_colors_legend <- fill_colors[fill_levels_legend]
 
@@ -743,13 +839,11 @@ plot_relabund <- function(
   x_axis_label <- if (is.null(xlab)) show_x_as else xlab
 
   if (abundance_in_y) {
-    labs_x <- x_axis_label    # samples → bottom axis
-    labs_y <- ylab             # abundance → left axis
+    labs_x <- x_axis_label
+    labs_y <- ylab
   } else {
-    # After coord_flip: ggplot x maps to the left (vertical) axis,
-    #                   ggplot y maps to the bottom (horizontal) axis.
-    labs_x <- ylab             # abundance → bottom axis
-    labs_y <- x_axis_label     # samples → left axis
+    labs_x <- ylab
+    labs_y <- x_axis_label
   }
 
   # ---------------------------------------------------------------------------
@@ -808,10 +902,6 @@ plot_relabund <- function(
   angle_rad    <- angle * pi / 180
   extra_margin <- ceiling(r_axis_text * abs(sin(angle_rad)) * 0.8)
 
-  # Tick label text elements
-  # abundance_in_y = TRUE  → sample labels on x-axis (bottom): rotate axis.text.x
-  # abundance_in_y = FALSE → after coord_flip, sample labels on y-axis (left):
-  #                           rotate axis.text.y
   text_x_el <- ggplot2::element_text(
     size   = r_axis_text,
     family = font_family,
@@ -827,7 +917,6 @@ plot_relabund <- function(
     vjust  = 0.5
   )
 
-  # Axis title margin to prevent overlap with rotated tick labels
   axis_title_x_el <- ggplot2::element_text(
     size   = r_xlab_size,
     family = font_family,
@@ -895,8 +984,15 @@ plot_relabund <- function(
     ) +
     ggplot2::scale_x_discrete(limits = x_levels) +
     ggplot2::scale_y_continuous(
-      expand = ggplot2::expansion(mult = c(0, 0.02)),
-      labels = function(v) paste0(round(v * 100, 0), "%")
+      limits = if (!is.null(group_brackets)) c(-0.15, 1.02) else NULL,
+      expand = if (!is.null(group_brackets)) c(0, 0) else ggplot2::expansion(mult = c(0, 0.02)),
+      labels = function(v) {
+        if (!is.null(group_brackets)) {
+          ifelse(v >= 0, paste0(round(v * 100, 0), "%"), "")
+        } else {
+          paste0(round(v * 100, 0), "%")
+        }
+      }
     ) +
     ggplot2::labs(
       title    = plot_title,
@@ -925,6 +1021,55 @@ plot_relabund <- function(
     )
 
   if (!abundance_in_y) p <- p + ggplot2::coord_flip()
+
+  # ---------------------------------------------------------------------------
+  # 21.5. Render group brackets (if supplied)
+  # ---------------------------------------------------------------------------
+  if (!is.null(group_brackets)) {
+    sample_to_group <- data.frame(
+      sample = x_levels,
+      group  = as.character(
+        metadata[[gb_col]][match(x_levels, as.character(metadata[[show_x_as]]))]
+      ),
+      stringsAsFactors = FALSE
+    )
+
+    runs      <- rle(sample_to_group$group)
+    end_pos   <- cumsum(runs$lengths)
+    start_pos <- end_pos - runs$lengths + 1
+
+    bracket_df <- data.frame(
+      group = runs$values,
+      start = start_pos,
+      end   = end_pos,
+      stringsAsFactors = FALSE
+    )
+
+    for (i in seq_len(nrow(bracket_df))) {
+      b_start <- bracket_df$start[i] - 0.45
+      b_end   <- bracket_df$end[i]   + 0.45
+      b_mid   <- (b_start + b_end) / 2
+      b_label <- bracket_df$group[i]
+
+      if (abundance_in_y) {
+        p <- p +
+          ggplot2::annotate("segment", x = b_start, xend = b_end,   y = -0.06, yend = -0.06, color = "black", linewidth = 0.6) +
+          ggplot2::annotate("segment", x = b_start, xend = b_start, y = -0.06, yend = -0.03, color = "black", linewidth = 0.6) +
+          ggplot2::annotate("segment", x = b_end,   xend = b_end,   y = -0.06, yend = -0.03, color = "black", linewidth = 0.6) +
+          ggplot2::annotate("text",    x = b_mid,   y = -0.11,      label = b_label,
+                            fontface = "bold", size = r_axis_text * 0.353,
+                            family = font_family, vjust = 0.5)
+      } else {
+        p <- p +
+          ggplot2::annotate("segment", x = b_start, xend = b_end,   y = -0.06, yend = -0.06, color = "black", linewidth = 0.6) +
+          ggplot2::annotate("segment", x = b_start, xend = b_start, y = -0.06, yend = -0.03, color = "black", linewidth = 0.6) +
+          ggplot2::annotate("segment", x = b_end,   xend = b_end,   y = -0.06, yend = -0.03, color = "black", linewidth = 0.6) +
+          ggplot2::annotate("text",    x = b_mid,   y = -0.11,      label = b_label,
+                            fontface = "bold", size = r_axis_text * 0.353,
+                            family = font_family, angle = 90, vjust = 0.5)
+      }
+    }
+  }
 
   # ---------------------------------------------------------------------------
   # 22. Draw and return
