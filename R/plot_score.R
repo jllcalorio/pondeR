@@ -713,7 +713,40 @@ plot_score.run_pca <- function(
 
 #' @rdname plot_score
 #' @export
-plot_score.run_pls <- plot_score.run_pca
+plot_score.run_pls <- function(res, pc = c(1, 2), ...) {
+  p <- plot_score.run_pca(res = res, pc = pc, ...)
+
+  if (is.numeric(pc)) {
+    pc_x <- as.integer(pc[1L]); pc_y <- as.integer(pc[2L])
+  } else {
+    pc_x <- as.integer(gsub("PC", "", pc[1L], ignore.case = TRUE))
+    pc_y <- as.integer(gsub("PC", "", pc[2L], ignore.case = TRUE))
+  }
+
+  ve <- res$variance_explained
+
+  # Only relabel axes for OPLS-DA; other methods use generic component labels
+  if (res$method_used == "oplsda") {
+    .fmt_pls_label <- function(idx, val) {
+      if (idx == 1L) {
+        sprintf("Predictive Score t[1] (%.1f%%)", val)
+      } else {
+        sprintf("Orthogonal Score to[%d] (%.1f%%)", idx - 1L, val)
+      }
+    }
+    p <- p + ggplot2::labs(
+      x = .fmt_pls_label(pc_x, ve[pc_x]),
+      y = .fmt_pls_label(pc_y, ve[pc_y])
+    )
+  } else if (res$method_used %in% c("plsda", "splsda")) {
+    p <- p + ggplot2::labs(
+      x = sprintf("Component %d (%.1f%%)", pc_x, ve[pc_x]),
+      y = sprintf("Component %d (%.1f%%)", pc_y, ve[pc_y])
+    )
+  }
+
+  return(p)
+}
 
 # ==============================================================================
 # HELPER FUNCTIONS FOR OUTLIER DETECTION
@@ -886,6 +919,15 @@ plot_score.run_pcoa <- function(
       ))
     }
 
+    # 1.1 PERMDISP line
+    if (!is.null(res$permdisp)) {
+      p_val_disp <- res$permdisp$tab[["Pr(>F)"]][1]
+      sub_parts <- c(sub_parts, sprintf(
+        "Dispersion test (PERMDISP): p = %s",
+        .fmt_p_sub(p_val_disp)
+      ))
+    }
+
     # 2. Determine number of levels in the rhs grouping variable
     n_levels <- NA_integer_
     if (!is.null(res$permanova) && !missing(metadata)) {
@@ -974,8 +1016,8 @@ plot_score.run_pcoa <- function(
   # ── 5. Re-label axes to "PCo" convention ────────────────────────────────────
   ve <- res$variance_explained
   p  <- p + ggplot2::labs(
-    x = sprintf("PC%d (%.1f%%)", pc_x, ve[pc_x]),
-    y = sprintf("PC%d (%.1f%%)", pc_y, ve[pc_y])
+    x = sprintf("PCoA%d (%.1f%%)", pc_x, ve[pc_x]),
+    y = sprintf("PCoA%d (%.1f%%)", pc_y, ve[pc_y])
   )
 
   return(p)
