@@ -17,6 +17,7 @@ Imports:
     BiocParallel,
     car,
     caret,
+    contentValidity,
     doParallel,
     dplyr,
     effectsize,
