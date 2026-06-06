@@ -12,41 +12,73 @@
 #' output indicates whether Firth's correction was applied to each model. Output is formatted as
 #' a clean data frame.
 #'
+#' When \code{crude = TRUE}, a separate simple logistic regression is fitted for each variable
+#' in \code{indep} against \code{y}, producing unadjusted (crude) odds ratios. Results are
+#' stacked into a single tidy data frame. The \code{confounders} and \code{iterate} arguments
+#' are ignored in this mode.
+#'
 #' @param x A data frame, matrix, or tibble containing the dataset.
 #' @param y A string specifying the valid, categorical column name in \code{x} to be used as the dependent variable.
-#' @param confounders A character vector of valid column names in \code{x} to be used as confounding factors. Default is \code{NULL}.
-#' @param indep A character vector of valid column names in \code{x} to be used as independent variables. Default is \code{NULL}.
+#' @param confounders A character vector of valid column names in \code{x} to be used as confounding factors.
+#'   Ignored when \code{crude = TRUE} (a warning is emitted). Default is \code{NULL}.
+#' @param indep A character vector of valid column names in \code{x} to be used as independent variables.
+#'   When \code{crude = TRUE}, each variable is modelled individually against \code{y}.
+#'   Default is \code{NULL}.
 #' @param ref A string specifying the valid category of \code{y} to be used as the reference category.
 #' @param ref_levels A list of two-sided formulas mapping categorical predictor column names to their
 #'   desired reference categories. The left-hand side must be a valid column name of \code{x} (quoted
 #'   as a string), and the right-hand side must be a valid category of that column
-#'   (e.g., \code{list("Sex" ~ "Female", "District" ~ "North")}). Default is \code{NULL}.
+#'   (e.g., \code{list("Sex" ~ "Female", "District" ~ "North")}). Applied in both standard and
+#'   crude modes. Default is \code{NULL}.
 #' @param remove A list of two-sided formulas specifying categories to drop from predictor variables
 #'   before analysis. The left-hand side must be a valid column name of \code{x} (quoted as a string),
 #'   and the right-hand side must be a valid category of that column to be removed. Multiple mappings
 #'   may target the same column to remove multiple categories
-#'   (e.g., \code{list("Sex" ~ "Unknown", "District" ~ "Other")}). Default is \code{NULL}.
-#' @param exclude A character vector of categories in \code{y} to drop before analysis. Default is \code{NULL}.
+#'   (e.g., \code{list("Sex" ~ "Unknown", "District" ~ "Other")}). Applied in both standard and
+#'   crude modes. Default is \code{NULL}.
+#' @param exclude A character vector of categories in \code{y} to drop before analysis. Applied in
+#'   both standard and crude modes. Default is \code{NULL}.
 #' @param iterate Logical; if \code{FALSE} (default), combines \code{confounders} and \code{indep}
 #'   into a single model. If \code{TRUE}, fits separate models for all possible combinations of
-#'   \code{indep} added to \code{confounders}.
+#'   \code{indep} added to \code{confounders}. Ignored when \code{crude = TRUE}.
+#' @param crude Logical; if \code{TRUE}, fits a separate simple (unadjusted) logistic regression
+#'   for each variable in \code{indep} against \code{y}, producing crude odds ratios. Results are
+#'   stacked into a single tidy data frame with the same column structure as the standard output.
+#'   \code{confounders} and \code{iterate} are ignored in this mode (a warning is emitted if
+#'   \code{confounders} is non-\code{NULL}). All other parameters (\code{ref}, \code{ref_levels},
+#'   \code{remove}, \code{exclude}, \code{add_vif}, \code{apply_firth},
+#'   \code{force_apply_firth}) remain applicable. Default is \code{FALSE}.
 #' @param add_vif Logical; if \code{TRUE} (default), adds Variance Inflation Factor (VIF) values
 #'   to the output. VIFs are computed via \code{car::vif()}, which returns GVIF for categorical
 #'   predictors and standard VIF for continuous predictors, consistent with jamovi's output.
 #'   Note that VIF is computed from a standard \code{glm()} fit even when Firth's correction is
-#'   applied, as \code{car::vif()} does not support \code{logistf} objects.
+#'   applied, as \code{car::vif()} does not support \code{logistf} objects. In crude mode,
+#'   VIF is not meaningful for simple (one-predictor) models and will be \code{NA} throughout.
 #' @param apply_firth Logical; if \code{TRUE} (default), Firth's bias-reduced penalized-likelihood
 #'   logistic regression (\code{logistf::logistf()}) is applied \emph{selectively} — only to models
 #'   where at least one predictor variable has a zero cell count in its cross-tabulation with the
 #'   outcome. Models with no zero cells are fitted using standard \code{glm()} regardless of this
-#'   setting. A logical column \code{Firth Corrected} is added to the \code{Metrics} table
-#'   (and attached metrics for \code{iterate = FALSE}) indicating whether Firth's correction was
-#'   applied to each model.
+#'   setting. A logical column \code{Firth Corrected} is added to the output indicating whether
+#'   Firth's correction was applied to each model. Applicable in both standard and crude modes.
 #' @param force_apply_firth Logical; if \code{TRUE} (default \code{FALSE}), overrides the dynamic
 #'   zero-cell detection of \code{apply_firth} and applies Firth's correction to \emph{all} models
 #'   regardless of whether zero cells are present. Ignored if \code{apply_firth = FALSE}.
+#'   Applicable in both standard and crude modes.
 #'
 #' @details
+#' \strong{Crude odds ratios (\code{crude = TRUE}):} Each variable in \code{indep} is fitted in
+#' a separate simple logistic regression model with \code{y} as the only outcome and no
+#' covariates, yielding unadjusted (crude) odds ratios. All preprocessing steps — category
+#' exclusion (\code{exclude}), predictor category removal (\code{remove}), dependent variable
+#' releveling (\code{ref}), and predictor releveling (\code{ref_levels}) — are applied before
+#' each model is fitted. The results are stacked row-wise into a single tidy data frame. Each
+#' variable's rows are separated by a blank spacer row to visually group the predictors.
+#' Inline model-fit metrics (Deviance, AIC, BIC, and R2 measures) are placed in the first row
+#' of each variable's block (aligned with its intercept row), and \code{NA} elsewhere. Because
+#' each model contains only one predictor, VIF is not meaningful and the \code{VIF} column
+#' will be \code{NA} for all rows. \code{confounders} and \code{iterate} are silently ignored
+#' after emitting a warning.
+#'
 #' When \code{iterate = TRUE}, the function generates all possible combinations (the power set)
 #' of the \code{indep} vector. For example, if \code{indep = c("A", "B", "C")}, the combinations
 #' evaluated alongside \code{confounders} will be: \code{A}, \code{B}, \code{C}, \code{A+B},
@@ -90,16 +122,22 @@
 #'
 #' \strong{Inline model metrics:} Model-fit statistics (Deviance, AIC, BIC, McFadden R2,
 #' CoxSnell R2, Nagelkerke R2, Tjur R2, Firth Corrected) are appended as additional columns to
-#' the right of the \code{VIF} column. Values are placed only in the first row (aligned with the
-#' intercept); all subsequent rows contain \code{NA} for these columns.
+#' the right of the \code{VIF} column. Values are placed only in the first row of each model
+#' block (aligned with the intercept); all subsequent rows contain \code{NA} for these columns.
 #'
 #' @return
-#' If \code{iterate = FALSE}, returns a data frame containing Predictor, Log Odds, Std Error,
-#' p-value, Significance, OR, 95\% CIs, VIF, and inline model metrics (Deviance, AIC, BIC,
-#' McFadden R2, CoxSnell R2, Nagelkerke R2, Tjur R2, Firth Corrected) in the first row.
-#' Model metrics are also attached as \code{attr(result, "model_metrics")}.
+#' If \code{crude = TRUE}, returns a single tidy data frame with rows for all \code{indep}
+#' variables stacked sequentially (separated by blank spacer rows). Columns: Predictor, Log Odds,
+#' Std Error, p-value, Significance, OR, 95\% CI Low, 95\% CI High, VIF (all \code{NA}),
+#' Deviance, AIC, BIC, McFadden R2, CoxSnell R2, Nagelkerke R2, Tjur R2, Firth Corrected.
+#' Inline model metrics are placed in the first (intercept) row of each variable's block.
 #'
-#' If \code{iterate = TRUE}, returns a named list containing:
+#' If \code{crude = FALSE} and \code{iterate = FALSE}, returns a data frame containing Predictor,
+#' Log Odds, Std Error, p-value, Significance, OR, 95\% CIs, VIF, and inline model metrics
+#' (Deviance, AIC, BIC, McFadden R2, CoxSnell R2, Nagelkerke R2, Tjur R2, Firth Corrected) in
+#' the first row. Model metrics are also attached as \code{attr(result, "model_metrics")}.
+#'
+#' If \code{crude = FALSE} and \code{iterate = TRUE}, returns a named list containing:
 #' \describe{
 #'   \item{Tables}{A named list of result data frames, each with inline model metrics in row 1.}
 #'   \item{Metrics}{A data frame comparing model metrics across all combinations.}
@@ -116,12 +154,12 @@
 #' \dontrun{
 #' # --- Example 1: Single model with Firth's correction applied dynamically ---
 #' result <- run_logreg(
-#'   x          = my_data,
-#'   y          = "Outcome",
+#'   x           = my_data,
+#'   y           = "Outcome",
 #'   confounders = c("Age", "Sex"),
-#'   indep      = c("Biomarker_A", "Biomarker_B"),
-#'   ref        = "Control",
-#'   ref_levels = list("Sex" ~ "Female"),
+#'   indep       = c("Biomarker_A", "Biomarker_B"),
+#'   ref         = "Control",
+#'   ref_levels  = list("Sex" ~ "Female"),
 #'   apply_firth = TRUE
 #' )
 #' result
@@ -129,19 +167,31 @@
 #'
 #' # --- Example 2: Iterative models with forced Firth and VIF filtering -------
 #' results <- run_logreg(
-#'   x                = my_data,
-#'   y                = "Outcome",
-#'   confounders      = c("Age", "Sex", "Site"),
-#'   indep            = c("Biomarker_A", "Biomarker_B", "Biomarker_C"),
-#'   ref              = "Control",
-#'   ref_levels       = list("Sex" ~ "Female", "Site" ~ "Main"),
-#'   exclude          = "Indeterminate",
-#'   iterate          = TRUE,
-#'   apply_firth      = TRUE,
+#'   x                 = my_data,
+#'   y                 = "Outcome",
+#'   confounders       = c("Age", "Sex", "Site"),
+#'   indep             = c("Biomarker_A", "Biomarker_B", "Biomarker_C"),
+#'   ref               = "Control",
+#'   ref_levels        = list("Sex" ~ "Female", "Site" ~ "Main"),
+#'   exclude           = "Indeterminate",
+#'   iterate           = TRUE,
+#'   apply_firth       = TRUE,
 #'   force_apply_firth = TRUE
 #' )
 #' results$Metrics
 #' results$vif_filtered_Tables
+#'
+#' # --- Example 3: Crude (unadjusted) odds ratios for each biomarker ----------
+#' crude_results <- run_logreg(
+#'   x           = my_data,
+#'   y           = "Outcome",
+#'   indep       = c("Biomarker_A", "Biomarker_B", "Biomarker_C"),
+#'   ref         = "Control",
+#'   ref_levels  = list("Sex" ~ "Female"),
+#'   crude       = TRUE,
+#'   apply_firth = TRUE
+#' )
+#' crude_results
 #' }
 #'
 #' @author John Lennon L. Calorio
@@ -169,9 +219,9 @@
 #' @importFrom utils combn
 #' @export
 run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels = NULL,
-                       remove = NULL, exclude = NULL, iterate = FALSE, add_vif = TRUE,
-                       apply_firth = TRUE, force_apply_firth = FALSE) {
-  
+                       remove = NULL, exclude = NULL, iterate = FALSE, crude = FALSE,
+                       add_vif = TRUE, apply_firth = TRUE, force_apply_firth = FALSE) {
+
   # --- Integration with run_DIpreprocess ---
   if (inherits(x, "run_DIpreprocess")) {
     target_meta <- if (!is.null(x$metadata_merged)) x$metadata_merged else x$metadata
@@ -186,8 +236,28 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
   x <- as.data.frame(x)
 
   if (!(y %in% names(x))) stop(sprintf("Error: Dependent variable '%s' not found in data.", y))
-  if (is.null(confounders) && is.null(indep)) {
-    stop("Error: Both 'confounders' and 'indep' cannot be NULL at the same time.")
+
+  if (crude) {
+    if (is.null(indep)) {
+      stop("Error: 'indep' must be specified when 'crude = TRUE'.")
+    }
+    if (!is.null(confounders)) {
+      warning(
+        "Constructive Warning: 'confounders' is ignored when 'crude = TRUE'. ",
+        "Crude models are unadjusted (simple) regressions for each variable in 'indep'.",
+        call. = FALSE
+      )
+    }
+    if (iterate) {
+      warning(
+        "Constructive Warning: 'iterate' is ignored when 'crude = TRUE'.",
+        call. = FALSE
+      )
+    }
+  } else {
+    if (is.null(confounders) && is.null(indep)) {
+      stop("Error: Both 'confounders' and 'indep' cannot be NULL at the same time.")
+    }
   }
 
   all_vars <- c(confounders, indep)
@@ -363,7 +433,6 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
     for (col in metric_cols) {
       val <- metrics_row[[col]]
 
-      # Pre-fill entire column with NA of the appropriate type
       if (is.logical(val)) {
         tbl[[col]] <- NA
         tbl[[col]] <- as.logical(tbl[[col]])
@@ -371,7 +440,6 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
         tbl[[col]] <- NA_real_
       }
 
-      # Place the metric value only in row 1
       tbl[[col]][1] <- val
     }
 
@@ -448,54 +516,58 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
     if (add_vif) {
       res_df$VIF <- NA_real_
 
-      vif_mod <- if (is_firth) {
-        tryCatch(
-          stats::glm(mod$formula, data = data, family = stats::binomial(link = "logit")),
-          error = function(e) NULL
-        )
-      } else {
-        mod
-      }
-
-      if (!is.null(vif_mod)) {
-        tryCatch({
-          vif_raw <- car::vif(vif_mod)
-
-          if (is.matrix(vif_raw)) {
-            vif_vec <- setNames(vif_raw[, "GVIF"], rownames(vif_raw))
-          } else {
-            vif_vec <- vif_raw
-          }
-
-          mm          <- stats::model.matrix(vif_mod)
-          assign_idx  <- attr(mm, "assign")
-          term_labels <- attr(stats::terms(vif_mod), "term.labels")
-
-          clean_labels    <- gsub("`", "", term_labels)
-          clean_vif_names <- gsub("`", "", names(vif_vec))
-
-          for (i in seq_len(nrow(res_df))) {
-            cname <- res_df$Predictor[i]
-            if (cname == "(Intercept)") next
-
-            mm_col_idx <- match(cname, colnames(mm))
-            if (is.na(mm_col_idx)) next
-
-            t_idx <- assign_idx[mm_col_idx]
-            if (t_idx == 0) next
-
-            actual_label <- clean_labels[t_idx]
-            v_idx        <- match(actual_label, clean_vif_names)
-
-            if (!is.na(v_idx)) res_df$VIF[i] <- vif_vec[v_idx]
-          }
-        }, error = function(e) {
-          warning(
-            "Constructive Warning: Could not compute VIF. ",
-            "Perfect multicollinearity or a single-predictor model is likely.",
-            call. = FALSE
+      # VIF requires >= 2 predictors; single-predictor models (crude mode) will
+      # always produce NA without attempting a car::vif() call.
+      if (length(pred_vars) >= 2) {
+        vif_mod <- if (is_firth) {
+          tryCatch(
+            stats::glm(mod$formula, data = data, family = stats::binomial(link = "logit")),
+            error = function(e) NULL
           )
-        })
+        } else {
+          mod
+        }
+
+        if (!is.null(vif_mod)) {
+          tryCatch({
+            vif_raw <- car::vif(vif_mod)
+
+            if (is.matrix(vif_raw)) {
+              vif_vec <- setNames(vif_raw[, "GVIF"], rownames(vif_raw))
+            } else {
+              vif_vec <- vif_raw
+            }
+
+            mm          <- stats::model.matrix(vif_mod)
+            assign_idx  <- attr(mm, "assign")
+            term_labels <- attr(stats::terms(vif_mod), "term.labels")
+
+            clean_labels    <- gsub("`", "", term_labels)
+            clean_vif_names <- gsub("`", "", names(vif_vec))
+
+            for (i in seq_len(nrow(res_df))) {
+              cname <- res_df$Predictor[i]
+              if (cname == "(Intercept)") next
+
+              mm_col_idx <- match(cname, colnames(mm))
+              if (is.na(mm_col_idx)) next
+
+              t_idx <- assign_idx[mm_col_idx]
+              if (t_idx == 0) next
+
+              actual_label <- clean_labels[t_idx]
+              v_idx        <- match(actual_label, clean_vif_names)
+
+              if (!is.na(v_idx)) res_df$VIF[i] <- vif_vec[v_idx]
+            }
+          }, error = function(e) {
+            warning(
+              "Constructive Warning: Could not compute VIF. ",
+              "Perfect multicollinearity or a single-predictor model is likely.",
+              call. = FALSE
+            )
+          })
+        }
       }
     }
     # --------------------------------------------------------------------------
@@ -507,84 +579,163 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
   # ---------------------------------------------------------------------------
   # Helper: fit a single model (glm or logistf).
   # ---------------------------------------------------------------------------
-fit_model <- function(form_str, pred_vars, data, combo_name) {
-  use_firth <- FALSE
+  fit_model <- function(form_str, pred_vars, data, combo_name) {
+    use_firth <- FALSE
 
-  # Guard: skip any combo where a predictor has fewer than 2 levels in the
-  # working data. This prevents the "contrasts can be applied only to factors
-  # with 2 or more levels" crash in both glm() and logistf().
-  degenerate <- vapply(pred_vars, function(v) {
-    col <- data[[v]]
-    if (is.factor(col) || is.character(col) || is.numeric(col)) {
-      length(unique(col[!is.na(col)])) < 2L
-    } else {
-      FALSE
-    }
-  }, logical(1))
-
-  if (any(degenerate)) {
-    bad <- pred_vars[degenerate]
-    warning(
-      sprintf(
-        "Constructive Warning: Model '%s' skipped. The following predictor(s) have fewer than ",
-        combo_name
-      ),
-      "2 unique levels in the working data and cannot be used in regression: ",
-      paste(bad, collapse = ", "), ".",
-      call. = FALSE
-    )
-    return(list(mod = NULL, firth_used = FALSE))
-  }
-
-  if (apply_firth) {
-    use_firth <- force_apply_firth || has_zero_cells(pred_vars, data, y)
-  }
-
-  if (use_firth) {
-    mod <- tryCatch(
-      logistf::logistf(stats::as.formula(form_str), data = data, plconf = NULL),
-      error = function(e) {
-        warning(sprintf(
-          "Constructive Warning: Firth model failed for '%s'. Falling back to glm(). Error: %s",
-          combo_name, e$message
-        ), call. = FALSE)
-        NULL
+    degenerate <- vapply(pred_vars, function(v) {
+      col <- data[[v]]
+      if (is.factor(col) || is.character(col) || is.numeric(col)) {
+        length(unique(col[!is.na(col)])) < 2L
+      } else {
+        FALSE
       }
-    )
-    if (is.null(mod)) {
+    }, logical(1))
+
+    if (any(degenerate)) {
+      bad <- pred_vars[degenerate]
+      warning(
+        sprintf(
+          "Constructive Warning: Model '%s' skipped. The following predictor(s) have fewer than ",
+          combo_name
+        ),
+        "2 unique levels in the working data and cannot be used in regression: ",
+        paste(bad, collapse = ", "), ".",
+        call. = FALSE
+      )
+      return(list(mod = NULL, firth_used = FALSE))
+    }
+
+    if (apply_firth) {
+      use_firth <- force_apply_firth || has_zero_cells(pred_vars, data, y)
+    }
+
+    if (use_firth) {
       mod <- tryCatch(
-        stats::glm(stats::as.formula(form_str), data = data,
-                   family = stats::binomial(link = "logit")),
+        logistf::logistf(stats::as.formula(form_str), data = data, plconf = NULL),
         error = function(e) {
           warning(sprintf(
-            "Constructive Warning: glm fallback also failed for '%s'. Error: %s",
+            "Constructive Warning: Firth model failed for '%s'. Falling back to glm(). Error: %s",
             combo_name, e$message
           ), call. = FALSE)
           NULL
         }
       )
-      use_firth <- FALSE
-    }
-  } else {
-    mod <- tryCatch(
-      stats::glm(stats::as.formula(form_str), data = data,
-                 family = stats::binomial(link = "logit")),
-      error = function(e) {
-        warning(sprintf(
-          "Constructive Warning: Model failed for combination '%s'. Error: %s",
-          combo_name, e$message
-        ), call. = FALSE)
-        NULL
+      if (is.null(mod)) {
+        mod <- tryCatch(
+          stats::glm(stats::as.formula(form_str), data = data,
+                     family = stats::binomial(link = "logit")),
+          error = function(e) {
+            warning(sprintf(
+              "Constructive Warning: glm fallback also failed for '%s'. Error: %s",
+              combo_name, e$message
+            ), call. = FALSE)
+            NULL
+          }
+        )
+        use_firth <- FALSE
       }
-    )
+    } else {
+      mod <- tryCatch(
+        stats::glm(stats::as.formula(form_str), data = data,
+                   family = stats::binomial(link = "logit")),
+        error = function(e) {
+          warning(sprintf(
+            "Constructive Warning: Model failed for combination '%s'. Error: %s",
+            combo_name, e$message
+          ), call. = FALSE)
+          NULL
+        }
+      )
+    }
+
+    list(mod = mod, firth_used = use_firth)
   }
 
-  list(mod = mod, firth_used = use_firth)
-}
+  # ---------------------------------------------------------------------------
+  # Helper: build a blank spacer row with the same columns as a result table.
+  # Used in crude mode to visually separate blocks across indep variables.
+  # ---------------------------------------------------------------------------
+  make_spacer_row <- function(tbl) {
+    spacer <- tbl[NA_integer_, , drop = FALSE]
+    spacer[1, ] <- NA
+    spacer$Predictor <- ""
+    rownames(spacer) <- NULL
+    spacer
+  }
 
   # ---------------------------------------------------------------------------
   # 3. Model Execution
   # ---------------------------------------------------------------------------
+
+  # ============================================================
+  # CRUDE MODE: one simple model per indep variable
+  # ============================================================
+  if (crude) {
+
+    crude_blocks <- vector("list", length(indep))
+
+    for (i in seq_along(indep)) {
+      v          <- indep[i]
+      pred_vars  <- v
+      form_str   <- paste0("`", y, "` ~ `", v, "`")
+
+      fit        <- fit_model(form_str, pred_vars, x, combo_name = v)
+      mod        <- fit$mod
+      firth_used <- fit$firth_used
+
+      if (is.null(mod)) {
+        # Skipped model: emit a minimal NA block so the variable is still
+        # represented in the output
+        na_row <- data.frame(
+          Predictor    = v,
+          `Log Odds`   = NA_real_,
+          `Std Error`  = NA_real_,
+          `p-value`    = NA_real_,
+          Significance = NA_character_,
+          OR           = NA_real_,
+          `95% CI Low` = NA_real_,
+          `95% CI High`= NA_real_,
+          VIF          = NA_real_,
+          Deviance     = NA_real_,
+          AIC          = NA_real_,
+          BIC          = NA_real_,
+          `McFadden R2`   = NA_real_,
+          `CoxSnell R2`   = NA_real_,
+          `Nagelkerke R2` = NA_real_,
+          `Tjur R2`       = NA_real_,
+          `Firth Corrected` = NA,
+          stringsAsFactors = FALSE,
+          check.names  = FALSE
+        )
+        crude_blocks[[i]] <- na_row
+        next
+      }
+
+      tbl         <- build_table(mod, combo_name = v, pred_vars = pred_vars,
+                                 data = x, firth_used = firth_used)
+      metrics_row <- get_metrics(mod, model_name = v, firth_used = firth_used)
+      tbl         <- append_metrics(tbl, metrics_row)
+
+      crude_blocks[[i]] <- tbl
+    }
+
+    # Stack blocks, inserting a spacer row between each variable's block
+    stacked <- vector("list", length(crude_blocks) * 2 - 1)
+    for (i in seq_along(crude_blocks)) {
+      stacked[[2 * i - 1]] <- crude_blocks[[i]]
+      if (i < length(crude_blocks)) {
+        stacked[[2 * i]] <- make_spacer_row(crude_blocks[[i]])
+      }
+    }
+
+    out <- do.call(rbind, stacked)
+    rownames(out) <- NULL
+    return(out)
+  }
+
+  # ============================================================
+  # STANDARD MODE (unchanged from original)
+  # ============================================================
   if (!iterate) {
 
     pred_vars  <- c(confounders, indep)
@@ -599,7 +750,6 @@ fit_model <- function(form_str, pred_vars, data, combo_name) {
                                data = x, firth_used = firth_used)
     metrics_out <- get_metrics(mod, model_name = "Base Model", firth_used = firth_used)
 
-    # Append inline metric columns — values in row 1 only, NA elsewhere
     tbl_out <- append_metrics(tbl_out, metrics_out)
 
     attr(tbl_out, "model_metrics") <- metrics_out
@@ -638,14 +788,12 @@ fit_model <- function(form_str, pred_vars, data, combo_name) {
           data = x, firth_used = firth_used
         )
 
-        # Append inline metric columns — values in row 1 only, NA elsewhere
         tbl <- append_metrics(tbl, metrics_row)
 
         results_tables[[combo_name]] <- tbl
       }
     }
 
-    # Assemble metrics data frame and append significance flag
     metrics_df <- do.call(rbind, metrics_list)
     rownames(metrics_df) <- NULL
 
@@ -659,8 +807,6 @@ fit_model <- function(form_str, pred_vars, data, combo_name) {
       logical(1)
     )
 
-    # filtered_Tables: exclude models where ALL non-intercept "95% CI Low" values
-    # are Inf or 0, OR ALL non-intercept "95% CI High" values are Inf or 0.
     filtered_tables <- Filter(function(tbl) {
       non_int <- tbl[tbl$Predictor != "(Intercept)", ]
       low     <- non_int$`95% CI Low`
@@ -669,13 +815,11 @@ fit_model <- function(form_str, pred_vars, data, combo_name) {
         all(is.infinite(high) | high == 0))
     }, results_tables)
 
-    # p_filtered_Tables
     p_filtered_tables <- Filter(function(tbl) {
       non_int <- tbl[tbl$Predictor != "(Intercept)", ]
       any(non_int$`p-value` < 0.05, na.rm = TRUE)
     }, filtered_tables)
 
-    # vif_filtered_Tables
     vif_filtered_tables <- Filter(function(tbl) {
       non_int  <- tbl[tbl$Predictor != "(Intercept)", ]
       vif_vals <- non_int$VIF[!is.na(non_int$VIF)]
