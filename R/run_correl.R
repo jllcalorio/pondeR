@@ -418,42 +418,42 @@
 #' \tabular{ll}{
 #'   \strong{Absolute Correlation} \tab \strong{Interpretation} \cr
 #'   1.0 \tab Perfect \cr
-#'   0.7 to < 1.0 \tab Strong \cr
-#'   0.4 to < 0.7 \tab Moderate \cr
-#'   0.1 to < 0.4 \tab Weak \cr
-#'   < 0.1 \tab Zero \cr
+#'   0.7 to \eqn{<} 1.0 \tab Strong \cr
+#'   0.4 to \eqn{<} 0.7 \tab Moderate \cr
+#'   0.1 to \eqn{<} 0.4 \tab Weak \cr
+#'   \eqn{<} 0.1 \tab Zero \cr
 #' }
 #'
 #' \emph{Politics}:
 #' \tabular{ll}{
 #'   \strong{Absolute Correlation} \tab \strong{Interpretation} \cr
 #'   1.0 \tab Perfect \cr
-#'   0.7 to < 1.0 \tab Very Strong \cr
-#'   0.4 to < 0.7 \tab Strong \cr
-#'   0.3 to < 0.4 \tab Moderate \cr
-#'   0.2 to < 0.3 \tab Weak \cr
-#'   0.1 to < 0.2 \tab Negligible \cr
-#'   < 0.1 \tab None \cr
+#'   0.7 to \eqn{<} 1.0 \tab Very Strong \cr
+#'   0.4 to \eqn{<} 0.7 \tab Strong \cr
+#'   0.3 to \eqn{<} 0.4 \tab Moderate \cr
+#'   0.2 to \eqn{<} 0.3 \tab Weak \cr
+#'   0.1 to \eqn{<} 0.2 \tab Negligible \cr
+#'   \eqn{<} 0.1 \tab None \cr
 #' }
 #'
 #' \emph{Medicine}:
 #' \tabular{ll}{
 #'   \strong{Absolute Correlation} \tab \strong{Interpretation} \cr
 #'   1.0 \tab Perfect \cr
-#'   0.8 to < 1.0 \tab Very Strong \cr
-#'   0.6 to < 0.8 \tab Moderate \cr
-#'   0.3 to < 0.6 \tab Fair \cr
-#'   0.1 to < 0.3 \tab Poor \cr
-#'   < 0.1 \tab None \cr
+#'   0.8 to \eqn{<} 1.0 \tab Very Strong \cr
+#'   0.6 to \eqn{<} 0.8 \tab Moderate \cr
+#'   0.3 to \eqn{<} 0.6 \tab Fair \cr
+#'   0.1 to \eqn{<} 0.3 \tab Poor \cr
+#'   \eqn{<} 0.1 \tab None \cr
 #' }
 #'
 #' \emph{Categorical (Phi and Cramer's V)}:
 #' \tabular{ll}{
 #'   \strong{Value} \tab \strong{Interpretation} \cr
-#'   > 0.25 \tab Very strong \cr
-#'   > 0.15 \tab Strong \cr
-#'   > 0.10 \tab Moderate \cr
-#'   > 0.05 \tab Weak \cr
+#'   \eqn{>} 0.25 \tab Very strong \cr
+#'   \eqn{>} 0.15 \tab Strong \cr
+#'   \eqn{>} 0.10 \tab Moderate \cr
+#'   \eqn{>} 0.05 \tab Weak \cr
 #'   0 to 0.05 \tab No or very weak \cr
 #' }
 #'
