@@ -59,9 +59,9 @@ pair and the correlation method to use for that pair, overriding the
 global \code{method} argument. Each element must be of the form
 \code{list(c("var1", "var2"), "method")}. For example:
 \preformatted{force_test = list(
-    list(c("var1", "var2"), "pearson"),
-    list(c("var1", "var3"), "spearman")
-  )}
+  list(c("var1", "var2"), "pearson"),
+  list(c("var1", "var3"), "spearman")
+)}
 Valid methods are all values accepted by \code{method} except
 \code{"auto"}. Column names are order-insensitive within each pair.
 If a pair appears more than once, the last entry takes precedence with
