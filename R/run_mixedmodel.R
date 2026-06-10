@@ -141,8 +141,7 @@
 #'
 #' @importFrom lme4 VarCorr ranef
 #' @importFrom lmerTest lmer
-#' @importFrom stats as.formula p.adjust fitted resid ppoints confint vcov
-#'   df.residual qt
+#' @importFrom stats as.formula p.adjust fitted resid ppoints confint vcov df.residual qt
 #'
 #' @export
 run_mixedmodel <- function(
