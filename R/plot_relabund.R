@@ -248,9 +248,9 @@
 #' @author John Lennon L. Calorio
 #'
 #' @importFrom ggplot2 ggplot aes geom_bar scale_fill_manual scale_x_discrete
-#'   scale_y_continuous coord_flip labs theme_bw theme_minimal theme_classic
-#'   theme_light theme_dark theme element_text element_blank element_line
-#'   element_rect guide_legend expansion waiver unit margin
+#' @importFrom ggplot2 scale_y_continuous coord_flip labs theme_bw theme_minimal theme_classic
+#' @importFrom ggplot2 theme_light theme_dark theme element_text element_blank element_line
+#' @importFrom ggplot2 element_rect guide_legend expansion waiver unit margin
 #' @importFrom stats median setNames
 #'
 #' @export

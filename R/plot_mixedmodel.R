@@ -151,9 +151,9 @@
 #' @author John Lennon L. Calorio
 #'
 #' @importFrom ggplot2 ggplot aes geom_point geom_hline geom_vline geom_text
-#'   scale_color_manual scale_alpha_manual scale_size_manual labs facet_wrap
-#'   theme_bw theme_minimal theme_classic theme element_text element_rect
-#'   element_line element_blank margin unit
+#' @importFrom ggplot2 scale_color_manual scale_alpha_manual scale_size_manual labs facet_wrap
+#' @importFrom ggplot2 theme_bw theme_minimal theme_classic theme element_text element_rect
+#' @importFrom ggplot2 element_line element_blank margin unit
 #' @importFrom stats setNames
 #'
 #' @export

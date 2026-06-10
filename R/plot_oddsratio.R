@@ -152,9 +152,9 @@
 #' )
 #'
 #' @importFrom ggplot2 ggplot aes geom_point geom_errorbarh geom_vline
-#'   scale_color_manual scale_x_log10 coord_cartesian labs theme_bw
-#'   theme_classic theme_minimal theme_gray theme_dark theme element_text
-#'   element_line element_blank margin expansion
+#' @importFrom ggplot2 scale_color_manual scale_x_log10 coord_cartesian labs theme_bw
+#' @importFrom ggplot2 theme_classic theme_minimal theme_gray theme_dark theme element_text
+#' @importFrom ggplot2 element_line element_blank margin expansion
 #' @importFrom rlang sym
 #'
 #' @export

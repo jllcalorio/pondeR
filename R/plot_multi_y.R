@@ -214,10 +214,10 @@
 # ---- Long-format pivot helper ----------------------------------------------
 
 #' @keywords internal
-#' Pivots selected columns to long format, keeping x_axis (and optionally
-#' facet) intact.  Rows where x_axis is NA are always dropped.  Rows where
-#' the y value is NA are kept as NA rows so ggplot2 can render partial series
-#' without dropping entire x positions.
+# Pivots selected columns to long format, keeping x_axis (and optionally
+# facet) intact.  Rows where x_axis is NA are always dropped.  Rows where
+# the y value is NA are kept as NA rows so ggplot2 can render partial series
+# without dropping entire x positions.
 .pivot_long <- function(df, cols, x_axis, facet = NULL, transform_fn = NULL) {
   if (is.null(cols) || length(cols) == 0L) return(NULL)
 

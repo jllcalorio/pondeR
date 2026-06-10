@@ -95,7 +95,7 @@ contains raw (unnormalised) data.} If \code{FALSE} (default), each row in
 simultaneously with \code{group_brackets}.}
 
 \item{normalize_to_relabund}{Logical. Relevant when \code{group_aggregate =
-  TRUE} or \code{sort} is \code{"high"}/\code{"low"}. If \code{TRUE}
+TRUE} or \code{sort} is \code{"high"}/\code{"low"}. If \code{TRUE}
 (default), row-wise relative abundance normalisation is applied to \code{x}
 via \code{run_normalize(method = "row_rel_abundance")} before aggregation
 or ranking. Set to \code{FALSE} if \code{x} is already appropriately

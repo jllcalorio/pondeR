@@ -87,9 +87,9 @@
 #' \doi{10.1177/001316446002000116}
 #'
 #' @importFrom ggplot2 ggplot aes geom_col geom_line geom_point geom_text
-#'   scale_x_continuous scale_y_continuous sec_axis labs theme_bw theme_minimal
-#'   theme_classic theme_light theme_dark theme element_text element_blank
-#'   element_line element_rect margin
+#' @importFrom ggplot2 scale_x_continuous scale_y_continuous sec_axis labs theme_bw theme_minimal
+#' @importFrom ggplot2 theme_classic theme_light theme_dark theme element_text element_blank
+#' @importFrom ggplot2 element_line element_rect margin
 #' @importFrom ggrepel geom_text_repel
 #'
 #' @export
