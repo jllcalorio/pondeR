@@ -140,9 +140,8 @@
 #' \url{https://jfly.uni-koeln.de/color/}
 #'
 #' @importFrom ggplot2 ggplot aes geom_point stat_ellipse scale_color_manual
-#'   scale_shape_manual scale_fill_manual labs theme_bw theme_minimal theme_classic
-#'   theme_light theme_dark theme element_text element_blank element_line element_rect
-#'   unit
+#' @importFrom ggplot2 scale_shape_manual scale_fill_manual labs theme_bw theme_minimal theme_classic
+#' @importFrom ggplot2 theme_light theme_dark theme element_text element_blank element_line element_rect unit
 #' @importFrom viridis scale_color_viridis
 #' @importFrom ggrepel geom_label_repel
 #' @importFrom stats mahalanobis cov qt qnorm
@@ -713,9 +712,14 @@ plot_score.run_pca <- function(
 
 #' @rdname plot_score
 #' @export
-plot_score.run_pls <- function(res, pc = c(1, 2), ...) {
-  p <- plot_score.run_pca(res = res, pc = pc, ...)
-
+plot_score.run_pls <- function(
+    res,
+    pc               = c(1, 2),
+    title            = NULL,
+    subtitle         = NULL,
+    ...
+) {
+  # ── Parse PC indices ──────────────────────────────────────────────────────────
   if (is.numeric(pc)) {
     pc_x <- as.integer(pc[1L]); pc_y <- as.integer(pc[2L])
   } else {
@@ -723,22 +727,125 @@ plot_score.run_pls <- function(res, pc = c(1, 2), ...) {
     pc_y <- as.integer(gsub("PC", "", pc[2L], ignore.case = TRUE))
   }
 
+  # ── Method label ──────────────────────────────────────────────────────────────
+  method_label <- switch(res$method_used,
+                         "oplsda" = "OPLS-DA",
+                         "plsda"  = "PLS-DA",
+                         "splsda" = "sPLS-DA",
+                         toupper(res$method_used))
+
+  # ============================================================================
+  # EARLY EXIT: no usable scores
+  # Conditions that make the result unplottable:
+  #   (a) scores is NULL or has 0 columns
+  #   (b) n_pcs < 2  — can't form an X vs Y axes plot
+  #   (c) all variance_explained are NA  — model produced no valid component
+  # ============================================================================
+
+  scores_unusable <- is.null(res$scores)  ||
+    ncol(res$scores) < 2L               ||
+    all(is.na(res$variance_explained))
+
+  if (scores_unusable) {
+    warning(
+      sprintf(
+        paste0(
+          "[plot_score] %s model for this dataset produced no plottable components.\n",
+          "  n_pcs = %d | variance_explained = %s\n",
+          "  Possible causes: the predictive component was not significant ",
+          "(low R\u00b2X/Q\u00b2), insufficient between-group separation, or ",
+          "cross-validation eliminated all components.\n",
+          "  Returning NULL invisibly."
+        ),
+        method_label,
+        res$n_pcs,
+        paste(round(res$variance_explained, 3L), collapse = ", ")
+      ),
+      call. = FALSE
+    )
+    return(invisible(NULL))
+  }
+
+  # ── Auto-title ────────────────────────────────────────────────────────────────
+  if (is.null(title)) {
+    if (res$method_used == "oplsda") {
+      x_lbl <- if (pc_x == 1L) "t[1]" else sprintf("to[%d]", pc_x - 1L)
+      y_lbl <- if (pc_y == 1L) "t[1]" else sprintf("to[%d]", pc_y - 1L)
+      title <- sprintf("%s Scores Plot (%s vs %s)", method_label, x_lbl, y_lbl)
+    } else {
+      title <- sprintf("%s Scores Plot (Component %d vs Component %d)",
+                       method_label, pc_x, pc_y)
+    }
+  }
+
+  # ── Auto-subtitle: model fit stats (ropls only) ───────────────────────────────
+  if (is.null(subtitle) && res$method_used %in% c("oplsda", "plsda")) {
+    subtitle <- tryCatch({
+      mdl    <- res$pls_object
+      df_mod <- mdl@modelDF
+
+      .fmt_p <- function(p) {
+        if (is.null(p) || length(p) == 0L || is.na(p)) return("NA")
+        if (p < 0.001) return("< 0.001")
+        sprintf("%.3f", round(p, 3L))
+      }
+      .fmt_r <- function(x) {
+        if (is.null(x) || length(x) == 0L || is.na(x)) return("NA")
+        sprintf("%.2f", round(x, 2L))
+      }
+
+      r2x <- if ("R2X(cum)" %in% colnames(df_mod)) {
+        df_mod[nrow(df_mod), "R2X(cum)"]
+      } else {
+        sum(df_mod[, "R2X"], na.rm = TRUE)
+      }
+
+      r2y <- if ("R2Y(cum)" %in% colnames(df_mod)) {
+        df_mod[nrow(df_mod), "R2Y(cum)"]
+      } else if ("R2Y" %in% colnames(df_mod)) {
+        sum(df_mod[, "R2Y"], na.rm = TRUE)
+      } else {
+        NA_real_
+      }
+
+      q2 <- if ("Q2(cum)" %in% colnames(df_mod)) {
+        df_mod[nrow(df_mod), "Q2(cum)"]
+      } else if ("Q2" %in% colnames(df_mod)) {
+        df_mod[nrow(df_mod), "Q2"]
+      } else {
+        NA_real_
+      }
+
+      sum_df <- mdl@summaryDF
+      p_r2y  <- if (!is.null(sum_df) && "pR2Y" %in% colnames(sum_df)) sum_df[1L, "pR2Y"] else NA_real_
+      p_q2   <- if (!is.null(sum_df) && "pQ2"  %in% colnames(sum_df)) sum_df[1L, "pQ2"]  else NA_real_
+      perm_n <- res$parameters$permI
+
+      sprintf(
+        "R\u00b2X = %s, R\u00b2Y = %s, Q\u00b2 = %s | perm = %d; p(R\u00b2Y) = %s, p(Q\u00b2) = %s",
+        .fmt_r(r2x), .fmt_r(r2y), .fmt_r(q2),
+        perm_n,
+        .fmt_p(p_r2y), .fmt_p(p_q2)
+      )
+    }, error = function(e) NULL)
+  }
+
+  # ── Delegate to run_pca plotting engine ───────────────────────────────────────
+  p <- plot_score.run_pca(res = res, pc = pc, title = title, subtitle = subtitle, ...)
+
   ve <- res$variance_explained
 
-  # Only relabel axes for OPLS-DA; other methods use generic component labels
+  # ── Re-label axes by method ───────────────────────────────────────────────────
   if (res$method_used == "oplsda") {
-    .fmt_pls_label <- function(idx, val) {
-      if (idx == 1L) {
-        sprintf("Predictive Score t[1] (%.1f%%)", val)
-      } else {
-        sprintf("Orthogonal Score to[%d] (%.1f%%)", idx - 1L, val)
-      }
+    .fmt_axis <- function(idx, val) {
+      if (idx == 1L) sprintf("Predictive Score t[1] (%.1f%%)", val)
+      else           sprintf("Orthogonal Score to[%d] (%.1f%%)", idx - 1L, val)
     }
     p <- p + ggplot2::labs(
-      x = .fmt_pls_label(pc_x, ve[pc_x]),
-      y = .fmt_pls_label(pc_y, ve[pc_y])
+      x = .fmt_axis(pc_x, ve[pc_x]),
+      y = .fmt_axis(pc_y, ve[pc_y])
     )
-  } else if (res$method_used %in% c("plsda", "splsda")) {
+  } else {
     p <- p + ggplot2::labs(
       x = sprintf("Component %d (%.1f%%)", pc_x, ve[pc_x]),
       y = sprintf("Component %d (%.1f%%)", pc_y, ve[pc_y])

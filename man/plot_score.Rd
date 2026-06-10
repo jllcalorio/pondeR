@@ -42,7 +42,7 @@ plot_score(res, ...)
   verbose = TRUE
 )
 
-\method{plot_score}{run_pls}(res, pc = c(1, 2), ...)
+\method{plot_score}{run_pls}(res, pc = c(1, 2), title = NULL, subtitle = NULL, ...)
 
 \method{plot_score}{run_pcoa}(
   res,
