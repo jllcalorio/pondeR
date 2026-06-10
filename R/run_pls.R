@@ -449,11 +449,13 @@ run_pls <- function(
       group = group,
       exclude = exclude,
       ncomp = ncomp,
-      orthoI = orthoI
+      orthoI = orthoI,
+      crossvalI = crossvalI,
+      permI = permI
     )
   )
   
-  class(result) <- c("run_pls", "list")
+  class(result) <- c("run_pls", "run_pca", "list")
   return(result)
 }
 
