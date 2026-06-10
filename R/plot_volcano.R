@@ -72,6 +72,17 @@
 #'   vector created with \code{setNames(feature_ids, display_names)}, in which
 #'   case the display names are shown on the plot. A line segment always
 #'   connects each label to its corresponding point. Default \code{NULL}.
+#' @param annotate2 An optional numeric vector of length 2 providing fold-change
+#'   thresholds for automatic annotation. Features with fold change \eqn{\le}
+#'   \code{annotate2[1]} or \eqn{\ge} \code{annotate2[2]} will be labelled.
+#'   The values are specified as raw fold changes (not log2). To annotate only
+#'   one side, use \code{NA} for the other, e.g., \code{c(0.6, NA)}. Features
+#'   selected by \code{annotate2} must \strong{also} meet the significance
+#'   threshold defined by \code{pval} (i.e., \eqn{p < \text{pval}}).
+#'   Requires \code{features} to be specified.
+#'   Labels added via \code{annotate2} use the feature identifiers
+#'   found in the \code{features} column. If \code{annotate} is also provided,
+#'   both sets of features are labelled. Default \code{NULL}.
 #' @param use_ggrepel Logical. If \code{TRUE} (default), uses
 #'   \code{ggrepel::geom_text_repel()} for non-overlapping labels with
 #'   connector segments. If \code{FALSE}, uses \code{ggplot2::geom_text()}.
@@ -194,11 +205,25 @@
 #' )
 #' print(res3$plots[[1]])
 #'
+#' ## -----------------------------------------------------------------------
+#' ## Example 4 — threshold-based annotation (annotate2)
+#' ## -----------------------------------------------------------------------
+#' # Label everything with a 4-fold change that is also significant (p < 0.05)
+#' res4 <- plot_volcano(
+#'   x         = dat,
+#'   y         = "log2fc",
+#'   z         = "pvalue",
+#'   features  = "feature",
+#'   annotate2 = c(0.25, 4),
+#'   up        = 1.5,
+#'   down      = 0.5
+#' )
+#' print(res4$plots[[1]])
+#'
 #' @author John Lennon L. Calorio
 #' @importFrom ggplot2 ggplot aes geom_point geom_hline geom_vline geom_text
-#'   scale_colour_manual labs theme_classic theme_minimal theme_bw theme_gray
-#'   theme_light theme_dark theme element_text element_blank scale_y_reverse
-#'   guide_legend
+#' @importFrom ggplot2 scale_colour_manual labs theme_classic theme_minimal theme_bw theme_gray
+#' @importFrom ggplot2 theme_light theme_dark theme element_text element_blank scale_y_reverse guide_legend
 #' @importFrom ggrepel geom_text_repel
 #' @seealso \code{\link{run_foldchange}}, \code{\link{run_diff}}, \code{\link{get_volcanodata}}, \code{\link{run_DIpreprocess}}
 #' @export
@@ -212,6 +237,7 @@ plot_volcano <- function(
     down             = 0.5,
     pval             = 0.05,
     annotate         = NULL,
+    annotate2        = NULL,
     use_ggrepel      = TRUE,
     up_color         = c("red",  "purple", "yellow"),
     down_color       = c("blue", "green",  "cyan"),
@@ -451,6 +477,59 @@ plot_volcano <- function(
   # ---------------------------------------------------------------------------
   # 9.  Validate features and annotate
   # ---------------------------------------------------------------------------
+  # 9a. Handle annotate2 (threshold-based selection)
+  if (!is.null(annotate2)) {
+    if (is.null(features)) {
+      stop("`features` must be specified (a column name of `x`) when `annotate2` is supplied.",
+           call. = FALSE)
+    }
+    if (!is.numeric(annotate2) || length(annotate2) != 2L) {
+      stop("`annotate2` must be a numeric vector of length 2 (e.g. c(0.5, 2.0) or c(0.6, NA)).",
+           call. = FALSE)
+    }
+
+    # Constructive logic checks
+    lower_val <- annotate2[1]
+    upper_val <- annotate2[2]
+
+    if (!is.na(lower_val) && !is.na(upper_val) && lower_val >= upper_val) {
+      warning("`annotate2[1]` (down) is greater than or equal to `annotate2[2]` (up). ",
+              "This might lead to unintended results.", call. = FALSE)
+    }
+
+    # Identify feature IDs based on FC thresholds
+    raw_fc_vals <- x[[y]]
+    p_vals      <- x[[z]]
+    extra_ids <- character(0)
+
+    if (!is.na(lower_val)) {
+      idx_low <- !is.na(raw_fc_vals) & raw_fc_vals <= lower_val & !is.na(p_vals) & p_vals < pval
+      extra_ids <- c(extra_ids, as.character(x[[features]][idx_low]))
+    }
+    if (!is.na(upper_val)) {
+      idx_up <- !is.na(raw_fc_vals) & raw_fc_vals >= upper_val & !is.na(p_vals) & p_vals < pval
+      extra_ids <- c(extra_ids, as.character(x[[features]][idx_up]))
+    }
+
+    if (length(extra_ids) > 0L) {
+      new_unique_ids <- unique(extra_ids)
+      if (is.null(annotate)) {
+        annotate <- new_unique_ids
+      } else {
+        existing_ids <- unname(annotate)
+        ids_to_add <- setdiff(new_unique_ids, existing_ids)
+        if (length(ids_to_add) > 0L) {
+          if (!is.null(names(annotate))) {
+            annotate <- c(annotate, stats::setNames(ids_to_add, ids_to_add))
+          } else {
+            annotate <- c(annotate, ids_to_add)
+          }
+        }
+      }
+    }
+  }
+
+  # 9b. Primary annotation processing
   ann_lookup <- NULL
   ann_ids    <- NULL
 
@@ -777,6 +856,7 @@ plot_volcano <- function(
         pval         = pval,
         neglog10     = neglog10,
         annotate     = annotate,
+        annotate2    = annotate2,
         use_ggrepel  = use_ggrepel,
         up_color     = up_cols,
         down_color   = down_cols,

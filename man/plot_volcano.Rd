@@ -14,6 +14,7 @@ plot_volcano(
   down = 0.5,
   pval = 0.05,
   annotate = NULL,
+  annotate2 = NULL,
   use_ggrepel = TRUE,
   up_color = c("red", "purple", "yellow"),
   down_color = c("blue", "green", "cyan"),
@@ -109,6 +110,18 @@ May be a plain character vector (labels shown as-is) or a named character
 vector created with \code{setNames(feature_ids, display_names)}, in which
 case the display names are shown on the plot. A line segment always
 connects each label to its corresponding point. Default \code{NULL}.}
+
+\item{annotate2}{An optional numeric vector of length 2 providing fold-change
+thresholds for automatic annotation. Features with fold change \eqn{\le}
+\code{annotate2[1]} or \eqn{\ge} \code{annotate2[2]} will be labelled.
+The values are specified as raw fold changes (not log2). To annotate only
+one side, use \code{NA} for the other, e.g., \code{c(0.6, NA)}. Features
+selected by \code{annotate2} must \strong{also} meet the significance
+threshold defined by \code{pval} (i.e., \eqn{p < \text{pval}}).
+Requires \code{features} to be specified.
+Labels added via \code{annotate2} use the feature identifiers
+found in the \code{features} column. If \code{annotate} is also provided,
+both sets of features are labelled. Default \code{NULL}.}
 
 \item{use_ggrepel}{Logical. If \code{TRUE} (default), uses
 \code{ggrepel::geom_text_repel()} for non-overlapping labels with
@@ -265,6 +278,21 @@ res3 <- plot_volcano(
   legend_nrow = 2
 )
 print(res3$plots[[1]])
+
+## -----------------------------------------------------------------------
+## Example 4 — threshold-based annotation (annotate2)
+## -----------------------------------------------------------------------
+# Label everything with a 4-fold change that is also significant (p < 0.05)
+res4 <- plot_volcano(
+  x         = dat,
+  y         = "log2fc",
+  z         = "pvalue",
+  features  = "feature",
+  annotate2 = c(0.25, 4),
+  up        = 1.5,
+  down      = 0.5
+)
+print(res4$plots[[1]])
 
 }
 \seealso{
