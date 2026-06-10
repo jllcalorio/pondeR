@@ -1106,14 +1106,21 @@ run_diff <- function(
     if (is.null(metadata)) {
       metadata <- if (!is.null(x$metadata_merged)) x$metadata_merged else x$metadata
     }
-    x_data  <- if (!is.null(x$data_nonpls_merged)) x$data_nonpls_merged else x$data_nonpls
-    
+    x_data <- if (!is.null(x$data_nonpls_merged)) x$data_nonpls_merged else x$data_nonpls
+
     if (missing(outcome) || is.null(outcome)) outcome <- names(x_data)
     if (is.null(group)) group <- x$parameters$group_col
 
     if (is.null(filter)) {
-      filter <- eval(x$parameters$qc_types)
+      # $parameters now stores evaluated values, so $qc_types is a plain
+      # character vector.  Fall back to the standard defaults if somehow
+      # the slot is still absent (e.g. an object built by an older version).
+      filter <- if (!is.null(x$parameters$qc_types))
+        x$parameters$qc_types
+      else
+        c("QC", "SQC", "EQC")
     }
+
     x <- x_data
   }
 
