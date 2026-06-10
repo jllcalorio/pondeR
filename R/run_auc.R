@@ -223,9 +223,9 @@
 #'
 #' @importFrom pROC roc auc ci
 #' @importFrom ggplot2 ggplot aes geom_line geom_abline annotate labs theme_minimal
-#'   theme_bw theme_classic theme_gray theme_light theme_dark theme element_text
-#'   element_rect element_blank scale_colour_manual guides guide_legend
-#'   scale_x_continuous scale_y_continuous coord_equal .pt
+#' @importFrom ggplot2 theme_bw theme_classic theme_gray theme_light theme_dark theme element_text
+#' @importFrom ggplot2 element_rect element_blank scale_colour_manual guides guide_legend
+#' @importFrom ggplot2 scale_x_continuous scale_y_continuous coord_equal .pt
 #' @importFrom stats setNames
 #' @importFrom utils head
 #'
@@ -298,8 +298,11 @@ run_auc <- function(
     fc_obj   <- if (length(fc_obj) > 0) fc_obj[[1]] else NULL
     
     # run_diff could be a single object, or a list of run_diff objects (multi-outcome)
-    diff_obj <- Filter(function(obj) inherits(obj, "run_diff") || 
-                                     (is.list(obj) && "summary_table" %in% names(obj)), x)
+    diff_obj <- Filter(function(obj) {
+      inherits(obj, "run_diff") || 
+      (is.list(obj) && "summary_table" %in% names(obj) && 
+       !inherits(obj, "run_foldchange") && !inherits(obj, "run_pls"))
+    }, x)
     diff_obj <- if (length(diff_obj) > 0) diff_obj[[1]] else NULL
 
     # Extract base data
@@ -351,7 +354,8 @@ run_auc <- function(
       if (!is.null(diff_obj$summary_table)) {
         # Handles run_diff multi-outcome with summary_table = TRUE
         st <- diff_obj$summary_table
-        pass_diff <- st$outcome[!is.na(st$p_value) & st$p_value < p_value]
+        col_nm <- if ("outcome" %in% colnames(st)) "outcome" else "feature"
+        pass_diff <- st[[col_nm]][!is.na(st$p_value) & st$p_value < p_value]
         
       } else if (inherits(diff_obj, "run_diff")) {
         # Handles a single run_diff object
