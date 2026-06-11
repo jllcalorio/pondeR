@@ -13,12 +13,10 @@ Imports:
     anthro,
     anthroplus,
     ape,
-    BiocManager,
     BiocParallel,
     car,
     caret,
     contentValidity,
-    doParallel,
     dplyr,
     effectsize,
     forcats,
@@ -59,7 +57,6 @@ Imports:
     pROC,
     purrr,
     reshape2,
-    reticulate,
     rlang,
     ropls,
     rstatix,
@@ -77,6 +74,6 @@ Suggests:
     rmarkdown
 VignetteBuilder: 
     knitr
+Config/roxygen2/version: 8.0.0
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-Config/roxygen2/version: 8.0.0
