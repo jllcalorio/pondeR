@@ -69,9 +69,8 @@ reference:
 
   - title: "Summarizing Data & Checking Distributions"
     desc: >
-      Functions for generating publication-ready summary tables,
-      anthropometric indices according to WHO standards, 
-      and testing for normality or skewness.
+      Functions for generating publication-ready summary tables and
+      anthropometric indices according to WHO standards.
     contents:
       - starts_with("run_summarytable")
       - starts_with("run_anthroindex")
@@ -79,7 +78,7 @@ reference:
   - title: "Comparing Groups & Identifying Associations"
     desc: >
       Methods for detecting differences between cohorts, calculating
-      fold changes, and testing statistical associations.
+      fold changes, testing statistical associations, and visualization.
     contents:
       - starts_with("run_diff")
       - starts_with("plot_diff")
@@ -87,22 +86,25 @@ reference:
       - starts_with("run_single_assoc")
       - starts_with("run_foldchange")
       - starts_with("plot_volcano")
+      - starts_with("get_volcanodata")
       - starts_with("run_correl")
       - starts_with("plot_heatmap")
       - starts_with("plot_dend")
+      - starts_with("run_lefse")
 
   - title: "Predictive Modeling & Classification"
     desc: >
       Regularized regression (Ridge, LASSO, and Elastic Net),
       Linear Mixed-Effect Model,
-      Logistic regression analysis and performance evaluation (AUC/AUROC) 
-      with automated bias correction options. 
+      Logistic regression analysis and performance evaluation (AUC/AUROC).
     contents:
       - starts_with("run_regreg")
       - starts_with("run_mixedmodel")
       - starts_with("plot_mixedmodel")
       - starts_with("run_logreg")
       - starts_with("run_auc")
+      - starts_with("plot_oddsratio")
+
 
   - title: "Multivariate Exploration and Discrimination"
     desc: >
@@ -151,6 +153,15 @@ reference:
     contents:
       - starts_with("plot_meanmap")
       - starts_with("plot_multi_y")
+      - starts_with("plot_relabund")
+
+  - title: "Content validity"
+    desc: >
+      "Functions to assess/validate questionnaires 
+      using subject-matter expert (SME) ratings."
+    contents:
+      - starts_with("run_contentvalidity")
+      - starts_with("run_contentvaliditycvr")
 
   - title: "Export Functions"
     desc: "Functions export data frames to Excel/CSV files and figure to PNGs, etc."
@@ -165,20 +176,25 @@ reference:
       - starts_with("run_relabel")
       - starts_with("run_move_names")
       - starts_with("run_randomize")
+      - starts_with("run_subset")
+      - starts_with("run_vector2df")
       - starts_with("get_groupsizes")
       - starts_with("get_removed_samples")
       - starts_with("get_sigfeatures")
+      - starts_with("utils")
+
+  - title: "S3 methods"
+    desc: >
+      S3 methods used by pondeR.
+    contents:
       - starts_with("print.")
       - starts_with("summary.")
-      - starts_with("check_")
-      - has_keyword("internal")
 
-  - title: "Other"
+  - title: "Internal functions"
     desc: >
-      Additional exported functions. New functions land here automatically
-      until formally categorised.
+      Internal functions used by pondeR.
     contents:
-      - matches(".")
+      - has_keyword("internal")
 
 # ── Articles (vignettes) ─────────────────────────────────────────────────────
 articles:
