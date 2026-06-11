@@ -65,6 +65,18 @@ jobs:
         with:
           use-public-rspm: true
 
+      # # Temporary step
+      # - name: Show dependency plan
+      #   shell: Rscript {0}
+      #   run: |
+      #     install.packages("pak")
+      #     pak::pkg_deps(".", dependencies = TRUE)
+
+      - name: Install system MPI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libopenmpi-dev openmpi-bin
+
       # 7. Install R dependencies
       - name: Install R dependencies
         uses: r-lib/actions/setup-r-dependencies@v2.3.0
