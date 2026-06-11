@@ -182,6 +182,10 @@ reference:
       - starts_with("get_removed_samples")
       - starts_with("get_sigfeatures")
       - starts_with("utils")
+      - starts_with("as_")
+      - starts_with("has_")
+      - starts_with("is_")
+      - starts_with("select_")
 
   - title: "S3 methods"
     desc: >

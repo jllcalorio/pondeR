@@ -15,6 +15,9 @@ on:
 
 name: pkgdown
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 # Needed to deploy to GitHub Pages
 permissions:
   contents: write
@@ -46,32 +49,11 @@ jobs:
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      # 1. Check out the repository
+      # 1. Check out the repository (Logic from redundant steps 2 & 3 removed)
       - name: Checkout repository
         uses: actions/checkout@v4.2.2
         with:
           fetch-depth: 0
-
-      # 2. Check whether there were commits in the last 30 days
-      - name: Check for recent commits
-        id: recent_commits
-        run: |
-          commits=$(git log --since="30 days ago" --oneline | wc -l)
-
-          echo "Commits in last 30 days: $commits"
-
-          if [ "$commits" -eq 0 ]; then
-            echo "skip=true" >> $GITHUB_OUTPUT
-          else
-            echo "skip=false" >> $GITHUB_OUTPUT
-          fi
-
-      # 3. Stop workflow if no recent commits
-      - name: Stop if no recent commits
-        if: steps.recent_commits.outputs.skip == 'true'
-        run: |
-          echo "No commits in the last 30 days. Skipping pkgdown build."
-          exit 0
 
       # 4. Set up Pandoc
       - name: Install Pandoc
@@ -109,28 +91,13 @@ jobs:
           extra-packages: |
             any::pkgdown
             any::BiocManager
+            bioc::BiocParallel
+            bioc::imputeLCMD
+            bioc::matrixStats
+            bioc::pmp
+            bioc::sva
+            bioc::vsn
           needs: website
-
-      # 8. Install Bioconductor dependencies
-      - name: Install Bioconductor dependencies
-        run: |
-          Rscript -e "
-            if (!requireNamespace('BiocManager', quietly = TRUE))
-              install.packages('BiocManager')
-
-            BiocManager::install(
-              c(
-                'BiocParallel',
-                'imputeLCMD',
-                'matrixStats',
-                'pmp',
-                'sva',
-                'vsn'
-              ),
-              ask = FALSE,
-              update = FALSE
-            )
-          "
 
       # 9. Install pondeR
       - name: Install pondeR
