@@ -966,6 +966,14 @@ print.run_correl <- function(x, ...) {
 #' @param ... Additional arguments forwarded to \code{gt::gt()}.
 #'
 #' @return A \code{gt_tbl} object.
+#' Convert an object to a gt table
+#' @param x An object to convert.
+#' @param ... Additional arguments.
+#' @return A gt table object.
+#' @export
+as_gt <- function(x, ...) UseMethod("as_gt")
+
+#' @rdname as_gt
 #' @export
 as_gt.run_correl <- function(x, ...) {
   if (!requireNamespace("gt", quietly = TRUE))

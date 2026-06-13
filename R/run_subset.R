@@ -48,6 +48,10 @@
 #' @param left_to_right Logical; `TRUE` (default). For deterministic col pulls.
 #' @param seed An integer; `123` (default). The random seed. `NULL` disables seeding.
 #'
+#' @importFrom("utils", "tail")
+#' 
+#' @author John Lennon L. Calorio
+#' 
 #' @return A named list of class `"run_subset"`.
 #' @export
 run_subset <- function(

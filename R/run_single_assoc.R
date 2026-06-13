@@ -28,6 +28,11 @@
 #'   \item \code{raw_results}: A named list containing the full test objects 
 #'     returned by the underlying R functions.
 #' }
+#' 
+#' @importFrom stats binom.test
+#' 
+#' @author John Lennon L. Calorio
+#' 
 #' @export
 #' @examples
 #' # Example 1: Binomial test (exactly 2 levels)

@@ -408,17 +408,17 @@
 #' weight-for-length/height (WFH), BMI-for-age (BMIFA), head
 #' circumference-for-age (HCFA), arm circumference-for-age (ACFA), triceps
 #' skinfold-for-age (TSFA), and subscapular skinfold-for-age (SSFA)—using
-#' \code{\link[anthro]{anthro_zscores}} (WHO Child Growth Standards 2006) for
+#' \code{\link{anthro::anthro_zscores}} (WHO Child Growth Standards 2006) for
 #' ages 0 to < 5 years, and
-#' \code{\link[anthroplus]{anthroplus_zscores}} (WHO Growth Reference 2007)
+#' \code{\link{anthroplus::anthroplus_zscores}} (WHO Growth Reference 2007)
 #' for ages 5 to < 20 years where applicable.
 #'
 #' For BMIFA, the function covers the full age range:
 #' \itemize{
 #'   \item \strong{0 to < 5 years}: z-scores from
-#'     \code{\link[anthro]{anthro_zscores}}, WHO Child Growth Standards 2006.
+#'     \code{\link{anthro::anthro_zscores}}, WHO Child Growth Standards 2006.
 #'   \item \strong{5 to < 20 years}: z-scores from
-#'     \code{\link[anthroplus]{anthroplus_zscores}}, WHO Growth Reference 2007.
+#'     \code{\link{anthroplus::anthroplus_zscores}}, WHO Growth Reference 2007.
 #'     The \pkg{anthroplus} package must be installed separately when
 #'     participants in this age range are present.
 #'   \item \strong{20 years and above}: nutritional status classified directly
@@ -516,8 +516,8 @@
 #' @details
 #' ## Sex coding
 #' Internally, sex is encoded as \code{1} = male and \code{2} = female, as
-#' required by both \code{\link[anthro]{anthro_zscores}} and
-#' \code{\link[anthroplus]{anthroplus_zscores}}. If \code{male_code} and
+#' required by both \code{\link{anthro::anthro_zscores}} and
+#' \code{\link{anthroplus::anthroplus_zscores}}. If \code{male_code} and
 #' \code{female_code} are not supplied, the following values are detected
 #' automatically: \code{m}, \code{M}, \code{male}, \code{Male} \eqn{\to}
 #' male; \code{f}, \code{F}, \code{female}, \code{Female} \eqn{\to} female.

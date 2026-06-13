@@ -13,9 +13,8 @@
 #' cluster bracket annotations and per-row significance markers on the right.
 #'
 #' This function is intended for visualising group-level mean differences
-#' across variables — for example, metabolite intensities across disease
-#' stages — and is distinct from \code{\link{plot_clustermap}}, which
-#' visualises variable-to-variable correlation structure.
+#' across variables, for example, metabolite intensities across disease
+#' stages.
 #'
 #' @param x A numeric matrix or data frame whose \strong{columns} are the
 #'   variables (e.g. metabolites) and whose \strong{rows} are

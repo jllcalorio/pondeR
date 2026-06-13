@@ -23,16 +23,16 @@
 #'   \strong{List input — supported combinations:}
 #'   \describe{
 #'     \item{\code{list(fc = <run_foldchange>, diff = <run_diff>)}}{
-#'       Both objects are supplied. Log2 fold changes are sourced from
-#'       \code{run_foldchange()}'s \code{$summary_table} (requires
-#'       \code{log2 = TRUE}, the default) and p-values are sourced from
+#'       Both objects are supplied. Fold changes are sourced from
+#'       \code{run_foldchange()}'s \code{$summary_table}
+#'       and p-values are sourced from
 #'       \code{run_diff()}'s \code{$summary_table}, matched on feature name.
 #'       When \code{run_foldchange()} produced more than one pairwise
 #'       comparison, the \code{comparison} column is automatically used as
 #'       \code{group}, overlaying all comparisons on a single plot with
 #'       distinct colours. This is the recommended usage.}
 #'     \item{\code{list(fc = <run_foldchange>)}}{
-#'       Fold-change object only. p-values are unavailable; all features are
+#'       Fold-change object only. Log2 fold changes are available but p-values are unavailable; all features are
 #'       classified as non-significant and the significance threshold line is
 #'       not meaningful. A warning is issued.}
 #'     \item{\code{list(diff = <run_diff>)}}{
@@ -45,10 +45,10 @@
 #'   \code{features}, and \code{group} are set automatically and do not need
 #'   to be specified by the caller (though they can be overridden).
 #' @param y A single character string naming the column in \code{x} that
-#'   contains \strong{log2} fold change values (numeric). Note that the
-#'   \code{up} and \code{down} thresholds are specified as raw fold changes
-#'   (e.g., \code{up = 1.5}), which are converted to log2 scale internally
-#'   before being applied to this column.
+#'   contains \strong{raw} fold change values (numeric). The function
+#'   automatically applies a log2 transformation internally. The \code{up}
+#'   and \code{down} thresholds are also specified as raw fold changes
+#'   (e.g., \code{up = 1.5}).
 #' @param z A single character string naming the column in \code{x} that
 #'   contains raw p-values (numeric, in \eqn{[0, 1]}).
 #' @param group An optional single character string naming the column in
@@ -151,17 +151,17 @@
 #'
 #' @examples
 #' ## -----------------------------------------------------------------------
-#' ## Example 1 — minimal synthetic data, no group
+#' ## Example 1 - minimal synthetic data, no group
 #' ## -----------------------------------------------------------------------
 #' set.seed(42)
 #' n   <- 200
 #' dat <- data.frame(
-#'   feature = paste0("feat_", seq_len(n)),
-#'   log2fc  = rnorm(n, 0, 2),
-#'   pvalue  = runif(n, 0, 0.5)
+#'   feature     = paste0("feat_", seq_len(n)),
+#'   fold_change = 2^rnorm(n, 0, 2),
+#'   pvalue      = runif(n, 0, 0.5)
 #' )
 #'
-#' res <- plot_volcano(x = dat, y = "log2fc", z = "pvalue")
+#' res <- plot_volcano(x = dat, y = "fold_change", z = "pvalue")
 #' print(res$plots[[1]])
 #'
 #' ## -----------------------------------------------------------------------
@@ -172,7 +172,7 @@
 #'
 #' res2 <- plot_volcano(
 #'   x        = dat,
-#'   y        = "log2fc",
+#'   y        = "fold_change",
 #'   z        = "pvalue",
 #'   features = "feature",
 #'   up       = 1.5,
@@ -187,7 +187,7 @@
 #' set.seed(7)
 #' dat_multi <- data.frame(
 #'   feature    = rep(paste0("feat_", seq_len(50)), 3),
-#'   log2fc     = rnorm(150, 0, 1.5),
+#'   fold_change = 2^rnorm(150, 0, 1.5),
 #'   pvalue     = runif(150, 0, 0.3),
 #'   comparison = rep(c("Severe_vs_Healthy", "Nonsevere_vs_Healthy",
 #'                      "Severe_vs_Nonsevere"), each = 50)
@@ -195,7 +195,7 @@
 #'
 #' res3 <- plot_volcano(
 #'   x           = dat_multi,
-#'   y           = "log2fc",
+#'   y           = "fold_change",
 #'   z           = "pvalue",
 #'   group       = "comparison",
 #'   features    = "feature",
@@ -211,7 +211,7 @@
 #' # Label everything with a 4-fold change that is also significant (p < 0.05)
 #' res4 <- plot_volcano(
 #'   x         = dat,
-#'   y         = "log2fc",
+#'   y         = "fold_change",
 #'   z         = "pvalue",
 #'   features  = "feature",
 #'   annotate2 = c(0.25, 4),
@@ -326,7 +326,7 @@ plot_volcano <- function(
 
     # Resolve column mapping
     if (missing(y) || is.null(y)) {
-      # Prefer raw fold_change because plot_volcano takes log2 internally in Step 13
+      # Favor raw fold_change column from run_foldchange output
       y <- if ("fold_change" %in% names(v_data)) "fold_change" else "log2_fc"
     }
     if (missing(z) || is.null(z)) {
@@ -743,8 +743,8 @@ plot_volcano <- function(
       ns_val    <- c(NS = ns_color)
 
       all_vals   <- c(up_vals, down_vals, ns_val)
-      up_labels  <- paste0(grp_levels, " \u2191")   # ↑ for up
-      dn_labels  <- paste0(grp_levels, " \u2193")   # ↓ for down
+      up_labels  <- paste0(grp_levels, " \u2191")   # \u2191 for up
+      dn_labels  <- paste0(grp_levels, " \u2193")   # \u2193 for down
       all_labels <- c(up_labels, dn_labels, "NS")
 
       ggplot2::scale_colour_manual(

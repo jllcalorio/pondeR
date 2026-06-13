@@ -52,8 +52,6 @@
 #'     lda_threshold = 2.0
 #'   )
 #' }
-#' @seealso \code{\link{plot_lefse}} for visualization (if implemented),
-#'   \code{\link{run_assoc}} for association testing.
 #' @encoding UTF-8
 #' @export
 run_lefse <- function(x,

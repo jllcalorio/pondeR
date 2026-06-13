@@ -33,7 +33,7 @@
 #'   is categorical. Requires at least 3 samples per group. Default: `TRUE`.
 #' @param ellipse_type Character. Type of ellipse: `"t"` (t-distribution, default) or
 #'   `"norm"` (normal distribution). Default: `"t"`.
-#' @param ellipse_level Numeric. Confidence level for ellipses (0–1). Default: `0.95`.
+#' @param ellipse_level Numeric. Confidence level for ellipses (0-1). Default: `0.95`.
 #' @param legend Character or `NULL`. Custom legend title. Default: `NULL` (uses `color_by`
 #'   column name).
 #' @param legend_position Character. Position of the legend. Options: `"bottom"`, `"top"`,
@@ -46,7 +46,7 @@
 #'   (default), the Okabe-Ito colorblind-friendly palette is used. Ignored when `color_by`
 #'   is numeric (continuous scale is always used for numeric variables).
 #' @param point_size Numeric. Size of points. Default: `10`.
-#' @param point_alpha Numeric. Transparency of points (0–1). Default: `0.8`.
+#' @param point_alpha Numeric. Transparency of points (0-1). Default: `0.8`.
 #' @param theme Character. ggplot2 theme to apply. Options: `"nature"`, `"minimal"`,
 #'   `"classic"`, `"bw"`, `"light"`, `"dark"`. Default: `"nature"` (a clean, publication-ready
 #'   style based on `theme_bw()`).
@@ -60,6 +60,7 @@
 #' @param zoom Numeric. Scaling factor applied uniformly to all text and point size elements.
 #'   Values > 1 enlarge, values < 1 shrink. Default: `1`.
 #' @param verbose Logical. Print progress messages. Default: `TRUE`.
+#' @param ... Additional arguments passed to methods.
 #'
 #' @return A `ggplot2` object.
 #'
@@ -107,7 +108,7 @@
 #' Outliers are identified using Mahalanobis distance from the group centroid.
 #' A sample is flagged as an outlier if it falls outside the confidence region defined
 #' by `ellipse_level`. The default (`0.95`) identifies samples outside the 95% confidence
-#' region. This exactly mirrors `ggplot2::stat_ellipse()` behaviour.
+#'   region. This exactly mirrors `ggplot2::stat_ellipse()` behavior.
 #'
 #' Outlier detection requires:
 #' - Categorical `color_by`
@@ -122,7 +123,7 @@
 #' **Themes:**
 #'
 #' The `"nature"` theme (default) is a clean, publication-ready style with a white
-#' background, minimal gridlines, and no top/right panel border — suitable for
+#' background, minimal gridlines, and no top/right panel border - suitable for
 #' journal figures. Other options map directly to their ggplot2 equivalents.
 #'
 #' @author John Lennon L. Calorio
@@ -132,7 +133,7 @@
 #' London: Academic Press.
 #'
 #' Brereton, R.G., & Lloyd, G.R. (2014). Partial least squares discriminant analysis:
-#' taking the magic away. *Journal of Chemometrics*, 28(4), 213–225.
+#' taking the magic away. *Journal of Chemometrics*, 28(4), 213-225.
 #' \doi{10.1002/cem.2609}
 #'
 #' Okabe, M., & Ito, K. (2002). *Color Universal Design (CUD): How to make figures
@@ -172,7 +173,7 @@
 #'                          group   = "Group",
 #'                          exclude = "QC")
 #'
-#' # Basic scores plot — nature theme, Okabe-Ito colors (defaults)
+#' # Basic scores plot - nature theme, Okabe-Ito colors (defaults)
 #' plot_score(res,
 #'            color_by    = "Group",
 #'            points_from = "Sample")
@@ -250,7 +251,8 @@ plot_score.run_pca <- function(
     legend_title_size = NULL,
     legend_text_size = NULL,
     zoom             = 1,
-    verbose          = TRUE
+    verbose          = TRUE,
+    ...
 ) {
 
   msg <- function(...) if (verbose) message(...)
@@ -919,11 +921,12 @@ plot_score.run_pls <- function(
 #'   \code{run_pcoa()}.
 #' @export
 plot_score.run_pcoa <- function(
-    res,                  # run_pcoa result (name kept for S3 consistency)
-    metadata,             # required: data.frame, same row order as pcoa scores
+    res,
     pc               = c(1, 2),
     color_by,
     points_from,
+    ...,
+    metadata         = NULL, # Reordered to fix S3 consistency
     title            = NULL,
     subtitle         = NULL,
     caption          = NULL,
@@ -948,11 +951,12 @@ plot_score.run_pcoa <- function(
     legend_title_size = NULL,
     legend_text_size  = NULL,
     zoom             = 1,
-    verbose          = TRUE
+    verbose          = TRUE,
+    ...
 ) {
 
   # ── 1. Validate metadata ────────────────────────────────────────────────────
-  if (missing(metadata)) {
+  if (missing(metadata) || is.null(metadata)) {
     stop(
       "'metadata' is required for plot_score.run_pcoa().\n",
       "  Provide a data.frame with one row per observation, in the same row ",
@@ -993,21 +997,13 @@ plot_score.run_pcoa <- function(
   class(proxy) <- c("run_pca", "list")   # borrow run_pca dispatch for the body
 
   # ── 3. Patch axis title builder so labels read "PCo" not "PC" ───────────────
-  if (is.numeric(pc)) {
-    pc_x <- as.integer(pc[1L])
-    pc_y <- as.integer(pc[2L])
-  } else {
-    pc_x <- as.integer(gsub("PC", "", pc[1L], ignore.case = TRUE))
-    pc_y <- as.integer(gsub("PC", "", pc[2L], ignore.case = TRUE))
-  }
-
   if (is.null(title)) {
-    title <- sprintf("PCoA Scores Plot (PCoA%d vs PCoA%d)", pc_x, pc_y)
+    title <- sprintf("PCoA Scores Plot (PCoA%d vs PCoA%d)", pc[1], pc[2])
   }
 
   # ── 3.5 Auto-generate PERMANOVA & Post-Hoc subtitle if present ──────────────
   if (is.null(subtitle)) {
-    sub_parts <- c()
+    sub_parts <- character(0)
 
     # Helper: format a p-value to 3 dp or "<0.001"
     .fmt_p_sub <- function(p) {
@@ -1123,8 +1119,8 @@ plot_score.run_pcoa <- function(
   # ── 5. Re-label axes to "PCo" convention ────────────────────────────────────
   ve <- res$variance_explained
   p  <- p + ggplot2::labs(
-    x = sprintf("PCoA%d (%.1f%%)", pc_x, ve[pc_x]),
-    y = sprintf("PCoA%d (%.1f%%)", pc_y, ve[pc_y])
+    x = sprintf("PCoA%d (%.1f%%)", pc[1], ve[pc[1]]),
+    y = sprintf("PCoA%d (%.1f%%)", pc[2], ve[pc[2]])
   )
 
   return(p)

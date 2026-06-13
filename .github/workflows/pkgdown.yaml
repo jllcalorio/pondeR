@@ -91,6 +91,11 @@ jobs:
             bioc::sva
             bioc::vsn
           needs: website
+          install-package: true
+
+      # Install package
+      - name: Install package
+        run: Rscript -e 'devtools::install_local(".", upgrade = "never")'
 
       # 10. Build pkgdown site
       - name: Build site
