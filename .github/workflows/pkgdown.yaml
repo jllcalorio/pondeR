@@ -95,7 +95,7 @@ jobs:
 
       # Install package
       - name: Install package
-        run: Rscript -e 'devtools::install_local(".", upgrade = "never")'
+        run: Rscript -e 'pak::local_install(".")'
 
       # 10. Build pkgdown site
       - name: Build site
