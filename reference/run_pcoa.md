@@ -171,9 +171,25 @@ elements:
   When `groups` is specified: the full result table from
   [`OmicFlow::pairwise_adonis`](https://rdrr.io/pkg/OmicFlow/man/pairwise_adonis.html).
 
+- `betadisper`:
+
+  When `dispersion = TRUE` and PERMANOVA is requested: the output from
+  [`betadisper`](https://vegandevs.github.io/vegan/reference/betadisper.html).
+
+- `permdisp`:
+
+  When `dispersion = TRUE` and PERMANOVA is requested: the output from
+  [`permutest`](https://vegandevs.github.io/vegan/reference/anova.cca.html)
+  on the betadisper result.
+
 - `call`:
 
   The matched function call.
+
+- `p_adjust`:
+
+  Character. The p-value adjustment method used for pairwise
+  comparisons.
 
 ## Details
 

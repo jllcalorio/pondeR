@@ -23,6 +23,7 @@ plot_volcano(
   down = 0.5,
   pval = 0.05,
   annotate = NULL,
+  annotate2 = NULL,
   use_ggrepel = TRUE,
   up_color = c("red", "purple", "yellow"),
   down_color = c("blue", "green", "cyan"),
@@ -146,6 +147,19 @@ plot_volcano(
   created with `setNames(feature_ids, display_names)`, in which case the
   display names are shown on the plot. A line segment always connects
   each label to its corresponding point. Default `NULL`.
+
+- annotate2:
+
+  An optional numeric vector of length 2 providing fold-change
+  thresholds for automatic annotation. Features with fold change \\\le\\
+  `annotate2[1]` or \\\ge\\ `annotate2[2]` will be labelled. The values
+  are specified as raw fold changes (not log2). To annotate only one
+  side, use `NA` for the other, e.g., `c(0.6, NA)`. Features selected by
+  `annotate2` must **also** meet the significance threshold defined by
+  `pval` (i.e., \\p \< \text{pval}\\). Requires `features` to be
+  specified. Labels added via `annotate2` use the feature identifiers
+  found in the `features` column. If `annotate` is also provided, both
+  sets of features are labelled. Default `NULL`.
 
 - use_ggrepel:
 
@@ -365,4 +379,21 @@ res3 <- plot_volcano(
 #> Error: Column `y` ("log2fc") contains non-positive values. Fold changes must be positive (e.g., 0.5 for a 2-fold decrease).
 print(res3$plots[[1]])
 #> Error: object 'res3' not found
+
+## -----------------------------------------------------------------------
+## Example 4 — threshold-based annotation (annotate2)
+## -----------------------------------------------------------------------
+# Label everything with a 4-fold change that is also significant (p < 0.05)
+res4 <- plot_volcano(
+  x         = dat,
+  y         = "log2fc",
+  z         = "pvalue",
+  features  = "feature",
+  annotate2 = c(0.25, 4),
+  up        = 1.5,
+  down      = 0.5
+)
+#> Error: Column `y` ("log2fc") contains non-positive values. Fold changes must be positive (e.g., 0.5 for a 2-fold decrease).
+print(res4$plots[[1]])
+#> Error: object 'res4' not found
 ```

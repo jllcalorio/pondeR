@@ -56,6 +56,7 @@ Supports treating zero values as missing, which is common in metabolomics data.<
 <span>  <span class="va">metadata</span>,</span>
 <span>  threshold <span class="op">=</span> <span class="fl">0.2</span>,</span>
 <span>  filter_by_group <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  any_group <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  include_QC <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  group_col <span class="op">=</span> <span class="st">"Group"</span>,</span>
 <span>  qc_types <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"QC"</span>, <span class="st">"SQC"</span>, <span class="st">"EQC"</span><span class="op">)</span>,</span>
@@ -87,6 +88,13 @@ Features with missing proportion &gt;= threshold are removed. Default: 0.2 (20%)
 <dt id="arg-filter-by-group">filter_by_group<a class="anchor" aria-label="anchor" href="#arg-filter-by-group"></a></dt>
 <dd><p>Logical. If TRUE, assess missingness within each group separately.
 A feature is kept if it passes the threshold in at least one group. Default: TRUE.</p></dd>
+
+
+<dt id="arg-any-group">any_group<a class="anchor" aria-label="anchor" href="#arg-any-group"></a></dt>
+<dd><p>Logical. Only used when <code>filter_by_group = TRUE</code>. If <code>TRUE</code>
+(default), a feature is retained if its missingness is below the <code>threshold</code>
+in <strong>any</strong> one group. This implements the "Modified 80% Rule" (Yang et al., 2015).
+If <code>FALSE</code>, the feature must satisfy the threshold in <strong>all</strong> groups.</p></dd>
 
 
 <dt id="arg-include-qc">include_QC<a class="anchor" aria-label="anchor" href="#arg-include-qc"></a></dt>
@@ -162,11 +170,17 @@ metabolomics datasets.</p>
 <p>Two filtering modes are available:</p>
 <ul><li><p><strong>Global filtering</strong> (<code>filter_by_group = FALSE</code>):
 Missingness is calculated across all eligible samples. Features with
-missing proportion greater than or equal to <code>threshold</code> are removed.</p></li>
+missing proportion greater than or equal to <code>threshold</code> are removed.
+When threshold = 0.20, essentially, you are implementing the procedure of
+Smilde et al. (2005), the <code>80% rule</code>, i.e., a variable will be kept if it
+has a non-zero value for at least 80% of all samples.</p></li>
 <li><p><strong>Group-wise filtering</strong> (<code>filter_by_group = TRUE</code>):
-Missingness is calculated separately within each group. A feature is
-retained if it satisfies the threshold in at least one group. This approach
-is less stringent and helps preserve group-specific features.</p></li>
+Missingness is calculated separately within each group. By default
+(<code>any_group = TRUE</code>), a feature is retained if it satisfies the
+threshold in at least one group. This implements the "Modified 80% Rule"
+(Yang et al., 2015), which is less stringent and helps preserve
+group-specific features. Set <code>any_group = FALSE</code> to require that the
+threshold is met across all groups.</p></li>
 </ul><p><strong>QC sample handling</strong></p>
 <p>When <code>include_QC = FALSE</code>, samples whose group labels match
 <code>qc_types</code> are excluded from missingness calculations. This is
@@ -179,9 +193,16 @@ patterns compared with biological samples.</p>
 Exploration &amp; Data Cleaning (Version 2.1) Zendono. <a href="https://doi.org/10.5281/zenodo.16824822" class="external-link">doi:10.5281/zenodo.16824822</a>
 .
 Retrieved from <a href="https://github.com/broadhurstdavid/QC-MXP" class="external-link">https://github.com/broadhurstdavid/QC-MXP</a>.</p>
+<p>Smilde, A. K., van der Werf, M. J., Bijlsma, S., van der Werff-van der Vat, B. J.,
+&amp; Jellema, R. H. (2005). Fusion of mass spectrometry-based metabolomics data.
+Anal. Chem. 77, 6729–6736. <a href="https://doi.org/10.1021/ac051080y" class="external-link">doi:10.1021/ac051080y</a>
+.</p>
 <p>Wei, R., Wang, J., Su, M., Jia, E., Chen, S., Chen, T., &amp; Ni, Y. (2018).
 Missing Value Imputation Approach for Mass Spectrometry-based Metabolomics Data.
 Scientific Reports, 8(1), 663. <a href="https://doi.org/10.1038/s41598-017-19120-0" class="external-link">doi:10.1038/s41598-017-19120-0</a></p>
+<p>Yang J, Zhao X, Lu X, Lin X and Xu G (2015) A data preprocessing strategy for
+metabolomics to reduce the mask effect in data analysis. Front. Mol. Biosci. 2:4.
+<a href="https://doi.org/10.3389/fmolb.2015.00004" class="external-link">doi:10.3389/fmolb.2015.00004</a></p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

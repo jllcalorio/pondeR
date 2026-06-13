@@ -47,37 +47,7 @@ plot_score(
 )
 
 # S3 method for class 'run_pls'
-plot_score(
-  res,
-  pc = c(1, 2),
-  color_by,
-  points_from,
-  title = NULL,
-  subtitle = NULL,
-  caption = NULL,
-  position = "center",
-  arrange_levels = NULL,
-  ellipse = TRUE,
-  ellipse_type = "t",
-  ellipse_level = 0.95,
-  legend = NULL,
-  legend_position = "bottom",
-  show_outliers = FALSE,
-  label_outliers = "all",
-  colors = NULL,
-  point_size = 10,
-  point_alpha = 0.8,
-  theme = "nature",
-  base_size = 30,
-  font_family = "sans",
-  axis_title_size = NULL,
-  axis_text_size = NULL,
-  plot_title_size = NULL,
-  legend_title_size = NULL,
-  legend_text_size = NULL,
-  zoom = 1,
-  verbose = TRUE
-)
+plot_score(res, pc = c(1, 2), title = NULL, subtitle = NULL, ...)
 
 # S3 method for class 'run_pcoa'
 plot_score(

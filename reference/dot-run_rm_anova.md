@@ -8,6 +8,7 @@ Called exclusively from the single-outcome path of `run_diff` when
 ``` r
 .run_rm_anova(
   x,
+  metadata,
   outcome,
   group,
   within,

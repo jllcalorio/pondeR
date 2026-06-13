@@ -5,6 +5,17 @@ by orchestrating the individual `run_*` functions of pondeR. Steps
 execute in a fixed, reproducible order regardless of argument
 arrangement.
 
+When `normalize_method` and/or `transform_method` are supplied as
+character vectors with more than one element, **all combinations** are
+computed. The steps prior to normalization (validation, outlier removal,
+missing-value filtering, imputation, and drift/batch correction) are
+executed **only once**; the normalization → transformation → scaling →
+quality filtering → replicate-merging branch is then repeated for every
+normalization × transformation pair. The return value in this case is a
+plain `list` (class `"run_DIpreprocess_multi"`) whose elements are named
+`<normalize>_<transform>` and each hold a standard `run_DIpreprocess`
+object.
+
 ## Usage
 
 ``` r
@@ -21,8 +32,10 @@ run_DIpreprocess(
   outliers = NULL,
   missing_threshold = 0.2,
   missing_by_group = TRUE,
+  missing_any_group = TRUE,
   missing_include_qc = FALSE,
-  impute_fraction = 0.2,
+  impute_method = 0.2,
+  impute_method_post_drift = NULL,
   positive_only = TRUE,
   correct_drift = TRUE,
   remove_uncorrected = FALSE,
@@ -30,10 +43,10 @@ run_DIpreprocess(
   spline_spar_limit = c(-1.5, 1.5),
   correct_on_log = TRUE,
   min_qc_per_batch = 5L,
-  normalize_method = "sum",
+  normalize_method = "median",
   normalize_ref_sample = NULL,
-  normalize_qc_method = "median",
-  transform_method = "log2",
+  normalize_qc_method = "none",
+  transform_method = "log10",
   vsn_cores = 1L,
   scale_nonpls = "auto",
   scale_pls = "pareto",
@@ -42,6 +55,7 @@ run_DIpreprocess(
   variance_percentile = 10,
   scale_filter_ref = "auto",
   merge_replicates = FALSE,
+  track = NULL,
   verbose = TRUE
 )
 ```
@@ -107,14 +121,25 @@ run_DIpreprocess(
 
   Logical. If `TRUE`, assess per group. Default: `TRUE`.
 
+- missing_any_group:
+
+  Logical. Only used when `missing_by_group = TRUE`. If `TRUE`
+  (default), a feature is retained if its missingness is below the
+  threshold in at least one group (Modified 80% Rule). If `FALSE`, it
+  must satisfy the threshold in all groups.
+
 - missing_include_qc:
 
   Logical. If `TRUE`, include QC samples. Default: `FALSE`.
 
-- impute_fraction:
+- impute_method:
 
   Numeric \> 0. Fraction of the smallest positive value per feature used
   for imputation. Default: `0.2`.
+
+- impute_method_post_drift:
+
+  Missing value imputation after signal drift and batch correction.
 
 - positive_only:
 
@@ -149,7 +174,9 @@ run_DIpreprocess(
 
 - normalize_method:
 
-  Character. Normalization method.
+  Character or character vector. One or more normalization methods to
+  apply. When multiple methods are supplied every method is paired with
+  every element of `transform_method` (Cartesian product).
 
   - `"sum"`: Normalizes by sum.
 
@@ -161,13 +188,13 @@ run_DIpreprocess(
 
   - `"pqn_reference"`: PQN using `normalize_ref_sample`.
 
-  - `"pqn_group"`: PQN grouping.
+  - `"pqn_group"`: PQN using pooled QC samples as reference.
 
   - `"quantile"`: Quantile normalization.
 
   - `"none"`: No normalization.
 
-  Default: `"sum"`.
+  Default: `"median"`.
 
 - normalize_ref_sample:
 
@@ -176,16 +203,18 @@ run_DIpreprocess(
 - normalize_qc_method:
 
   Character. QC normalization when using factors. One of `"mean"`,
-  `"median"`, `"none"`. Default: `"median"`.
+  `"median"`, `"none"`. Default: `"none"`.
 
 - transform_method:
 
-  Character. Transformation method.
+  Character or character vector. One or more transformation methods to
+  apply. When multiple methods are supplied every method is paired with
+  every element of `normalize_method` (Cartesian product).
 
   - `"log2"`, `"log10"`, `"sqrt"`, `"cbrt"`, `"clr"`, `"vsn"`, `"glog"`,
     or `"none"`.
 
-  Default: `"log2"`.
+  Default: `"log10"`.
 
 - vsn_cores:
 
@@ -225,27 +254,31 @@ run_DIpreprocess(
 
   Logical. Average technical replicates. Default: `FALSE`.
 
+- track:
+
+  Character vector or `NULL`. Feature names to monitor across
+  preprocessing steps. If a tracked feature is removed, the step and
+  reason (e.g., missingness percentage, RSD value) are recorded.
+  Default: `NULL`.
+
 - verbose:
 
   Logical. Print progress. Default: `TRUE`.
 
 ## Value
 
-A named list of class `run_DIpreprocess` containing:
+- Single combination (scalar `normalize_method` and scalar
+  `transform_method`):
 
-- `metadata`: Processed sample metadata.
+  A named list of class `run_DIpreprocess` — identical to the original
+  behaviour.
 
-- `data_raw`: Original feature matrix.
+- Multiple combinations (either argument is a vector of length \> 1):
 
-- `data_nonpls`: Final NONPLS-scaled, filtered data.
-
-- `data_pls`: Final PLS-scaled, filtered data.
-
-- `features_final`: Character vector of retained features.
-
-- `dimensions`: Sample and feature counts at each step.
-
-- `elapsed_seconds`: Execution time.
+  A named list of class `run_DIpreprocess_multi`. Each element is named
+  `<normalize>_<transform>` (e.g. `sum_log10`) and is itself a
+  `run_DIpreprocess` object. The shared pre-normalization data
+  (post-drift-correction) is stored in the `shared` attribute.
 
 ## Details
 
@@ -264,33 +297,38 @@ A named list of class `run_DIpreprocess` containing:
 5.  Signal drift correction
     ([`run_driftBatchCorrect`](https://jllcalorio.github.io/pondeR/reference/run_driftBatchCorrect.md))
 
-6.  Normalization
+6.  *\[Per combination\]* Normalization
     ([`run_normalize`](https://jllcalorio.github.io/pondeR/reference/run_normalize.md))
 
-7.  Transformation
+7.  *\[Per combination\]* Transformation
     ([`run_transform`](https://jllcalorio.github.io/pondeR/reference/run_transform.md))
 
-8.  Scaling
+8.  *\[Per combination\]* Scaling
     ([`run_scale`](https://jllcalorio.github.io/pondeR/reference/run_scale.md))
 
-9.  Quality filtering
+9.  *\[Per combination\]* Quality filtering
     ([`run_filterRSD`](https://jllcalorio.github.io/pondeR/reference/run_filterRSD.md),
     [`run_filtervariance`](https://jllcalorio.github.io/pondeR/reference/run_filtervariance.md))
 
-10. Common-feature harmonisation
+10. *\[Per combination\]* Common-feature harmonisation & replicate
+    merging
 
 ## Note
 
 **Zero Handling:** The pipeline automatically converts all `0` values in
-`x` to `NA` prior to analysis. This represents a strong, domain-specific
-assumption (common in mass spectrometry metabolomics) that zeros signify
-structural missingness (e.g., values below the limit of detection)
-rather than a true biological absence.
+`x` to `NA` prior to analysis.
+
+**Multi-method pre-flight checks:** When vectors are supplied for
+`normalize_method` or `transform_method`, the function validates all
+method-specific requirements (e.g. `norm_factor_col` for
+`"specific_factor"`, `normalize_ref_sample` for `"pqn_reference"`)
+*before* executing any preprocessing step, so errors are surfaced early
+rather than mid-run.
 
 ## References
 
 Kirwan, J.A., et al. (2013). *Analytical and Bioanalytical Chemistry*,
-405, 5147–5157.
+405, 5147-5157.
 
 ## See also
 
@@ -314,26 +352,46 @@ colnames(x) <- paste0("Feature", seq_len(n_f))
 x[sample(length(x), 400)] <- 0
 
 meta <- data.frame(
-  Sample          = paste0("S", seq_len(n_s)),
-  Group           = rep(c("Control", "Treatment", "QC"), c(30, 30, 20)),
-  Batch           = rep(1:2, each = 40),
+  Sample            = paste0("S", seq_len(n_s)),
+  Group             = rep(c("Control", "Treatment", "QC"), c(30, 30, 20)),
+  Batch             = rep(1:2, each = 40),
   InjectionSequence = seq_len(n_s),
-  SubjectID       = c(paste0("BIO", seq_len(60)), rep(NA, 20)),
-  stringsAsFactors = FALSE
+  SubjectID         = c(paste0("BIO", seq_len(60)), rep(NA, 20)),
+  stringsAsFactors  = FALSE
 )
 rownames(x) <- meta$Sample
 
-result <- run_DIpreprocess(
-  x              = x,
-  metadata       = meta,
+# --- Single combination (original behaviour) ---
+result_single <- run_DIpreprocess(
+  x                = x,
+  metadata         = meta,
   normalize_method = "pqn_group",
   transform_method = "log2",
-  scale_nonpls   = "auto",
-  scale_pls      = "pareto",
-  correct_drift  = FALSE
+  correct_drift    = FALSE
 )
+class(result_single)          # "run_DIpreprocess"
+dim(result_single$data_nonpls)
 
-dim(result$data_nonpls)
-result$dimensions
+# --- Multiple transform methods ---
+result_multi <- run_DIpreprocess(
+  x                = x,
+  metadata         = meta,
+  normalize_method = "median",
+  transform_method = c("log10", "vsn"),
+  correct_drift    = FALSE
+)
+class(result_multi)           # "run_DIpreprocess_multi"
+names(result_multi)           # "median_log10"  "median_vsn"
+
+# --- Full Cartesian product ---
+result_cart <- run_DIpreprocess(
+  x                = x,
+  metadata         = meta,
+  normalize_method = c("sum", "median"),
+  transform_method = c("log10", "vsn"),
+  correct_drift    = FALSE
+)
+names(result_cart)
+# "sum_log10"  "sum_vsn"  "median_log10"  "median_vsn"
 } # }
 ```

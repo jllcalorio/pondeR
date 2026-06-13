@@ -16,11 +16,12 @@ plot_dist_beforeafter(
   n_random = 30L,
   x_label = "Before",
   y_label = "After",
+  plot_title = NULL,
   x_fill = "#56B4E9",
   y_fill = "#E69F00",
   point_alpha = 0.6,
   theme = "nature",
-  base_size = 11,
+  base_size = 15,
   font_family = "sans",
   plot_cols = NULL,
   seed = 123,
@@ -73,6 +74,11 @@ plot_dist_beforeafter(
   Character. Label describing the after state, used in plot titles.
   Default is `"After"`.
 
+- plot_title:
+
+  Character or `NULL`. Main title for the combined plot. If `NULL`
+  (default), a title is automatically generated.
+
 - x_fill:
 
   Character. Fill color for before density and box plots. Default is
@@ -95,7 +101,7 @@ plot_dist_beforeafter(
 
 - base_size:
 
-  Numeric. Base font size for the theme (pts). Default is `11`.
+  Numeric. Base font size for the theme (pts). Default is `15`.
 
 - font_family:
 

@@ -158,11 +158,11 @@ Illegal Excel characters are stripped, names are truncated to 25 characters
 name <code>"History"</code> becomes <code>"History_"</code>, and duplicates get a
 <code>" (N)"</code> suffix (up to <code>" (999)"</code>, hence the 25-character base
 limit).</p>
-<p><strong>Single vs. multi-object behaviour.</strong>  When <code>x</code> is a single
-tabular object, the supplied <code>filename</code> is used exactly (after
-sanitisation).  When <code>x</code> is a list with multiple elements, the
-<code>filename</code> argument is ignored and each element's name is used as
-its sheet name; the workbook file is named after the list variable.</p>
+<p><strong>Filename priority.</strong>  The <code>filename</code> argument is prioritized
+unless it is left as the default <code>"output"</code>.  If <code>filename</code> is
+<code>"output"</code> and <code>x</code> is a list (or a pondeR result containing
+multiple tables), the function automatically uses the variable name of
+<code>x</code> as the filename for convenience.</p>
 <p><strong>pondeR result objects.</strong>  Objects whose class starts with
 <code>run_</code> (e.g. <code>run_auc</code>, <code>run_diff</code>) are unpacked
 automatically and their tabular slots are written as separate sheets.</p>

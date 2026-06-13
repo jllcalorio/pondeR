@@ -100,11 +100,11 @@ removed from the end first, then consonants if needed), the reserved
 name `"History"` becomes `"History_"`, and duplicates get a `" (N)"`
 suffix (up to `" (999)"`, hence the 25-character base limit).
 
-**Single vs. multi-object behaviour.** When `x` is a single tabular
-object, the supplied `filename` is used exactly (after sanitisation).
-When `x` is a list with multiple elements, the `filename` argument is
-ignored and each element's name is used as its sheet name; the workbook
-file is named after the list variable.
+**Filename priority.** The `filename` argument is prioritized unless it
+is left as the default `"output"`. If `filename` is `"output"` and `x`
+is a list (or a pondeR result containing multiple tables), the function
+automatically uses the variable name of `x` as the filename for
+convenience.
 
 **pondeR result objects.** Objects whose class starts with `run_` (e.g.
 `run_auc`, `run_diff`) are unpacked automatically and their tabular

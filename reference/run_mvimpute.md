@@ -51,6 +51,10 @@ run_mvimpute(
     [`mice`](https://amices.org/mice/reference/mice.html) from the mice
     package. Controlled further by `m`, `maxit`, `seed`, and `...`.
 
+  - **`"none"`** — Skips missing value imputation entirely and returns
+    the data exactly as-is. Useful for deferring imputation to a later
+    step.
+
   Default: `0.2` (1/5th of minimum, deterministic).
 
 - positive_only:

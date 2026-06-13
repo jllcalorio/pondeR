@@ -7,6 +7,7 @@
 <url><loc>https://jllcalorio.github.io/pondeR/articles/intro.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/authors.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/index.html</loc></url>
+<url><loc>https://jllcalorio.github.io/pondeR/reference/as_gt.run_correl.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/dot-assumption_row.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/dot-build_posthoc_df.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/dot-build_summary_table.html</loc></url>
@@ -40,6 +41,7 @@
 <url><loc>https://jllcalorio.github.io/pondeR/reference/plot_meanmap.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/plot_mixedmodel.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/plot_multi_y.html</loc></url>
+<url><loc>https://jllcalorio.github.io/pondeR/reference/plot_oddsratio.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/plot_relabund.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/plot_score.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/plot_scree.html</loc></url>
@@ -56,6 +58,8 @@
 <url><loc>https://jllcalorio.github.io/pondeR/reference/run_anthroindex.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/run_assoc.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/run_auc.html</loc></url>
+<url><loc>https://jllcalorio.github.io/pondeR/reference/run_contentvalidity.html</loc></url>
+<url><loc>https://jllcalorio.github.io/pondeR/reference/run_contentvaliditycvr.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/run_correl.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/run_diff.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/run_driftBatchCorrect.html</loc></url>
@@ -63,6 +67,7 @@
 <url><loc>https://jllcalorio.github.io/pondeR/reference/run_filtermissing.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/run_filtervariance.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/run_foldchange.html</loc></url>
+<url><loc>https://jllcalorio.github.io/pondeR/reference/run_lefse.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/run_logreg.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/run_mixedmodel.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/run_move_names.html</loc></url>
@@ -76,10 +81,15 @@
 <url><loc>https://jllcalorio.github.io/pondeR/reference/run_regreg.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/run_relabel.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/run_scale.html</loc></url>
+<url><loc>https://jllcalorio.github.io/pondeR/reference/run_single_assoc.html</loc></url>
+<url><loc>https://jllcalorio.github.io/pondeR/reference/run_subset.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/run_summarytable.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/run_transform.html</loc></url>
+<url><loc>https://jllcalorio.github.io/pondeR/reference/run_vector2df.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/save_excel.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/save_plots.html</loc></url>
+<url><loc>https://jllcalorio.github.io/pondeR/reference/select_catvars.html</loc></url>
+<url><loc>https://jllcalorio.github.io/pondeR/reference/select_numvars.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/summary.run_assoc.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/summary.run_assoc_multi.html</loc></url>
 <url><loc>https://jllcalorio.github.io/pondeR/reference/summary.run_diff.html</loc></url>

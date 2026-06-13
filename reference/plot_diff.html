@@ -61,6 +61,7 @@ single-outcome engine that powers <code><a href="run_diff.html">run_diff</a></co
 <span>  <span class="va">x</span>,</span>
 <span>  <span class="va">outcome</span>,</span>
 <span>  <span class="va">group</span>,</span>
+<span>  metadata <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  plot_vars <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  plot_type <span class="op">=</span> <span class="st">"boxplot"</span>,</span>
 <span>  test_type <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -116,6 +117,11 @@ specified.</p></dd>
 <dt id="arg-group">group<a class="anchor" aria-label="anchor" href="#arg-group"></a></dt>
 <dd><p>Character string specifying the column name for the grouping
 variable.</p></dd>
+
+
+<dt id="arg-metadata">metadata<a class="anchor" aria-label="anchor" href="#arg-metadata"></a></dt>
+<dd><p>A data frame containing metadata (e.g., grouping variables).
+If <code>NULL</code>, <code>x</code> is used as metadata. Default is <code>NULL</code>.</p></dd>
 
 
 <dt id="arg-plot-vars">plot_vars<a class="anchor" aria-label="anchor" href="#arg-plot-vars"></a></dt>

@@ -4,10 +4,12 @@ Generates a stacked bar chart of relative abundances from a feature
 matrix, optionally restricting the display to the top or bottom `limit`
 features by *total* abundance and collapsing the remainder into an
 `"Others"` category. Samples may be shown individually or aggregated by
-a grouping variable using the mean or median. Both horizontal and
-vertical orientations are supported, along with full control over
-colours, fonts, legend layout, and axis labels. Column names containing
-spaces or special characters are fully supported.
+a grouping variable by summing raw counts per group before normalising.
+Both horizontal and vertical orientations are supported, along with full
+control over colours, fonts, legend layout, and axis labels. Column
+names containing spaces or special characters are fully supported. When
+plotting individual samples, bracket annotations can be drawn beneath
+(or beside) the bars to visually group samples by a metadata variable.
 
 ## Usage
 
@@ -19,16 +21,18 @@ plot_relabund(
   sort = NULL,
   others_position = NULL,
   show_x_as = NULL,
-  group_aggregate = NULL,
+  group_aggregate = FALSE,
   normalize_to_relabund = TRUE,
   ignore_normalization = FALSE,
   order = NULL,
+  group_brackets = NULL,
   angle = NULL,
   abundance_in_y = TRUE,
   legend_position = NULL,
   legend_nrow = NULL,
   legend_ncol = NULL,
   italicize_legend_items = FALSE,
+  exclude_unknown = FALSE,
   exclude_others = FALSE,
   unknown_before_others = TRUE,
   theme = "nature",
@@ -56,11 +60,11 @@ plot_relabund(
   A `data.frame`, `tibble`, or `matrix` with named columns representing
   features (e.g., taxa, metabolites). Rows are samples; columns are
   features. Column names may contain spaces and special characters.
-  **When `group_aggregate = NULL` and `ignore_normalization = FALSE`**,
+  **When `group_aggregate = FALSE` and `ignore_normalization = FALSE`**,
   `x` is expected to already contain row-wise relative abundances (each
-  row summing to 1). A warning is issued for any column whose sum is not
-  0 or 1, indicating that column-wise relative abundance normalisation
-  may not have been applied.
+  row summing to 1). A warning is issued for any row whose sum is not 0
+  or 1, indicating that row-wise relative abundance normalisation may
+  not have been applied.
 
 - metadata:
 
@@ -105,21 +109,20 @@ plot_relabund(
 
 - group_aggregate:
 
-  Character or `NULL`. If `"mean"` or `"median"`, `show_x_as` is treated
-  as a grouping variable and raw feature values in `x` are aggregated
-  per group before normalising to relative abundances. **Assumes `x`
-  contains raw (unnormalised) data.** See `normalize_to_relabund`. If
-  `NULL` (default), each row in `x` is an individual sample and `x` must
-  already contain row-wise relative abundances (unless
-  `ignore_normalization = TRUE`).
+  Logical. If `TRUE`, `show_x_as` is treated as a grouping variable and
+  raw feature values in `x` are summed per group before normalising to
+  relative abundances. **Assumes `x` contains raw (unnormalised) data.**
+  If `FALSE` (default), each row in `x` is treated as an individual
+  sample. Cannot be `TRUE` simultaneously with `group_brackets`.
 
 - normalize_to_relabund:
 
-  Logical. Relevant when `group_aggregate` is non-`NULL` or `sort` is
-  `"high"`/`"low"`. If `TRUE` (default),
-  `run_normalize(method = "col_rel_abundance")` is applied to `x` before
-  aggregation or ranking. Set to `FALSE` if `x` is already appropriately
-  normalised. Ignored when `ignore_normalization = TRUE`.
+  Logical. Relevant when `group_aggregate = TRUE` or `sort` is
+  `"high"`/`"low"`. If `TRUE` (default), row-wise relative abundance
+  normalisation is applied to `x` via
+  `run_normalize(method = "row_rel_abundance")` before aggregation or
+  ranking. Set to `FALSE` if `x` is already appropriately normalised.
+  Ignored when `ignore_normalization = TRUE`.
 
 - ignore_normalization:
 
@@ -137,11 +140,21 @@ plot_relabund(
   sequence. `"alphanumeric"` sorts lexicographically. `NULL` (default)
   preserves natural order of appearance in `metadata`.
 
+- group_brackets:
+
+  A formula or `NULL`. Draws bracket annotations beneath (or beside,
+  when `abundance_in_y = FALSE`) the bars to visually group individual
+  samples by a metadata variable. Specify as a one-sided formula of the
+  form `GroupCol ~ c("Level1", "Level2")`, where `GroupCol` is a column
+  in `metadata` and the right-hand side gives the display order of the
+  groups. **Cannot be used when `group_aggregate = TRUE`.** Default is
+  `NULL`.
+
 - angle:
 
   Numeric or `NULL`. Rotation angle (0–360 degrees) for sample/group
-  tick labels. `NULL` (default): `0` when `group_aggregate` is
-  non-`NULL`, `45` otherwise.
+  tick labels. `NULL` (default): `0` when `group_aggregate = TRUE`, `45`
+  otherwise.
 
 - abundance_in_y:
 
@@ -169,6 +182,12 @@ plot_relabund(
 
   Logical. Render legend labels in italic. Requires `ggtext`; falls back
   to `element_text(face = "italic")` with a warning. Default `FALSE`.
+
+- exclude_unknown:
+
+  Logical. If `TRUE`, any feature whose name is exactly `"unknown"`
+  (case-insensitive) is omitted from the plot entirely. Default is
+  `FALSE`.
 
 - exclude_others:
 
@@ -275,8 +294,20 @@ the bottom `limit` features by total are retained instead.
 `normalize_to_relabund = TRUE`, row-relative abundance is applied via
 `run_normalize(method = "row_rel_abundance")` before any aggregation or
 ranking. Row-wise proportions are then computed so each bar sums to
-100\\ `ignore_normalization = TRUE`, the data are plotted as supplied
-and the y-axis label should be interpreted accordingly.
+100\\ When `ignore_normalization = TRUE`, the data are plotted as
+supplied and the y-axis label should be interpreted accordingly.
+
+**Group aggregation.** When `group_aggregate = TRUE`, all rows belonging
+to the same level of `show_x_as` are summed (raw counts), and the result
+is then normalised to row-wise relative abundances. This is incompatible
+with `group_brackets`.
+
+**Group brackets.** When `group_brackets` is supplied (and
+`group_aggregate = FALSE`), bracket annotations are drawn below each set
+of sample bars that belong to the same group, with the group label
+centred beneath the bracket. The formula right-hand side controls both
+which groups appear and their left-to-right order. Any group present in
+`metadata` but absent from the right-hand side is appended at the end.
 
 **Legend reversal when flipped.** When `abundance_in_y = FALSE`,
 `coord_flip()` causes the stack to render left-to-right. The legend fill
@@ -308,7 +339,7 @@ meta <- data.frame(
   Group    = rep(c("Control", "Treatment"), each = n / 2L)
 )
 
-# --- Pipeline: col_rel_abundance → CLR → plot as-is ---
+# --- Pipeline: col_rel_abundance -> CLR -> plot as-is ---
 norm_out <- run_normalize(counts, meta, method = "col_rel_abundance",
                           verbose = FALSE)
 clr_out  <- run_transform(norm_out$data, method = "clr")
@@ -321,12 +352,12 @@ plot_relabund(
   plot_title           = "Gut Microbiome (CLR-transformed)"
 )
 
-# --- Group-aggregated from raw counts, bold title ---
+# --- Group-aggregated from raw counts (group_aggregate = TRUE) ---
 plot_relabund(
   x               = counts,
   metadata        = meta,
   show_x_as       = "Group",
-  group_aggregate = "mean",
+  group_aggregate = TRUE,
   order           = c("Treatment", "Control"),
   limit           = 8L,
   sort            = "high",
@@ -334,12 +365,26 @@ plot_relabund(
   legend_title    = "Phylum"
 )
 
-# --- Horizontal bars ---
+# --- Individual samples with group brackets (group_aggregate = FALSE) ---
+plot_relabund(
+  x                = counts,
+  metadata         = meta,
+  show_x_as        = "SampleID",
+  group_aggregate  = FALSE,
+  group_brackets   = Group ~ c("Control", "Treatment"),
+  limit            = 8L,
+  sort             = "high",
+  plot_title       = "Relative Abundance by Sample",
+  legend_title     = "Phylum"
+)
+
+# --- Horizontal bars, individual samples, group brackets ---
 plot_relabund(
   x                     = counts,
   metadata              = meta,
-  show_x_as             = "Group",
-  group_aggregate       = "mean",
+  show_x_as             = "SampleID",
+  group_aggregate       = FALSE,
+  group_brackets        = Group ~ c("Control", "Treatment"),
   limit                 = 6L,
   exclude_others        = FALSE,
   unknown_before_others = TRUE,

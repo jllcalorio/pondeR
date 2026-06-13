@@ -50,19 +50,28 @@ downstream use by <code>plot_diff</code>. Not intended for direct use.</p>
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">.run_diff_single</span><span class="op">(</span></span>
 <span>  <span class="va">x</span>,</span>
+<span>  metadata <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">outcome</span>,</span>
-<span>  <span class="va">group</span>,</span>
+<span>  group <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  filter <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  within <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  subject_id <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  paired <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  test_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"parametric"</span>, <span class="st">"nonparametric"</span><span class="op">)</span>,</span>
 <span>  normality_method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"shapiro"</span>, <span class="st">"lilliefors"</span><span class="op">)</span>,</span>
 <span>  alpha_normality <span class="op">=</span> <span class="fl">0.05</span>,</span>
 <span>  alpha_variance <span class="op">=</span> <span class="fl">0.05</span>,</span>
+<span>  alpha_sphericity <span class="op">=</span> <span class="fl">0.05</span>,</span>
+<span>  type_sosquares <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  rm_effect_size <span class="op">=</span> <span class="st">"ges"</span>,</span>
+<span>  correction <span class="op">=</span> <span class="st">"auto"</span>,</span>
 <span>  test_alpha <span class="op">=</span> <span class="fl">0.05</span>,</span>
 <span>  min_n_threshold <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>  calculate_effect_size <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  perform_posthoc <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  p_adjust_method <span class="op">=</span> <span class="st">"BH"</span>,</span>
 <span>  group_order <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  subgroup <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  num_cores <span class="op">=</span> <span class="fl">1L</span></span>
 <span><span class="op">)</span></span></code></pre></div>

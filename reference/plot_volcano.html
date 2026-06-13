@@ -73,6 +73,7 @@ group, saving publication space.</p>
 <span>  down <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>  pval <span class="op">=</span> <span class="fl">0.05</span>,</span>
 <span>  annotate <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  annotate2 <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  use_ggrepel <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  up_color <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"red"</span>, <span class="st">"purple"</span>, <span class="st">"yellow"</span><span class="op">)</span>,</span>
 <span>  down_color <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"blue"</span>, <span class="st">"green"</span>, <span class="st">"cyan"</span><span class="op">)</span>,</span>
@@ -188,6 +189,20 @@ May be a plain character vector (labels shown as-is) or a named character
 vector created with <code>setNames(feature_ids, display_names)</code>, in which
 case the display names are shown on the plot. A line segment always
 connects each label to its corresponding point. Default <code>NULL</code>.</p></dd>
+
+
+<dt id="arg-annotate-">annotate2<a class="anchor" aria-label="anchor" href="#arg-annotate-"></a></dt>
+<dd><p>An optional numeric vector of length 2 providing fold-change
+thresholds for automatic annotation. Features with fold change \(\le\)
+<code>annotate2[1]</code> or \(\ge\) <code>annotate2[2]</code> will be labelled.
+The values are specified as raw fold changes (not log2). To annotate only
+one side, use <code>NA</code> for the other, e.g., <code>c(0.6, NA)</code>. Features
+selected by <code>annotate2</code> must <strong>also</strong> meet the significance
+threshold defined by <code>pval</code> (i.e., \(p &lt; \text{pval}\)).
+Requires <code>features</code> to be specified.
+Labels added via <code>annotate2</code> use the feature identifiers
+found in the <code>features</code> column. If <code>annotate</code> is also provided,
+both sets of features are labelled. Default <code>NULL</code>.</p></dd>
 
 
 <dt id="arg-use-ggrepel">use_ggrepel<a class="anchor" aria-label="anchor" href="#arg-use-ggrepel"></a></dt>
@@ -407,6 +422,23 @@ or <code>"NS"</code>).</p></dd>
 <span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error:</span> Column `y` ("log2fc") contains non-positive values. Fold changes must be positive (e.g., 0.5 for a 2-fold decrease).</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">res3</span><span class="op">$</span><span class="va">plots</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span></span>
 <span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error:</span> object 'res3' not found</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">## -----------------------------------------------------------------------</span></span></span>
+<span class="r-in"><span><span class="co">## Example 4 — threshold-based annotation (annotate2)</span></span></span>
+<span class="r-in"><span><span class="co">## -----------------------------------------------------------------------</span></span></span>
+<span class="r-in"><span><span class="co"># Label everything with a 4-fold change that is also significant (p &lt; 0.05)</span></span></span>
+<span class="r-in"><span><span class="va">res4</span> <span class="op">&lt;-</span> <span class="fu">plot_volcano</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  x         <span class="op">=</span> <span class="va">dat</span>,</span></span>
+<span class="r-in"><span>  y         <span class="op">=</span> <span class="st">"log2fc"</span>,</span></span>
+<span class="r-in"><span>  z         <span class="op">=</span> <span class="st">"pvalue"</span>,</span></span>
+<span class="r-in"><span>  features  <span class="op">=</span> <span class="st">"feature"</span>,</span></span>
+<span class="r-in"><span>  annotate2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.25</span>, <span class="fl">4</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  up        <span class="op">=</span> <span class="fl">1.5</span>,</span></span>
+<span class="r-in"><span>  down      <span class="op">=</span> <span class="fl">0.5</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error:</span> Column `y` ("log2fc") contains non-positive values. Fold changes must be positive (e.g., 0.5 for a 2-fold decrease).</span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">res4</span><span class="op">$</span><span class="va">plots</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error:</span> object 'res4' not found</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

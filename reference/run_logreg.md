@@ -15,6 +15,11 @@ warranting penalized likelihood. A column in the output indicates
 whether Firth's correction was applied to each model. Output is
 formatted as a clean data frame.
 
+When `crude = TRUE`, a separate simple logistic regression is fitted for
+each variable in `indep` against `y`, producing unadjusted (crude) odds
+ratios. Results are stacked into a single tidy data frame. The
+`confounders` and `iterate` arguments are ignored in this mode.
+
 ## Usage
 
 ``` r
@@ -28,6 +33,7 @@ run_logreg(
   remove = NULL,
   exclude = NULL,
   iterate = FALSE,
+  crude = FALSE,
   add_vif = TRUE,
   apply_firth = TRUE,
   force_apply_firth = FALSE
@@ -48,12 +54,14 @@ run_logreg(
 - confounders:
 
   A character vector of valid column names in `x` to be used as
-  confounding factors. Default is `NULL`.
+  confounding factors. Ignored when `crude = TRUE` (a warning is
+  emitted). Default is `NULL`.
 
 - indep:
 
   A character vector of valid column names in `x` to be used as
-  independent variables. Default is `NULL`.
+  independent variables. When `crude = TRUE`, each variable is modelled
+  individually against `y`. Default is `NULL`.
 
 - ref:
 
@@ -66,7 +74,8 @@ run_logreg(
   names to their desired reference categories. The left-hand side must
   be a valid column name of `x` (quoted as a string), and the right-hand
   side must be a valid category of that column (e.g.,
-  `list("Sex" ~ "Female", "District" ~ "North")`). Default is `NULL`.
+  `list("Sex" ~ "Female", "District" ~ "North")`). Applied in both
+  standard and crude modes. Default is `NULL`.
 
 - remove:
 
@@ -75,19 +84,31 @@ run_logreg(
   valid column name of `x` (quoted as a string), and the right-hand side
   must be a valid category of that column to be removed. Multiple
   mappings may target the same column to remove multiple categories
-  (e.g., `list("Sex" ~ "Unknown", "District" ~ "Other")`). Default is
-  `NULL`.
+  (e.g., `list("Sex" ~ "Unknown", "District" ~ "Other")`). Applied in
+  both standard and crude modes. Default is `NULL`.
 
 - exclude:
 
   A character vector of categories in `y` to drop before analysis.
-  Default is `NULL`.
+  Applied in both standard and crude modes. Default is `NULL`.
 
 - iterate:
 
   Logical; if `FALSE` (default), combines `confounders` and `indep` into
   a single model. If `TRUE`, fits separate models for all possible
-  combinations of `indep` added to `confounders`.
+  combinations of `indep` added to `confounders`. Ignored when
+  `crude = TRUE`.
+
+- crude:
+
+  Logical; if `TRUE`, fits a separate simple (unadjusted) logistic
+  regression for each variable in `indep` against `y`, producing crude
+  odds ratios. Results are stacked into a single tidy data frame with
+  the same column structure as the standard output. `confounders` and
+  `iterate` are ignored in this mode (a warning is emitted if
+  `confounders` is non-`NULL`). All other parameters (`ref`,
+  `ref_levels`, `remove`, `exclude`, `add_vif`, `apply_firth`,
+  `force_apply_firth`) remain applicable. Default is `FALSE`.
 
 - add_vif:
 
@@ -99,7 +120,8 @@ run_logreg(
   from a standard [`glm()`](https://rdrr.io/r/stats/glm.html) fit even
   when Firth's correction is applied, as
   [`car::vif()`](https://rdrr.io/pkg/car/man/vif.html) does not support
-  `logistf` objects.
+  `logistf` objects. In crude mode, VIF is not meaningful for simple
+  (one-predictor) models and will be `NA` throughout.
 
 - apply_firth:
 
@@ -110,25 +132,34 @@ run_logreg(
   variable has a zero cell count in its cross-tabulation with the
   outcome. Models with no zero cells are fitted using standard
   [`glm()`](https://rdrr.io/r/stats/glm.html) regardless of this
-  setting. A logical column `Firth Corrected` is added to the `Metrics`
-  table (and attached metrics for `iterate = FALSE`) indicating whether
-  Firth's correction was applied to each model.
+  setting. A logical column `Firth Corrected` is added to the output
+  indicating whether Firth's correction was applied to each model.
+  Applicable in both standard and crude modes.
 
 - force_apply_firth:
 
   Logical; if `TRUE` (default `FALSE`), overrides the dynamic zero-cell
   detection of `apply_firth` and applies Firth's correction to *all*
   models regardless of whether zero cells are present. Ignored if
-  `apply_firth = FALSE`.
+  `apply_firth = FALSE`. Applicable in both standard and crude modes.
 
 ## Value
 
-If `iterate = FALSE`, returns a data frame containing Predictor, Log
-Odds, Std Error, p-value, Significance, OR, 95\\ McFadden R2, CoxSnell
-R2, Nagelkerke R2, Tjur R2, Firth Corrected) in the first row. Model
-metrics are also attached as `attr(result, "model_metrics")`.
+If `crude = TRUE`, returns a single tidy data frame with rows for all
+`indep` variables stacked sequentially (separated by blank spacer rows).
+Columns: Predictor, Log Odds, Std Error, p-value, Significance, OR, 95\\
+Deviance, AIC, BIC, McFadden R2, CoxSnell R2, Nagelkerke R2, Tjur R2,
+Firth Corrected. Inline model metrics are placed in the first
+(intercept) row of each variable's block.
 
-If `iterate = TRUE`, returns a named list containing:
+If `crude = FALSE` and `iterate = FALSE`, returns a data frame
+containing Predictor, Log Odds, Std Error, p-value, Significance, OR,
+95\\ (Deviance, AIC, BIC, McFadden R2, CoxSnell R2, Nagelkerke R2, Tjur
+R2, Firth Corrected) in the first row. Model metrics are also attached
+as `attr(result, "model_metrics")`.
+
+If `crude = FALSE` and `iterate = TRUE`, returns a named list
+containing:
 
 - Tables:
 
@@ -157,6 +188,21 @@ If `iterate = TRUE`, returns a named list containing:
   multicollinearity.
 
 ## Details
+
+**Crude odds ratios (`crude = TRUE`):** Each variable in `indep` is
+fitted in a separate simple logistic regression model with `y` as the
+only outcome and no covariates, yielding unadjusted (crude) odds ratios.
+All preprocessing steps — category exclusion (`exclude`), predictor
+category removal (`remove`), dependent variable releveling (`ref`), and
+predictor releveling (`ref_levels`) — are applied before each model is
+fitted. The results are stacked row-wise into a single tidy data frame.
+Each variable's rows are separated by a blank spacer row to visually
+group the predictors. Inline model-fit metrics (Deviance, AIC, BIC, and
+R2 measures) are placed in the first row of each variable's block
+(aligned with its intercept row), and `NA` elsewhere. Because each model
+contains only one predictor, VIF is not meaningful and the `VIF` column
+will be `NA` for all rows. `confounders` and `iterate` are silently
+ignored after emitting a warning.
 
 When `iterate = TRUE`, the function generates all possible combinations
 (the power set) of the `indep` vector. For example, if
@@ -216,8 +262,8 @@ scheme: `***` if \\p \< .001\\, `**` if \\p \< .01\\, `*` if \\p \<
 **Inline model metrics:** Model-fit statistics (Deviance, AIC, BIC,
 McFadden R2, CoxSnell R2, Nagelkerke R2, Tjur R2, Firth Corrected) are
 appended as additional columns to the right of the `VIF` column. Values
-are placed only in the first row (aligned with the intercept); all
-subsequent rows contain `NA` for these columns.
+are placed only in the first row of each model block (aligned with the
+intercept); all subsequent rows contain `NA` for these columns.
 
 ## References
 
@@ -251,12 +297,12 @@ John Lennon L. Calorio
 if (FALSE) { # \dontrun{
 # --- Example 1: Single model with Firth's correction applied dynamically ---
 result <- run_logreg(
-  x          = my_data,
-  y          = "Outcome",
+  x           = my_data,
+  y           = "Outcome",
   confounders = c("Age", "Sex"),
-  indep      = c("Biomarker_A", "Biomarker_B"),
-  ref        = "Control",
-  ref_levels = list("Sex" ~ "Female"),
+  indep       = c("Biomarker_A", "Biomarker_B"),
+  ref         = "Control",
+  ref_levels  = list("Sex" ~ "Female"),
   apply_firth = TRUE
 )
 result
@@ -264,18 +310,30 @@ attr(result, "model_metrics")
 
 # --- Example 2: Iterative models with forced Firth and VIF filtering -------
 results <- run_logreg(
-  x                = my_data,
-  y                = "Outcome",
-  confounders      = c("Age", "Sex", "Site"),
-  indep            = c("Biomarker_A", "Biomarker_B", "Biomarker_C"),
-  ref              = "Control",
-  ref_levels       = list("Sex" ~ "Female", "Site" ~ "Main"),
-  exclude          = "Indeterminate",
-  iterate          = TRUE,
-  apply_firth      = TRUE,
+  x                 = my_data,
+  y                 = "Outcome",
+  confounders       = c("Age", "Sex", "Site"),
+  indep             = c("Biomarker_A", "Biomarker_B", "Biomarker_C"),
+  ref               = "Control",
+  ref_levels        = list("Sex" ~ "Female", "Site" ~ "Main"),
+  exclude           = "Indeterminate",
+  iterate           = TRUE,
+  apply_firth       = TRUE,
   force_apply_firth = TRUE
 )
 results$Metrics
 results$vif_filtered_Tables
+
+# --- Example 3: Crude (unadjusted) odds ratios for each biomarker ----------
+crude_results <- run_logreg(
+  x           = my_data,
+  y           = "Outcome",
+  indep       = c("Biomarker_A", "Biomarker_B", "Biomarker_C"),
+  ref         = "Control",
+  ref_levels  = list("Sex" ~ "Female"),
+  crude       = TRUE,
+  apply_firth = TRUE
+)
+crude_results
 } # }
 ```

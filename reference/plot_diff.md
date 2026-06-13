@@ -15,6 +15,7 @@ plot_diff(
   x,
   outcome,
   group,
+  metadata = NULL,
   plot_vars = NULL,
   plot_type = "boxplot",
   test_type = NULL,
@@ -67,6 +68,11 @@ plot_diff(
 - group:
 
   Character string specifying the column name for the grouping variable.
+
+- metadata:
+
+  A data frame containing metadata (e.g., grouping variables). If
+  `NULL`, `x` is used as metadata. Default is `NULL`.
 
 - plot_vars:
 

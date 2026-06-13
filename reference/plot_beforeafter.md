@@ -18,6 +18,8 @@ plot_beforeafter(
   col_batch = "Batch",
   col_group = "Group",
   col_qc_label = c("QC", "SQC", "EQC"),
+  arrange_group = NULL,
+  plot_title = NULL,
   x_label = "Before",
   y_label = "After",
   log_transform = TRUE,
@@ -25,7 +27,7 @@ plot_beforeafter(
   point_alpha = 0.7,
   plot_cols = NULL,
   theme = "nature",
-  base_size = 11,
+  base_size = 15,
   font_family = "sans",
   seed = 123,
   global_font_size = NULL,
@@ -59,9 +61,10 @@ plot_beforeafter(
 - plot_what:
 
   Character vector or `NULL`. Column names from `x` to be plotted. If
-  `NULL` (default), the function will randomly select up to 6 feature
-  names from `x`. If `x` has fewer than 6 features, all available
-  features will be plotted. This argument is required.
+  `NULL` (default), the function randomly selects up to 6 features. If
+  specific features are provided but not found, a warning is issued and
+  they are skipped. If none of the provided features are found, the
+  function falls back to random selection.
 
 - col_injection:
 
@@ -91,6 +94,18 @@ plot_beforeafter(
   line is drawn. Default is `c("QC", "SQC", "EQC")`. If
   `run_DIpreprocess` class, value is automatically taken from
   `$parameters$qc_types`.
+
+- arrange_group:
+
+  Character vector or `NULL`. Custom order for the sample groups in
+  `col_group`. If `NULL` (default), groups are arranged
+  alphanumerically, with `col_qc_label` values placed first.
+
+- plot_title:
+
+  Character or `NULL`. Main title for the combined plot. If `NULL`
+  (default), a title is automatically generated based on `x_label`,
+  `y_label`, and the number of batches.
 
 - x_label:
 
@@ -129,7 +144,7 @@ plot_beforeafter(
 
 - base_size:
 
-  Numeric. Base font size for the theme (pts). Default is `11`.
+  Numeric. Base font size for the theme (pts). Default is `15`.
 
 - font_family:
 

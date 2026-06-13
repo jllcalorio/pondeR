@@ -8,7 +8,11 @@ of independent variables. When apply_firth = TRUE, Firth's correction is applied
 selectively — only to models where at least one predictor-outcome cross-tabulation contains a
 zero cell, which is the primary condition warranting penalized likelihood. A column in the
 output indicates whether Firth's correction was applied to each model. Output is formatted as
-a clean data frame."><meta property="og:description" content="A robust wrapper for glm (standard logistic regression) and
+a clean data frame.
+When crude = TRUE, a separate simple logistic regression is fitted for each variable
+in indep against y, producing unadjusted (crude) odds ratios. Results are
+stacked into a single tidy data frame. The confounders and iterate arguments
+are ignored in this mode."><meta property="og:description" content="A robust wrapper for glm (standard logistic regression) and
 logistf (Firth's bias-reduced penalized-likelihood logistic regression)
 that performs binary logistic regression. It automatically handles column names with spaces,
 computes advanced model fit metrics, maps specific reference categories, removes specified
@@ -17,7 +21,11 @@ of independent variables. When apply_firth = TRUE, Firth's correction is applied
 selectively — only to models where at least one predictor-outcome cross-tabulation contains a
 zero cell, which is the primary condition warranting penalized likelihood. A column in the
 output indicates whether Firth's correction was applied to each model. Output is formatted as
-a clean data frame."><link rel="preconnect" href="https://fonts.googleapis.com"></head><body>
+a clean data frame.
+When crude = TRUE, a separate simple logistic regression is fitted for each variable
+in indep against y, producing unadjusted (crude) odds ratios. Results are
+stacked into a single tidy data frame. The confounders and iterate arguments
+are ignored in this mode."><link rel="preconnect" href="https://fonts.googleapis.com"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -68,6 +76,10 @@ selectively — only to models where at least one predictor-outcome cross-tabula
 zero cell, which is the primary condition warranting penalized likelihood. A column in the
 output indicates whether Firth's correction was applied to each model. Output is formatted as
 a clean data frame.</p>
+<p>When <code>crude = TRUE</code>, a separate simple logistic regression is fitted for each variable
+in <code>indep</code> against <code>y</code>, producing unadjusted (crude) odds ratios. Results are
+stacked into a single tidy data frame. The <code>confounders</code> and <code>iterate</code> arguments
+are ignored in this mode.</p>
     </div>
 
     <div class="section level2">
@@ -82,6 +94,7 @@ a clean data frame.</p>
 <span>  remove <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  exclude <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  iterate <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  crude <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  add_vif <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  apply_firth <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  force_apply_firth <span class="op">=</span> <span class="cn">FALSE</span></span>
@@ -101,11 +114,14 @@ a clean data frame.</p>
 
 
 <dt id="arg-confounders">confounders<a class="anchor" aria-label="anchor" href="#arg-confounders"></a></dt>
-<dd><p>A character vector of valid column names in <code>x</code> to be used as confounding factors. Default is <code>NULL</code>.</p></dd>
+<dd><p>A character vector of valid column names in <code>x</code> to be used as confounding factors.
+Ignored when <code>crude = TRUE</code> (a warning is emitted). Default is <code>NULL</code>.</p></dd>
 
 
 <dt id="arg-indep">indep<a class="anchor" aria-label="anchor" href="#arg-indep"></a></dt>
-<dd><p>A character vector of valid column names in <code>x</code> to be used as independent variables. Default is <code>NULL</code>.</p></dd>
+<dd><p>A character vector of valid column names in <code>x</code> to be used as independent variables.
+When <code>crude = TRUE</code>, each variable is modelled individually against <code>y</code>.
+Default is <code>NULL</code>.</p></dd>
 
 
 <dt id="arg-ref">ref<a class="anchor" aria-label="anchor" href="#arg-ref"></a></dt>
@@ -116,7 +132,8 @@ a clean data frame.</p>
 <dd><p>A list of two-sided formulas mapping categorical predictor column names to their
 desired reference categories. The left-hand side must be a valid column name of <code>x</code> (quoted
 as a string), and the right-hand side must be a valid category of that column
-(e.g., <code>list("Sex" ~ "Female", "District" ~ "North")</code>). Default is <code>NULL</code>.</p></dd>
+(e.g., <code>list("Sex" ~ "Female", "District" ~ "North")</code>). Applied in both standard and
+crude modes. Default is <code>NULL</code>.</p></dd>
 
 
 <dt id="arg-remove">remove<a class="anchor" aria-label="anchor" href="#arg-remove"></a></dt>
@@ -124,17 +141,29 @@ as a string), and the right-hand side must be a valid category of that column
 before analysis. The left-hand side must be a valid column name of <code>x</code> (quoted as a string),
 and the right-hand side must be a valid category of that column to be removed. Multiple mappings
 may target the same column to remove multiple categories
-(e.g., <code>list("Sex" ~ "Unknown", "District" ~ "Other")</code>). Default is <code>NULL</code>.</p></dd>
+(e.g., <code>list("Sex" ~ "Unknown", "District" ~ "Other")</code>). Applied in both standard and
+crude modes. Default is <code>NULL</code>.</p></dd>
 
 
 <dt id="arg-exclude">exclude<a class="anchor" aria-label="anchor" href="#arg-exclude"></a></dt>
-<dd><p>A character vector of categories in <code>y</code> to drop before analysis. Default is <code>NULL</code>.</p></dd>
+<dd><p>A character vector of categories in <code>y</code> to drop before analysis. Applied in
+both standard and crude modes. Default is <code>NULL</code>.</p></dd>
 
 
 <dt id="arg-iterate">iterate<a class="anchor" aria-label="anchor" href="#arg-iterate"></a></dt>
 <dd><p>Logical; if <code>FALSE</code> (default), combines <code>confounders</code> and <code>indep</code>
 into a single model. If <code>TRUE</code>, fits separate models for all possible combinations of
-<code>indep</code> added to <code>confounders</code>.</p></dd>
+<code>indep</code> added to <code>confounders</code>. Ignored when <code>crude = TRUE</code>.</p></dd>
+
+
+<dt id="arg-crude">crude<a class="anchor" aria-label="anchor" href="#arg-crude"></a></dt>
+<dd><p>Logical; if <code>TRUE</code>, fits a separate simple (unadjusted) logistic regression
+for each variable in <code>indep</code> against <code>y</code>, producing crude odds ratios. Results are
+stacked into a single tidy data frame with the same column structure as the standard output.
+<code>confounders</code> and <code>iterate</code> are ignored in this mode (a warning is emitted if
+<code>confounders</code> is non-<code>NULL</code>). All other parameters (<code>ref</code>, <code>ref_levels</code>,
+<code>remove</code>, <code>exclude</code>, <code>add_vif</code>, <code>apply_firth</code>,
+<code>force_apply_firth</code>) remain applicable. Default is <code>FALSE</code>.</p></dd>
 
 
 <dt id="arg-add-vif">add_vif<a class="anchor" aria-label="anchor" href="#arg-add-vif"></a></dt>
@@ -142,7 +171,8 @@ into a single model. If <code>TRUE</code>, fits separate models for all possible
 to the output. VIFs are computed via <code><a href="https://rdrr.io/pkg/car/man/vif.html" class="external-link">car::vif()</a></code>, which returns GVIF for categorical
 predictors and standard VIF for continuous predictors, consistent with jamovi's output.
 Note that VIF is computed from a standard <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code> fit even when Firth's correction is
-applied, as <code><a href="https://rdrr.io/pkg/car/man/vif.html" class="external-link">car::vif()</a></code> does not support <code>logistf</code> objects.</p></dd>
+applied, as <code><a href="https://rdrr.io/pkg/car/man/vif.html" class="external-link">car::vif()</a></code> does not support <code>logistf</code> objects. In crude mode,
+VIF is not meaningful for simple (one-predictor) models and will be <code>NA</code> throughout.</p></dd>
 
 
 <dt id="arg-apply-firth">apply_firth<a class="anchor" aria-label="anchor" href="#arg-apply-firth"></a></dt>
@@ -150,24 +180,29 @@ applied, as <code><a href="https://rdrr.io/pkg/car/man/vif.html" class="external
 logistic regression (<code><a href="https://rdrr.io/pkg/logistf/man/logistf.html" class="external-link">logistf::logistf()</a></code>) is applied <em>selectively</em> — only to models
 where at least one predictor variable has a zero cell count in its cross-tabulation with the
 outcome. Models with no zero cells are fitted using standard <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code> regardless of this
-setting. A logical column <code>Firth Corrected</code> is added to the <code>Metrics</code> table
-(and attached metrics for <code>iterate = FALSE</code>) indicating whether Firth's correction was
-applied to each model.</p></dd>
+setting. A logical column <code>Firth Corrected</code> is added to the output indicating whether
+Firth's correction was applied to each model. Applicable in both standard and crude modes.</p></dd>
 
 
 <dt id="arg-force-apply-firth">force_apply_firth<a class="anchor" aria-label="anchor" href="#arg-force-apply-firth"></a></dt>
 <dd><p>Logical; if <code>TRUE</code> (default <code>FALSE</code>), overrides the dynamic
 zero-cell detection of <code>apply_firth</code> and applies Firth's correction to <em>all</em> models
-regardless of whether zero cells are present. Ignored if <code>apply_firth = FALSE</code>.</p></dd>
+regardless of whether zero cells are present. Ignored if <code>apply_firth = FALSE</code>.
+Applicable in both standard and crude modes.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>If <code>iterate = FALSE</code>, returns a data frame containing Predictor, Log Odds, Std Error,
-p-value, Significance, OR, 95\<!-- % CIs, VIF, and inline model metrics (Deviance, AIC, BIC, -->
-McFadden R2, CoxSnell R2, Nagelkerke R2, Tjur R2, Firth Corrected) in the first row.
-Model metrics are also attached as <code>attr(result, "model_metrics")</code>.</p>
-<p>If <code>iterate = TRUE</code>, returns a named list containing:</p><dl><dt>Tables</dt>
+    <p>If <code>crude = TRUE</code>, returns a single tidy data frame with rows for all <code>indep</code>
+variables stacked sequentially (separated by blank spacer rows). Columns: Predictor, Log Odds,
+Std Error, p-value, Significance, OR, 95\<!-- % CI Low, 95\\% CI High, VIF (all \code{NA}), -->
+Deviance, AIC, BIC, McFadden R2, CoxSnell R2, Nagelkerke R2, Tjur R2, Firth Corrected.
+Inline model metrics are placed in the first (intercept) row of each variable's block.</p>
+<p>If <code>crude = FALSE</code> and <code>iterate = FALSE</code>, returns a data frame containing Predictor,
+Log Odds, Std Error, p-value, Significance, OR, 95\<!-- % CIs, VIF, and inline model metrics -->
+(Deviance, AIC, BIC, McFadden R2, CoxSnell R2, Nagelkerke R2, Tjur R2, Firth Corrected) in
+the first row. Model metrics are also attached as <code>attr(result, "model_metrics")</code>.</p>
+<p>If <code>crude = FALSE</code> and <code>iterate = TRUE</code>, returns a named list containing:</p><dl><dt>Tables</dt>
 <dd><p>A named list of result data frames, each with inline model metrics in row 1.</p></dd>
 
 <dt>Metrics</dt>
@@ -190,7 +225,19 @@ all non-<code>NA</code> VIF values are less than 5, ensuring no violation of mul
 </dl></div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>When <code>iterate = TRUE</code>, the function generates all possible combinations (the power set)
+    <p><strong>Crude odds ratios (<code>crude = TRUE</code>):</strong> Each variable in <code>indep</code> is fitted in
+a separate simple logistic regression model with <code>y</code> as the only outcome and no
+covariates, yielding unadjusted (crude) odds ratios. All preprocessing steps — category
+exclusion (<code>exclude</code>), predictor category removal (<code>remove</code>), dependent variable
+releveling (<code>ref</code>), and predictor releveling (<code>ref_levels</code>) — are applied before
+each model is fitted. The results are stacked row-wise into a single tidy data frame. Each
+variable's rows are separated by a blank spacer row to visually group the predictors.
+Inline model-fit metrics (Deviance, AIC, BIC, and R2 measures) are placed in the first row
+of each variable's block (aligned with its intercept row), and <code>NA</code> elsewhere. Because
+each model contains only one predictor, VIF is not meaningful and the <code>VIF</code> column
+will be <code>NA</code> for all rows. <code>confounders</code> and <code>iterate</code> are silently ignored
+after emitting a warning.</p>
+<p>When <code>iterate = TRUE</code>, the function generates all possible combinations (the power set)
 of the <code>indep</code> vector. For example, if <code>indep = c("A", "B", "C")</code>, the combinations
 evaluated alongside <code>confounders</code> will be: <code>A</code>, <code>B</code>, <code>C</code>, <code>A+B</code>,
 <code>A+C</code>, <code>B+C</code>, and <code>A+B+C</code>.</p>
@@ -227,8 +274,8 @@ formula and data.</p>
 and blank otherwise.</p>
 <p><strong>Inline model metrics:</strong> Model-fit statistics (Deviance, AIC, BIC, McFadden R2,
 CoxSnell R2, Nagelkerke R2, Tjur R2, Firth Corrected) are appended as additional columns to
-the right of the <code>VIF</code> column. Values are placed only in the first row (aligned with the
-intercept); all subsequent rows contain <code>NA</code> for these columns.</p>
+the right of the <code>VIF</code> column. Values are placed only in the first row of each model
+block (aligned with the intercept); all subsequent rows contain <code>NA</code> for these columns.</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
@@ -253,12 +300,12 @@ for Assessment, Comparison and Testing of Statistical Models." <em>Journal of Op
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
 <span class="r-in"><span><span class="co"># --- Example 1: Single model with Firth's correction applied dynamically ---</span></span></span>
 <span class="r-in"><span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">run_logreg</span><span class="op">(</span></span></span>
-<span class="r-in"><span>  x          <span class="op">=</span> <span class="va">my_data</span>,</span></span>
-<span class="r-in"><span>  y          <span class="op">=</span> <span class="st">"Outcome"</span>,</span></span>
+<span class="r-in"><span>  x           <span class="op">=</span> <span class="va">my_data</span>,</span></span>
+<span class="r-in"><span>  y           <span class="op">=</span> <span class="st">"Outcome"</span>,</span></span>
 <span class="r-in"><span>  confounders <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Age"</span>, <span class="st">"Sex"</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  indep      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Biomarker_A"</span>, <span class="st">"Biomarker_B"</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  ref        <span class="op">=</span> <span class="st">"Control"</span>,</span></span>
-<span class="r-in"><span>  ref_levels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"Sex"</span> <span class="op">~</span> <span class="st">"Female"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  indep       <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Biomarker_A"</span>, <span class="st">"Biomarker_B"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  ref         <span class="op">=</span> <span class="st">"Control"</span>,</span></span>
+<span class="r-in"><span>  ref_levels  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"Sex"</span> <span class="op">~</span> <span class="st">"Female"</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  apply_firth <span class="op">=</span> <span class="cn">TRUE</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">result</span></span></span>
@@ -266,19 +313,31 @@ for Assessment, Comparison and Testing of Statistical Models." <em>Journal of Op
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># --- Example 2: Iterative models with forced Firth and VIF filtering -------</span></span></span>
 <span class="r-in"><span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu">run_logreg</span><span class="op">(</span></span></span>
-<span class="r-in"><span>  x                <span class="op">=</span> <span class="va">my_data</span>,</span></span>
-<span class="r-in"><span>  y                <span class="op">=</span> <span class="st">"Outcome"</span>,</span></span>
-<span class="r-in"><span>  confounders      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Age"</span>, <span class="st">"Sex"</span>, <span class="st">"Site"</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  indep            <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Biomarker_A"</span>, <span class="st">"Biomarker_B"</span>, <span class="st">"Biomarker_C"</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  ref              <span class="op">=</span> <span class="st">"Control"</span>,</span></span>
-<span class="r-in"><span>  ref_levels       <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"Sex"</span> <span class="op">~</span> <span class="st">"Female"</span>, <span class="st">"Site"</span> <span class="op">~</span> <span class="st">"Main"</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  exclude          <span class="op">=</span> <span class="st">"Indeterminate"</span>,</span></span>
-<span class="r-in"><span>  iterate          <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
-<span class="r-in"><span>  apply_firth      <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
+<span class="r-in"><span>  x                 <span class="op">=</span> <span class="va">my_data</span>,</span></span>
+<span class="r-in"><span>  y                 <span class="op">=</span> <span class="st">"Outcome"</span>,</span></span>
+<span class="r-in"><span>  confounders       <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Age"</span>, <span class="st">"Sex"</span>, <span class="st">"Site"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  indep             <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Biomarker_A"</span>, <span class="st">"Biomarker_B"</span>, <span class="st">"Biomarker_C"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  ref               <span class="op">=</span> <span class="st">"Control"</span>,</span></span>
+<span class="r-in"><span>  ref_levels        <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"Sex"</span> <span class="op">~</span> <span class="st">"Female"</span>, <span class="st">"Site"</span> <span class="op">~</span> <span class="st">"Main"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  exclude           <span class="op">=</span> <span class="st">"Indeterminate"</span>,</span></span>
+<span class="r-in"><span>  iterate           <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
+<span class="r-in"><span>  apply_firth       <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
 <span class="r-in"><span>  force_apply_firth <span class="op">=</span> <span class="cn">TRUE</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">results</span><span class="op">$</span><span class="va">Metrics</span></span></span>
 <span class="r-in"><span><span class="va">results</span><span class="op">$</span><span class="va">vif_filtered_Tables</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># --- Example 3: Crude (unadjusted) odds ratios for each biomarker ----------</span></span></span>
+<span class="r-in"><span><span class="va">crude_results</span> <span class="op">&lt;-</span> <span class="fu">run_logreg</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  x           <span class="op">=</span> <span class="va">my_data</span>,</span></span>
+<span class="r-in"><span>  y           <span class="op">=</span> <span class="st">"Outcome"</span>,</span></span>
+<span class="r-in"><span>  indep       <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Biomarker_A"</span>, <span class="st">"Biomarker_B"</span>, <span class="st">"Biomarker_C"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  ref         <span class="op">=</span> <span class="st">"Control"</span>,</span></span>
+<span class="r-in"><span>  ref_levels  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"Sex"</span> <span class="op">~</span> <span class="st">"Female"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  crude       <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
+<span class="r-in"><span>  apply_firth <span class="op">=</span> <span class="cn">TRUE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">crude_results</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>

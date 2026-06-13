@@ -16,6 +16,7 @@ run_randomize(
   x,
   n = NULL,
   p = NULL,
+  per = c("all", "row", "col"),
   per_group = NULL,
   joint = TRUE,
   joint_behaviour = "cascading",
@@ -47,6 +48,21 @@ run_randomize(
   i.e., all rows shuffled). Mutually exclusive with `n`. When
   `per_group` is supplied without an explicit `n`/`p` inside the list,
   this top-level value is used as the fallback.
+
+- per:
+
+  A character string specifying the randomization strategy for data
+  frames, matrices, or tibbles.
+
+  - **"all"** (default): Will randomize all of the items in the data
+    frame. Any value can be placed anywhere in the randomized data
+    frame.
+
+  - **"row"**: Will randomize the items row-wise. The randomization is
+    done for each row independently.
+
+  - **"col"**: Will randomize the items column-wise. The randomization
+    is done for each column independently.
 
 - per_group:
 
@@ -214,80 +230,139 @@ John Lennon L. Calorio
 ## 1. Shuffle all rows (default: p = 1)
 ## ------------------------------------------------------------------
 run_randomize(mtcars)
-#>                      mpg cyl  disp  hp drat    wt  qsec vs am gear carb
-#> Maserati Bora       15.0   8 301.0 335 3.54 3.570 14.60  0  1    5    8
-#> Cadillac Fleetwood  10.4   8 472.0 205 2.93 5.250 17.98  0  0    3    4
-#> Honda Civic         30.4   4  75.7  52 4.93 1.615 18.52  1  1    4    2
-#> Merc 450SLC         15.2   8 275.8 180 3.07 3.780 18.00  0  0    3    3
-#> Datsun 710          22.8   4 108.0  93 3.85 2.320 18.61  1  1    4    1
-#> Merc 280            19.2   6 167.6 123 3.92 3.440 18.30  1  0    4    4
-#> Fiat 128            32.4   4  78.7  66 4.08 2.200 19.47  1  1    4    1
-#> Dodge Challenger    15.5   8 318.0 150 2.76 3.520 16.87  0  0    3    2
-#> Merc 280C           17.8   6 167.6 123 3.92 3.440 18.90  1  0    4    4
-#> Hornet Sportabout   18.7   8 360.0 175 3.15 3.440 17.02  0  0    3    2
-#> Toyota Corolla      33.9   4  71.1  65 4.22 1.835 19.90  1  1    4    1
-#> Ford Pantera L      15.8   8 351.0 264 4.22 3.170 14.50  0  1    5    4
-#> AMC Javelin         15.2   8 304.0 150 3.15 3.435 17.30  0  0    3    2
-#> Ferrari Dino        19.7   6 145.0 175 3.62 2.770 15.50  0  1    5    6
-#> Merc 230            22.8   4 140.8  95 3.92 3.150 22.90  1  0    4    2
-#> Lotus Europa        30.4   4  95.1 113 3.77 1.513 16.90  1  1    5    2
-#> Merc 240D           24.4   4 146.7  62 3.69 3.190 20.00  1  0    4    2
-#> Porsche 914-2       26.0   4 120.3  91 4.43 2.140 16.70  0  1    5    2
-#> Duster 360          14.3   8 360.0 245 3.21 3.570 15.84  0  0    3    4
-#> Volvo 142E          21.4   4 121.0 109 4.11 2.780 18.60  1  1    4    2
-#> Fiat X1-9           27.3   4  79.0  66 4.08 1.935 18.90  1  1    4    1
-#> Chrysler Imperial   14.7   8 440.0 230 3.23 5.345 17.42  0  0    3    4
-#> Hornet 4 Drive      21.4   6 258.0 110 3.08 3.215 19.44  1  0    3    1
-#> Mazda RX4           21.0   6 160.0 110 3.90 2.620 16.46  0  1    4    4
-#> Camaro Z28          13.3   8 350.0 245 3.73 3.840 15.41  0  0    3    4
-#> Toyota Corona       21.5   4 120.1  97 3.70 2.465 20.01  1  0    3    1
-#> Pontiac Firebird    19.2   8 400.0 175 3.08 3.845 17.05  0  0    3    2
-#> Merc 450SL          17.3   8 275.8 180 3.07 3.730 17.60  0  0    3    3
-#> Lincoln Continental 10.4   8 460.0 215 3.00 5.424 17.82  0  0    3    4
-#> Mazda RX4 Wag       21.0   6 160.0 110 3.90 2.875 17.02  0  1    4    4
-#> Merc 450SE          16.4   8 275.8 180 3.07 4.070 17.40  0  0    3    3
-#> Valiant             18.1   6 225.0 105 2.76 3.460 20.22  1  0    3    1
+#>                         mpg    cyl   disp      hp    drat      wt    qsec
+#> Camaro Z28          440.000   8.00   1.00 275.800   8.000   4.000   3.000
+#> Lotus Europa        180.000   6.00   1.00   3.000   3.000   1.000   1.000
+#> Duster 360            0.000 146.70   3.62  13.300   5.424   4.000   4.000
+#> Fiat 128             27.300  10.40   0.00   8.000   4.000   0.000   2.465
+#> Chrysler Imperial     2.000  14.60   2.20   4.000   6.000  16.900  26.000
+#> Toyota Corolla        4.000 145.00  16.87   3.000  17.800   2.140   1.000
+#> Merc 230              8.000   8.00  15.84  21.500  62.000  19.200   2.760
+#> Toyota Corona         0.000   0.00 335.00   0.000   1.000   4.220   0.000
+#> Merc 280C            79.000  19.47   3.15 167.600 351.000  22.800   3.900
+#> Merc 450SE          120.300   2.00 120.10   3.215   1.000   3.000 123.000
+#> Merc 240D             1.000 275.80   4.00   1.000  33.900   2.000   1.000
+#> Ford Pantera L        0.000  21.40   4.08  19.440   1.000   0.000   0.000
+#> Hornet Sportabout   150.000   4.00 175.00 225.000   0.000 264.000 175.000
+#> Pontiac Firebird      6.000   3.54   4.00   1.000   4.000   0.000   0.000
+#> Valiant               4.000 360.00 180.00   3.000  18.900   6.000   1.000
+#> Merc 280              3.080   3.07 108.00   8.000   6.000   1.513   1.000
+#> Maserati Bora         3.000   5.00   0.00   3.190   4.070   1.835   8.000
+#> Fiat X1-9             2.930   0.00 230.00   3.840   2.000   2.000   3.150
+#> Volvo 142E            3.210   1.00   4.11  19.700   1.000   4.000  20.220
+#> Ferrari Dino         15.200  17.30 105.00  21.000   0.000  17.300  20.000
+#> Honda Civic          14.300  65.00 110.00  18.900  71.100   4.000   4.000
+#> Datsun 710           18.610   3.46  19.20   3.440   0.000   3.070   8.000
+#> Dodge Challenger     18.520   1.00  19.90   0.000   3.435  52.000   1.000
+#> Merc 450SL            1.000   3.00   3.44   0.000   4.000   1.000   1.000
+#> Hornet 4 Drive        4.000  17.05   4.00  18.700 350.000  15.500  95.000
+#> Lincoln Continental   3.920   2.00 167.60   5.000   5.345   3.000   2.320
+#> Merc 450SLC          17.020   0.00   3.69   0.000 180.000   8.000   2.000
+#> Cadillac Fleetwood    1.000   4.00   4.00  75.700  15.500   3.730  15.800
+#> AMC Javelin         275.800 318.00   3.78   8.000   1.000   0.000 160.000
+#> Mazda RX4 Wag        15.200  18.60 400.00   4.430   0.000   3.730   0.000
+#> Porsche 914-2        21.400  17.42 123.00 205.000  17.020  17.600  97.000
+#> Mazda RX4             1.615   4.00   0.00   4.000   3.000   6.000   3.000
+#>                         vs     am    gear    carb
+#> Camaro Z28            3.00   4.93   3.000   4.000
+#> Lotus Europa          3.00   0.00  17.400  20.010
+#> Duster 360            3.15   4.00  66.000   0.000
+#> Fiat 128              8.00 140.80   4.080   3.000
+#> Chrysler Imperial    21.00  15.00   4.000   1.000
+#> Toyota Corolla        4.00   3.00 175.000 160.000
+#> Merc 230             66.00   3.70  93.000   1.000
+#> Toyota Corona         1.00   8.00   0.000   3.850
+#> Merc 280C           360.00   3.92   8.000   3.080
+#> Merc 450SE           18.00   1.00  17.980   4.220
+#> Merc 240D            15.41 304.00 121.000 301.000
+#> Ford Pantera L        2.00  16.46  30.400 245.000
+#> Hornet Sportabout    95.10   5.25  32.400   3.170
+#> Pontiac Firebird      2.62 245.00   4.000  18.300
+#> Valiant               4.00 113.00   0.000   0.000
+#> Merc 280             91.00 109.00   1.935  30.400
+#> Maserati Bora         2.00   4.00 258.000  22.900
+#> Fiat X1-9             8.00   3.57   4.000   0.000
+#> Volvo 142E            1.00   8.00   5.000   0.000
+#> Ferrari Dino         17.82   0.00   6.000   4.000
+#> Honda Civic         215.00   3.44   1.000  18.100
+#> Datsun 710            3.00 460.00   1.000   1.000
+#> Dodge Challenger      1.00   2.77  24.400   3.570
+#> Merc 450SL           78.70  14.50   3.230   4.000
+#> Hornet 4 Drive        3.90   2.78   3.920   3.770
+#> Lincoln Continental 110.00   1.00   2.760  10.400
+#> Merc 450SLC           3.07   3.52 110.000   2.875
+#> Cadillac Fleetwood    0.00   0.00   3.000   5.000
+#> AMC Javelin           0.00   4.00 472.000   2.000
+#> Mazda RX4 Wag        14.70   0.00  22.800   4.000
+#> Porsche 914-2       150.00  16.40   5.000   3.000
+#> Mazda RX4             1.00   6.00   3.845  16.700
 
 ## ------------------------------------------------------------------
 ## 2. Sample a fixed number of rows
 ## ------------------------------------------------------------------
 run_randomize(mtcars, n = 5)
-#>                     mpg cyl  disp  hp drat    wt  qsec vs am gear carb
-#> Maserati Bora      15.0   8 301.0 335 3.54 3.570 14.60  0  1    5    8
-#> Cadillac Fleetwood 10.4   8 472.0 205 2.93 5.250 17.98  0  0    3    4
-#> Honda Civic        30.4   4  75.7  52 4.93 1.615 18.52  1  1    4    2
-#> Merc 450SLC        15.2   8 275.8 180 3.07 3.780 18.00  0  0    3    3
-#> Datsun 710         22.8   4 108.0  93 3.85 2.320 18.61  1  1    4    1
+#>                     mpg   cyl disp    hp  drat   wt   qsec    vs     am  gear
+#> Camaro Z28        440.0   8.0 1.00 275.8 8.000  4.0  3.000  3.00   4.93  3.00
+#> Lotus Europa      180.0   6.0 1.00   3.0 3.000  1.0  1.000  3.00   0.00 17.40
+#> Duster 360          0.0 146.7 3.62  13.3 5.424  4.0  4.000  3.15   4.00 66.00
+#> Fiat 128           27.3  10.4 0.00   8.0 4.000  0.0  2.465  8.00 140.80  4.08
+#> Chrysler Imperial   2.0  14.6 2.20   4.0 6.000 16.9 26.000 21.00  15.00  4.00
+#>                    carb
+#> Camaro Z28         4.00
+#> Lotus Europa      20.01
+#> Duster 360         0.00
+#> Fiat 128           3.00
+#> Chrysler Imperial  1.00
 
 ## ------------------------------------------------------------------
 ## 3. Sample a proportion of rows
 ## ------------------------------------------------------------------
 run_randomize(mtcars, p = 0.25)
-#>                     mpg cyl  disp  hp drat    wt  qsec vs am gear carb
-#> Maserati Bora      15.0   8 301.0 335 3.54 3.570 14.60  0  1    5    8
-#> Cadillac Fleetwood 10.4   8 472.0 205 2.93 5.250 17.98  0  0    3    4
-#> Honda Civic        30.4   4  75.7  52 4.93 1.615 18.52  1  1    4    2
-#> Merc 450SLC        15.2   8 275.8 180 3.07 3.780 18.00  0  0    3    3
-#> Datsun 710         22.8   4 108.0  93 3.85 2.320 18.61  1  1    4    1
-#> Merc 280           19.2   6 167.6 123 3.92 3.440 18.30  1  0    4    4
-#> Fiat 128           32.4   4  78.7  66 4.08 2.200 19.47  1  1    4    1
-#> Dodge Challenger   15.5   8 318.0 150 2.76 3.520 16.87  0  0    3    2
+#>                     mpg   cyl   disp    hp   drat    wt   qsec    vs     am
+#> Camaro Z28        440.0   8.0   1.00 275.8  8.000  4.00  3.000  3.00   4.93
+#> Lotus Europa      180.0   6.0   1.00   3.0  3.000  1.00  1.000  3.00   0.00
+#> Duster 360          0.0 146.7   3.62  13.3  5.424  4.00  4.000  3.15   4.00
+#> Fiat 128           27.3  10.4   0.00   8.0  4.000  0.00  2.465  8.00 140.80
+#> Chrysler Imperial   2.0  14.6   2.20   4.0  6.000 16.90 26.000 21.00  15.00
+#> Toyota Corolla      4.0 145.0  16.87   3.0 17.800  2.14  1.000  4.00   3.00
+#> Merc 230            8.0   8.0  15.84  21.5 62.000 19.20  2.760 66.00   3.70
+#> Toyota Corona       0.0   0.0 335.00   0.0  1.000  4.22  0.000  1.00   8.00
+#>                     gear   carb
+#> Camaro Z28          3.00   4.00
+#> Lotus Europa       17.40  20.01
+#> Duster 360         66.00   0.00
+#> Fiat 128            4.08   3.00
+#> Chrysler Imperial   4.00   1.00
+#> Toyota Corolla    175.00 160.00
+#> Merc 230           93.00   1.00
+#> Toyota Corona       0.00   3.85
 
 ## ------------------------------------------------------------------
 ## 4. Sampling with replacement
 ## ------------------------------------------------------------------
 run_randomize(mtcars, n = 10, replace = TRUE)
-#>                     mpg cyl  disp  hp drat    wt  qsec vs am gear carb
-#> Maserati Bora      15.0   8 301.0 335 3.54 3.570 14.60  0  1    5    8
-#> Cadillac Fleetwood 10.4   8 472.0 205 2.93 5.250 17.98  0  0    3    4
-#> Honda Civic        30.4   4  75.7  52 4.93 1.615 18.52  1  1    4    2
-#> Merc 450SLC        15.2   8 275.8 180 3.07 3.780 18.00  0  0    3    3
-#> Datsun 710         22.8   4 108.0  93 3.85 2.320 18.61  1  1    4    1
-#> Merc 280           19.2   6 167.6 123 3.92 3.440 18.30  1  0    4    4
-#> Fiat 128           32.4   4  78.7  66 4.08 2.200 19.47  1  1    4    1
-#> Dodge Challenger   15.5   8 318.0 150 2.76 3.520 16.87  0  0    3    2
-#> Merc 280C          17.8   6 167.6 123 3.92 3.440 18.90  1  0    4    4
-#> Hornet Sportabout  18.7   8 360.0 175 3.15 3.440 17.02  0  0    3    2
+#>                     mpg    cyl   disp    hp    drat    wt   qsec     vs     am
+#> Camaro Z28        440.0   8.00   1.00 275.8   8.000  4.00  3.000   3.00   4.93
+#> Lotus Europa      180.0   6.00   1.00   3.0   3.000  1.00  1.000   3.00   0.00
+#> Duster 360          0.0 146.70   3.62  13.3   5.424  4.00  4.000   3.15   4.00
+#> Fiat 128           27.3  10.40   0.00   8.0   4.000  0.00  2.465   8.00 140.80
+#> Chrysler Imperial   2.0  14.60   2.20   4.0   6.000 16.90 26.000  21.00  15.00
+#> Toyota Corolla      4.0 145.00  16.87   3.0  17.800  2.14  1.000   4.00   3.00
+#> Porsche 914-2      21.4  17.42 123.00 205.0  17.020 17.60 97.000 150.00  16.40
+#> Merc 230            8.0   8.00  15.84  21.5  62.000 19.20  2.760  66.00   3.70
+#> Toyota Corona       0.0   0.00 335.00   0.0   1.000  4.22  0.000   1.00   8.00
+#> Merc 280C          79.0  19.47   3.15 167.6 351.000 22.80  3.900 360.00   3.92
+#>                     gear   carb
+#> Camaro Z28          3.00   4.00
+#> Lotus Europa       17.40  20.01
+#> Duster 360         66.00   0.00
+#> Fiat 128            4.08   3.00
+#> Chrysler Imperial   4.00   1.00
+#> Toyota Corolla    175.00 160.00
+#> Porsche 914-2       5.00   3.00
+#> Merc 230           93.00   1.00
+#> Toyota Corona       0.00   3.85
+#> Merc 280C           8.00   3.08
 
 ## ------------------------------------------------------------------
 ## 5. Randomize a vector
@@ -307,20 +382,81 @@ run_randomize(
   per_group = list(list("Species", n = 10)),
   seed = 2024
 )
-#> # A tibble: 30 × 5
+#> Warning: Some groups in column 'Species' have fewer rows than n = 10:
+#>   - '0.1' (2 row(s))
+#>   - '0.2' (5 row(s))
+#>   - '0.3' (1 row(s))
+#>   - '0.4' (1 row(s))
+#>   - '0.5' (1 row(s))
+#>   - '0.6' (1 row(s))
+#>   - '1.0' (3 row(s))
+#>   - '1.3' (6 row(s))
+#>   - '1.4' (3 row(s))
+#>   - '1.5' (7 row(s))
+#>   - '1.8' (2 row(s))
+#>   - '1.9' (2 row(s))
+#>   - '2.0' (3 row(s))
+#>   - '2.1' (2 row(s))
+#>   - '2.2' (1 row(s))
+#>   - '2.3' (3 row(s))
+#>   - '2.4' (1 row(s))
+#>   - '2.5' (2 row(s))
+#>   - '2.6' (2 row(s))
+#>   - '2.7' (1 row(s))
+#>   - '2.8' (1 row(s))
+#>   - '2.9' (2 row(s))
+#>   - '3.0' (4 row(s))
+#>   - '3.1' (1 row(s))
+#>   - '3.2' (1 row(s))
+#>   - '3.3' (1 row(s))
+#>   - '3.4' (3 row(s))
+#>   - '3.5' (1 row(s))
+#>   - '3.6' (1 row(s))
+#>   - '3.7' (2 row(s))
+#>   - '3.8' (2 row(s))
+#>   - '3.9' (2 row(s))
+#>   - '4.0' (1 row(s))
+#>   - '4.1' (1 row(s))
+#>   - '4.3' (2 row(s))
+#>   - '4.5' (4 row(s))
+#>   - '4.6' (2 row(s))
+#>   - '4.7' (3 row(s))
+#>   - '4.8' (1 row(s))
+#>   - '4.9' (4 row(s))
+#>   - '5.0' (4 row(s))
+#>   - '5.1' (2 row(s))
+#>   - '5.4' (2 row(s))
+#>   - '5.5' (1 row(s))
+#>   - '5.6' (3 row(s))
+#>   - '5.7' (2 row(s))
+#>   - '5.8' (3 row(s))
+#>   - '5.9' (1 row(s))
+#>   - '6.1' (3 row(s))
+#>   - '6.2' (1 row(s))
+#>   - '6.3' (1 row(s))
+#>   - '6.5' (2 row(s))
+#>   - '6.6' (2 row(s))
+#>   - '6.7' (3 row(s))
+#>   - '6.9' (1 row(s))
+#>   - '7.2' (1 row(s))
+#>   - '7.9' (1 row(s))
+#>   - 'setosa' (8 row(s))
+#> All rows from these groups will be returned.
+#> Set `replace = TRUE` to allow oversampling.
+#> # A tibble: 149 × 5
 #>    Sepal.Length Sepal.Width Petal.Length Petal.Width Species   
-#>           <dbl>       <dbl>        <dbl>       <dbl> <fct>     
-#>  1          6.7         3.1          4.4         1.4 versicolor
-#>  2          6.1         3            4.9         1.8 virginica 
-#>  3          7           3.2          4.7         1.4 versicolor
-#>  4          6           2.2          5           1.5 virginica 
-#>  5          6.7         3.1          5.6         2.4 virginica 
-#>  6          6.7         3.3          5.7         2.5 virginica 
-#>  7          5.4         3.7          1.5         0.2 setosa    
-#>  8          5.4         3.9          1.3         0.4 setosa    
-#>  9          5           3.5          1.3         0.3 setosa    
-#> 10          6.3         2.7          4.9         1.8 virginica 
-#> # ℹ 20 more rows
+#>    <chr>        <chr>       <chr>        <chr>       <chr>     
+#>  1 5.1          6.1         1.8          setosa      1.5       
+#>  2 3.1          2.3         setosa       5.5         versicolor
+#>  3 5.7          setosa      5.7          6.4         1.5       
+#>  4 4.4          0.2         6.1          2.5         3.1       
+#>  5 5.4          0.2         3.7          5.1         1.5       
+#>  6 setosa       2.9         5.2          1.6         versicolor
+#>  7 2.3          versicolor  1.6          0.2         4.5       
+#>  8 1.8          5.0         6.4          versicolor  4.9       
+#>  9 versicolor   6.7         6.3          4.8         4.9       
+#> 10 virginica    5.4         7.7          virginica   virginica 
+#> # ℹ 139 more rows
 
 ## ------------------------------------------------------------------
 ## 7. Per-group: single column, explicit p
@@ -330,20 +466,20 @@ run_randomize(
   per_group = list(list("Species", p = 0.6)),
   seed = 2024
 )
-#> # A tibble: 90 × 5
+#> # A tibble: 61 × 5
 #>    Sepal.Length Sepal.Width Petal.Length Petal.Width Species   
-#>           <dbl>       <dbl>        <dbl>       <dbl> <fct>     
-#>  1          5           3.2          1.2         0.2 setosa    
-#>  2          7           3.2          4.7         1.4 versicolor
-#>  3          7.1         3            5.9         2.1 virginica 
-#>  4          6.2         3.4          5.4         2.3 virginica 
-#>  5          6.5         3            5.2         2   virginica 
-#>  6          5.6         2.5          3.9         1.1 versicolor
-#>  7          5.1         3.8          1.5         0.3 setosa    
-#>  8          6           3            4.8         1.8 virginica 
-#>  9          6.5         2.8          4.6         1.5 versicolor
-#> 10          7.3         2.9          6.3         1.8 virginica 
-#> # ℹ 80 more rows
+#>    <chr>        <chr>       <chr>        <chr>       <chr>     
+#>  1 7.4          3.0         1.5          3.0         2.1       
+#>  2 4.9          4.7         virginica    2.8         6.6       
+#>  3 setosa       versicolor  virginica    5.0         0.2       
+#>  4 1.4          6.8         1.0          setosa      virginica 
+#>  5 3.0          0.2         versicolor   6.2         1.5       
+#>  6 1.9          2.7         7.2          1.8         5.6       
+#>  7 4.0          5.9         2.5          1.4         versicolor
+#>  8 7.7          5.6         1.6          virginica   5.8       
+#>  9 versicolor   virginica   3.0          3.6         1.9       
+#> 10 versicolor   6.1         5.1          setosa      virginica 
+#> # ℹ 51 more rows
 
 ## ------------------------------------------------------------------
 ## 8. Per-group: single column, n/p omitted — falls back to top-level n
@@ -379,27 +515,54 @@ run_randomize(
   seed = 99
 )
 #> Warning: Some joint groups have fewer rows than n = 2:
-#>   - '4:3' (1 row(s))
-#>   - '6:5' (1 row(s))
+#>   - '4: 66' (1 row(s))
+#>   - '1:0' (1 row(s))
+#>   - '10.4:0' (1 row(s))
+#>   - '360.0:0' (1 row(s))
+#>   - ' 62:1' (1 row(s))
+#>   - '301.0:1' (1 row(s))
+#>   - '3:110' (1 row(s))
+#>   - '17.98:13.3' (1 row(s))
+#>   - '22.90:14.7' (1 row(s))
+#>   - '4:16.4' (1 row(s))
+#>   - '4:17.02' (1 row(s))
+#>   - '3:18.1' (1 row(s))
+#>   - '0:2' (1 row(s))
+#>   - '1:2' (1 row(s))
+#>   - '123:2' (1 row(s))
+#>   - '0:2.140' (1 row(s))
+#>   - ' 93:21.4' (1 row(s))
+#>   - '8:21.4' (1 row(s))
+#>   - '0:21.5' (1 row(s))
+#>   - '4.11:215' (1 row(s))
+#>   - '120.3:27.3' (1 row(s))
+#>   - '245:275.8' (1 row(s))
+#>   - '1:3' (1 row(s))
+#>   - '1.513:3.23' (1 row(s))
+#>   - '0:3.440' (1 row(s))
+#>   - '1:3.73' (1 row(s))
+#>   - '4:3.730' (1 row(s))
+#>   - ' 91:3.90' (1 row(s))
+#>   - '2.465:30.4' (1 row(s))
+#>   - '110:4' (1 row(s))
+#>   - '5:4' (1 row(s))
+#>   - '3.845:6' (1 row(s))
 #> All rows from these groups will be returned.
 #> Set `replace = TRUE` to allow oversampling.
-#> # A tibble: 14 × 11
-#>      mpg cyl    disp    hp  drat    wt  qsec    vs    am gear   carb
-#>    <dbl> <fct> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <fct> <dbl>
-#>  1  10.4 8     472     205  2.93  5.25  18.0     0     0 3         4
-#>  2  15.8 8     351     264  4.22  3.17  14.5     0     1 5         4
-#>  3  15   8     301     335  3.54  3.57  14.6     0     1 5         8
-#>  4  17.8 6     168.    123  3.92  3.44  18.9     1     0 4         4
-#>  5  21.4 6     258     110  3.08  3.22  19.4     1     0 3         1
-#>  6  21   6     160     110  3.9   2.88  17.0     0     1 4         4
-#>  7  30.4 4      75.7    52  4.93  1.62  18.5     1     1 4         2
-#>  8  26   4     120.     91  4.43  2.14  16.7     0     1 5         2
-#>  9  19.7 6     145     175  3.62  2.77  15.5     0     1 5         6
-#> 10  19.2 8     400     175  3.08  3.84  17.0     0     0 3         2
-#> 11  22.8 4     141.     95  3.92  3.15  22.9     1     0 4         2
-#> 12  30.4 4      95.1   113  3.77  1.51  16.9     1     1 5         2
-#> 13  18.1 6     225     105  2.76  3.46  20.2     1     0 3         1
-#> 14  21.5 4     120.     97  3.7   2.46  20.0     1     0 3         1
+#> # A tibble: 32 × 11
+#>    mpg   cyl     disp    hp    drat    wt    qsec  vs    am      gear  carb 
+#>    <chr> <chr>   <chr>   <chr> <chr>   <chr> <chr> <chr> <chr>   <chr> <chr>
+#>  1 0     "3"     "351.0" 2.93  "5.250" 4     17.60 0     "1"     18.1  3.00 
+#>  2 3     "17.98" "0"     26.0  " 71.1" 14.60 2.770 4     "14.50" 13.3  3.92 
+#>  3 0     " 91"   "19.7"  2     "3.190" 15.0  16.46 2     " 95.1" 3.90  0    
+#>  4 8     "1"     "1"     18.60 "3"     275.8 15.50 0     "0"     2     1    
+#>  5 109   "1"     "22.8"  167.6 "4"     110   1     2.200 "16.70" 0     3.440
+#>  6 4     " 93"   " 79.0" 0     "0"     1     150   3.780 "19.2"  21.4  175  
+#>  7 14.3  "0"     "5"     5.424 "1"     121.0 3.07  3.440 "3.150" 2.140 17.30
+#>  8 3.08  "245"   "4"     0     "1"     1     24.4  4     "4"     275.8 8    
+#>  9 3.570 "8"     "8"     0     "0"     1     146.7 140.8 "1"     21.4  3.90 
+#> 10 3     "2.465" "1"     3.70  "2.620" 3.840 3.170 17.82 "1"     30.4  19.90
+#> # ℹ 22 more rows
 
 ## ------------------------------------------------------------------
 ## 10. Per-group: two columns, joint = FALSE, cascading (default)
@@ -414,18 +577,65 @@ run_randomize(
   joint_behaviour = "cascading",
   seed = 99
 )
-#> Warning: Some groups in column 'gear' have fewer rows than n = 3:
-#>   - '3' (2 row(s))
+#> Warning: Some groups in column 'cyl' have fewer rows than n = 2:
+#>   - ' 62' (1 row(s))
+#>   - ' 91' (1 row(s))
+#>   - ' 93' (1 row(s))
+#>   - '1.513' (1 row(s))
+#>   - '10.4' (1 row(s))
+#>   - '110' (1 row(s))
+#>   - '120.3' (1 row(s))
+#>   - '123' (1 row(s))
+#>   - '17.98' (1 row(s))
+#>   - '2.465' (1 row(s))
+#>   - '22.90' (1 row(s))
+#>   - '245' (1 row(s))
+#>   - '3.845' (1 row(s))
+#>   - '301.0' (1 row(s))
+#>   - '360.0' (1 row(s))
+#>   - '4.11' (1 row(s))
+#>   - '5' (1 row(s))
+#>   - '8' (1 row(s))
 #> All rows from these groups will be returned.
 #> Set `replace = TRUE` to allow oversampling.
-#> # A tibble: 5 × 11
-#>     mpg cyl    disp    hp  drat    wt  qsec    vs    am gear   carb
-#>   <dbl> <fct> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl> <fct> <dbl>
-#> 1  17.8 6     168.    123  3.92  3.44  18.9     1     0 4         4
-#> 2  33.9 4      71.1    65  4.22  1.84  19.9     1     1 4         1
-#> 3  19.2 6     168.    123  3.92  3.44  18.3     1     0 4         4
-#> 4  16.4 8     276.    180  3.07  4.07  17.4     0     0 3         3
-#> 5  15.2 8     304     150  3.15  3.44  17.3     0     0 3         2
+#> Warning: Some groups in column 'gear' have fewer rows than n = 3:
+#>   - '0' (2 row(s))
+#>   - '1' (2 row(s))
+#>   - '110' (1 row(s))
+#>   - '13.3' (1 row(s))
+#>   - '14.7' (1 row(s))
+#>   - '16.4' (1 row(s))
+#>   - '18.1' (1 row(s))
+#>   - '2' (2 row(s))
+#>   - '21.4' (2 row(s))
+#>   - '215' (1 row(s))
+#>   - '27.3' (1 row(s))
+#>   - '275.8' (1 row(s))
+#>   - '3' (1 row(s))
+#>   - '3.23' (1 row(s))
+#>   - '3.440' (1 row(s))
+#>   - '3.73' (1 row(s))
+#>   - '3.730' (1 row(s))
+#>   - '3.90' (1 row(s))
+#>   - '30.4' (1 row(s))
+#>   - '4' (2 row(s))
+#>   - '6' (1 row(s))
+#> All rows from these groups will be returned.
+#> Set `replace = TRUE` to allow oversampling.
+#> # A tibble: 26 × 11
+#>    mpg   cyl     disp    hp    drat  wt    qsec  vs      am      gear  carb   
+#>    <chr> <chr>   <chr>   <chr> <chr> <chr> <chr> <chr>   <chr>   <chr> <chr>  
+#>  1 0     "3"     "351.0" 2.93  5.250 4     17.60 "0"     "1"     18.1  "3.00" 
+#>  2 4     "0"     "1.615" 1     0     0     1     "4"     "160.0" 3.440 " 65"  
+#>  3 2     "5"     "18.30" 1.835 400.0 17.40 1     "3.69"  "230"   4     "4"    
+#>  4 0     "120.3" "17.42" 108.0 180   4     4     " 75.7" "180"   27.3  "3.07" 
+#>  5 318.0 "4"     "4.93"  4     18.90 17.3  4     "3.15"  "180"   3.730 "20.01"
+#>  6 0     " 91"   "19.7"  2     3.190 15.0  16.46 "2"     " 95.1" 3.90  "0"    
+#>  7 4     "110"   "4"     3.92  16.90 6     0     "4"     "2.875" 4     "1"    
+#>  8 350.0 "1"     "20.00" 6     8     3     1     "18.90" "4"     3.73  "15.2" 
+#>  9 4     " 93"   " 79.0" 0     0     1     150   "3.780" "19.2"  21.4  "175"  
+#> 10 145.0 "1.513" "440.0" 1     0     4     3     "17.02" "4.08"  3.23  "3.85" 
+#> # ℹ 16 more rows
 
 ## ------------------------------------------------------------------
 ## 11. Per-group: two columns, joint = FALSE, independent
@@ -440,22 +650,119 @@ run_randomize(
   joint_behaviour = "independent",
   seed = 99
 )
-#>                    mpg cyl  disp  hp drat    wt  qsec vs am gear carb
-#> Merc 450SE        16.4   8 275.8 180 3.07 4.070 17.40  0  0    3    3
-#> Merc 280          19.2   6 167.6 123 3.92 3.440 18.30  1  0    4    4
-#> Lotus Europa      30.4   4  95.1 113 3.77 1.513 16.90  1  1    5    2
-#> Ferrari Dino      19.7   6 145.0 175 3.62 2.770 15.50  0  1    5    6
-#> Datsun 710        22.8   4 108.0  93 3.85 2.320 18.61  1  1    4    1
-#> Merc 450SL        17.3   8 275.8 180 3.07 3.730 17.60  0  0    3    3
-#> Hornet Sportabout 18.7   8 360.0 175 3.15 3.440 17.02  0  0    3    2
-#> Camaro Z28        13.3   8 350.0 245 3.73 3.840 15.41  0  0    3    4
-#> Volvo 142E        21.4   4 121.0 109 4.11 2.780 18.60  1  1    4    2
-#> Toyota Corolla    33.9   4  71.1  65 4.22 1.835 19.90  1  1    4    1
-#> Merc 280C         17.8   6 167.6 123 3.92 3.440 18.90  1  0    4    4
-#> Porsche 914-2     26.0   4 120.3  91 4.43 2.140 16.70  0  1    5    2
-#> Merc 240D         24.4   4 146.7  62 3.69 3.190 20.00  1  0    4    2
-#> AMC Javelin       15.2   8 304.0 150 3.15 3.435 17.30  0  0    3    2
-#> Fiat X1-9         27.3   4  79.0  66 4.08 1.935 18.90  1  1    4    1
+#> Warning: Some groups in column 'cyl' have fewer rows than n = 2:
+#>   - ' 62' (1 row(s))
+#>   - ' 91' (1 row(s))
+#>   - ' 93' (1 row(s))
+#>   - '1.513' (1 row(s))
+#>   - '10.4' (1 row(s))
+#>   - '110' (1 row(s))
+#>   - '120.3' (1 row(s))
+#>   - '123' (1 row(s))
+#>   - '17.98' (1 row(s))
+#>   - '2.465' (1 row(s))
+#>   - '22.90' (1 row(s))
+#>   - '245' (1 row(s))
+#>   - '3.845' (1 row(s))
+#>   - '301.0' (1 row(s))
+#>   - '360.0' (1 row(s))
+#>   - '4.11' (1 row(s))
+#>   - '5' (1 row(s))
+#>   - '8' (1 row(s))
+#> All rows from these groups will be returned.
+#> Set `replace = TRUE` to allow oversampling.
+#> Warning: Some groups in column 'gear' have fewer rows than n = 3:
+#>   - ' 66' (1 row(s))
+#>   - '1' (2 row(s))
+#>   - '110' (1 row(s))
+#>   - '13.3' (1 row(s))
+#>   - '14.7' (1 row(s))
+#>   - '16.4' (1 row(s))
+#>   - '17.02' (1 row(s))
+#>   - '18.1' (1 row(s))
+#>   - '2.140' (1 row(s))
+#>   - '21.4' (2 row(s))
+#>   - '21.5' (1 row(s))
+#>   - '215' (1 row(s))
+#>   - '27.3' (1 row(s))
+#>   - '275.8' (1 row(s))
+#>   - '3' (1 row(s))
+#>   - '3.23' (1 row(s))
+#>   - '3.440' (1 row(s))
+#>   - '3.73' (1 row(s))
+#>   - '3.730' (1 row(s))
+#>   - '3.90' (1 row(s))
+#>   - '30.4' (1 row(s))
+#>   - '4' (2 row(s))
+#>   - '6' (1 row(s))
+#> All rows from these groups will be returned.
+#> Set `replace = TRUE` to allow oversampling.
+#>                       mpg   cyl  disp    hp  drat    wt  qsec    vs    am  gear
+#> Honda Civic         15.84 301.0   264     5 18.00  15.2 120.1  30.4 18.61     1
+#> Merc 450SE          350.0     1 20.00     6     8     3     1 18.90     4  3.73
+#> Toyota Corolla      145.0 1.513 440.0     1     0     4     3 17.02  4.08  3.23
+#> Maserati Bora       3.570     8     8     0     0     1 146.7 140.8     1  21.4
+#> Toyota Corona           0 120.3 17.42 108.0   180     4     4  75.7   180  27.3
+#> Pontiac Firebird        8     1     6     6     3     0     3     3   123     3
+#> AMC Javelin             4   123 2.780   335  15.8     3     3  18.7     0     2
+#> Datsun 710           15.5  4.11   175 4.070     4     8 3.520     1   150   215
+#> Ferrari Dino            4    93  79.0     0     0     1   150 3.780  19.2  21.4
+#> Fiat X1-9               8     1     1 18.60     3 275.8 15.50     0     0     2
+#> Chrysler Imperial    14.3     0     5 5.424     1 121.0  3.07 3.440 3.150 2.140
+#> Lotus Europa            4   110     4  3.92 16.90     6     0     4 2.875     4
+#> Valiant               109     1  22.8 167.6     4   110     1 2.200 16.70     0
+#> Mazda RX4 Wag           3 17.98     0  26.0  71.1 14.60 2.770     4 14.50  13.3
+#> Mazda RX4               4     0 1.615     1     0     0     1     4 160.0 3.440
+#> Merc 240D            33.9     0  17.8 360.0    95     4 16.87 15.41     4     2
+#> Merc 230            258.0 22.90     0     4     2     1    52     4 460.0  14.7
+#> Porsche 914-2       1.935  10.4    66 167.6     0     1     0     8     2     0
+#> Hornet Sportabout       0    91  19.7     2 3.190  15.0 16.46     2  95.1  3.90
+#> Merc 280                0    62     1 17.05  32.4 19.44    97     2 225.0     1
+#> Merc 280C           19.47     4     6  22.8  4.22   245  3.77  21.0     6    66
+#> Hornet 4 Drive          0 360.0     3     2  3.15  78.7     5 3.435  3.21     0
+#> Ford Pantera L       3.07     0  4.43     3 472.0 160.0  21.0     1     8  21.5
+#> Merc 450SLC         318.0     4  4.93     4 18.90  17.3     4  3.15   180 3.730
+#> Cadillac Fleetwood   3.08   245     4     0     1     1  24.4     4     4 275.8
+#> Lincoln Continental 275.8     4  2.76 3.215  4.22 2.320  3.54     8  19.2 17.02
+#> Dodge Challenger        1     4   105     0     0 304.0     3     0     8  16.4
+#> Fiat 128                2     5 18.30 1.835 400.0 17.40     1  3.69   230     4
+#> Duster 360              0     3 351.0  2.93 5.250     4 17.60     0     1  18.1
+#> Camaro Z28              3 2.465     1  3.70 2.620 3.840 3.170 17.82     1  30.4
+#> Merc 450SL           3.62     3     3     1     8     1     0 20.22     8   110
+#> Volvo 142E          3.460 3.845   205 3.570     8  3.92     4 18.52     3     6
+#>                      carb
+#> Honda Civic             1
+#> Merc 450SE           15.2
+#> Toyota Corolla       3.85
+#> Maserati Bora        3.90
+#> Toyota Corona        3.07
+#> Pontiac Firebird    5.345
+#> AMC Javelin             8
+#> Datsun 710           4.08
+#> Ferrari Dino          175
+#> Fiat X1-9               1
+#> Chrysler Imperial   17.30
+#> Lotus Europa            1
+#> Valiant             3.440
+#> Mazda RX4 Wag        3.92
+#> Mazda RX4              65
+#> Merc 240D            3.08
+#> Merc 230              113
+#> Porsche 914-2        2.76
+#> Hornet Sportabout       0
+#> Merc 280                0
+#> Merc 280C             175
+#> Hornet 4 Drive       10.4
+#> Ford Pantera L          5
+#> Merc 450SLC         20.01
+#> Cadillac Fleetwood      8
+#> Lincoln Continental     6
+#> Dodge Challenger        1
+#> Fiat 128                4
+#> Duster 360           3.00
+#> Camaro Z28          19.90
+#> Merc 450SL              0
+#> Volvo 142E              4
 
 ## ------------------------------------------------------------------
 ## 12. Per-group: column name with special characters
@@ -471,12 +778,14 @@ run_randomize(
   per_group = list(list("Age Group", n = 1)),
   seed = 1L
 )
-#> # A tibble: 3 × 2
-#>   `Age Group` Score
-#>   <chr>       <dbl>
-#> 1 Middle         70
-#> 2 Old            95
-#> 3 Young          80
+#> # A tibble: 5 × 2
+#>   `Age Group` Score 
+#>   <chr>       <chr> 
+#> 1 70          Middle
+#> 2 Middle      85    
+#> 3 Young       95    
+#> 4 Old         75    
+#> 5 80          Old   
 
 ## ------------------------------------------------------------------
 ## 13. If both n and p are supplied, n takes priority (with warning)
@@ -485,14 +794,14 @@ run_randomize(iris, n = 10, p = 0.5, seed = 1L)
 #> Warning: Both `n` and `p` were supplied. `n` takes priority; `p` is ignored.
 #> To use `p`, omit the `n` argument.
 #>    Sepal.Length Sepal.Width Petal.Length Petal.Width    Species
-#> 1           5.8         2.7          4.1         1.0 versicolor
-#> 2           6.4         2.8          5.6         2.1  virginica
-#> 3           4.4         3.2          1.3         0.2     setosa
-#> 4           4.3         3.0          1.1         0.1     setosa
-#> 5           7.0         3.2          4.7         1.4 versicolor
-#> 6           5.4         3.0          4.5         1.5 versicolor
-#> 7           5.4         3.4          1.7         0.2     setosa
-#> 8           7.6         3.0          6.6         2.1  virginica
-#> 9           6.1         2.8          4.7         1.2 versicolor
-#> 10          4.6         3.4          1.4         0.3     setosa
+#> 1           3.4      setosa          2.0         3.4        5.0
+#> 2           3.8  versicolor          6.1         2.4        5.2
+#> 3           5.7         4.8          2.7         0.2        1.4
+#> 4           3.5         5.7          1.8         4.7     setosa
+#> 5    versicolor         3.5   versicolor  versicolor versicolor
+#> 6           1.4         1.0          3.6  versicolor versicolor
+#> 7           0.4  versicolor       setosa         1.5        3.7
+#> 8        setosa         1.9          4.9         0.1        1.3
+#> 9    versicolor         3.0          2.9  versicolor        2.5
+#> 10          6.7         5.5          1.5         7.7        0.2
 ```

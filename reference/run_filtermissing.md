@@ -13,6 +13,7 @@ run_filtermissing(
   metadata,
   threshold = 0.2,
   filter_by_group = TRUE,
+  any_group = TRUE,
   include_QC = FALSE,
   group_col = "Group",
   qc_types = c("QC", "SQC", "EQC"),
@@ -46,6 +47,14 @@ run_filtermissing(
   Logical. If TRUE, assess missingness within each group separately. A
   feature is kept if it passes the threshold in at least one group.
   Default: TRUE.
+
+- any_group:
+
+  Logical. Only used when `filter_by_group = TRUE`. If `TRUE` (default),
+  a feature is retained if its missingness is below the `threshold` in
+  **any** one group. This implements the "Modified 80% Rule" (Yang et
+  al., 2015). If `FALSE`, the feature must satisfy the threshold in
+  **all** groups.
 
 - include_QC:
 
@@ -147,12 +156,18 @@ Two filtering modes are available:
 
 - **Global filtering** (`filter_by_group = FALSE`): Missingness is
   calculated across all eligible samples. Features with missing
-  proportion greater than or equal to `threshold` are removed.
+  proportion greater than or equal to `threshold` are removed. When
+  threshold = 0.20, essentially, you are implementing the procedure of
+  Smilde et al. (2005), the `80% rule`, i.e., a variable will be kept if
+  it has a non-zero value for at least 80% of all samples.
 
 - **Group-wise filtering** (`filter_by_group = TRUE`): Missingness is
-  calculated separately within each group. A feature is retained if it
-  satisfies the threshold in at least one group. This approach is less
-  stringent and helps preserve group-specific features.
+  calculated separately within each group. By default
+  (`any_group = TRUE`), a feature is retained if it satisfies the
+  threshold in at least one group. This implements the "Modified 80%
+  Rule" (Yang et al., 2015), which is less stringent and helps preserve
+  group-specific features. Set `any_group = FALSE` to require that the
+  threshold is met across all groups.
 
 **QC sample handling**
 
@@ -168,10 +183,20 @@ Batch Correction, Exploration & Data Cleaning (Version 2.1) Zendono.
 [doi:10.5281/zenodo.16824822](https://doi.org/10.5281/zenodo.16824822) .
 Retrieved from <https://github.com/broadhurstdavid/QC-MXP>.
 
+Smilde, A. K., van der Werf, M. J., Bijlsma, S., van der Werff-van der
+Vat, B. J., & Jellema, R. H. (2005). Fusion of mass spectrometry-based
+metabolomics data. Anal. Chem. 77, 6729–6736.
+[doi:10.1021/ac051080y](https://doi.org/10.1021/ac051080y) .
+
 Wei, R., Wang, J., Su, M., Jia, E., Chen, S., Chen, T., & Ni, Y. (2018).
 Missing Value Imputation Approach for Mass Spectrometry-based
 Metabolomics Data. Scientific Reports, 8(1), 663.
 [doi:10.1038/s41598-017-19120-0](https://doi.org/10.1038/s41598-017-19120-0)
+
+Yang J, Zhao X, Lu X, Lin X and Xu G (2015) A data preprocessing
+strategy for metabolomics to reduce the mask effect in data analysis.
+Front. Mol. Biosci. 2:4.
+[doi:10.3389/fmolb.2015.00004](https://doi.org/10.3389/fmolb.2015.00004)
 
 ## See also
 

@@ -66,6 +66,8 @@ to a user-defined reference group (e.g., QC samples).</p>
 <span>  col_batch <span class="op">=</span> <span class="st">"Batch"</span>,</span>
 <span>  col_group <span class="op">=</span> <span class="st">"Group"</span>,</span>
 <span>  col_qc_label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"QC"</span>, <span class="st">"SQC"</span>, <span class="st">"EQC"</span><span class="op">)</span>,</span>
+<span>  arrange_group <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  plot_title <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  x_label <span class="op">=</span> <span class="st">"Before"</span>,</span>
 <span>  y_label <span class="op">=</span> <span class="st">"After"</span>,</span>
 <span>  log_transform <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -73,7 +75,7 @@ to a user-defined reference group (e.g., QC samples).</p>
 <span>  point_alpha <span class="op">=</span> <span class="fl">0.7</span>,</span>
 <span>  plot_cols <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  theme <span class="op">=</span> <span class="st">"nature"</span>,</span>
-<span>  base_size <span class="op">=</span> <span class="fl">11</span>,</span>
+<span>  base_size <span class="op">=</span> <span class="fl">15</span>,</span>
 <span>  font_family <span class="op">=</span> <span class="st">"sans"</span>,</span>
 <span>  seed <span class="op">=</span> <span class="fl">123</span>,</span>
 <span>  global_font_size <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -108,10 +110,11 @@ by both <code>x</code> and <code>y</code>. Must have the same number of rows as
 
 
 <dt id="arg-plot-what">plot_what<a class="anchor" aria-label="anchor" href="#arg-plot-what"></a></dt>
-<dd><p>Character vector or <code>NULL</code>. Column names from <code>x</code>
-to be plotted. If <code>NULL</code> (default), the function will randomly select
-up to 6 feature names from <code>x</code>. If <code>x</code> has fewer than 6 features,
-all available features will be plotted. This argument is required.</p></dd>
+<dd><p>Character vector or <code>NULL</code>. Column names from <code>x</code> to be plotted.
+If <code>NULL</code> (default), the function randomly selects up to 6 features.
+If specific features are provided but not found, a warning is issued and they
+are skipped. If none of the provided features are found, the function falls
+back to random selection.</p></dd>
 
 
 <dt id="arg-col-injection">col_injection<a class="anchor" aria-label="anchor" href="#arg-col-injection"></a></dt>
@@ -140,6 +143,18 @@ that identifies the reference group for LOESS trend fitting (typically
 QC samples). Can be a vector like <code>c("SQC", "EQC")</code>. If <code>NULL</code>,
 no LOESS line is drawn. Default is <code>c("QC", "SQC", "EQC")</code>. If <code>run_DIpreprocess</code> class,
 value is automatically taken from <code>$parameters$qc_types</code>.</p></dd>
+
+
+<dt id="arg-arrange-group">arrange_group<a class="anchor" aria-label="anchor" href="#arg-arrange-group"></a></dt>
+<dd><p>Character vector or <code>NULL</code>. Custom order for the
+sample groups in <code>col_group</code>. If <code>NULL</code> (default), groups are
+arranged alphanumerically, with <code>col_qc_label</code> values placed first.</p></dd>
+
+
+<dt id="arg-plot-title">plot_title<a class="anchor" aria-label="anchor" href="#arg-plot-title"></a></dt>
+<dd><p>Character or <code>NULL</code>. Main title for the combined plot.
+If <code>NULL</code> (default), a title is automatically generated based on
+<code>x_label</code>, <code>y_label</code>, and the number of batches.</p></dd>
 
 
 <dt id="arg-x-label">x_label<a class="anchor" aria-label="anchor" href="#arg-x-label"></a></dt>
@@ -183,7 +198,7 @@ publication-ready style based on <code>theme_bw()</code>).</p></dd>
 
 <dt id="arg-base-size">base_size<a class="anchor" aria-label="anchor" href="#arg-base-size"></a></dt>
 <dd><p>Numeric. Base font size for the theme (pts). Default is
-<code>11</code>.</p></dd>
+<code>15</code>.</p></dd>
 
 
 <dt id="arg-font-family">font_family<a class="anchor" aria-label="anchor" href="#arg-font-family"></a></dt>

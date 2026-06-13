@@ -3,17 +3,21 @@
 optionally restricting the display to the top or bottom limit
 features by total abundance and collapsing the remainder into an
 "Others" category. Samples may be shown individually or aggregated
-by a grouping variable using the mean or median. Both horizontal and
-vertical orientations are supported, along with full control over colours,
-fonts, legend layout, and axis labels. Column names containing spaces or
-special characters are fully supported.'><meta property="og:description" content='Generates a stacked bar chart of relative abundances from a feature matrix,
+by a grouping variable by summing raw counts per group before normalising.
+Both horizontal and vertical orientations are supported, along with full
+control over colours, fonts, legend layout, and axis labels. Column names
+containing spaces or special characters are fully supported. When plotting
+individual samples, bracket annotations can be drawn beneath (or beside)
+the bars to visually group samples by a metadata variable.'><meta property="og:description" content='Generates a stacked bar chart of relative abundances from a feature matrix,
 optionally restricting the display to the top or bottom limit
 features by total abundance and collapsing the remainder into an
 "Others" category. Samples may be shown individually or aggregated
-by a grouping variable using the mean or median. Both horizontal and
-vertical orientations are supported, along with full control over colours,
-fonts, legend layout, and axis labels. Column names containing spaces or
-special characters are fully supported.'><link rel="preconnect" href="https://fonts.googleapis.com"></head><body>
+by a grouping variable by summing raw counts per group before normalising.
+Both horizontal and vertical orientations are supported, along with full
+control over colours, fonts, legend layout, and axis labels. Column names
+containing spaces or special characters are fully supported. When plotting
+individual samples, bracket annotations can be drawn beneath (or beside)
+the bars to visually group samples by a metadata variable.'><link rel="preconnect" href="https://fonts.googleapis.com"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -58,10 +62,12 @@ special characters are fully supported.'><link rel="preconnect" href="https://fo
 optionally restricting the display to the top or bottom <code>limit</code>
 features by <em>total</em> abundance and collapsing the remainder into an
 <code>"Others"</code> category. Samples may be shown individually or aggregated
-by a grouping variable using the mean or median. Both horizontal and
-vertical orientations are supported, along with full control over colours,
-fonts, legend layout, and axis labels. Column names containing spaces or
-special characters are fully supported.</p>
+by a grouping variable by summing raw counts per group before normalising.
+Both horizontal and vertical orientations are supported, along with full
+control over colours, fonts, legend layout, and axis labels. Column names
+containing spaces or special characters are fully supported. When plotting
+individual samples, bracket annotations can be drawn beneath (or beside)
+the bars to visually group samples by a metadata variable.</p>
     </div>
 
     <div class="section level2">
@@ -73,16 +79,18 @@ special characters are fully supported.</p>
 <span>  sort <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  others_position <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  show_x_as <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  group_aggregate <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  group_aggregate <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  normalize_to_relabund <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  ignore_normalization <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  order <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  group_brackets <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  angle <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  abundance_in_y <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  legend_position <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  legend_nrow <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  legend_ncol <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  italicize_legend_items <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  exclude_unknown <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  exclude_others <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  unknown_before_others <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  theme <span class="op">=</span> <span class="st">"nature"</span>,</span>
@@ -111,11 +119,11 @@ special characters are fully supported.</p>
 <dd><p>A <code>data.frame</code>, <code>tibble</code>, or <code>matrix</code> with named
 columns representing features (e.g., taxa, metabolites). Rows are samples;
 columns are features. Column names may contain spaces and special
-characters. <strong>When <code>group_aggregate = NULL</code> and
+characters. <strong>When <code>group_aggregate = FALSE</code> and
 <code>ignore_normalization = FALSE</code></strong>, <code>x</code> is expected to already
 contain row-wise relative abundances (each row summing to 1). A warning
-is issued for any column whose sum is not 0 or 1, indicating that
-column-wise relative abundance normalisation may not have been applied.</p></dd>
+is issued for any row whose sum is not 0 or 1, indicating that row-wise
+relative abundance normalisation may not have been applied.</p></dd>
 
 
 <dt id="arg-metadata">metadata<a class="anchor" aria-label="anchor" href="#arg-metadata"></a></dt>
@@ -143,9 +151,9 @@ legend/stack. <code>NULL</code> (default) preserves the original column order of
 <code>"low"</code> (lowest total abundance first — selects bottom <code>limit</code>).
 <strong>Note:</strong> <code>"high"</code> and <code>"low"</code> rank by column totals and
 are meaningful only when <code>x</code> contains raw counts or intensities
-(row sums not already 0 or 1). If normalised data is detected, a
-warning is issued and <code>sort</code> is ignored. When using ranked sorting,
-supply raw count data and set <code>normalize_to_relabund = TRUE</code>.</p></dd>
+(row sums not already 0 or 1). If normalised data is detected, a warning
+is issued and <code>sort</code> is ignored. When using ranked sorting, supply
+raw count data and set <code>normalize_to_relabund = TRUE</code>.</p></dd>
 
 
 <dt id="arg-others-position">others_position<a class="anchor" aria-label="anchor" href="#arg-others-position"></a></dt>
@@ -164,23 +172,21 @@ found.</p></dd>
 
 
 <dt id="arg-group-aggregate">group_aggregate<a class="anchor" aria-label="anchor" href="#arg-group-aggregate"></a></dt>
-<dd><p>Character or <code>NULL</code>. If <code>"mean"</code> or
-<code>"median"</code>, <code>show_x_as</code> is treated as a grouping variable and
-raw feature values in <code>x</code> are aggregated per group before normalising
-to relative abundances. <strong>Assumes <code>x</code> contains raw
-(unnormalised) data.</strong> See <code>normalize_to_relabund</code>. If <code>NULL</code>
-(default), each row in <code>x</code> is an individual sample and <code>x</code>
-must already contain row-wise relative abundances (unless
-<code>ignore_normalization = TRUE</code>).</p></dd>
+<dd><p>Logical. If <code>TRUE</code>, <code>show_x_as</code> is treated
+as a grouping variable and raw feature values in <code>x</code> are summed per
+group before normalising to relative abundances. <strong>Assumes <code>x</code>
+contains raw (unnormalised) data.</strong> If <code>FALSE</code> (default), each row in
+<code>x</code> is treated as an individual sample. Cannot be <code>TRUE</code>
+simultaneously with <code>group_brackets</code>.</p></dd>
 
 
 <dt id="arg-normalize-to-relabund">normalize_to_relabund<a class="anchor" aria-label="anchor" href="#arg-normalize-to-relabund"></a></dt>
-<dd><p>Logical. Relevant when <code>group_aggregate</code>
-is non-<code>NULL</code> or <code>sort</code> is <code>"high"</code>/<code>"low"</code>. If
-<code>TRUE</code> (default), <code>run_normalize(method = "col_rel_abundance")</code>
-is applied to <code>x</code> before aggregation or ranking. Set to <code>FALSE</code>
-if <code>x</code> is already appropriately normalised. Ignored when
-<code>ignore_normalization = TRUE</code>.</p></dd>
+<dd><p>Logical. Relevant when <code>group_aggregate =
+TRUE</code> or <code>sort</code> is <code>"high"</code>/<code>"low"</code>. If <code>TRUE</code>
+(default), row-wise relative abundance normalisation is applied to <code>x</code>
+via <code>run_normalize(method = "row_rel_abundance")</code> before aggregation
+or ranking. Set to <code>FALSE</code> if <code>x</code> is already appropriately
+normalised. Ignored when <code>ignore_normalization = TRUE</code>.</p></dd>
 
 
 <dt id="arg-ignore-normalization">ignore_normalization<a class="anchor" aria-label="anchor" href="#arg-ignore-normalization"></a></dt>
@@ -200,10 +206,20 @@ gives an explicit sequence. <code>"alphanumeric"</code> sorts lexicographically.
 <code>metadata</code>.</p></dd>
 
 
+<dt id="arg-group-brackets">group_brackets<a class="anchor" aria-label="anchor" href="#arg-group-brackets"></a></dt>
+<dd><p>A formula or <code>NULL</code>. Draws bracket annotations
+beneath (or beside, when <code>abundance_in_y = FALSE</code>) the bars to
+visually group individual samples by a metadata variable. Specify as a
+one-sided formula of the form <code>GroupCol ~ c("Level1", "Level2")</code>,
+where <code>GroupCol</code> is a column in <code>metadata</code> and the right-hand
+side gives the display order of the groups. <strong>Cannot be used when
+<code>group_aggregate = TRUE</code>.</strong> Default is <code>NULL</code>.</p></dd>
+
+
 <dt id="arg-angle">angle<a class="anchor" aria-label="anchor" href="#arg-angle"></a></dt>
 <dd><p>Numeric or <code>NULL</code>. Rotation angle (0–360 degrees) for
 sample/group tick labels. <code>NULL</code> (default): <code>0</code> when
-<code>group_aggregate</code> is non-<code>NULL</code>, <code>45</code> otherwise.</p></dd>
+<code>group_aggregate = TRUE</code>, <code>45</code> otherwise.</p></dd>
 
 
 <dt id="arg-abundance-in-y">abundance_in_y<a class="anchor" aria-label="anchor" href="#arg-abundance-in-y"></a></dt>
@@ -233,6 +249,12 @@ for <code>abundance_in_y = FALSE</code>.</p></dd>
 <dd><p>Logical. Render legend labels in italic.
 Requires <code>ggtext</code>; falls back to <code>element_text(face = "italic")</code>
 with a warning. Default <code>FALSE</code>.</p></dd>
+
+
+<dt id="arg-exclude-unknown">exclude_unknown<a class="anchor" aria-label="anchor" href="#arg-exclude-unknown"></a></dt>
+<dd><p>Logical. If <code>TRUE</code>, any feature whose name is
+exactly <code>"unknown"</code> (case-insensitive) is omitted from the plot
+entirely. Default is <code>FALSE</code>.</p></dd>
 
 
 <dt id="arg-exclude-others">exclude_others<a class="anchor" aria-label="anchor" href="#arg-exclude-others"></a></dt>
@@ -335,11 +357,21 @@ instead builds the long-format data frame manually.</p>
 <code>"Others"</code>. When <code>sort = "low"</code>, the bottom <code>limit</code> features
 by total are retained instead.</p>
 <p><strong>Normalisation flow.</strong> When <code>ignore_normalization = FALSE</code> and
-<code>normalize_to_relabund = TRUE</code>, row-relative abundance is applied
-via <code>run_normalize(method = "row_rel_abundance")</code> before any aggregation
-or ranking. Row-wise proportions are then computed so each bar sums to 100\<!-- %. When -->
-<code>ignore_normalization = TRUE</code>, the data are plotted as supplied and the
-y-axis label should be interpreted accordingly.</p>
+<code>normalize_to_relabund = TRUE</code>, row-relative abundance is applied via
+<code>run_normalize(method = "row_rel_abundance")</code> before any aggregation or
+ranking. Row-wise proportions are then computed so each bar sums to 100\<!-- %. -->
+When <code>ignore_normalization = TRUE</code>, the data are plotted as supplied
+and the y-axis label should be interpreted accordingly.</p>
+<p><strong>Group aggregation.</strong> When <code>group_aggregate = TRUE</code>, all rows
+belonging to the same level of <code>show_x_as</code> are summed (raw counts),
+and the result is then normalised to row-wise relative abundances. This is
+incompatible with <code>group_brackets</code>.</p>
+<p><strong>Group brackets.</strong> When <code>group_brackets</code> is supplied (and
+<code>group_aggregate = FALSE</code>), bracket annotations are drawn below each
+set of sample bars that belong to the same group, with the group label
+centred beneath the bracket. The formula right-hand side controls both
+which groups appear and their left-to-right order. Any group present in
+<code>metadata</code> but absent from the right-hand side is appended at the end.</p>
 <p><strong>Legend reversal when flipped.</strong> When <code>abundance_in_y = FALSE</code>,
 <code>coord_flip()</code> causes the stack to render left-to-right. The legend
 fill levels are reversed so the first (top-of-stack) feature also appears
@@ -370,7 +402,7 @@ first (top) in the legend, maintaining visual correspondence.</p>
 <span class="r-in"><span>  Group    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Control"</span>, <span class="st">"Treatment"</span><span class="op">)</span>, each <span class="op">=</span> <span class="va">n</span> <span class="op">/</span> <span class="fl">2L</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># --- Pipeline: col_rel_abundance → CLR → plot as-is ---</span></span></span>
+<span class="r-in"><span><span class="co"># --- Pipeline: col_rel_abundance -&gt; CLR -&gt; plot as-is ---</span></span></span>
 <span class="r-in"><span><span class="va">norm_out</span> <span class="op">&lt;-</span> <span class="fu"><a href="run_normalize.html">run_normalize</a></span><span class="op">(</span><span class="va">counts</span>, <span class="va">meta</span>, method <span class="op">=</span> <span class="st">"col_rel_abundance"</span>,</span></span>
 <span class="r-in"><span>                          verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">clr_out</span>  <span class="op">&lt;-</span> <span class="fu"><a href="run_transform.html">run_transform</a></span><span class="op">(</span><span class="va">norm_out</span><span class="op">$</span><span class="va">data</span>, method <span class="op">=</span> <span class="st">"clr"</span><span class="op">)</span></span></span>
@@ -383,12 +415,12 @@ first (top) in the legend, maintaining visual correspondence.</p>
 <span class="r-in"><span>  plot_title           <span class="op">=</span> <span class="st">"Gut Microbiome (CLR-transformed)"</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># --- Group-aggregated from raw counts, bold title ---</span></span></span>
+<span class="r-in"><span><span class="co"># --- Group-aggregated from raw counts (group_aggregate = TRUE) ---</span></span></span>
 <span class="r-in"><span><span class="fu">plot_relabund</span><span class="op">(</span></span></span>
 <span class="r-in"><span>  x               <span class="op">=</span> <span class="va">counts</span>,</span></span>
 <span class="r-in"><span>  metadata        <span class="op">=</span> <span class="va">meta</span>,</span></span>
 <span class="r-in"><span>  show_x_as       <span class="op">=</span> <span class="st">"Group"</span>,</span></span>
-<span class="r-in"><span>  group_aggregate <span class="op">=</span> <span class="st">"mean"</span>,</span></span>
+<span class="r-in"><span>  group_aggregate <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
 <span class="r-in"><span>  order           <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Treatment"</span>, <span class="st">"Control"</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  limit           <span class="op">=</span> <span class="fl">8L</span>,</span></span>
 <span class="r-in"><span>  sort            <span class="op">=</span> <span class="st">"high"</span>,</span></span>
@@ -396,12 +428,26 @@ first (top) in the legend, maintaining visual correspondence.</p>
 <span class="r-in"><span>  legend_title    <span class="op">=</span> <span class="st">"Phylum"</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># --- Horizontal bars ---</span></span></span>
+<span class="r-in"><span><span class="co"># --- Individual samples with group brackets (group_aggregate = FALSE) ---</span></span></span>
+<span class="r-in"><span><span class="fu">plot_relabund</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  x                <span class="op">=</span> <span class="va">counts</span>,</span></span>
+<span class="r-in"><span>  metadata         <span class="op">=</span> <span class="va">meta</span>,</span></span>
+<span class="r-in"><span>  show_x_as        <span class="op">=</span> <span class="st">"SampleID"</span>,</span></span>
+<span class="r-in"><span>  group_aggregate  <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
+<span class="r-in"><span>  group_brackets   <span class="op">=</span> <span class="va">Group</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Control"</span>, <span class="st">"Treatment"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  limit            <span class="op">=</span> <span class="fl">8L</span>,</span></span>
+<span class="r-in"><span>  sort             <span class="op">=</span> <span class="st">"high"</span>,</span></span>
+<span class="r-in"><span>  plot_title       <span class="op">=</span> <span class="st">"Relative Abundance by Sample"</span>,</span></span>
+<span class="r-in"><span>  legend_title     <span class="op">=</span> <span class="st">"Phylum"</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># --- Horizontal bars, individual samples, group brackets ---</span></span></span>
 <span class="r-in"><span><span class="fu">plot_relabund</span><span class="op">(</span></span></span>
 <span class="r-in"><span>  x                     <span class="op">=</span> <span class="va">counts</span>,</span></span>
 <span class="r-in"><span>  metadata              <span class="op">=</span> <span class="va">meta</span>,</span></span>
-<span class="r-in"><span>  show_x_as             <span class="op">=</span> <span class="st">"Group"</span>,</span></span>
-<span class="r-in"><span>  group_aggregate       <span class="op">=</span> <span class="st">"mean"</span>,</span></span>
+<span class="r-in"><span>  show_x_as             <span class="op">=</span> <span class="st">"SampleID"</span>,</span></span>
+<span class="r-in"><span>  group_aggregate       <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
+<span class="r-in"><span>  group_brackets        <span class="op">=</span> <span class="va">Group</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Control"</span>, <span class="st">"Treatment"</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  limit                 <span class="op">=</span> <span class="fl">6L</span>,</span></span>
 <span class="r-in"><span>  exclude_others        <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
 <span class="r-in"><span>  unknown_before_others <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>

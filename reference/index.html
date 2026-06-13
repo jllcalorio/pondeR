@@ -56,7 +56,7 @@
       </dl></div><div class="section level2">
       <h2 id="summarizing-data-checking-distributions">Summarizing Data &amp; Checking Distributions<a class="anchor" aria-label="anchor" href="#summarizing-data-checking-distributions"></a></h2>
 
-      <div class="section-desc"><p>Functions for generating publication-ready summary tables, anthropometric indices according to WHO standards, and testing for normality or skewness.</p></div>
+      <div class="section-desc"><p>Functions for generating publication-ready summary tables and anthropometric indices according to WHO standards.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -79,7 +79,7 @@
       </dl></div><div class="section level2">
       <h2 id="comparing-groups-identifying-associations">Comparing Groups &amp; Identifying Associations<a class="anchor" aria-label="anchor" href="#comparing-groups-identifying-associations"></a></h2>
 
-      <div class="section-desc"><p>Methods for detecting differences between cohorts, calculating fold changes, and testing statistical associations.</p></div>
+      <div class="section-desc"><p>Methods for detecting differences between cohorts, calculating fold changes, testing statistical associations, and visualization.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -109,6 +109,13 @@
 
         <dt>
 
+          <code><a href="run_single_assoc.html">run_single_assoc()</a></code>
+
+        </dt>
+        <dd>Run Single-Variable Association Tests</dd>
+
+        <dt>
+
           <code><a href="run_foldchange.html">run_foldchange()</a></code>
 
         </dt>
@@ -120,6 +127,13 @@
 
         </dt>
         <dd>Volcano Plot for Fold Change and p-value Data</dd>
+
+        <dt>
+
+          <code><a href="get_volcanodata.html">get_volcanodata()</a></code>
+
+        </dt>
+        <dd>Get Volcano Plot Data</dd>
 
         <dt>
 
@@ -141,10 +155,17 @@
 
         </dt>
         <dd>Plot a Hierarchical Clustering Dendrogram</dd>
+
+        <dt>
+
+          <code><a href="run_lefse.html">run_lefse()</a></code>
+
+        </dt>
+        <dd>Perform LEfSe (Linear Discriminant Analysis Effect Size) analysis</dd>
       </dl></div><div class="section level2">
       <h2 id="predictive-modeling-classification">Predictive Modeling &amp; Classification<a class="anchor" aria-label="anchor" href="#predictive-modeling-classification"></a></h2>
 
-      <div class="section-desc"><p>Regularized regression (Ridge, LASSO, and Elastic Net), Linear Mixed-Effect Model, Logistic regression analysis and performance evaluation (AUC/AUROC) with automated bias correction options.</p></div>
+      <div class="section-desc"><p>Regularized regression (Ridge, LASSO, and Elastic Net), Linear Mixed-Effect Model, Logistic regression analysis and performance evaluation (AUC/AUROC).</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -185,6 +206,13 @@
 
         </dt>
         <dd>Comprehensive Area Under the ROC Curve (AUROC) Analysis</dd>
+
+        <dt>
+
+          <code><a href="plot_oddsratio.html">plot_oddsratio()</a></code>
+
+        </dt>
+        <dd>Plot Odds Ratios</dd>
       </dl></div><div class="section level2">
       <h2 id="multivariate-exploration-and-discrimination">Multivariate Exploration and Discrimination<a class="anchor" aria-label="anchor" href="#multivariate-exploration-and-discrimination"></a></h2>
 
@@ -374,6 +402,36 @@
 
         </dt>
         <dd>Plot Multiple Variables on Primary and Secondary Y Axes</dd>
+
+        <dt>
+
+          <code><a href="plot_relabund.html">plot_relabund()</a></code>
+
+        </dt>
+        <dd>Plot Relative Abundance as Stacked Bar Chart</dd>
+      </dl></div><div class="section level2">
+      <h2 id="content-validity">Content validity<a class="anchor" aria-label="anchor" href="#content-validity"></a></h2>
+
+      <div class="section-desc"><p>“Functions to assess/validate questionnaires using subject-matter expert (SME) ratings.”</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="run_contentvalidity.html">run_contentvalidity()</a></code>
+
+        </dt>
+        <dd>Run Comprehensive Item-Level and Scale-Level Content Validity Analysis</dd>
+
+        <dt>
+
+          <code><a href="run_contentvaliditycvr.html">run_contentvaliditycvr()</a></code>
+
+        </dt>
+        <dd>Run Lawshe's Content Validity Ratio (CVR) Analysis</dd>
       </dl></div><div class="section level2">
       <h2 id="export-functions">Export Functions<a class="anchor" aria-label="anchor" href="#export-functions"></a></h2>
 
@@ -430,6 +488,20 @@
 
         <dt>
 
+          <code><a href="run_subset.html">run_subset()</a></code>
+
+        </dt>
+        <dd>Balanced Subsetting of Rows or Columns</dd>
+
+        <dt>
+
+          <code><a href="run_vector2df.html">run_vector2df()</a></code>
+
+        </dt>
+        <dd>Convert a Named Vector to a Two-Column Data Frame</dd>
+
+        <dt>
+
           <code><a href="get_groupsizes.html">get_groupsizes()</a></code>
 
         </dt>
@@ -450,6 +522,85 @@
         <dd>Get Features with Non-Zero Coefficients from a Regularized Regression Result</dd>
 
         <dt>
+
+          <code><a href="as_gt.run_correl.html">as_gt(<i>&lt;run_correl&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Convert a run_correl to a gt table</dd>
+
+        <dt>
+
+          <code><a href="has_inf.html">has_inf()</a></code>
+
+        </dt>
+        <dd>Check if an Object Contains Infinite Values</dd>
+
+        <dt>
+
+          <code><a href="has_na.html">has_na()</a></code>
+
+        </dt>
+        <dd>Check if an Object Contains Missing Values</dd>
+
+        <dt>
+
+          <code><a href="has_names.html">has_names()</a></code>
+
+        </dt>
+        <dd>Check if an Object has Names</dd>
+
+        <dt>
+
+          <code><a href="has_negative.html">has_negative()</a></code>
+
+        </dt>
+        <dd>Check if an Object Contains Negative Values</dd>
+
+        <dt>
+
+          <code><a href="has_zero.html">has_zero()</a></code>
+
+        </dt>
+        <dd>Check if an Object Contains Zero Values</dd>
+
+        <dt>
+
+          <code><a href="is_list.html">is_list()</a></code>
+
+        </dt>
+        <dd>Check if an Object is a Plain List</dd>
+
+        <dt>
+
+          <code><a href="is_tabular.html">is_tabular()</a></code>
+
+        </dt>
+        <dd>Check if an Object is a Tabular Data Structure</dd>
+
+        <dt>
+
+          <code><a href="select_catvars.html">select_catvars()</a></code>
+
+        </dt>
+        <dd>Select Categorical Variables from a Data Frame</dd>
+
+        <dt>
+
+          <code><a href="select_numvars.html">select_numvars()</a></code>
+
+        </dt>
+        <dd>Select Numeric Variables from a Data Frame</dd>
+      </dl></div><div class="section level2">
+      <h2 id="s-methods">S3 methods<a class="anchor" aria-label="anchor" href="#s-methods"></a></h2>
+
+      <div class="section-desc"><p>S3 methods used by pondeR.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
 
           <code><a href="print.plot_volcano.html">print(<i>&lt;plot_volcano&gt;</i>)</a></code>
 
@@ -525,8 +676,17 @@
 
         </dt>
         <dd>Summary method for run_diff objects</dd>
+      </dl></div><div class="section level2">
+      <h2 id="internal-functions">Internal functions<a class="anchor" aria-label="anchor" href="#internal-functions"></a></h2>
 
-        <dt>
+      <div class="section-desc"><p>Internal functions used by pondeR.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
 
           <code><a href="dot-assumption_row.html">.assumption_row()</a></code>
 
@@ -616,449 +776,6 @@
 
         </dt>
         <dd>Execute RM or mixed ANOVA and return a full run_diff-compatible result list</dd>
-      </dl></div><div class="section level2">
-      <h2 id="other">Other<a class="anchor" aria-label="anchor" href="#other"></a></h2>
-
-      <div class="section-desc"><p>Additional exported functions. New functions land here automatically until formally categorised.</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="get_groupsizes.html">get_groupsizes()</a></code>
-
-        </dt>
-        <dd>Inspect Group Sample Sizes That May Trigger CV Fold Reduction in <code><a href="../reference/run_regreg.html">run_regreg()</a></code></dd>
-
-        <dt>
-
-          <code><a href="get_removed_samples.html">get_removed_samples()</a></code>
-
-        </dt>
-        <dd>Get Samples Removed by <code><a href="../reference/run_regreg.html">run_regreg()</a></code> Due to Missing Covariate Data</dd>
-
-        <dt>
-
-          <code><a href="get_sigfeatures.html">get_sigfeatures()</a></code>
-
-        </dt>
-        <dd>Get Features with Non-Zero Coefficients from a Regularized Regression Result</dd>
-
-        <dt>
-
-          <code><a href="get_volcanodata.html">get_volcanodata()</a></code>
-
-        </dt>
-        <dd>Get Volcano Plot Data</dd>
-
-        <dt>
-
-          <code><a href="has_inf.html">has_inf()</a></code>
-
-        </dt>
-        <dd>Check if an Object Contains Infinite Values</dd>
-
-        <dt>
-
-          <code><a href="has_na.html">has_na()</a></code>
-
-        </dt>
-        <dd>Check if an Object Contains Missing Values</dd>
-
-        <dt>
-
-          <code><a href="has_names.html">has_names()</a></code>
-
-        </dt>
-        <dd>Check if an Object has Names</dd>
-
-        <dt>
-
-          <code><a href="has_negative.html">has_negative()</a></code>
-
-        </dt>
-        <dd>Check if an Object Contains Negative Values</dd>
-
-        <dt>
-
-          <code><a href="has_zero.html">has_zero()</a></code>
-
-        </dt>
-        <dd>Check if an Object Contains Zero Values</dd>
-
-        <dt>
-
-          <code><a href="is_list.html">is_list()</a></code>
-
-        </dt>
-        <dd>Check if an Object is a Plain List</dd>
-
-        <dt>
-
-          <code><a href="is_tabular.html">is_tabular()</a></code>
-
-        </dt>
-        <dd>Check if an Object is a Tabular Data Structure</dd>
-
-        <dt>
-
-          <code><a href="plot_beforeafter.html">plot_beforeafter()</a></code>
-
-        </dt>
-        <dd>Plot Pairwise Before-and-After Comparison for Selected Features</dd>
-
-        <dt>
-
-          <code><a href="plot_dend.html">plot_dend()</a></code>
-
-        </dt>
-        <dd>Plot a Hierarchical Clustering Dendrogram</dd>
-
-        <dt>
-
-          <code><a href="plot_diff.html">plot_diff()</a></code>
-
-        </dt>
-        <dd>Create Box or Violin Plots with Statistical Comparisons</dd>
-
-        <dt>
-
-          <code><a href="plot_dist_beforeafter.html">plot_dist_beforeafter()</a></code>
-
-        </dt>
-        <dd>Plot Distribution Comparison Before and After Data Transformation</dd>
-
-        <dt>
-
-          <code><a href="plot_heatmap.html">plot_heatmap()</a></code>
-
-        </dt>
-        <dd>Plot a Correlation Heatmap</dd>
-
-        <dt>
-
-          <code><a href="plot_meanmap.html">plot_meanmap()</a></code>
-
-        </dt>
-        <dd>Mean Intensity Heatmap with Hierarchical Clustering Dendrogram</dd>
-
-        <dt>
-
-          <code><a href="plot_mixedmodel.html">plot_mixedmodel()</a></code>
-
-        </dt>
-        <dd>Plot Results from a Linear Mixed-Effects Model Analysis</dd>
-
-        <dt>
-
-          <code><a href="plot_multi_y.html">plot_multi_y()</a></code>
-
-        </dt>
-        <dd>Plot Multiple Variables on Primary and Secondary Y Axes</dd>
-
-        <dt>
-
-          <code><a href="plot_relabund.html">plot_relabund()</a></code>
-
-        </dt>
-        <dd>Plot Relative Abundance as Stacked Bar Chart</dd>
-
-        <dt>
-
-          <code><a href="plot_score.html">plot_score()</a></code>
-
-        </dt>
-        <dd>Scores Plot for Multivariate Ordination Results</dd>
-
-        <dt>
-
-          <code><a href="plot_scree.html">plot_scree()</a></code>
-
-        </dt>
-        <dd>Plot PCA Scree Plot</dd>
-
-        <dt>
-
-          <code><a href="plot_volcano.html">plot_volcano()</a></code>
-
-        </dt>
-        <dd>Volcano Plot for Fold Change and p-value Data</dd>
-
-        <dt>
-
-          <code><a href="print.plot_volcano.html">print(<i>&lt;plot_volcano&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Print Method for <code>plot_volcano</code> Objects</dd>
-
-        <dt>
-
-          <code><a href="print.run_assoc.html">print(<i>&lt;run_assoc&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Print method for run_assoc objects</dd>
-
-        <dt>
-
-          <code><a href="print.run_assoc_error.html">print(<i>&lt;run_assoc_error&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Print method for run_assoc_error objects</dd>
-
-        <dt>
-
-          <code><a href="print.run_assoc_multi.html">print(<i>&lt;run_assoc_multi&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Print method for run_assoc_multi objects</dd>
-
-        <dt>
-
-          <code><a href="print.run_auc.html">print(<i>&lt;run_auc&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Print Method for <code>run_auc</code> Objects</dd>
-
-        <dt>
-
-          <code><a href="print.run_diff.html">print(<i>&lt;run_diff&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Print method for run_diff objects</dd>
-
-        <dt>
-
-          <code><a href="print.run_foldchange.html">print(<i>&lt;run_foldchange&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Print Method for <code>run_foldchange</code> Objects</dd>
-
-        <dt>
-
-          <code><a href="print.run_reduce.html">print(<i>&lt;run_reduce&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Print Method for <code>run_reduce</code> Objects</dd>
-
-        <dt>
-
-          <code><a href="run_DIpreprocess.html">run_DIpreprocess()</a></code>
-
-        </dt>
-        <dd>Direct-Injection Metabolomics Preprocessing Pipeline</dd>
-
-        <dt>
-
-          <code><a href="run_anthroindex.html">run_anthroindex()</a></code>
-
-        </dt>
-        <dd>Compute WHO Anthropometric Z-Scores and Nutritional Status</dd>
-
-        <dt>
-
-          <code><a href="run_assoc.html">run_assoc()</a></code>
-
-        </dt>
-        <dd>Automatic Statistical Comparison for Categorical Variables</dd>
-
-        <dt>
-
-          <code><a href="run_auc.html">run_auc()</a></code>
-
-        </dt>
-        <dd>Comprehensive Area Under the ROC Curve (AUROC) Analysis</dd>
-
-        <dt>
-
-          <code><a href="run_correl.html">run_correl()</a></code>
-
-        </dt>
-        <dd>Perform Correlation Analysis</dd>
-
-        <dt>
-
-          <code><a href="run_diff.html">run_diff()</a></code>
-
-        </dt>
-        <dd>Automatic Statistical Comparison with Comprehensive Analysis</dd>
-
-        <dt>
-
-          <code><a href="run_driftBatchCorrect.html">run_driftBatchCorrect()</a></code>
-
-        </dt>
-        <dd>Correct Signal Drift and Batch Effects Using QC Samples</dd>
-
-        <dt>
-
-          <code><a href="run_filterRSD.html">run_filterRSD()</a></code>
-
-        </dt>
-        <dd>Filter Features by Relative Standard Deviation in QC Samples</dd>
-
-        <dt>
-
-          <code><a href="run_filtermissing.html">run_filtermissing()</a></code>
-
-        </dt>
-        <dd>Filter Features by Missing Value Threshold</dd>
-
-        <dt>
-
-          <code><a href="run_filtervariance.html">run_filtervariance()</a></code>
-
-        </dt>
-        <dd>Filter Features by Low Variance</dd>
-
-        <dt>
-
-          <code><a href="run_foldchange.html">run_foldchange()</a></code>
-
-        </dt>
-        <dd>Fold Change Analysis Across Groups</dd>
-
-        <dt>
-
-          <code><a href="run_logreg.html">run_logreg()</a></code>
-
-        </dt>
-        <dd>Perform Binary Logistic Regression (Standard or Firth-Corrected) with Iterative Feature Combinations</dd>
-
-        <dt>
-
-          <code><a href="run_mixedmodel.html">run_mixedmodel()</a></code>
-
-        </dt>
-        <dd>Perform Linear Mixed-Effects Model Analysis</dd>
-
-        <dt>
-
-          <code><a href="run_move_names.html">run_move_names()</a></code>
-
-        </dt>
-        <dd>Move Row or Column Names into the Data Area</dd>
-
-        <dt>
-
-          <code><a href="run_mvimpute.html">run_mvimpute()</a></code>
-
-        </dt>
-        <dd>Impute Missing Values in Metabolomics Data</dd>
-
-        <dt>
-
-          <code><a href="run_normalize.html">run_normalize()</a></code>
-
-        </dt>
-        <dd>Normalize Metabolomics Data</dd>
-
-        <dt>
-
-          <code><a href="run_pca.html">run_pca()</a></code>
-
-        </dt>
-        <dd>Perform Principal Component Analysis</dd>
-
-        <dt>
-
-          <code><a href="run_pcoa.html">run_pcoa()</a></code>
-
-        </dt>
-        <dd>Principal Coordinate Analysis (PCoA) with Optional PERMANOVA and Post-hoc</dd>
-
-        <dt>
-
-          <code><a href="run_pls.html">run_pls()</a></code>
-
-        </dt>
-        <dd>Perform Partial Least Squares (PLS) Analysis</dd>
-
-        <dt>
-
-          <code><a href="run_randomize.html">run_randomize()</a></code>
-
-        </dt>
-        <dd>Randomize a Data Frame, Matrix, or Vector</dd>
-
-        <dt>
-
-          <code><a href="run_reduce.html">run_reduce()</a></code>
-
-        </dt>
-        <dd>Reduce Multiple Data Frames by Common or Unique Column/Row Names</dd>
-
-        <dt>
-
-          <code><a href="run_regreg.html">run_regreg()</a></code>
-
-        </dt>
-        <dd>Regularized Regression with Cross-Validation (Ridge, Elastic Net, LASSO)</dd>
-
-        <dt>
-
-          <code><a href="run_relabel.html">run_relabel()</a></code>
-
-        </dt>
-        <dd>Recode and Factorize a Column</dd>
-
-        <dt>
-
-          <code><a href="run_scale.html">run_scale()</a></code>
-
-        </dt>
-        <dd>Scale Metabolomics Data</dd>
-
-        <dt>
-
-          <code><a href="run_summarytable.html">run_summarytable()</a></code>
-
-        </dt>
-        <dd>Performs Descriptive Statistics on a Dataframe</dd>
-
-        <dt>
-
-          <code><a href="run_transform.html">run_transform()</a></code>
-
-        </dt>
-        <dd>Transform Metabolomics Data</dd>
-
-        <dt>
-
-          <code><a href="save_excel.html">save_excel()</a></code>
-
-        </dt>
-        <dd>Save Data Frames, Tibbles, or Matrices to an Excel File</dd>
-
-        <dt>
-
-          <code><a href="save_plots.html">save_plots()</a></code>
-
-        </dt>
-        <dd>Save Plots to Image or Vector Files</dd>
-
-        <dt>
-
-          <code><a href="summary.run_assoc.html">summary(<i>&lt;run_assoc&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Summary method for run_assoc objects</dd>
-
-        <dt>
-
-          <code><a href="summary.run_assoc_multi.html">summary(<i>&lt;run_assoc_multi&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Summary method for run_assoc_multi objects</dd>
-
-        <dt>
-
-          <code><a href="summary.run_diff.html">summary(<i>&lt;run_diff&gt;</i>)</a></code>
-
-        </dt>
-        <dd>Summary method for run_diff objects</dd>
       </dl></div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

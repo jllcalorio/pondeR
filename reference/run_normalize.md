@@ -54,7 +54,7 @@ run_normalize(
 
   - `"pqn_group"`: PQN using pooled QC samples as reference
 
-  - `"quantile"`: Quantile normalization
+  - `"pqn"`: Probabilistic Quotient Normalization
 
   - `"col_rel_abundance"`: Relative abundance per column (feature); each
     value divided by its column sum so each feature sums to 1 across all
