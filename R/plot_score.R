@@ -925,7 +925,6 @@ plot_score.run_pcoa <- function(
     pc               = c(1, 2),
     color_by,
     points_from,
-    ...,
     metadata         = NULL, # Reordered to fix S3 consistency
     title            = NULL,
     subtitle         = NULL,
