@@ -12,6 +12,7 @@ run_summarytable(
   split_by_header = NULL,
   strata_by = NULL,
   rename_variables = NULL,
+  combine_categories = NULL,
   continuous_statistics = "meanSD",
   categorical_statistics = "n_percent",
   force_continuous = NULL,
@@ -67,6 +68,26 @@ with at least 2 unique levels) by which to stratify \emph{before}
 \item{rename_variables}{List. Formulas of the form
 \code{list("original" ~ "new", ...)} used to relabel variables in the
 table.}
+
+\item{combine_categories}{Named list of named lists. Used to combine levels
+of categorical variables. The top-level names correspond to column names in
+\code{x}. Each column's value is a named list where the names are the new
+category labels and the values are character vectors of original levels to
+combine. If a column is not categorical by default, it must be listed in
+\code{force_categorical} first. Defaults to \code{NULL}.
+
+Example format:
+\code{
+combine_categories = list(
+  Education = list(
+    "Higher Ed" = c("Bachelors", "Masters"),
+    "Schooling" = c("Elementary", "High School")
+  ),
+  Gender = list(
+    "Non-Male" = c("Female", "Other")
+  )
+)
+}}
 
 \item{continuous_statistics}{String. Summary statistic(s) for continuous
 variables. One of: \code{"meanSD"}, \code{"meanSD2"},

@@ -35,6 +35,25 @@
 #' @param rename_variables List. Formulas of the form
 #'   \code{list("original" ~ "new", ...)} used to relabel variables in the
 #'   table.
+#' @param combine_categories Named list of named lists. Used to combine levels 
+#'   of categorical variables. The top-level names correspond to column names in 
+#'   \code{x}. Each column's value is a named list where the names are the new 
+#'   category labels and the values are character vectors of original levels to 
+#'   combine. If a column is not categorical by default, it must be listed in 
+#'   \code{force_categorical} first. Defaults to \code{NULL}.
+#'   
+#'   Example format:
+#'   \code{
+#'   combine_categories = list(
+#'     Education = list(
+#'       "Higher Ed" = c("Bachelors", "Masters"),
+#'       "Schooling" = c("Elementary", "High School")
+#'     ),
+#'     Gender = list(
+#'       "Non-Male" = c("Female", "Other")
+#'     )
+#'   )
+#'   }
 #' @param continuous_statistics String. Summary statistic(s) for continuous
 #'   variables. One of: \code{"meanSD"}, \code{"meanSD2"},
 #'   \code{"medianIQR"}, \code{"mean"}, \code{"sd"}, \code{"median"},
@@ -209,6 +228,7 @@ run_summarytable <- function(
     split_by_header               = NULL,
     strata_by                     = NULL,
     rename_variables              = NULL,
+    combine_categories            = NULL,
     continuous_statistics         = "meanSD",
     categorical_statistics        = "n_percent",
     force_continuous              = NULL,
@@ -258,6 +278,26 @@ run_summarytable <- function(
   }
 
   x <- as.data.frame(x)
+
+  # ---------------------------------------------------------------------------
+  # 0.5 Convert empty or whitespace-only strings to NA
+  # ---------------------------------------------------------------------------
+  for (col_name in names(x)) {
+    if (is.character(x[[col_name]])) {
+      # Replace empty or space-only strings with NA
+      x[[col_name]][trimws(x[[col_name]]) == ""] <- NA
+      
+    } else if (is.factor(x[[col_name]])) {
+      # Convert to character, replace with NA
+      col_char <- as.character(x[[col_name]])
+      col_char[trimws(col_char) == ""] <- NA
+      
+      # Rebuild the factor, preserving the original level order but dropping the empty levels
+      orig_levels <- levels(x[[col_name]])
+      valid_levels <- orig_levels[trimws(orig_levels) != ""]
+      x[[col_name]] <- factor(col_char, levels = valid_levels)
+    }
+  }
 
   if (!is.null(split_by) && !is.null(filter)) {
     if (!split_by %in% names(x)) stop(paste0("Split variable '", split_by, "' not found."))
@@ -314,6 +354,74 @@ run_summarytable <- function(
   if (!is.null(force_categorical)) {
     for (col_name in force_categorical) {
       x[[col_name]] <- as.factor(x[[col_name]])
+    }
+  }
+
+  # ---------------------------------------------------------------------------
+  # 3b. Combine categories of categorical variables
+  # ---------------------------------------------------------------------------
+  if (!is.null(combine_categories)) {
+    if (!is.list(combine_categories)) {
+      stop("'combine_categories' must be a named list.")
+    }
+    if (is.null(names(combine_categories)) || any(names(combine_categories) == "")) {
+      stop("All elements in 'combine_categories' must be named with valid column names.")
+    }
+    
+    # Edge Case: Prevent columns from being forced continuous and collapsed at the same time
+    if (!is.null(force_continuous)) {
+      overlap_cont <- intersect(names(combine_categories), force_continuous)
+      if (length(overlap_cont) > 0) {
+        stop(paste0("Variables cannot be in both 'combine_categories' and 'force_continuous': ",
+                    paste(overlap_cont, collapse = ", "), "."))
+      }
+    }
+    
+    for (col_name in names(combine_categories)) {
+      if (!(col_name %in% names(x))) {
+        stop(sprintf("Column '%s' specified in 'combine_categories' not found in data.", col_name))
+      }
+      
+      # Core Requirement: Check if column is categorical, otherwise prompt user to use force_categorical
+      if (!is.factor(x[[col_name]]) && !is.character(x[[col_name]])) {
+        stop(sprintf("Column '%s' is not categorical. It can be specified first in the 'force_categorical' parameter.", col_name))
+      }
+      
+      col_schemes <- combine_categories[[col_name]]
+      if (!is.list(col_schemes)) {
+        stop(sprintf("The recoding scheme for column '%s' must be a list.", col_name))
+      }
+      if (is.null(names(col_schemes)) || any(names(col_schemes) == "")) {
+        stop(sprintf("The recoding scheme for column '%s' must be a named list where names are the new categories.", col_name))
+      }
+      
+      # Coerce to factor to ensure safe execution with forcats
+      x[[col_name]] <- as.factor(x[[col_name]])
+      
+      # Collect all specified source categories for validation
+      specified_cats <- unlist(col_schemes)
+      
+      # Edge Case: Check for ambiguous duplicate mappings within the same column scheme
+      if (any(duplicated(specified_cats))) {
+        dup_cats <- unique(specified_cats[duplicated(specified_cats)])
+        stop(sprintf("In column '%s', the following source categories are duplicated across groups: %s", 
+                     col_name, paste(dup_cats, collapse = ", ")))
+      }
+      
+      # Edge Case: Constructive warning if user requests to combine levels that don't exist in data
+      existing_levels <- levels(x[[col_name]])
+      missing_cats <- setdiff(specified_cats, existing_levels)
+      if (length(missing_cats) > 0) {
+        warning(sprintf("In column '%s', the following categories to combine were not found in the data: %s", 
+                        col_name, paste(missing_cats, collapse = ", ")))
+      }
+      
+      # Dynamically unpack the user's list into args for forcats::fct_collapse
+      x[[col_name]] <- tryCatch({
+        do.call(forcats::fct_collapse, c(list(.f = x[[col_name]]), col_schemes))
+      }, error = function(e) {
+        stop(sprintf("Failed to combine categories for column '%s': %s", col_name, conditionMessage(e)))
+      })
     }
   }
 
@@ -852,7 +960,19 @@ run_summarytable <- function(
         ~ .x |>
           dplyr::mutate(dplyr::across(
             dplyr::starts_with("stat_"),
-            ~ dplyr::case_when(.x %in% zero_strings ~ "", TRUE ~ .x)
+            ~ {
+              # 1. First clear out cells containing zero counts
+              res <- dplyr::case_when(.x %in% zero_strings ~ "", TRUE ~ .x)
+              
+              # 2. Clean up integer percentages (supports any custom digit length)
+              # Inside parentheses: "2 (10.00%)" -> "2 (10%)"
+              res <- gsub("(?<=\\d)\\.0+%(?=\\))", "%", res, perl = TRUE)
+              
+              # Standalone cells: "10.00%" -> "10"
+              res <- gsub("(?<=\\d)\\.0+%$", "", res, perl = TRUE)
+              
+              res
+            }
           ))
       )
   }
@@ -909,15 +1029,35 @@ run_summarytable <- function(
 
     # -- 19b. Format p-value string ------------------------------------------
     .fmt_p <- function(p) {
-      if (is.null(n_digits_pvalues)) {
-        if (is.na(p))  return(NA_character_)
-        if (p < 0.001) return("<0.001")
-        if (p < 0.10)  return(formatC(p, digits = 3, format = "f"))
-        return(formatC(p, digits = 1, format = "f"))
+      if (is.na(p)) return(NA_character_)
+      
+      # Determine active decimal places to evaluate rounding behavior
+      dig <- if (is.null(n_digits_pvalues)) {
+        if (p < 0.10) 3 else 1
+      } else {
+        n_digits_pvalues
       }
-      if (is.na(p))  return(NA_character_)
-      if (p < 0.001) return("<0.001")
-      formatC(p, digits = n_digits_pvalues, format = "f")
+      
+      # Prevent p-values from rounding up to a misleading 1.0, 1.00, or 1.000
+      if (p == 1 || round(p, dig) >= 1) {
+        if (dig == 3) return(">.999")
+        if (dig == 1) return(">.9")
+        return(paste0(">.", strrep("9", dig))) # Fallback for other custom digit lengths
+      }
+
+      # Low-bound threshold check
+      if (p < 0.001) return("<.001")
+      
+      # Standard formatting matching user-defined precision string
+      formatted_p <- if (is.null(n_digits_pvalues)) {
+        if (p < 0.10)  formatC(p, digits = 3, format = "f")
+        else           formatC(p, digits = 1, format = "f")
+      } else {
+        formatC(p, digits = n_digits_pvalues, format = "f")
+      }
+      
+      # Remove leading zero (e.g., "0.043" becomes ".043")
+      sub("^0\\.", ".", formatted_p)
     }
 
     # -- 19c. Run engines and collect results ---------------------------------
