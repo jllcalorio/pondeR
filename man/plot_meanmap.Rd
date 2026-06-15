@@ -157,9 +157,8 @@ A coloured dendrogram is aligned to the left of the heatmap, with optional
 cluster bracket annotations and per-row significance markers on the right.
 
 This function is intended for visualising group-level mean differences
-across variables — for example, metabolite intensities across disease
-stages — and is distinct from \code{\link{plot_clustermap}}, which
-visualises variable-to-variable correlation structure.
+across variables, for example, metabolite intensities across disease
+stages.
 }
 \details{
 \strong{Algorithm overview}

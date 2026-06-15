@@ -80,3 +80,6 @@ into a single Cartesian product of categories (e.g.
 equally. This guarantees perfect joint balance.
 }
 }
+\author{
+John Lennon L. Calorio
+}

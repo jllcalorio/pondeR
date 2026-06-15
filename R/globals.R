@@ -19,6 +19,6 @@ globalVariables(c(
   "seg_col", "ymin", "ymax", "color", "variable", "x_pos", # plot_meanmap
   ".neg_log10_p", ".sig", ".label", # plot_mixedmodel
   "fpr", "tpr", "predictor", # run_auc
-  "export_xl_workbook", # save_excel
+  ".export_xl_workbook", # save_excel
   ".data" # standard for ggplot2/dplyr
 ))

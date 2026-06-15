@@ -82,7 +82,3 @@ indicate higher abundance.
   )
 }
 }
-\seealso{
-\code{\link{plot_lefse}} for visualization (if implemented),
-\code{\link{run_assoc}} for association testing.
-}

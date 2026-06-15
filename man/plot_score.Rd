@@ -39,17 +39,18 @@ plot_score(res, ...)
   legend_title_size = NULL,
   legend_text_size = NULL,
   zoom = 1,
-  verbose = TRUE
+  verbose = TRUE,
+  ...
 )
 
 \method{plot_score}{run_pls}(res, pc = c(1, 2), title = NULL, subtitle = NULL, ...)
 
 \method{plot_score}{run_pcoa}(
   res,
-  metadata,
   pc = c(1, 2),
   color_by,
   points_from,
+  metadata = NULL,
   title = NULL,
   subtitle = NULL,
   caption = NULL,
@@ -74,7 +75,8 @@ plot_score(res, ...)
   legend_title_size = NULL,
   legend_text_size = NULL,
   zoom = 1,
-  verbose = TRUE
+  verbose = TRUE,
+  ...
 )
 
 \method{plot_score}{default}(res, ...)
@@ -83,6 +85,8 @@ plot_score(res, ...)
 \item{res}{List. Output from \code{run_pca()}, \code{run_pls()}, or
 \code{run_pcoa()}. The appropriate plot method is selected automatically
 via S3 dispatch based on the class of \code{res}.}
+
+\item{...}{Additional arguments passed to methods.}
 
 \item{pc}{Character vector of length 2. Principal components to plot, e.g., \code{c("PC1", "PC2")}.
 Can also be numeric, e.g., \code{c(1, 2)}. Default: \code{c(1, 2)}.}
@@ -115,7 +119,7 @@ is categorical. Requires at least 3 samples per group. Default: \code{TRUE}.}
 \item{ellipse_type}{Character. Type of ellipse: \code{"t"} (t-distribution, default) or
 \code{"norm"} (normal distribution). Default: \code{"t"}.}
 
-\item{ellipse_level}{Numeric. Confidence level for ellipses (0–1). Default: \code{0.95}.}
+\item{ellipse_level}{Numeric. Confidence level for ellipses (0-1). Default: \code{0.95}.}
 
 \item{legend}{Character or \code{NULL}. Custom legend title. Default: \code{NULL} (uses \code{color_by}
 column name).}
@@ -135,7 +139,7 @@ is numeric (continuous scale is always used for numeric variables).}
 
 \item{point_size}{Numeric. Size of points. Default: \code{10}.}
 
-\item{point_alpha}{Numeric. Transparency of points (0–1). Default: \code{0.8}.}
+\item{point_alpha}{Numeric. Transparency of points (0-1). Default: \code{0.8}.}
 
 \item{theme}{Character. ggplot2 theme to apply. Options: \code{"nature"}, \code{"minimal"},
 \code{"classic"}, \code{"bw"}, \code{"light"}, \code{"dark"}. Default: \code{"nature"} (a clean, publication-ready
@@ -228,7 +232,7 @@ The \code{points_from} parameter controls how samples are labeled:
 Outliers are identified using Mahalanobis distance from the group centroid.
 A sample is flagged as an outlier if it falls outside the confidence region defined
 by \code{ellipse_level}. The default (\code{0.95}) identifies samples outside the 95\% confidence
-region. This exactly mirrors \code{ggplot2::stat_ellipse()} behaviour.
+region. This exactly mirrors \code{ggplot2::stat_ellipse()} behavior.
 
 Outlier detection requires:
 \itemize{
@@ -245,7 +249,7 @@ computation using \code{run_pca(exclude = ...)} rather than filtering at the plo
 \strong{Themes:}
 
 The \code{"nature"} theme (default) is a clean, publication-ready style with a white
-background, minimal gridlines, and no top/right panel border — suitable for
+background, minimal gridlines, and no top/right panel border - suitable for
 journal figures. Other options map directly to their ggplot2 equivalents.
 }
 \examples{
@@ -270,7 +274,7 @@ res    <- run_pca(scaled_result$data, metadata,
                          group   = "Group",
                          exclude = "QC")
 
-# Basic scores plot — nature theme, Okabe-Ito colors (defaults)
+# Basic scores plot - nature theme, Okabe-Ito colors (defaults)
 plot_score(res,
            color_by    = "Group",
            points_from = "Sample")
@@ -321,7 +325,7 @@ Mardia, K.V., Kent, J.T., & Bibby, J.M. (1979). \emph{Multivariate Analysis}.
 London: Academic Press.
 
 Brereton, R.G., & Lloyd, G.R. (2014). Partial least squares discriminant analysis:
-taking the magic away. \emph{Journal of Chemometrics}, 28(4), 213–225.
+taking the magic away. \emph{Journal of Chemometrics}, 28(4), 213-225.
 \doi{10.1002/cem.2609}
 
 Okabe, M., & Ito, K. (2002). \emph{Color Universal Design (CUD): How to make figures

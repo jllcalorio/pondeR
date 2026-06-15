@@ -150,6 +150,7 @@
 #' }
 #'
 #' @examples
+#' \dontrun{
 #' ## -----------------------------------------------------------------------
 #' ## Example 1 - minimal synthetic data, no group
 #' ## -----------------------------------------------------------------------
@@ -219,6 +220,7 @@
 #'   down      = 0.5
 #' )
 #' print(res4$plots[[1]])
+#' }
 #'
 #' @author John Lennon L. Calorio
 #' @importFrom ggplot2 ggplot aes geom_point geom_hline geom_vline geom_text

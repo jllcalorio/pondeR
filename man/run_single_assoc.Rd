@@ -55,3 +55,6 @@ run_single_assoc(iris, y = "Species")
 # Testing 'am' distribution stratified by 'vs' (Engine shape)
 run_single_assoc(mtcars, y = "am", subgroup = "vs", force_categorical = c("am", "vs"))
 }
+\author{
+John Lennon L. Calorio
+}

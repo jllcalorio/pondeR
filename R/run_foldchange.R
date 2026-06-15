@@ -413,7 +413,8 @@ run_foldchange <- function(
   }
 
   # ---------------------------------------------------------------------------
-  # 10.  Convert matrices to data frames; optionally sort each comparison col
+  # 10.  Convert matrices to data frames; optionally sort rows by abs FC
+  #       (sort is applied to rows only — each table keeps a single feature col)
   # ---------------------------------------------------------------------------
   .mat_to_df <- function(mat) {
     df           <- as.data.frame(mat, stringsAsFactors = FALSE)
@@ -422,29 +423,14 @@ run_foldchange <- function(
     df[, c("feature", comp_labels), drop = FALSE]
   }
 
-  fc_df     <- .mat_to_df(fc_mat)
-  log2fc_df <- if (log2) .mat_to_df(log2fc_mat) else NULL
-
   if (sort && n_comp >= 1L) {
-    # Sort each comparison independently by descending absolute value
-    fc_df <- do.call(cbind, c(
-      list(data.frame(feature = fc_df$feature, stringsAsFactors = FALSE)),
-      lapply(comp_labels, function(cl) {
-        ord <- order(abs(fc_df[[cl]]), decreasing = TRUE, na.last = TRUE)
-        df_out           <- data.frame(fc_df$feature[ord], fc_df[[cl]][ord],
-                                       stringsAsFactors = FALSE)
-        colnames(df_out) <- c(paste0("feature_", cl), cl)
-        df_out
-      })
-    ))
-    # Rebuild a tidy sorted frame: one feature column per comparison (keep wide)
-    # Simpler: just return sorted-by-first-comparison for the feature column
+    # Order rows by descending absolute FC of the first comparison
     ord_primary <- order(abs(fc_mat[, 1L]), decreasing = TRUE, na.last = TRUE)
-    fc_df       <- .mat_to_df(fc_mat[ord_primary, , drop = FALSE])
-
-    if (log2) {
-      log2fc_df <- .mat_to_df(log2fc_mat[ord_primary, , drop = FALSE])
-    }
+    fc_df     <- .mat_to_df(fc_mat[ord_primary, , drop = FALSE])
+    log2fc_df <- if (log2) .mat_to_df(log2fc_mat[ord_primary, , drop = FALSE]) else NULL
+  } else {
+    fc_df     <- .mat_to_df(fc_mat)
+    log2fc_df <- if (log2) .mat_to_df(log2fc_mat) else NULL
   }
 
   # ---------------------------------------------------------------------------
@@ -455,18 +441,22 @@ run_foldchange <- function(
     g_num <- lvl_order[pairs[1L, i]]
     g_den <- lvl_order[pairs[2L, i]]
 
-    fc_col     <- fc_mat[, i]
-    l2fc_col   <- if (log2) log2fc_mat[, i] else rep(NA_real_, n_feat)
-    mean_num   <- means_mat[g_num, ]
-    mean_den   <- means_mat[g_den, ]
+    fc_col   <- fc_mat[, i]
+    l2fc_col <- if (log2) log2fc_mat[, i] else rep(NA_real_, n_feat)
+    mean_num <- means_mat[g_num, ]
+    mean_den <- means_mat[g_den, ]
 
     regulation <- ifelse(
       is.na(fc_col), NA_character_,
       ifelse(fc_col > 1, "Up", ifelse(fc_col < 1, "Down", "Unchanged"))
     )
 
+    # Keep fixed column names so rbind() succeeds across all comparisons.
+    # Group identity is recorded in num_group / den_group instead.
     df <- data.frame(
       comparison   = lbl,
+      num_group    = g_num,
+      den_group    = g_den,
       feature      = feat_cols,
       mean_num     = mean_num,
       mean_den     = mean_den,
@@ -484,15 +474,6 @@ run_foldchange <- function(
       df$sig <- ifelse(is_sig, "Significant", "Not significant")
     }
 
-    df
-  })
-
-  # Rename mean columns to carry group names
-  summary_list <- lapply(summary_list, function(df) {
-    g_num <- sub("_vs_.*$", "", df$comparison[1L])
-    g_den <- sub("^.*_vs_", "", df$comparison[1L])
-    colnames(df)[colnames(df) == "mean_num"] <- paste0("mean_", g_num)
-    colnames(df)[colnames(df) == "mean_den"] <- paste0("mean_", g_den)
     df
   })
 

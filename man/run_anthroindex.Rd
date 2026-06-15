@@ -444,8 +444,8 @@ BMI categories. Atlanta: CDC.
 }
 \seealso{
 \code{\link{run_summarytable}},
-\code{\link{anthro::anthro_zscores}},
-\code{\link{anthroplus::anthroplus_zscores}}
+\code{\link[anthro]{anthro_zscores}},
+\code{\link[anthroplus]{anthroplus_zscores}}
 }
 \author{
 John Lennon L. Calorio
