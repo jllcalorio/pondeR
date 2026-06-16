@@ -485,7 +485,12 @@ run_summarytable <- function(
     if (length(missing_cols) > 0L)
       stop(paste0("Columns in 'summarize_what' not found in data: ",
                   paste(missing_cols, collapse = ", "), "."))
+    
+    # FIX: Ensure split and strata variables are removed from summarize_what
+    # because gtsummary strips them out from the underlying subsets.
+    summarize_what <- setdiff(summarize_what, c(split_by, strata_by))
   }
+  
   if (length(summarize_what) == 0L)
     stop("No columns remain to summarise.")
 
@@ -829,7 +834,6 @@ run_summarytable <- function(
       dplyr::filter(!is.na(.data[[strata_by]])) |>
       gtsummary::tbl_strata(
         strata    = strata_by,
-        include   = summarize_what,
         .tbl_fun  = \(.x) create_summary(.x)
       )
   } else {
