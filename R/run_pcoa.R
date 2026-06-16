@@ -18,10 +18,10 @@
 #'   PCoA and PERMANOVA.
 #' @param method A single character string specifying the dissimilarity index
 #'   passed to \code{\link[vegan]{vegdist}}. Common choices include
-#'   \code{"bray"} (Bray–Curtis), \code{"euclidean"}, \code{"aitchison"}, and
+#'   \code{"bray"} (Bray-Curtis), \code{"euclidean"}, \code{"aitchison"}, and
 #'   \code{"robust.aitchison"}; see \code{?vegan::vegdist} for the full list.
 #'   Ignored when \code{x} is already a \code{"dist"} object. The same
-#'   dissimilarity matrix is reused for PERMANOVA — the method is never applied
+#'   dissimilarity matrix is reused for PERMANOVA - the method is never applied
 #'   twice. Default: \code{"bray"}.
 #' @param correction Correction method for negative eigenvalues passed to
 #'   \code{\link[ape]{pcoa}}. One of \code{"lingoes"}, \code{"cailliez"}, or
@@ -79,7 +79,7 @@
 #'
 #' Key output fields from \code{adonis2}:
 #' \itemize{
-#'   \item \strong{R²}: proportion of total variance explained by the grouping
+#'   \item \strong{R\eqn{^2}}: proportion of total variance explained by the grouping
 #'     factor.
 #'   \item \strong{F}: pseudo-F statistic.
 #'   \item \strong{Pr(>F)}: permutation p-value.
@@ -99,7 +99,7 @@
 #' element with columns \code{PC1}, \code{PC2}, \ldots so that
 #' \code{pondeR::plot_score} can dispatch correctly. When PERMANOVA results are
 #' present, \code{plot_score.run_pcoa} formats and injects them automatically
-#' as the plot subtitle (R² and p-value).
+#' as the plot subtitle (R\eqn{^2} and p-value).
 #'
 #' @return A named list of class \code{c("run_pcoa", "list")} with the following
 #'   elements:
@@ -139,7 +139,7 @@
 #' }
 #'
 #' @examples
-#' ## ── Example 1: Bray–Curtis PCoA on the dune dataset ──────────────────────
+#' ## -- Example 1: Bray-Curtis PCoA on the dune dataset ----------------------
 #' if (requireNamespace("vegan", quietly = TRUE) &&
 #'     requireNamespace("ape",   quietly = TRUE)) {
 #'
@@ -153,7 +153,7 @@
 #'   result$variance_explained[1:3]
 #' }
 #'
-#' ## ── Example 2: PCoA + PERMANOVA ───────────────────────────────────────────
+#' ## -- Example 2: PCoA + PERMANOVA -------------------------------------------
 #' if (requireNamespace("vegan", quietly = TRUE) &&
 #'     requireNamespace("ape",   quietly = TRUE)) {
 #'
@@ -174,7 +174,7 @@
 #'   result_perm$permanova$table
 #' }
 #'
-#' ## ── Example 3: Lingoes correction ─────────────────────────────────────────
+#' ## -- Example 3: Lingoes correction -----------------------------------------
 #' if (requireNamespace("vegan", quietly = TRUE) &&
 #'     requireNamespace("ape",   quietly = TRUE)) {
 #'
@@ -183,7 +183,7 @@
 #'   result_ling$variance_explained[1:3]
 #' }
 #'
-#' ## ── Example 4: Precomputed dist + PERMANOVA ───────────────────────────────
+#' ## -- Example 4: Precomputed dist + PERMANOVA -------------------------------
 #' if (requireNamespace("vegan", quietly = TRUE) &&
 #'     requireNamespace("ape",   quietly = TRUE)) {
 #'
@@ -203,45 +203,45 @@
 #'
 #' @references
 #' Anderson, M.J. (2001) A new method for non-parametric multivariate analysis
-#'   of variance. \emph{Austral Ecology}, \strong{26}, 32–46.
+#'   of variance. \emph{Austral Ecology}, \strong{26}, 32-46.
 #'
 #' Cailliez, F. (1983) The analytical solution of the additive constant
-#'   problem. \emph{Psychometrika}, \strong{48}, 305–308.
+#'   problem. \emph{Psychometrika}, \strong{48}, 305-308.
 #'
 #' Excoffier, L., Smouse, P.E., and Quattro, J.M. (1992) Analysis of molecular
 #'   variance inferred from metric distances among DNA haplotypes: Application
 #'   to human mitochondrial DNA restriction data. \emph{Genetics},
-#'   \strong{131}, 479–491.
+#'   \strong{131}, 479-491.
 #'
 #' Gower, J.C. (1966) Some distance properties of latent root and vector
 #'   methods used in multivariate analysis. \emph{Biometrika}, \strong{53},
-#'   325–338.
+#'   325-338.
 #'
 #' Gower, J.C. and Legendre, P. (1986) Metric and Euclidean properties of
 #'   dissimilarity coefficients. \emph{Journal of Classification}, \strong{3},
-#'   5–48.
+#'   5-48.
 #'
 #' Legendre, P. and Anderson, M.J. (1999) Distance-based redundancy analysis:
 #'   Testing multispecies responses in multifactorial ecological experiments.
-#'   \emph{Ecological Monographs}, \strong{69}, 1–24.
+#'   \emph{Ecological Monographs}, \strong{69}, 1-24.
 #'
 #' Legendre, P. and Gallagher, E.D. (2001) Ecologically meaningful
 #'   transformations for ordination of species data. \emph{Oecologia},
-#'   \strong{129}, 271–280.
+#'   \strong{129}, 271-280.
 #'
 #' Legendre, P. and Legendre, L. (1998) \emph{Numerical Ecology}, 2nd English
 #'   edition. Amsterdam: Elsevier Science BV.
 #'
 #' Lingoes, J.C. (1971) Some boundary conditions for a monotone analysis of
-#'   symmetric matrices. \emph{Psychometrika}, \strong{36}, 195–203.
+#'   symmetric matrices. \emph{Psychometrika}, \strong{36}, 195-203.
 #'
 #' McArdle, B.H. and Anderson, M.J. (2001) Fitting multivariate models to
 #'   community data: A comment on distance-based redundancy analysis.
-#'   \emph{Ecology}, \strong{82}, 290–297.
+#'   \emph{Ecology}, \strong{82}, 290-297.
 #'
 #' Warton, D.I., Wright, T.W., and Wang, Y. (2012) Distance-based multivariate
 #'   analyses confound location and dispersion effects. \emph{Methods in
-#'   Ecology and Evolution}, \strong{3}, 89–101.
+#'   Ecology and Evolution}, \strong{3}, 89-101.
 #'
 #' @author John Lennon L. Calorio
 #' @export
@@ -256,10 +256,10 @@ run_pcoa <- function(x,
                      dispersion  = FALSE,
                      ...) {
 
-  # ── 0. Capture call ──────────────────────────────────────────────────────────
+  # -- 0. Capture call ----------------------------------------------------------
   .call <- match.call()
 
-  # ── 1. Check required packages ───────────────────────────────────────────────
+  # -- 1. Check required packages -----------------------------------------------
   if (!requireNamespace("vegan", quietly = TRUE)) {
     stop(
       "'vegan' is required for run_pcoa() but is not installed.\n",
@@ -275,7 +275,7 @@ run_pcoa <- function(x,
     )
   }
 
-  # ── 2. Validate scalar arguments ─────────────────────────────────────────────
+  # -- 2. Validate scalar arguments ---------------------------------------------
   correction <- match.arg(correction, choices = c("none", "lingoes", "cailliez"))
 
   if (!is.null(rhs)) {
@@ -295,7 +295,7 @@ run_pcoa <- function(x,
     perms <- as.integer(perms)
   }
 
-  # ── 3. Validate metadata when PERMANOVA is requested ─────────────────────────
+  # -- 3. Validate metadata when PERMANOVA is requested -------------------------
   run_permanova <- !is.null(rhs)
 
   if (run_permanova) {
@@ -315,7 +315,7 @@ run_pcoa <- function(x,
     }
   }
 
-  # ── 4. Branch on whether x is already a "dist" object ────────────────────────
+  # -- 4. Branch on whether x is already a "dist" object ------------------------
   is_precomputed_dist <- inherits(x, "dist")
 
   if (is_precomputed_dist) {
@@ -352,7 +352,7 @@ run_pcoa <- function(x,
 
   } else {
 
-    # ── 4b. x is a matrix / data.frame ──────────────────────────────────────────
+    # -- 4b. x is a matrix / data.frame ------------------------------------------
     if (!is.data.frame(x) && !is.matrix(x) && !inherits(x, "tbl_df")) {
       stop(
         "'x' must be a numeric data.frame, tibble, matrix, or an object of ",
@@ -448,7 +448,7 @@ run_pcoa <- function(x,
       }
     }
 
-    # ── Separate ... for vegdist / pcoa / adonis2 ──────────────────────────────
+    # -- Separate ... for vegdist / pcoa / adonis2 ------------------------------
     dots      <- list(...)
     vd_args   <- .split_dots_vegdist(dots)
     pcoa_args <- .split_dots_pcoa(dots)
@@ -471,7 +471,7 @@ run_pcoa <- function(x,
       )
     }
 
-    # ── Compute dissimilarity (once) ───────────────────────────────────────────
+    # -- Compute dissimilarity (once) -------------------------------------------
     vegdist_raw <- tryCatch(
       do.call(vegan::vegdist, c(list(x = x_mat, method = method), vd_args)),
       error = function(e) {
@@ -486,13 +486,13 @@ run_pcoa <- function(x,
     method_used <- method
   }
 
-  # ── 5. Separate ... for pcoa when x was a dist ───────────────────────────────
+  # -- 5. Separate ... for pcoa when x was a dist -------------------------------
   if (is_precomputed_dist) {
     dots      <- list(...)
     pcoa_args <- .split_dots_pcoa(dots)
   }
 
-  # ── 6. Run PCoA ───────────────────────────────────────────────────────────────
+  # -- 6. Run PCoA ---------------------------------------------------------------
   pcoa_raw <- tryCatch(
     do.call(ape::pcoa, c(list(D = dist_matrix, correction = correction), pcoa_args)),
     error = function(e) {
@@ -505,7 +505,7 @@ run_pcoa <- function(x,
     }
   )
 
-  # ── 7. Extract and rename scores ──────────────────────────────────────────────
+  # -- 7. Extract and rename scores ----------------------------------------------
   raw_scores <- if (!is.null(pcoa_raw$vectors.cor)) pcoa_raw$vectors.cor else pcoa_raw$vectors
 
   if (is.null(raw_scores) || ncol(raw_scores) == 0L) {
@@ -527,14 +527,14 @@ run_pcoa <- function(x,
     rownames(scores) <- attr(dist_matrix, "Labels")
   }
 
-  # ── 8. Variance explained ─────────────────────────────────────────────────────
+  # -- 8. Variance explained -----------------------------------------------------
   eig_values <- .extract_eigenvalues(pcoa_raw, correction)
   pos_eig    <- eig_values[eig_values > 0]
   var_pct    <- eig_values / sum(pos_eig) * 100
   var_pct    <- var_pct[seq_len(n_axes)]
   names(var_pct) <- pc_nms
 
-  # ── 9. Warn on negative eigenvalues (no correction) ──────────────────────────
+  # -- 9. Warn on negative eigenvalues (no correction) --------------------------
   all_eig <- pcoa_raw$values$Eigenvalues
   if (correction == "none" && any(all_eig < 0, na.rm = TRUE)) {
     n_neg <- sum(all_eig < 0, na.rm = TRUE)
@@ -550,13 +550,13 @@ run_pcoa <- function(x,
 
   n_obs <- nrow(scores)
 
-  # ── 10. PERMANOVA via vegan::adonis2 ─────────────────────────────────────────
+  # -- 10. PERMANOVA via vegan::adonis2 -----------------------------------------
   permanova_result <- NULL
 
   if (run_permanova) {
     # Build a minimal data frame that adonis2 can resolve the formula against.
     # We bind the grouping column from metadata; the LHS is the dist object
-    # passed directly so 'x' (the raw feature matrix) is NOT re-used here —
+    # passed directly so 'x' (the raw feature matrix) is NOT re-used here -
     # the dissimilarity is never recomputed.
     perm_data <- data.frame(
       .grp = metadata[[rhs]],
@@ -616,7 +616,7 @@ run_pcoa <- function(x,
     )
   }
 
-  # ── 10.5 betadisper + PERMDISP ────────────
+  # -- 10.5 betadisper + PERMDISP ------------
   betadisper_result <- NULL
   permdisp_result   <- NULL
 
@@ -656,7 +656,7 @@ run_pcoa <- function(x,
     }
   }
 
-  # ── 11. Post-hoc via OmicFlow::pairwise_adonis ───────────────────────────────
+  # -- 11. Post-hoc via OmicFlow::pairwise_adonis -------------------------------
   pairwise_result <- NULL
 
   if (!is.null(groups)) {
@@ -702,7 +702,7 @@ run_pcoa <- function(x,
     }
   }
 
-  # ── 12. Assemble result (replace existing list) ───────────────────────────
+  # -- 12. Assemble result (replace existing list) ---------------------------
   result <- list(
     scores             = scores,
     variance_explained = var_pct,
@@ -725,7 +725,7 @@ run_pcoa <- function(x,
   result
 }
 
-# ── S3 print ──────────────────────────────────────────────────────────────────
+# -- S3 print ------------------------------------------------------------------
 
 #' @export
 print.run_pcoa <- function(x, n_axes = 5L, ...) {
@@ -753,7 +753,7 @@ print.run_pcoa <- function(x, n_axes = 5L, ...) {
 }
 
 
-# ── S3 summary ────────────────────────────────────────────────────────────────
+# -- S3 summary ----------------------------------------------------------------
 
 #' @export
 summary.run_pcoa <- function(object, n_axes = 5L, ...) {
@@ -770,19 +770,19 @@ summary.run_pcoa <- function(object, n_axes = 5L, ...) {
 
   sep <- strrep("=", 55L)
   cat(sep, "\n")
-  cat("Principal Coordinate Analysis — Summary\n")
+  cat("Principal Coordinate Analysis - Summary\n")
   cat(sep, "\n\n")
 
-  # ── Call ───────────────────────────────────────────────────────────────────
+  # -- Call -------------------------------------------------------------------
   cat("Call:\n  ", deparse(object$call), "\n\n")
 
-  # ── Ordination info ────────────────────────────────────────────────────────
+  # -- Ordination info --------------------------------------------------------
   cat("Dissimilarity method : ", object$method,     "\n")
   cat("Correction           : ", object$correction, "\n")
   cat("Observations (n)     : ", object$n_obs,      "\n")
   cat("Total axes           : ", object$n_axes,     "\n\n")
 
-  # ── Eigenvalue table ───────────────────────────────────────────────────────
+  # -- Eigenvalue table -------------------------------------------------------
   show_n <- min(n_axes, object$n_axes)
   cat(sprintf("Eigenvalues and variance explained (first %d axes):\n", show_n))
   eig_df <- data.frame(
@@ -796,7 +796,7 @@ summary.run_pcoa <- function(object, n_axes = 5L, ...) {
   print(eig_df, row.names = FALSE)
   cat("\n")
 
-  # ── PERMANOVA summary table ────────────────────────────────────────────────
+  # -- PERMANOVA summary table ------------------------------------------------
   if (!is.null(object$permanova)) {
     cat(strrep("-", 55L), "\n")
     cat(sprintf(
@@ -810,14 +810,14 @@ summary.run_pcoa <- function(object, n_axes = 5L, ...) {
     perm_display        <- as.data.frame(perm_tbl)
     perm_display[["p (formatted)"]] <- vapply(
       perm_display[["Pr(>F)"]],
-      function(p) if (is.na(p)) "—" else .fmt_p(p),
+      function(p) if (is.na(p)) "-" else .fmt_p(p),
       character(1L)
     )
     print(perm_display)
     cat("\n")
   }
 
-  # ── Pairwise post-hoc table ────────────────────────────────────────────────
+  # -- Pairwise post-hoc table ------------------------------------------------
   if (!is.null(object$pairwise_adonis)) {
     pa      <- as.data.frame(object$pairwise_adonis)
 
@@ -860,7 +860,7 @@ summary.run_pcoa <- function(object, n_axes = 5L, ...) {
     cat("Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05\n\n")
   }
 
-  # ── betadisper / PERMDISP table ────────────────────────────────────────────
+  # -- betadisper / PERMDISP table --------------------------------------------
   # run_pcoa does not store betadisper internally by default, but users may
   # attach it manually (result$betadisper <- vegan::betadisper(...)).
   # The block below handles both the vegan betadisper object and a pre-extracted
@@ -903,7 +903,7 @@ summary.run_pcoa <- function(object, n_axes = 5L, ...) {
           pd$tab[["F"]][1L],
           if (!is.na(pv) && pv < 0.001) "< 0.001" else sprintf("= %.3f", pv),
           if (!is.na(pv) && pv < 0.05)
-            "Groups differ in dispersion — interpret PERMANOVA with caution"
+            "Groups differ in dispersion - interpret PERMANOVA with caution"
           else
             "No significant difference in dispersion"
         ))
@@ -917,7 +917,7 @@ summary.run_pcoa <- function(object, n_axes = 5L, ...) {
 }
 
 
-# ── Internal helpers ──────────────────────────────────────────────────────────
+# -- Internal helpers ----------------------------------------------------------
 
 .split_dots_vegdist <- function(dots) {
   dots[intersect(names(dots), names(formals(vegan::vegdist)))]

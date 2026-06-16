@@ -220,7 +220,7 @@ factor, it is silently converted to numeric.
 optionally, DeLong confidence intervals (\code{pROC::ci()}) are
 extracted.
 \item Plots are assembled with \pkg{ggplot2} using a colour-blind-friendly
-palette (Okabe–Ito). AUC labels are rounded to two decimal places;
+palette (Okabe-Ito). AUC labels are rounded to two decimal places;
 values that round to \code{1.00} are progressively displayed to more
 decimal places (up to five), after which scientific notation with two
 significant figures is used.
@@ -241,7 +241,7 @@ This function requires \pkg{pROC} (\eqn{\ge} 1.18) and \pkg{ggplot2}
 }
 \examples{
 ## -----------------------------------------------------------------------
-## Example 1 — numeric binary response (0/1), all predictors
+## Example 1 - numeric binary response (0/1), all predictors
 ## -----------------------------------------------------------------------
 set.seed(42)
 n  <- 120
@@ -256,7 +256,7 @@ res <- run_auc(x = df, y = "group", plot = "none")
 print(res$auc_table)
 
 ## -----------------------------------------------------------------------
-## Example 2 — categorical response, remove one group, combined plot
+## Example 2 - categorical response, remove one group, combined plot
 ## -----------------------------------------------------------------------
 df2 <- data.frame(
   status   = sample(c("control", "case", "unknown"), n, replace = TRUE),
@@ -275,7 +275,7 @@ res2 <- run_auc(
 print(res2$auc_table)
 
 ## -----------------------------------------------------------------------
-## Example 3 — column names with spaces, select top-2 by AUC
+## Example 3 - column names with spaces, select top-2 by AUC
 ## -----------------------------------------------------------------------
 df3 <- data.frame(
   `my group`  = sample(0:1, n, replace = TRUE),

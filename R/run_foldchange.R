@@ -96,7 +96,7 @@
 #'
 #' @examples
 #' ## -----------------------------------------------------------------------
-#' ## Example 1 — basic usage with iris
+#' ## Example 1 - basic usage with iris
 #' ## -----------------------------------------------------------------------
 #' data(iris)
 #' x_iris  <- iris[, 1:4]
@@ -111,7 +111,7 @@
 #' print(res$log2fc_table)
 #'
 #' ## -----------------------------------------------------------------------
-#' ## Example 2 — custom order, filter one level, select two features
+#' ## Example 2 - custom order, filter one level, select two features
 #' ## -----------------------------------------------------------------------
 #' res2 <- run_foldchange(
 #'   x        = x_iris,
@@ -125,7 +125,7 @@
 #' print(res2$fc_table)
 #'
 #' ## -----------------------------------------------------------------------
-#' ## Example 3 — data with special characters in column names
+#' ## Example 3 - data with special characters in column names
 #' ## -----------------------------------------------------------------------
 #' set.seed(1)
 #' n   <- 60
@@ -404,7 +404,7 @@ run_foldchange <- function(
   }
 
   # ---------------------------------------------------------------------------
-  # 9.  Log2 fold change — log2 of the SAME fc_mat ratios
+  # 9.  Log2 fold change - log2 of the SAME fc_mat ratios
   # ---------------------------------------------------------------------------
   log2fc_mat <- NULL
 
@@ -414,7 +414,7 @@ run_foldchange <- function(
 
   # ---------------------------------------------------------------------------
   # 10.  Convert matrices to data frames; optionally sort rows by abs FC
-  #       (sort is applied to rows only — each table keeps a single feature col)
+  #       (sort is applied to rows only - each table keeps a single feature col)
   # ---------------------------------------------------------------------------
   .mat_to_df <- function(mat) {
     df           <- as.data.frame(mat, stringsAsFactors = FALSE)
@@ -537,14 +537,14 @@ run_foldchange <- function(
 #' @author John Lennon L. Calorio
 #' @export
 print.run_foldchange <- function(x, ...) {
-  cat("── run_foldchange results ──────────────────────────────────\n")
+  cat("-- run_foldchange results ----------------------------------\n")
   cat(sprintf("  Features   : %d\n",  x$stats$n_feat))
   cat(sprintf("  Groups     : %d  (%s)\n",
               x$stats$n_groups, paste(x$params$arrange, collapse = " > ")))
   cat(sprintf("  Comparisons: %s\n",  paste(x$comparisons, collapse = ", ")))
   cat(sprintf("  log2 FC    : %s\n",  x$params$log2))
   if (x$params$log2 && x$shift != 0)
-    cat(sprintf("  Shift (δ)  : %.3e  (min before shift: %.3e)\n",
+    cat(sprintf("  Shift (\u03b4)  : %.3e  (min before shift: %.3e)\n",
                 x$shift, x$min_value))
   cat("\n  Fold-change table (first 6 rows):\n")
   print(utils::head(x$fc_table), row.names = FALSE)

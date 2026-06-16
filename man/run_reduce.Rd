@@ -78,7 +78,7 @@ subsetting behaviour would be ambiguous.
 
 \subsection{Performance note}{
 Name intersection/union is computed once via \code{Reduce(intersect, ...)}
-or \code{Reduce(union, ...)} — an idiomatic base-R approach that avoids
+or \code{Reduce(union, ...)} - an idiomatic base-R approach that avoids
 repeated pairwise comparisons and scales well with the number of inputs.
 }
 }

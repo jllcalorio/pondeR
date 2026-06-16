@@ -20,7 +20,7 @@
 #'   \code{\link{run_diff}()} result (with \code{summary_table = TRUE}).
 #'   Column names may contain special characters.
 #'
-#'   \strong{List input — supported combinations:}
+#'   \strong{List input - supported combinations:}
 #'   \describe{
 #'     \item{\code{list(fc = <run_foldchange>, diff = <run_diff>)}}{
 #'       Both objects are supplied. Fold changes are sourced from
@@ -166,7 +166,7 @@
 #' print(res$plots[[1]])
 #'
 #' ## -----------------------------------------------------------------------
-#' ## Example 2 — asymmetric thresholds as raw fold changes, with labels
+#' ## Example 2 - asymmetric thresholds as raw fold changes, with labels
 #' ## -----------------------------------------------------------------------
 #' ann <- setNames(c("feat_1", "feat_2", "feat_3"),
 #'                 c("Marker A", "Marker B", "Marker C"))
@@ -183,7 +183,7 @@
 #' print(res2$plots[[1]])
 #'
 #' ## -----------------------------------------------------------------------
-#' ## Example 3 — multi-group overlay
+#' ## Example 3 - multi-group overlay
 #' ## -----------------------------------------------------------------------
 #' set.seed(7)
 #' dat_multi <- data.frame(
@@ -207,7 +207,7 @@
 #' print(res3$plots[[1]])
 #'
 #' ## -----------------------------------------------------------------------
-#' ## Example 4 — threshold-based annotation (annotate2)
+#' ## Example 4 - threshold-based annotation (annotate2)
 #' ## -----------------------------------------------------------------------
 #' # Label everything with a 4-fold change that is also significant (p < 0.05)
 #' res4 <- plot_volcano(
@@ -276,16 +276,16 @@ plot_volcano <- function(
   # reconstructed so that the rest of plot_volcano works unchanged.
   #
   # Supported combinations
-  # ──────────────────────
-  # A) run_foldchange only  → log2 FC available; p-values are NOT present,
+  # ----------------------
+  # A) run_foldchange only  -> log2 FC available; p-values are NOT present,
   #    so `z` must be left as NULL and the horizontal threshold line is
   #    suppressed (p-values set to NA / 1).  A warning is issued.
   #
-  # B) run_diff (multi-outcome summary_table) only → p-values available;
+  # B) run_diff (multi-outcome summary_table) only -> p-values available;
   #    fold changes are NOT present.  A warning is issued and FC columns
   #    are set to 1 (log2 FC = 0) so the plot still renders.
   #
-  # C) Both  → joined on feature name; each pairwise comparison from
+  # C) Both  -> joined on feature name; each pairwise comparison from
   #    run_foldchange becomes one facet group (or a single plot when only
   #    one comparison exists), with matching p-values from run_diff.
   #
@@ -729,7 +729,7 @@ plot_volcano <- function(
     guide_args$title <- resolved_legend_title
 
     if (is.null(grp_levels)) {
-      # Single comparison — 3 levels
+      # Single comparison - 3 levels
       vals <- c(Up = up_cols[1L], Down = down_cols[1L], NS = ns_color)
       ggplot2::scale_colour_manual(
         values = vals,
@@ -789,7 +789,7 @@ plot_volcano <- function(
 
     if (!neglog10) p <- p + ggplot2::scale_y_reverse()
 
-    # Annotation layer — ggrepel draws segment lines to dots by default
+    # Annotation layer - ggrepel draws segment lines to dots by default
     if (!is.null(annotate)) {
       ann_df <- df[!is.na(df$.ann_lbl), , drop = FALSE]
       if (nrow(ann_df) > 0L) {
@@ -891,7 +891,7 @@ print.plot_volcano <- function(x, ...) {
   up_n <- sum(clf$.regulation == "Up",   na.rm = TRUE)
   dn_n <- sum(clf$.regulation == "Down", na.rm = TRUE)
   ns_n <- sum(clf$.regulation == "NS",   na.rm = TRUE)
-  cat("── plot_volcano results ────────────────────────────────────\n")
+  cat("-- plot_volcano results ------------------------------------\n")
   cat(sprintf("  Features   : %d  (Up: %d | Down: %d | NS: %d)\n",
               nrow(clf), up_n, dn_n, ns_n))
   cat(sprintf("  Thresholds : FC >= %.4f (up) | <= %.4f (down)  |  p < %.4f\n",

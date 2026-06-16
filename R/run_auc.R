@@ -132,7 +132,7 @@
 #'     optionally, DeLong confidence intervals (\code{pROC::ci()}) are
 #'     extracted.
 #'   \item Plots are assembled with \pkg{ggplot2} using a colour-blind-friendly
-#'     palette (Okabe–Ito). AUC labels are rounded to two decimal places;
+#'     palette (Okabe-Ito). AUC labels are rounded to two decimal places;
 #'     values that round to \code{1.00} are progressively displayed to more
 #'     decimal places (up to five), after which scientific notation with two
 #'     significant figures is used.
@@ -169,7 +169,7 @@
 #'
 #' @examples
 #' ## -----------------------------------------------------------------------
-#' ## Example 1 — numeric binary response (0/1), all predictors
+#' ## Example 1 - numeric binary response (0/1), all predictors
 #' ## -----------------------------------------------------------------------
 #' set.seed(42)
 #' n  <- 120
@@ -184,7 +184,7 @@
 #' print(res$auc_table)
 #'
 #' ## -----------------------------------------------------------------------
-#' ## Example 2 — categorical response, remove one group, combined plot
+#' ## Example 2 - categorical response, remove one group, combined plot
 #' ## -----------------------------------------------------------------------
 #' df2 <- data.frame(
 #'   status   = sample(c("control", "case", "unknown"), n, replace = TRUE),
@@ -203,7 +203,7 @@
 #' print(res2$auc_table)
 #'
 #' ## -----------------------------------------------------------------------
-#' ## Example 3 — column names with spaces, select top-2 by AUC
+#' ## Example 3 - column names with spaces, select top-2 by AUC
 #' ## -----------------------------------------------------------------------
 #' df3 <- data.frame(
 #'   `my group`  = sample(0:1, n, replace = TRUE),
@@ -580,7 +580,7 @@ run_auc <- function(
   }
 
   # ---------------------------------------------------------------------------
-  # 7.  Subset columns — keep y always, only subset predictors
+  # 7.  Subset columns - keep y always, only subset predictors
   # ---------------------------------------------------------------------------
   all_cols <- colnames(x)
 
@@ -817,7 +817,7 @@ run_auc <- function(
 
   ## Helper: build a safe pROC::roc call, suppressing its internal messages.
   ## We filter extra_args against the formals of the exported pROC::roc
-  ## generic — NOT pROC::roc.default, which is not exported and cannot be
+  ## generic - NOT pROC::roc.default, which is not exported and cannot be
   ## introspected reliably across pROC versions.
   .roc_formal_names <- tryCatch(
     names(formals(pROC::roc)),
@@ -948,7 +948,7 @@ run_auc <- function(
   # ---------------------------------------------------------------------------
   .fmt_auc_val <- function(val) {
     if (is.na(val)) return(NA_character_)
-    if (val == 1)   return("1.00")          # exact 1 → always "1.00"
+    if (val == 1)   return("1.00")          # exact 1 -> always "1.00"
     for (dp in 2L:5L) {
       fmt_val <- formatC(val, digits = dp, format = "f")
       if (as.numeric(fmt_val) < 1) return(fmt_val)
@@ -1216,9 +1216,9 @@ run_auc <- function(
 
         if (!is.null(auc_label)) {
           ## legend_title_str (e.g. "AUC (95% CI)") as a bold header,
-          ## then the value on the next line — placed at bottom-right
+          ## then the value on the next line - placed at bottom-right
           ## using annotation_custom + a ggplot2 text grob so that the
-          ## position is in data coordinates (0–1 on both axes).
+          ## position is in data coordinates (0-1 on both axes).
           ann_label <- paste0(legend_title_str, "\n", auc_label)
           p_sep <- p_sep +
             ggplot2::annotate(
@@ -1292,7 +1292,7 @@ run_auc <- function(
 #' @author John Lennon L. Calorio
 #' @export
 print.run_auc <- function(x, ...) {
-  cat("── run_auc results ─────────────────────────────────────────\n")
+  cat("-- run_auc results -----------------------------------------\n")
 
   # Get counts from the result object
   n_cases    <- if (!is.null(x$n_cases)) x$n_cases else 0

@@ -193,7 +193,7 @@ print.run_contentvaliditycvr <- function(x, digits = 3L, ...) {
 
 #' @export
 summary.run_contentvaliditycvr <- function(object, digits = 3L, ...) {
-  cat("Content Validity Ratio (CVR) Analysis — Summary\n")
+  cat("Content Validity Ratio (CVR) Analysis - Summary\n")
   cat(strrep("=", 50L), "\n\n")
   cat("Panel size  :", attr(object, "n"),    "\n")
   cat("Alpha       :", attr(object, "alpha"), "\n")

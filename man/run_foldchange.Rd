@@ -128,7 +128,7 @@ consume directly.
 }
 \examples{
 ## -----------------------------------------------------------------------
-## Example 1 — basic usage with iris
+## Example 1 - basic usage with iris
 ## -----------------------------------------------------------------------
 data(iris)
 x_iris  <- iris[, 1:4]
@@ -143,7 +143,7 @@ print(res$fc_table)
 print(res$log2fc_table)
 
 ## -----------------------------------------------------------------------
-## Example 2 — custom order, filter one level, select two features
+## Example 2 - custom order, filter one level, select two features
 ## -----------------------------------------------------------------------
 res2 <- run_foldchange(
   x        = x_iris,
@@ -157,7 +157,7 @@ print(res2$comparisons)
 print(res2$fc_table)
 
 ## -----------------------------------------------------------------------
-## Example 3 — data with special characters in column names
+## Example 3 - data with special characters in column names
 ## -----------------------------------------------------------------------
 set.seed(1)
 n   <- 60

@@ -229,7 +229,7 @@ get_sigfeatures <- function(
     if (!is_multinomial) {
       warning(
         "'by_comparison = TRUE' is only meaningful for multinomial results. ",
-        "This model has no 'Comparison' column — returning a plain vector.",
+        "This model has no 'Comparison' column - returning a plain vector.",
         call. = FALSE
       )
       # fall through to the plain-vector path below
@@ -273,7 +273,7 @@ get_sigfeatures <- function(
   if (!is.null(x_names)) return(x_names)
   # Fall back to names stored inside the result object by run_regreg
   if (!is.null(res[["x_names"]])) return(res[["x_names"]])
-  # No allowlist available — cannot filter
+  # No allowlist available - cannot filter
   NULL
 }
 

@@ -723,7 +723,7 @@ run_correl <- function(x,
   #   )
 
   #   if (verbose)
-  #     message(sprintf("[%d/%d] %s vs %s — method: %s, r = %.4f, p = %.4f",
+  #     message(sprintf("[%d/%d] %s vs %s - method: %s, r = %.4f, p = %.4f",
   #                     i, length(pairs), xname, yname,
   #                     results[[i]]$method_used,
   #                     results[[i]]$estimate %||% NA,
@@ -740,7 +740,7 @@ run_correl <- function(x,
     ft_key      <- paste(sort(c(xname, yname)), collapse = "\r")
     pair_method <- if (!is.null(.ft_lookup[[ft_key]])) {
       if (verbose)
-        message(sprintf("[%d/%d] %s vs %s — force_test override: '%s'",
+        message(sprintf("[%d/%d] %s vs %s - force_test override: '%s'",
                         i, length(pairs), xname, yname, .ft_lookup[[ft_key]]))
       .ft_lookup[[ft_key]]
     } else {
@@ -761,7 +761,7 @@ run_correl <- function(x,
     )
 
     if (verbose)
-      message(sprintf("[%d/%d] %s vs %s — method: %s, r = %.4f, p = %.4f",
+      message(sprintf("[%d/%d] %s vs %s - method: %s, r = %.4f, p = %.4f",
                       i, length(pairs), xname, yname,
                       results[[i]]$method_used,
                       results[[i]]$estimate %||% NA,
@@ -857,7 +857,7 @@ run_correl <- function(x,
       m_present  <- unique(res_df$method)
       m_unique   <- m_present[order(match(m_present, pref_order), m_present)]
 
-      # Unicode superscript lowercase letters a–z (sans q, which has no Unicode
+      # Unicode superscript lowercase letters a-z (sans q, which has no Unicode
       # superscript codepoint); fall back to plain letters for > 25 methods.
       superscripts <- c(
         "\u1D43", "\u1D47", "\u1D9C", "\u1D48", "\u1D49", "\u1DA0",

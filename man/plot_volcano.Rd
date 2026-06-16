@@ -50,7 +50,7 @@ one row per feature (must contain the columns named by \code{y} and
 \code{\link{run_diff}()} result (with \code{summary_table = TRUE}).
 Column names may contain special characters.
 
-\strong{List input — supported combinations:}
+\strong{List input - supported combinations:}
 \describe{
 \item{\code{list(fc = <run_foldchange>, diff = <run_diff>)}}{
 Both objects are supplied. Fold changes are sourced from
@@ -240,7 +240,7 @@ res <- plot_volcano(x = dat, y = "fold_change", z = "pvalue")
 print(res$plots[[1]])
 
 ## -----------------------------------------------------------------------
-## Example 2 — asymmetric thresholds as raw fold changes, with labels
+## Example 2 - asymmetric thresholds as raw fold changes, with labels
 ## -----------------------------------------------------------------------
 ann <- setNames(c("feat_1", "feat_2", "feat_3"),
                 c("Marker A", "Marker B", "Marker C"))
@@ -257,7 +257,7 @@ res2 <- plot_volcano(
 print(res2$plots[[1]])
 
 ## -----------------------------------------------------------------------
-## Example 3 — multi-group overlay
+## Example 3 - multi-group overlay
 ## -----------------------------------------------------------------------
 set.seed(7)
 dat_multi <- data.frame(
@@ -281,7 +281,7 @@ res3 <- plot_volcano(
 print(res3$plots[[1]])
 
 ## -----------------------------------------------------------------------
-## Example 4 — threshold-based annotation (annotate2)
+## Example 4 - threshold-based annotation (annotate2)
 ## -----------------------------------------------------------------------
 # Label everything with a 4-fold change that is also significant (p < 0.05)
 res4 <- plot_volcano(

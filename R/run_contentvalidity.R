@@ -273,7 +273,7 @@ print.run_contentvalidity <- function(x, digits = 3L, ...) {
 
 #' @export
 summary.run_contentvalidity <- function(object, digits = 3L, ...) {
-  cat("Content Validity Analysis — Summary\n")
+  cat("Content Validity Analysis - Summary\n")
   cat(strrep("=", 42L), "\n\n")
 
   n_items   <- nrow(object$items)

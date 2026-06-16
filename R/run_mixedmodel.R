@@ -73,7 +73,7 @@
 #'   \item{\code{<feature_name>}}{
 #'     One entry per feature in \code{x}. Each is a list with:
 #'     \describe{
-#'       \item{\code{status}}{Character string — \code{"success"} or failure reason.}
+#'       \item{\code{status}}{Character string - \code{"success"} or failure reason.}
 #'       \item{\code{model}}{Fitted \code{lmerModLmerTest} object or \code{NULL}.}
 #'       \item{\code{fixed_effects}}{Data frame of fixed effects.}
 #'       \item{\code{random_effects}}{From \code{\link[lme4]{VarCorr}}.}
@@ -626,7 +626,7 @@ summary.run_mixedmodel <- function(object, n = 10L, ...) {
 print.summary.run_mixedmodel <- function(x, ...) {
   ps <- x$processing_summary
   cat("---------------------------------------\n")
-  cat("run_mixedmodel — Analysis Summary\n")
+  cat("run_mixedmodel - Analysis Summary\n")
   cat("---------------------------------------\n")
   cat(sprintf("  Formula       : %s\n", x$parameters$formula))
   cat(sprintf("  Subject col   : %s\n", x$parameters$subject_col %||% "(not specified)"))

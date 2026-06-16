@@ -27,10 +27,10 @@ PCoA and PERMANOVA.}
 
 \item{method}{A single character string specifying the dissimilarity index
 passed to \code{\link[vegan]{vegdist}}. Common choices include
-\code{"bray"} (Bray–Curtis), \code{"euclidean"}, \code{"aitchison"}, and
+\code{"bray"} (Bray-Curtis), \code{"euclidean"}, \code{"aitchison"}, and
 \code{"robust.aitchison"}; see \code{?vegan::vegdist} for the full list.
 Ignored when \code{x} is already a \code{"dist"} object. The same
-dissimilarity matrix is reused for PERMANOVA — the method is never applied
+dissimilarity matrix is reused for PERMANOVA - the method is never applied
 twice. Default: \code{"bray"}.}
 
 \item{correction}{Correction method for negative eigenvalues passed to
@@ -147,7 +147,7 @@ dispersions (\code{vegan::betadisper}) when groups differ in spread.
 
 Key output fields from \code{adonis2}:
 \itemize{
-\item \strong{R²}: proportion of total variance explained by the grouping
+\item \strong{R\eqn{^2}}: proportion of total variance explained by the grouping
 factor.
 \item \strong{F}: pseudo-F statistic.
 \item \strong{Pr(>F)}: permutation p-value.
@@ -173,11 +173,11 @@ The returned object carries class \code{"run_pcoa"} and a \code{scores}
 element with columns \code{PC1}, \code{PC2}, \ldots so that
 \code{pondeR::plot_score} can dispatch correctly. When PERMANOVA results are
 present, \code{plot_score.run_pcoa} formats and injects them automatically
-as the plot subtitle (R² and p-value).
+as the plot subtitle (R\eqn{^2} and p-value).
 }
 }
 \examples{
-## ── Example 1: Bray–Curtis PCoA on the dune dataset ──────────────────────
+## -- Example 1: Bray-Curtis PCoA on the dune dataset ----------------------
 if (requireNamespace("vegan", quietly = TRUE) &&
     requireNamespace("ape",   quietly = TRUE)) {
 
@@ -191,7 +191,7 @@ if (requireNamespace("vegan", quietly = TRUE) &&
   result$variance_explained[1:3]
 }
 
-## ── Example 2: PCoA + PERMANOVA ───────────────────────────────────────────
+## -- Example 2: PCoA + PERMANOVA -------------------------------------------
 if (requireNamespace("vegan", quietly = TRUE) &&
     requireNamespace("ape",   quietly = TRUE)) {
 
@@ -212,7 +212,7 @@ if (requireNamespace("vegan", quietly = TRUE) &&
   result_perm$permanova$table
 }
 
-## ── Example 3: Lingoes correction ─────────────────────────────────────────
+## -- Example 3: Lingoes correction -----------------------------------------
 if (requireNamespace("vegan", quietly = TRUE) &&
     requireNamespace("ape",   quietly = TRUE)) {
 
@@ -221,7 +221,7 @@ if (requireNamespace("vegan", quietly = TRUE) &&
   result_ling$variance_explained[1:3]
 }
 
-## ── Example 4: Precomputed dist + PERMANOVA ───────────────────────────────
+## -- Example 4: Precomputed dist + PERMANOVA -------------------------------
 if (requireNamespace("vegan", quietly = TRUE) &&
     requireNamespace("ape",   quietly = TRUE)) {
 
@@ -242,45 +242,45 @@ if (requireNamespace("vegan", quietly = TRUE) &&
 }
 \references{
 Anderson, M.J. (2001) A new method for non-parametric multivariate analysis
-of variance. \emph{Austral Ecology}, \strong{26}, 32–46.
+of variance. \emph{Austral Ecology}, \strong{26}, 32-46.
 
 Cailliez, F. (1983) The analytical solution of the additive constant
-problem. \emph{Psychometrika}, \strong{48}, 305–308.
+problem. \emph{Psychometrika}, \strong{48}, 305-308.
 
 Excoffier, L., Smouse, P.E., and Quattro, J.M. (1992) Analysis of molecular
 variance inferred from metric distances among DNA haplotypes: Application
 to human mitochondrial DNA restriction data. \emph{Genetics},
-\strong{131}, 479–491.
+\strong{131}, 479-491.
 
 Gower, J.C. (1966) Some distance properties of latent root and vector
 methods used in multivariate analysis. \emph{Biometrika}, \strong{53},
-325–338.
+325-338.
 
 Gower, J.C. and Legendre, P. (1986) Metric and Euclidean properties of
 dissimilarity coefficients. \emph{Journal of Classification}, \strong{3},
-5–48.
+5-48.
 
 Legendre, P. and Anderson, M.J. (1999) Distance-based redundancy analysis:
 Testing multispecies responses in multifactorial ecological experiments.
-\emph{Ecological Monographs}, \strong{69}, 1–24.
+\emph{Ecological Monographs}, \strong{69}, 1-24.
 
 Legendre, P. and Gallagher, E.D. (2001) Ecologically meaningful
 transformations for ordination of species data. \emph{Oecologia},
-\strong{129}, 271–280.
+\strong{129}, 271-280.
 
 Legendre, P. and Legendre, L. (1998) \emph{Numerical Ecology}, 2nd English
 edition. Amsterdam: Elsevier Science BV.
 
 Lingoes, J.C. (1971) Some boundary conditions for a monotone analysis of
-symmetric matrices. \emph{Psychometrika}, \strong{36}, 195–203.
+symmetric matrices. \emph{Psychometrika}, \strong{36}, 195-203.
 
 McArdle, B.H. and Anderson, M.J. (2001) Fitting multivariate models to
 community data: A comment on distance-based redundancy analysis.
-\emph{Ecology}, \strong{82}, 290–297.
+\emph{Ecology}, \strong{82}, 290-297.
 
 Warton, D.I., Wright, T.W., and Wang, Y. (2012) Distance-based multivariate
 analyses confound location and dispersion effects. \emph{Methods in
-Ecology and Evolution}, \strong{3}, 89–101.
+Ecology and Evolution}, \strong{3}, 89-101.
 }
 \author{
 John Lennon L. Calorio

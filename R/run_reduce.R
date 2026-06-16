@@ -49,7 +49,7 @@
 #'
 #' \subsection{Performance note}{
 #'   Name intersection/union is computed once via \code{Reduce(intersect, ...)}
-#'   or \code{Reduce(union, ...)} — an idiomatic base-R approach that avoids
+#'   or \code{Reduce(union, ...)} - an idiomatic base-R approach that avoids
 #'   repeated pairwise comparisons and scales well with the number of inputs.
 #' }
 #'
@@ -385,7 +385,7 @@ print.run_reduce <- function(x, ...) {
   mode_label  <- if (x$check_cols) "column" else "row"
   set_label   <- if (x$return_common) "intersection (common)" else "union (all unique)"
 
-  cat("── run_reduce result ─────────────────────────────────────────────\n")
+  cat("-- run_reduce result ---------------------------------------------\n")
   cat(sprintf("  Inputs      : %d data frame(s)\n", x$n_inputs))
   cat(sprintf("  Dimension   : %s names\n", mode_label))
   cat(sprintf("  Name set    : %s\n", set_label))
@@ -410,7 +410,7 @@ print.run_reduce <- function(x, ...) {
     cat("\n  Names removed per input: (none in any input)\n")
   }
 
-  cat("──────────────────────────────────────────────────────────────────\n")
+  cat("------------------------------------------------------------------\n")
   cat("\n$data:\n")
   print(x$data)
 

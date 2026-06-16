@@ -63,7 +63,7 @@ following top-level components:
 \item{\code{<feature_name>}}{
 One entry per feature in \code{x}. Each is a list with:
 \describe{
-\item{\code{status}}{Character string — \code{"success"} or failure reason.}
+\item{\code{status}}{Character string - \code{"success"} or failure reason.}
 \item{\code{model}}{Fitted \code{lmerModLmerTest} object or \code{NULL}.}
 \item{\code{fixed_effects}}{Data frame of fixed effects.}
 \item{\code{random_effects}}{From \code{\link[lme4]{VarCorr}}.}

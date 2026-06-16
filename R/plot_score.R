@@ -721,7 +721,7 @@ plot_score.run_pls <- function(
     subtitle         = NULL,
     ...
 ) {
-  # ── Parse PC indices ──────────────────────────────────────────────────────────
+  # -- Parse PC indices ----------------------------------------------------------
   if (is.numeric(pc)) {
     pc_x <- as.integer(pc[1L]); pc_y <- as.integer(pc[2L])
   } else {
@@ -729,7 +729,7 @@ plot_score.run_pls <- function(
     pc_y <- as.integer(gsub("PC", "", pc[2L], ignore.case = TRUE))
   }
 
-  # ── Method label ──────────────────────────────────────────────────────────────
+  # -- Method label --------------------------------------------------------------
   method_label <- switch(res$method_used,
                          "oplsda" = "OPLS-DA",
                          "plsda"  = "PLS-DA",
@@ -740,8 +740,8 @@ plot_score.run_pls <- function(
   # EARLY EXIT: no usable scores
   # Conditions that make the result unplottable:
   #   (a) scores is NULL or has 0 columns
-  #   (b) n_pcs < 2  — can't form an X vs Y axes plot
-  #   (c) all variance_explained are NA  — model produced no valid component
+  #   (b) n_pcs < 2  - can't form an X vs Y axes plot
+  #   (c) all variance_explained are NA  - model produced no valid component
   # ============================================================================
 
   scores_unusable <- is.null(res$scores)  ||
@@ -768,7 +768,7 @@ plot_score.run_pls <- function(
     return(invisible(NULL))
   }
 
-  # ── Auto-title ────────────────────────────────────────────────────────────────
+  # -- Auto-title ----------------------------------------------------------------
   if (is.null(title)) {
     if (res$method_used == "oplsda") {
       x_lbl <- if (pc_x == 1L) "t[1]" else sprintf("to[%d]", pc_x - 1L)
@@ -780,7 +780,7 @@ plot_score.run_pls <- function(
     }
   }
 
-  # ── Auto-subtitle: model fit stats (ropls only) ───────────────────────────────
+  # -- Auto-subtitle: model fit stats (ropls only) -------------------------------
   if (is.null(subtitle) && res$method_used %in% c("oplsda", "plsda")) {
     subtitle <- tryCatch({
       mdl    <- res$pls_object
@@ -832,12 +832,12 @@ plot_score.run_pls <- function(
     }, error = function(e) NULL)
   }
 
-  # ── Delegate to run_pca plotting engine ───────────────────────────────────────
+  # -- Delegate to run_pca plotting engine ---------------------------------------
   p <- plot_score.run_pca(res = res, pc = pc, title = title, subtitle = subtitle, ...)
 
   ve <- res$variance_explained
 
-  # ── Re-label axes by method ───────────────────────────────────────────────────
+  # -- Re-label axes by method ---------------------------------------------------
   if (res$method_used == "oplsda") {
     .fmt_axis <- function(idx, val) {
       if (idx == 1L) sprintf("Predictive Score t[1] (%.1f%%)", val)
@@ -954,7 +954,7 @@ plot_score.run_pcoa <- function(
     ...
 ) {
 
-  # ── 1. Validate metadata ────────────────────────────────────────────────────
+  # -- 1. Validate metadata ----------------------------------------------------
   if (missing(metadata) || is.null(metadata)) {
     stop(
       "'metadata' is required for plot_score.run_pcoa().\n",
@@ -983,7 +983,7 @@ plot_score.run_pcoa <- function(
     )
   }
 
-  # ── 2. Build a pseudo run_pca-compatible object ─────────────────────────────
+  # -- 2. Build a pseudo run_pca-compatible object -----------------------------
   n_axes  <- res$n_axes
   pc_nms  <- colnames(res$scores)   # already "PC1", "PC2", ...
 
@@ -995,12 +995,12 @@ plot_score.run_pcoa <- function(
   )
   class(proxy) <- c("run_pca", "list")   # borrow run_pca dispatch for the body
 
-  # ── 3. Patch axis title builder so labels read "PCo" not "PC" ───────────────
+  # -- 3. Patch axis title builder so labels read "PCo" not "PC" ---------------
   if (is.null(title)) {
     title <- sprintf("PCoA Scores Plot (PCoA%d vs PCoA%d)", pc[1], pc[2])
   }
 
-  # ── 3.5 Auto-generate PERMANOVA & Post-Hoc subtitle if present ──────────────
+  # -- 3.5 Auto-generate PERMANOVA & Post-Hoc subtitle if present --------------
   if (is.null(subtitle)) {
     sub_parts <- character(0)
 
@@ -1039,7 +1039,7 @@ plot_score.run_pcoa <- function(
       }
     }
 
-    # 3. Post-hoc block — only for 3+ groups
+    # 3. Post-hoc block - only for 3+ groups
     if (!is.null(res$pairwise_adonis) && !is.na(n_levels) && n_levels >= 3L) {
 
       pa       <- as.data.frame(res$pairwise_adonis)
@@ -1057,9 +1057,9 @@ plot_score.run_pcoa <- function(
           }, character(1L))
 
           if (length(pair_lines) > 6L) {
-            # Too many to list inline — redirect to summary()
+            # Too many to list inline - redirect to summary()
             posthoc_str <- sprintf(
-              "Post-hoc Sig. pairs: %d (p < 0.05) — see summary() for full table",
+              "Post-hoc Sig. pairs: %d (p < 0.05) - see summary() for full table",
               length(pair_lines)
             )
           } else {
@@ -1082,7 +1082,7 @@ plot_score.run_pcoa <- function(
     }
   }
 
-  # ── 4. Delegate to run_pca method ───────────────────────────────────────────
+  # -- 4. Delegate to run_pca method -------------------------------------------
   p <- plot_score.run_pca(
     res               = proxy,
     pc                = pc,
@@ -1115,7 +1115,7 @@ plot_score.run_pcoa <- function(
     verbose           = verbose
   )
 
-  # ── 5. Re-label axes to "PCo" convention ────────────────────────────────────
+  # -- 5. Re-label axes to "PCo" convention ------------------------------------
   ve <- res$variance_explained
   p  <- p + ggplot2::labs(
     x = sprintf("PCoA%d (%.1f%%)", pc[1], ve[pc[1]]),
@@ -1138,7 +1138,7 @@ plot_score.run_pcoa <- function(
     # Happy path: all four quantile boundaries are distinct
     result <- cut(x, breaks = breaks, labels = lbs, include.lowest = TRUE)
   } else {
-    # Fallback: rank-based equal-frequency binning — always produces 4 groups
+    # Fallback: rank-based equal-frequency binning - always produces 4 groups
     # regardless of ties in the original variable.
     n      <- length(x)
     rnk    <- rank(x, ties.method = "first", na.last = "keep")
