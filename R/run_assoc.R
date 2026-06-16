@@ -92,7 +92,7 @@
 #'   \item{residuals}{Pearson residuals as a data frame (\code{NULL} for
 #'     Fisher's/McNemar's).}
 #'   \item{stdres}{Standardized residuals as a data frame (\code{NULL} for
-#'     Fisher's/McNemar's). Values beyond \u00b1 1.96 or \u00b 12.58 indicate cells
+#'     Fisher's/McNemar's). Values beyond \u00b1 1.96 or \u00b1 2.58 indicate cells
 #'     contributing to significance.}
 #'   \item{association}{Data frame of association metrics (metric, estimate,
 #'     CI, magnitude, interpretation), or \code{NULL}.}
