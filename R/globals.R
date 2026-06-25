@@ -11,8 +11,6 @@ globalVariables(c(
   ".", "group1", "group2", "p.adj", "p.adj.signif", "y",
   "ColorGroup", "ShapeGroup", "Label", "PC_num", 
   "Value", "CumValue", "daxta", "var", "::", ":::",
-
-  "injection", "value", "group", "batch", # plot_beforeafter
   "xend", "yend", "label", # plot_dend, plot_meanmap
   "agg_val", "agg_lbl", # plot_diff
   "Var1", "Var2", "estimate", # plot_heatmap

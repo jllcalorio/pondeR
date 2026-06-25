@@ -146,6 +146,8 @@
 #'     \code{NULL} when only one alpha is tested.}
 #' }
 #'
+#' @importFrom stats predict
+#' 
 #' @author John Lennon L. Calorio
 #'
 #' @references

@@ -6,32 +6,26 @@ This package aims to make statistical analysis more accessible for everyone, ens
 
 ## Key Features
 
-`pondeR` offers a comprehensive suite of tools for various stages of data analysis, particularly focused on metabolomics data preprocessing and general statistical reporting:
+`pondeR` offers a comprehensive suite of tools for various stages of data analysis and general statistical reporting:
 
-*   **Direct-Injection Metabolomics Preprocessing Pipeline**: Orchestrates a sequential preprocessing pipeline for metabolomics data by combining individual `pondeR` functions for filtering, imputation, batch correction, normalization, transformation, and scaling.
 *   **Summarizing Data & Checking Distributions**: Generate publication-ready summary tables, calculate anthropometric indices according to WHO standards, and test for normality or skewness.
 *   **Comparing Groups & Identifying Associations**: Provides methods for detecting differences between cohorts, calculating fold changes, and testing statistical associations. Includes plotting functions like volcano plots and heatmaps.
 *   **Predictive Modeling & Classification**: Offers tools for regularized regression (Ridge, LASSO, Elastic Net), Linear Mixed-Effect Models, and Logistic regression analysis with performance evaluation (AUC/AUROC) and automated bias correction options.
 *   **Multivariate Exploration and Discrimination**: Features dimensionality reduction and visualization tools (PCA, PLS, PCoA) for simplified exploration of complex datasets, including scree and score plots.
-*   **Data Cleaning & Quality Control**: Functions for filtering features based on missingness, variance, or RSD thresholds.
-*   **Missing Value Imputation**: Addresses missing data using various imputation algorithms.
-*   **Data Normalization, Transformation, and Scaling**: Transforms and scales data to ensure comparability across samples.
-*   **Signal Drift and Batch Effects Correction**: Corrects for technical variation and instrument signal drift.
-*   **Plotting Functions**: A variety of plotting utilities, including before-and-after comparisons, distribution plots, mean maps, and multi-Y plots for metabolomics and metagenomics data.
+*   **Plotting Functions**: A variety of plotting utilities, including distribution plots, mean maps, and multi-Y plots.
 *   **Export Functions**: Easily export data frames to Excel/CSV files and figures to PNGs.
-*   **Utilities & Helpers**: A collection of utility functions for data management, relabelling, randomization, and retrieving group sizes or significant features.
+*   **Utilities & Helpers**: A collection of utility functions for data management, relabelling, and randomization.
 
 ## Installation
 
 You can install the development version of `pondeR` directly from GitHub:
 
 ```R
-# Install devtools if you haven't already
-if (!requireNamespace("devtools", quietly = TRUE)) {
-  install.packages("devtools")
-}
+# Install pak if you haven't already
+install.packages("pak")
 
-devtools::install_github("jllcalorio/pondeR")
+# Install the GitHub package
+pak::pak("jllcalorio/pondeR")
 ```
 
 ## Quick Start
