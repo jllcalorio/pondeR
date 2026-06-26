@@ -147,7 +147,7 @@
 #' @importFrom ggrepel geom_label_repel
 #' @importFrom stats mahalanobis cov qt qnorm
 #'
-#' @seealso \code{\link{run_DIpreprocess}}, \code{\link{run_pca}}, \code{\link{run_pls}}
+#' @seealso \code{\link[dimsprepr]{run_DIpreprocess}}, \code{\link{run_pca}}, \code{\link{run_pls}}
 #' 
 #' @export
 #'

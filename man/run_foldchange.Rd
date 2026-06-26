@@ -173,7 +173,7 @@ print(res3$fc_table)
 
 }
 \seealso{
-\code{\link{run_diff}}, \code{\link{plot_volcano}}, \code{\link{get_volcanodata}}, \code{\link{run_DIpreprocess}}
+\code{\link{run_diff}}, \code{\link{plot_volcano}}, \code{\link{get_volcanodata}}, \code{\link[dimsprepr]{run_DIpreprocess}}
 }
 \author{
 John Lennon L. Calorio

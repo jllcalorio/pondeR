@@ -293,7 +293,7 @@ print(res3$auc_table)
 
 }
 \seealso{
-\code{\link{run_DIpreprocess}}, \code{\link{run_pls}}, \code{\link{run_foldchange}}, \code{\link{run_diff}}
+\code{\link[dimsprepr]{run_DIpreprocess}}, \code{\link{run_pls}}, \code{\link{run_foldchange}}, \code{\link{run_diff}}
 }
 \author{
 John Lennon L. Calorio

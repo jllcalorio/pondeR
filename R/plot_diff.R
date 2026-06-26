@@ -114,7 +114,7 @@
 #' @import ggplot2
 #' @importFrom ggrepel geom_text_repel
 #' 
-#' @seealso \code{\link{run_DIpreprocess}}, \code{\link{run_diff}}
+#' @seealso \code{\link[dimsprepr]{run_DIpreprocess}}, \code{\link{run_diff}}
 #'
 #' @examples
 #' \dontrun{
@@ -198,19 +198,17 @@ plot_diff <- function(x,
   # ---------------------------------------------------------------------------
   # 0. Package checks
   # ---------------------------------------------------------------------------
-  missing_pkgs <- Filter(
-    function(pkg) !requireNamespace(pkg, quietly = TRUE),
-    c("ggpubr", "dplyr", "ggplot2", "ggrepel", "rstatix")
-  )
-  if (length(missing_pkgs) > 0)
-    stop(
-      "The following packages are required but not installed: ",
-      paste(missing_pkgs, collapse = ", "),
-      ".\nInstall them with: install.packages(",
-      paste0('c("', paste(missing_pkgs, collapse = '", "'), '")'),
-      ")",
-      call. = FALSE
-    )
+  
+  if (!requireNamespace("ggpubr", quietly = TRUE))
+    stop("Package 'ggpubr' is required but not installed. Install with: install.packages('ggpubr')")
+  if (!requireNamespace("dplyr", quietly = TRUE))
+    stop("Package 'dplyr' is required but not installed. Install with: install.packages('dplyr')")
+  if (!requireNamespace("ggplot2", quietly = TRUE))
+    stop("Package 'ggplot2' is required but not installed. Install with: install.packages('ggplot2')")
+  if (!requireNamespace("ggrepel", quietly = TRUE))
+    stop("Package 'ggrepel' is required but not installed. Install with: install.packages('ggrepel')")
+  if (!requireNamespace("rstatix", quietly = TRUE))
+    stop("Package 'rstatix' is required but not installed. Install with: install.packages('rstatix')")
 
   # ---------------------------------------------------------------------------
   # 1. Font size resolution

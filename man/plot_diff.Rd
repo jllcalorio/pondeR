@@ -234,7 +234,7 @@ print(results3$plots$extra)
 
 }
 \seealso{
-\code{\link{run_DIpreprocess}}, \code{\link{run_diff}}
+\code{\link[dimsprepr]{run_DIpreprocess}}, \code{\link{run_diff}}
 }
 \author{
 John Lennon L. Calorio

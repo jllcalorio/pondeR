@@ -18,5 +18,6 @@ globalVariables(c(
   ".neg_log10_p", ".sig", ".label", # plot_mixedmodel
   "fpr", "tpr", "predictor", # run_auc
   ".export_xl_workbook", # save_excel
-  ".data" # standard for ggplot2/dplyr
+  ".data", # standard for ggplot2/dplyr
+  "value" # plot_meanmap
 ))

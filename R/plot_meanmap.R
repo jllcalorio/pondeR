@@ -211,18 +211,13 @@ plot_meanmap <- function(
     na_color          = "grey80"
 ) {
 
-  # ── 0. Dependencies ──────────────────────────────────────────────────────────
-  .need <- function(pkg) {
-    if (!requireNamespace(pkg, quietly = TRUE))
-      stop(sprintf(
-        "Package '%s' is required but not installed. Install with: install.packages('%s')",
-        pkg, pkg
-      ), call. = FALSE)
-  }
-  .need("ggplot2")
-  .need("patchwork")
-  .need("ggdendro")
-
+  if (!requireNamespace("ggplot2", quietly = TRUE))
+    stop("Package 'ggplot2' is required but not installed. Install with: install.packages('ggplot2')")
+  if (!requireNamespace("patchwork", quietly = TRUE))
+    stop("Package 'patchwork' is required but not installed. Install with: install.packages('patchwork')")
+  if (!requireNamespace("ggdendro", quietly = TRUE))
+    stop("Package 'ggdendro' is required but not installed. Install with: install.packages('ggdendro')")
+  
   # ── 1. Input validation ──────────────────────────────────────────────────────
 
   ## 1a. x

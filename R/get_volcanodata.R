@@ -35,7 +35,7 @@
 #' @author John Lennon L. Calorio
 #' 
 #' @seealso
-#' \code{\link{run_foldchange}}, \code{\link{run_diff}}, \code{\link{plot_volcano}}, \code{\link{run_DIpreprocess}}
+#' \code{\link{run_foldchange}}, \code{\link{run_diff}}, \code{\link{plot_volcano}}, \code{\link[dimsprepr]{run_DIpreprocess}}
 #' 
 #' @export
 get_volcanodata <- function(..., up = NULL, down = NULL, pval = NULL, filter = TRUE) {

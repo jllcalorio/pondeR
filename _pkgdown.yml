@@ -60,13 +60,6 @@ navbar:
 # ── Reference (function index) ───────────────────────────────────────────────
 reference:
 
-  - title: "Direct-Injection Metabolomics Preprocessing Pipeline"
-    desc: >
-      Function for running a sequential preprocessing pipeline for metabolomics data by
-      orchestrating the individual run_* functions of pondeR.
-    contents:
-      - starts_with("run_DIpreprocess")
-
   - title: "Summarizing Data & Checking Distributions"
     desc: >
       Functions for generating publication-ready summary tables and
@@ -117,36 +110,6 @@ reference:
       - starts_with("plot_scree")
       - starts_with("plot_score")
       - starts_with("run_reduce")
-
-  - title: "Data Cleaning & Quality Control"
-    desc: "Filtering features based on missingness, variance, or RSD thresholds."
-    contents:
-      - starts_with("run_filtermissing")
-      - starts_with("run_filterRSD")
-      - starts_with("run_filtervariance")
-
-  - title: "Missing Value Imputation"
-    desc: "Addressing missing data using various imputation algorithms."
-    contents:
-      - starts_with("run_mvimpute")
-
-  - title: "Data Normalization, Transformation, and Scaling"
-    desc: "Transforming and scaling data to ensure comparability across samples."
-    contents:
-      - starts_with("run_normalize")
-      - starts_with("run_transform")
-      - starts_with("run_scale")
-
-  - title: "Signal Drift and Batch Effects Correction"
-    desc: "Correcting for technical variation and instrument signal drift."
-    contents:
-      - starts_with("run_driftBatchCorrect")
-
-  - title: "Plotting Functions of Two Data Frames"
-    desc: "Plots two data frames at a time, can be before and after implementing a method."
-    contents:
-      - starts_with("plot_beforeafter")
-      - starts_with("plot_dist_beforeafter")
 
   - title: "Other Plotting Functions"
     desc: "Other functions to plot metabolomics and metagenomics data."

@@ -44,7 +44,7 @@ volcano_data <- get_volcanodata(fc_res, diff_res, filter = TRUE)
 
 }
 \seealso{
-\code{\link{run_foldchange}}, \code{\link{run_diff}}, \code{\link{plot_volcano}}, \code{\link{run_DIpreprocess}}
+\code{\link{run_foldchange}}, \code{\link{run_diff}}, \code{\link{plot_volcano}}, \code{\link[dimsprepr]{run_DIpreprocess}}
 }
 \author{
 John Lennon L. Calorio

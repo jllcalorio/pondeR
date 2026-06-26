@@ -84,7 +84,7 @@
 #'
 #' @importFrom stats var
 #' 
-#' @seealso \code{\link{run_DIpreprocess}}
+#' @seealso \code{\link[dimsprepr]{run_DIpreprocess}}
 #' 
 #' @export
 #'
@@ -143,6 +143,10 @@ run_pls <- function(
     }
     x <- if (!is.null(x$data_pls_merged)) x$data_pls_merged else x$data_pls
   }
+
+  if (!requireNamespace("dimsprepr",  quietly = TRUE))
+  stop("Package 'dimsprepr' is required. Install with: pak::pak('dimsprepr')",
+        call. = FALSE)
   
   # ============================================================================
   # INPUT VALIDATION
@@ -244,9 +248,9 @@ run_pls <- function(
     if (!is.null(transform_method)) {
       msg(sprintf("Applying '%s' transformation...", transform_method))
       if (!exists("run_transform", mode = "function")) {
-         stop("Helper function 'run_transform' not found. Please load it into your environment.")
+         stop("Function 'run_transform' not found. Please install 'dimsprepr'.")
       }
-      transform_result <- run_transform(x = x_matrix, method = transform_method, 
+      transform_result <- dimsprepr::run_transform(x = x_matrix, method = transform_method, 
                                         metadata = metadata, verbose = verbose)
       x_matrix <- as.matrix(transform_result$data)
       preprocessing_log$transformation_applied <- TRUE
@@ -257,9 +261,9 @@ run_pls <- function(
     if (!is.null(scale_method)) {
       msg(sprintf("Applying '%s' scaling...", scale_method))
       if (!exists("run_scale", mode = "function")) {
-        stop("Helper function 'run_scale' not found. Please load it into your environment.")
+        stop("Function 'run_scale' not found. Please install 'dimsprepr'.")
       }
-      scale_result <- run_scale(x = x_matrix, method = scale_method, verbose = verbose)
+      scale_result <- dimsprepr::run_scale(x = x_matrix, method = scale_method, verbose = verbose)
       x_matrix <- as.matrix(scale_result$data)
       preprocessing_log$scaling_applied <- TRUE
       preprocessing_log$scale_method_used <- scale_method

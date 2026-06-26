@@ -147,7 +147,7 @@ Rohart F, Gautier B, Singh A, Lê Cao K-A. (2017) mixOmics: An R package for 'om
 and multiple data integration. PLoS Comput Biol 13(11): e1005752.
 }
 \seealso{
-\code{\link{run_DIpreprocess}}
+\code{\link[dimsprepr]{run_DIpreprocess}}
 }
 \author{
 John Lennon L. Calorio

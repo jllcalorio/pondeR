@@ -223,13 +223,6 @@ get_groupsizes <- function(
         "'show_summary_table = TRUE' is only supported for categorical 'pred' ",
         "variables. Skipping summary table."
       )
-    } else if (!requireNamespace("pondeR", quietly = TRUE) &&
-               !exists("run_summarytable", mode = "function")) {
-      warning(
-        "run_summarytable() was not found. ",
-        "Make sure the pondeR package is loaded.",
-        call. = FALSE
-      )
     } else {
 
       # Filter metadata to only the rows that run_regreg would see

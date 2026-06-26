@@ -298,7 +298,7 @@ print(res4$plots[[1]])
 
 }
 \seealso{
-\code{\link{run_foldchange}}, \code{\link{run_diff}}, \code{\link{get_volcanodata}}, \code{\link{run_DIpreprocess}}
+\code{\link{run_foldchange}}, \code{\link{run_diff}}, \code{\link{get_volcanodata}}, \code{\link[dimsprepr]{run_DIpreprocess}}
 }
 \author{
 John Lennon L. Calorio

@@ -333,7 +333,7 @@ and presentations that are friendly to colorblind people}.
 \url{https://jfly.uni-koeln.de/color/}
 }
 \seealso{
-\code{\link{run_DIpreprocess}}, \code{\link{run_pca}}, \code{\link{run_pls}}
+\code{\link[dimsprepr]{run_DIpreprocess}}, \code{\link{run_pca}}, \code{\link{run_pls}}
 }
 \author{
 John Lennon L. Calorio

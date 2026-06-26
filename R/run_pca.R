@@ -112,7 +112,7 @@
 #'
 #' @importFrom stats prcomp
 #' 
-#' @seealso \code{\link{run_DIpreprocess}}
+#' @seealso \code{\link[dimsprepr]{run_DIpreprocess}}
 #'
 #' @export
 #'
@@ -177,6 +177,10 @@ run_pca <- function(
     }
     x <- if (!is.null(x$data_nonpls_merged)) x$data_nonpls_merged else x$data_nonpls
   }
+
+  if (!requireNamespace("dimsprepr",  quietly = TRUE))
+    stop("Package 'dimsprepr' is required. Install with: pak::pak('dimsprepr')",
+         call. = FALSE)
   
   # Input validation
   if (!is.matrix(x) && !is.data.frame(x)) {
@@ -259,7 +263,7 @@ run_pca <- function(
     if (!is.null(transform_method)) {
       msg(sprintf("Applying '%s' transformation before PCA...", transform_method))
       
-      transform_result <- run_transform(
+      transform_result <- dimsprepr::run_transform(
         x = x_matrix,
         method = transform_method,
         metadata = metadata,
@@ -275,7 +279,7 @@ run_pca <- function(
     if (!is.null(scale_method)) {
       msg(sprintf("Applying '%s' scaling before PCA...", scale_method))
       
-      scale_result <- run_scale(
+      scale_result <- dimsprepr::run_scale(
         x = x_matrix,
         method = scale_method,
         verbose = verbose

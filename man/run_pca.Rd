@@ -173,7 +173,7 @@ Centering, scaling, and transformations: improving the biological information co
 metabolomics data. BMC Genomics, 7, 142. \doi{10.1186/1471-2164-7-142}
 }
 \seealso{
-\code{\link{run_DIpreprocess}}
+\code{\link[dimsprepr]{run_DIpreprocess}}
 }
 \author{
 John Lennon L. Calorio

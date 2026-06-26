@@ -538,15 +538,15 @@ plot_relabund <- function(
        (!is.null(sort) && sort %in% c("high", "low")))
 
   if (needs_prenorm) {
-    ponder_ns   <- tryCatch(asNamespace("pondeR"), error = function(e) NULL)
-    run_norm_fn <- if (!is.null(ponder_ns))
-      get0("run_normalize", envir = ponder_ns, mode = "function")
+    dimsprepr_ns   <- tryCatch(asNamespace("dimsprepr"), error = function(e) NULL)
+    run_norm_fn <- if (!is.null(dimsprepr_ns))
+      get0("run_normalize", envir = dimsprepr_ns, mode = "function")
     else NULL
 
     if (is.null(run_norm_fn)) {
       warning(
         "'normalize_to_relabund = TRUE' requires 'run_normalize' from the ",
-        "'pondeR' package, which could not be found. Skipping pre-normalisation."
+        "'dimsprepr' package, which could not be found. Skipping pre-normalisation."
       )
     } else {
       norm_result <- run_norm_fn(

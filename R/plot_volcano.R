@@ -227,7 +227,7 @@
 #' @importFrom ggplot2 scale_colour_manual labs theme_classic theme_minimal theme_bw theme_gray
 #' @importFrom ggplot2 theme_light theme_dark theme element_text element_blank scale_y_reverse guide_legend
 #' @importFrom ggrepel geom_text_repel
-#' @seealso \code{\link{run_foldchange}}, \code{\link{run_diff}}, \code{\link{get_volcanodata}}, \code{\link{run_DIpreprocess}}
+#' @seealso \code{\link{run_foldchange}}, \code{\link{run_diff}}, \code{\link{get_volcanodata}}, \code{\link[dimsprepr]{run_DIpreprocess}}
 #' @export
 plot_volcano <- function(
     x,
