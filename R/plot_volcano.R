@@ -641,7 +641,7 @@ plot_volcano <- function(
     h_line_y  <- pval
     y_lbl     <- if (!is.null(ylab)) ylab else "p-value"
   }
-  x_lbl <- if (!is.null(xlab)) xlab else expression(log[2]~"Fold Change")
+  x_lbl <- if (!is.null(xlab)) xlab else expression(log[2]~"(Fold Change)")
 
   # ---------------------------------------------------------------------------
   # 14.  Classify features

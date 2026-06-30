@@ -331,7 +331,16 @@ run_auc <- function(
       if (!is.null(pls_obj$vip_scores)) {
         vips <- pls_obj$vip_scores
         pass_vip <- names(vips)[!is.na(vips) & vips >= min_vip]
-        valid_features <- intersect(valid_features, pass_vip)
+        if (length(intersect(valid_features, pass_vip)) == 0L) {
+          warning(
+            "No features passed the VIP threshold (min_vip = ", min_vip, ") from run_pls. ",
+            "VIP filtering will be skipped; run_auc will use features passing ",
+            "run_foldchange and/or run_diff thresholds only.",
+            call. = FALSE
+          )
+        } else {
+          valid_features <- intersect(valid_features, pass_vip)
+        }
       } else {
         warning("run_pls object provided but no VIP scores found. Skipping VIP filtering.", call. = FALSE)
       }
