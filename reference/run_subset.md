@@ -106,3 +106,7 @@ run_subset(
 ## Value
 
 A named list of class `"run_subset"`.
+
+## Author
+
+John Lennon L. Calorio

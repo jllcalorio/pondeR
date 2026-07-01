@@ -312,7 +312,7 @@ A named list with the following elements:
     extracted.
 
 5.  Plots are assembled with ggplot2 using a colour-blind-friendly
-    palette (Okabe–Ito). AUC labels are rounded to two decimal places;
+    palette (Okabe-Ito). AUC labels are rounded to two decimal places;
     values that round to `1.00` are progressively displayed to more
     decimal places (up to five), after which scientific notation with
     two significant figures is used.
@@ -331,7 +331,7 @@ Both are listed as `Imports` in the package `DESCRIPTION` file.
 
 ## See also
 
-[`run_DIpreprocess`](https://jllcalorio.github.io/pondeR/reference/run_DIpreprocess.md),
+`run_DIpreprocess`,
 [`run_pls`](https://jllcalorio.github.io/pondeR/reference/run_pls.md),
 [`run_foldchange`](https://jllcalorio.github.io/pondeR/reference/run_foldchange.md),
 [`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md)
@@ -344,7 +344,7 @@ John Lennon L. Calorio
 
 ``` r
 ## -----------------------------------------------------------------------
-## Example 1 — numeric binary response (0/1), all predictors
+## Example 1 - numeric binary response (0/1), all predictors
 ## -----------------------------------------------------------------------
 set.seed(42)
 n  <- 120
@@ -363,7 +363,7 @@ print(res$auc_table)
 #> 3  marker_C 0.5350605 0.4300641 0.6400569     0.95         >      67         53
 
 ## -----------------------------------------------------------------------
-## Example 2 — categorical response, remove one group, combined plot
+## Example 2 - categorical response, remove one group, combined plot
 ## -----------------------------------------------------------------------
 df2 <- data.frame(
   status   = sample(c("control", "case", "unknown"), n, replace = TRUE),
@@ -386,7 +386,7 @@ print(res2$auc_table)
 #> 2   score_2 0.5372629       NA       NA     0.95         <      36         41
 
 ## -----------------------------------------------------------------------
-## Example 3 — column names with spaces, select top-2 by AUC
+## Example 3 - column names with spaces, select top-2 by AUC
 ## -----------------------------------------------------------------------
 df3 <- data.frame(
   `my group`  = sample(0:1, n, replace = TRUE),

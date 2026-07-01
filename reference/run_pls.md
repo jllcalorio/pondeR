@@ -32,10 +32,8 @@ run_pls(
 - x:
 
   Matrix or data frame. Numeric data with samples in rows and features
-  in columns. Can be output from
-  [`run_scale()`](https://jllcalorio.github.io/pondeR/reference/run_scale.md),
-  raw data (which will be scaled if `scale_method`, or from
-  `run_DIpreprocess`. is specified).
+  in columns. Can be output from `run_scale()`, raw data (which will be
+  scaled if `scale_method`, or from `run_DIpreprocess`. is specified).
 
 - metadata:
 
@@ -211,7 +209,7 @@ Biol 13(11): e1005752.
 
 ## See also
 
-[`run_DIpreprocess`](https://jllcalorio.github.io/pondeR/reference/run_DIpreprocess.md)
+`run_DIpreprocess`
 
 ## Author
 

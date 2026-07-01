@@ -89,7 +89,7 @@ top-level components:
 
   `status`
 
-  :   Character string — `"success"` or failure reason.
+  :   Character string - `"success"` or failure reason.
 
   `model`
 

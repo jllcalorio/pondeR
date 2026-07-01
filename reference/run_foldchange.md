@@ -181,7 +181,7 @@ can consume directly.
 [`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md),
 [`plot_volcano`](https://jllcalorio.github.io/pondeR/reference/plot_volcano.md),
 [`get_volcanodata`](https://jllcalorio.github.io/pondeR/reference/get_volcanodata.md),
-[`run_DIpreprocess`](https://jllcalorio.github.io/pondeR/reference/run_DIpreprocess.md)
+`run_DIpreprocess`
 
 ## Author
 
@@ -191,7 +191,7 @@ John Lennon L. Calorio
 
 ``` r
 ## -----------------------------------------------------------------------
-## Example 1 — basic usage with iris
+## Example 1 - basic usage with iris
 ## -----------------------------------------------------------------------
 data(iris)
 x_iris  <- iris[, 1:4]
@@ -202,14 +202,21 @@ res <- run_foldchange(
   metadata = meta_iris,
   group    = "Species"
 )
-#> Error in match.names(clabs, names(xi)): names do not match previous names
 print(res$fc_table)
-#> Error: object 'res' not found
+#>        feature setosa_vs_versicolor setosa_vs_virginica versicolor_vs_virginica
+#> 1  Sepal.Width            1.2375451           1.1526564               0.9314055
+#> 2 Sepal.Length            0.8433288           0.7598664               0.9010322
+#> 3 Petal.Length            0.3431925           0.2633285               0.7672911
+#> 4  Petal.Width            0.1855204           0.1214215               0.6544916
 print(res$log2fc_table)
-#> Error: object 'res' not found
+#>        feature setosa_vs_versicolor setosa_vs_virginica versicolor_vs_virginica
+#> 1  Sepal.Width            0.3074811           0.2049625              -0.1025187
+#> 2 Sepal.Length           -0.2458328          -0.3961823              -0.1503495
+#> 3 Petal.Length           -1.5429101          -1.9250643              -0.3821541
+#> 4  Petal.Width           -2.4303506          -3.0419040              -0.6115534
 
 ## -----------------------------------------------------------------------
-## Example 2 — custom order, filter one level, select two features
+## Example 2 - custom order, filter one level, select two features
 ## -----------------------------------------------------------------------
 res2 <- run_foldchange(
   x        = x_iris,
@@ -219,14 +226,16 @@ res2 <- run_foldchange(
   filter   = NULL,
   select   = c("Sepal.Length", "Petal.Length")
 )
-#> Error in match.names(clabs, names(xi)): names do not match previous names
 print(res2$comparisons)
-#> Error: object 'res2' not found
+#> [1] "virginica_vs_versicolor" "virginica_vs_setosa"    
+#> [3] "versicolor_vs_setosa"   
 print(res2$fc_table)
-#> Error: object 'res2' not found
+#>        feature virginica_vs_versicolor virginica_vs_setosa versicolor_vs_setosa
+#> 1 Petal.Length                1.303286            3.797538             2.913817
+#> 2 Sepal.Length                1.109838            1.316021             1.185777
 
 ## -----------------------------------------------------------------------
-## Example 3 — data with special characters in column names
+## Example 3 - data with special characters in column names
 ## -----------------------------------------------------------------------
 set.seed(1)
 n   <- 60

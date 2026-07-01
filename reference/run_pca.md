@@ -23,9 +23,8 @@ run_pca(
 - x:
 
   Matrix or data frame. Numeric data with samples in rows and features
-  in columns. Can be output from
-  [`run_scale()`](https://jllcalorio.github.io/pondeR/reference/run_scale.md)
-  or raw data (which will be scaled if `scale_method` is specified).
+  in columns. Can be output from `run_scale()` or raw data (which will
+  be scaled if `scale_method` is specified).
 
 - metadata:
 
@@ -37,9 +36,8 @@ run_pca(
 
   Character or NULL. Scaling method to apply before PCA if `x` is not
   already scaled. Options: "mean", "auto", "pareto". If NULL (default)
-  and `x` is not from
-  [`run_scale()`](https://jllcalorio.github.io/pondeR/reference/run_scale.md),
-  a warning is issued and PCA proceeds without additional scaling.
+  and `x` is not from `run_scale()`, a warning is issued and PCA
+  proceeds without additional scaling.
 
 - transform_method:
 
@@ -156,10 +154,8 @@ PCA:
 
 The function accepts data in two forms:
 
-1.  **Pre-scaled data** from
-    [`run_scale()`](https://jllcalorio.github.io/pondeR/reference/run_scale.md):
-    PCA is performed directly without additional preprocessing. This is
-    the recommended workflow.
+1.  **Pre-scaled data** from `run_scale()`: PCA is performed directly
+    without additional preprocessing. This is the recommended workflow.
 
 2.  **Raw data**: If `scale_method` is specified, the function will
     first apply optional transformation (via `transform_method`), then
@@ -223,7 +219,7 @@ Genomics, 7, 142.
 
 ## See also
 
-[`run_DIpreprocess`](https://jllcalorio.github.io/pondeR/reference/run_DIpreprocess.md)
+`run_DIpreprocess`
 
 ## Author
 

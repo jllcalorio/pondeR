@@ -95,7 +95,8 @@ publication themes.</p>
 <span>  legend_title_size <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  legend_text_size <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  zoom <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># S3 method for class 'run_pls'</span></span>
@@ -104,10 +105,10 @@ publication themes.</p>
 <span><span class="co"># S3 method for class 'run_pcoa'</span></span>
 <span><span class="fu">plot_score</span><span class="op">(</span></span>
 <span>  <span class="va">res</span>,</span>
-<span>  <span class="va">metadata</span>,</span>
 <span>  pc <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span>,</span>
 <span>  <span class="va">color_by</span>,</span>
 <span>  <span class="va">points_from</span>,</span>
+<span>  metadata <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  title <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  subtitle <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  caption <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -132,7 +133,8 @@ publication themes.</p>
 <span>  legend_title_size <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  legend_text_size <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  zoom <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Default S3 method</span></span>
@@ -147,6 +149,10 @@ publication themes.</p>
 <dd><p>List. Output from <code><a href="run_pca.html">run_pca()</a></code>, <code><a href="run_pls.html">run_pls()</a></code>, or
 <code><a href="run_pcoa.html">run_pcoa()</a></code>. The appropriate plot method is selected automatically
 via S3 dispatch based on the class of <code>res</code>.</p></dd>
+
+
+<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
+<dd><p>Additional arguments passed to methods.</p></dd>
 
 
 <dt id="arg-pc">pc<a class="anchor" aria-label="anchor" href="#arg-pc"></a></dt>
@@ -201,7 +207,7 @@ is categorical. Requires at least 3 samples per group. Default: <code>TRUE</code
 
 
 <dt id="arg-ellipse-level">ellipse_level<a class="anchor" aria-label="anchor" href="#arg-ellipse-level"></a></dt>
-<dd><p>Numeric. Confidence level for ellipses (0–1). Default: <code>0.95</code>.</p></dd>
+<dd><p>Numeric. Confidence level for ellipses (0-1). Default: <code>0.95</code>.</p></dd>
 
 
 <dt id="arg-legend">legend<a class="anchor" aria-label="anchor" href="#arg-legend"></a></dt>
@@ -235,7 +241,7 @@ is numeric (continuous scale is always used for numeric variables).</p></dd>
 
 
 <dt id="arg-point-alpha">point_alpha<a class="anchor" aria-label="anchor" href="#arg-point-alpha"></a></dt>
-<dd><p>Numeric. Transparency of points (0–1). Default: <code>0.8</code>.</p></dd>
+<dd><p>Numeric. Transparency of points (0-1). Default: <code>0.8</code>.</p></dd>
 
 
 <dt id="arg-theme">theme<a class="anchor" aria-label="anchor" href="#arg-theme"></a></dt>
@@ -323,7 +329,7 @@ supply a custom <code>colors</code> vector.</p>
 <p>Outliers are identified using Mahalanobis distance from the group centroid.
 A sample is flagged as an outlier if it falls outside the confidence region defined
 by <code>ellipse_level</code>. The default (<code>0.95</code>) identifies samples outside the 95% confidence
-region. This exactly mirrors <code><a href="https://ggplot2.tidyverse.org/reference/stat_ellipse.html" class="external-link">ggplot2::stat_ellipse()</a></code> behaviour.</p>
+region. This exactly mirrors <code><a href="https://ggplot2.tidyverse.org/reference/stat_ellipse.html" class="external-link">ggplot2::stat_ellipse()</a></code> behavior.</p>
 <p>Outlier detection requires:</p><ul><li><p>Categorical <code>color_by</code></p></li>
 <li><p><code>ellipse = TRUE</code></p></li>
 <li><p>At least 3 samples per group</p></li>
@@ -332,7 +338,7 @@ region. This exactly mirrors <code><a href="https://ggplot2.tidyverse.org/refere
 computation using <code>run_pca(exclude = ...)</code> rather than filtering at the plot stage.</p>
 <p><strong>Themes:</strong></p>
 <p>The <code>"nature"</code> theme (default) is a clean, publication-ready style with a white
-background, minimal gridlines, and no top/right panel border — suitable for
+background, minimal gridlines, and no top/right panel border - suitable for
 journal figures. Other options map directly to their ggplot2 equivalents.</p>
     </div>
     <div class="section level2">
@@ -340,7 +346,7 @@ journal figures. Other options map directly to their ggplot2 equivalents.</p>
     <p>Mardia, K.V., Kent, J.T., &amp; Bibby, J.M. (1979). <em>Multivariate Analysis</em>.
 London: Academic Press.</p>
 <p>Brereton, R.G., &amp; Lloyd, G.R. (2014). Partial least squares discriminant analysis:
-taking the magic away. <em>Journal of Chemometrics</em>, 28(4), 213–225.
+taking the magic away. <em>Journal of Chemometrics</em>, 28(4), 213-225.
 <a href="https://doi.org/10.1002/cem.2609" class="external-link">doi:10.1002/cem.2609</a></p>
 <p>Okabe, M., &amp; Ito, K. (2002). <em>Color Universal Design (CUD): How to make figures
 and presentations that are friendly to colorblind people</em>.
@@ -348,7 +354,7 @@ and presentations that are friendly to colorblind people</em>.
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
-    <div class="dont-index"><p><code><a href="run_DIpreprocess.html">run_DIpreprocess</a></code>, <code><a href="run_pca.html">run_pca</a></code>, <code><a href="run_pls.html">run_pls</a></code></p></div>
+    <div class="dont-index"><p><code>run_DIpreprocess</code>, <code><a href="run_pca.html">run_pca</a></code>, <code><a href="run_pls.html">run_pls</a></code></p></div>
     </div>
     <div class="section level2">
     <h2 id="author">Author<a class="anchor" aria-label="anchor" href="#author"></a></h2>
@@ -373,12 +379,12 @@ and presentations that are friendly to colorblind people</em>.
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Run PCA (excluding QC samples)</span></span></span>
-<span class="r-in"><span><span class="va">scaled_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="run_scale.html">run_scale</a></span><span class="op">(</span><span class="va">x</span>, method <span class="op">=</span> <span class="st">"auto"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">scaled_result</span> <span class="op">&lt;-</span> <span class="fu">run_scale</span><span class="op">(</span><span class="va">x</span>, method <span class="op">=</span> <span class="st">"auto"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">res</span>    <span class="op">&lt;-</span> <span class="fu"><a href="run_pca.html">run_pca</a></span><span class="op">(</span><span class="va">scaled_result</span><span class="op">$</span><span class="va">data</span>, <span class="va">metadata</span>,</span></span>
 <span class="r-in"><span>                         group   <span class="op">=</span> <span class="st">"Group"</span>,</span></span>
 <span class="r-in"><span>                         exclude <span class="op">=</span> <span class="st">"QC"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Basic scores plot — nature theme, Okabe-Ito colors (defaults)</span></span></span>
+<span class="r-in"><span><span class="co"># Basic scores plot - nature theme, Okabe-Ito colors (defaults)</span></span></span>
 <span class="r-in"><span><span class="fu">plot_score</span><span class="op">(</span><span class="va">res</span>,</span></span>
 <span class="r-in"><span>           color_by    <span class="op">=</span> <span class="st">"Group"</span>,</span></span>
 <span class="r-in"><span>           points_from <span class="op">=</span> <span class="st">"Sample"</span><span class="op">)</span></span></span>

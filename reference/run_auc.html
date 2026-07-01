@@ -348,7 +348,7 @@ factor, it is silently converted to numeric.</p></li>
 optionally, DeLong confidence intervals (<code><a href="https://rdrr.io/pkg/pROC/man/ci.html" class="external-link">pROC::ci()</a></code>) are
 extracted.</p></li>
 <li><p>Plots are assembled with <span class="pkg">ggplot2</span> using a colour-blind-friendly
-palette (Okabe–Ito). AUC labels are rounded to two decimal places;
+palette (Okabe-Ito). AUC labels are rounded to two decimal places;
 values that round to <code>1.00</code> are progressively displayed to more
 decimal places (up to five), after which scientific notation with two
 significant figures is used.</p></li>
@@ -365,7 +365,7 @@ This function requires <span class="pkg">pROC</span> (\(\ge\) 1.18) and <span cl
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
-    <div class="dont-index"><p><code><a href="run_DIpreprocess.html">run_DIpreprocess</a></code>, <code><a href="run_pls.html">run_pls</a></code>, <code><a href="run_foldchange.html">run_foldchange</a></code>, <code><a href="run_diff.html">run_diff</a></code></p></div>
+    <div class="dont-index"><p><code>run_DIpreprocess</code>, <code><a href="run_pls.html">run_pls</a></code>, <code><a href="run_foldchange.html">run_foldchange</a></code>, <code><a href="run_diff.html">run_diff</a></code></p></div>
     </div>
     <div class="section level2">
     <h2 id="author">Author<a class="anchor" aria-label="anchor" href="#author"></a></h2>
@@ -375,7 +375,7 @@ This function requires <span class="pkg">pROC</span> (\(\ge\) 1.18) and <span cl
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co">## -----------------------------------------------------------------------</span></span></span>
-<span class="r-in"><span><span class="co">## Example 1 — numeric binary response (0/1), all predictors</span></span></span>
+<span class="r-in"><span><span class="co">## Example 1 - numeric binary response (0/1), all predictors</span></span></span>
 <span class="r-in"><span><span class="co">## -----------------------------------------------------------------------</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">n</span>  <span class="op">&lt;-</span> <span class="fl">120</span></span></span>
@@ -394,7 +394,7 @@ This function requires <span class="pkg">pROC</span> (\(\ge\) 1.18) and <span cl
 <span class="r-out co"><span class="r-pr">#&gt;</span> 3  marker_C 0.5350605 0.4300641 0.6400569     0.95         &gt;      67         53</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## -----------------------------------------------------------------------</span></span></span>
-<span class="r-in"><span><span class="co">## Example 2 — categorical response, remove one group, combined plot</span></span></span>
+<span class="r-in"><span><span class="co">## Example 2 - categorical response, remove one group, combined plot</span></span></span>
 <span class="r-in"><span><span class="co">## -----------------------------------------------------------------------</span></span></span>
 <span class="r-in"><span><span class="va">df2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>  status   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"control"</span>, <span class="st">"case"</span>, <span class="st">"unknown"</span><span class="op">)</span>, <span class="va">n</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span></span>
@@ -417,7 +417,7 @@ This function requires <span class="pkg">pROC</span> (\(\ge\) 1.18) and <span cl
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2   score_2 0.5372629       NA       NA     0.95         &lt;      36         41</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## -----------------------------------------------------------------------</span></span></span>
-<span class="r-in"><span><span class="co">## Example 3 — column names with spaces, select top-2 by AUC</span></span></span>
+<span class="r-in"><span><span class="co">## Example 3 - column names with spaces, select top-2 by AUC</span></span></span>
 <span class="r-in"><span><span class="co">## -----------------------------------------------------------------------</span></span></span>
 <span class="r-in"><span><span class="va">df3</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>  `my group`  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">0</span><span class="op">:</span><span class="fl">1</span>, <span class="va">n</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span></span>

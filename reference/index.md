@@ -1,14 +1,5 @@
 # Package index
 
-## Direct-Injection Metabolomics Preprocessing Pipeline
-
-Function for running a sequential preprocessing pipeline for
-metabolomics data by orchestrating the individual run\_\* functions of
-pondeR.
-
-- [`run_DIpreprocess()`](https://jllcalorio.github.io/pondeR/reference/run_DIpreprocess.md)
-  : Direct-Injection Metabolomics Preprocessing Pipeline
-
 ## Summarizing Data & Checking Distributions
 
 Functions for generating publication-ready summary tables and
@@ -87,52 +78,6 @@ exploration of complex datasets.
 - [`run_reduce()`](https://jllcalorio.github.io/pondeR/reference/run_reduce.md)
   : Reduce Multiple Data Frames by Common or Unique Column/Row Names
 
-## Data Cleaning & Quality Control
-
-Filtering features based on missingness, variance, or RSD thresholds.
-
-- [`run_filtermissing()`](https://jllcalorio.github.io/pondeR/reference/run_filtermissing.md)
-  : Filter Features by Missing Value Threshold
-- [`run_filterRSD()`](https://jllcalorio.github.io/pondeR/reference/run_filterRSD.md)
-  : Filter Features by Relative Standard Deviation in QC Samples
-- [`run_filtervariance()`](https://jllcalorio.github.io/pondeR/reference/run_filtervariance.md)
-  : Filter Features by Low Variance
-
-## Missing Value Imputation
-
-Addressing missing data using various imputation algorithms.
-
-- [`run_mvimpute()`](https://jllcalorio.github.io/pondeR/reference/run_mvimpute.md)
-  : Impute Missing Values in Metabolomics Data
-
-## Data Normalization, Transformation, and Scaling
-
-Transforming and scaling data to ensure comparability across samples.
-
-- [`run_normalize()`](https://jllcalorio.github.io/pondeR/reference/run_normalize.md)
-  : Normalize Metabolomics Data
-- [`run_transform()`](https://jllcalorio.github.io/pondeR/reference/run_transform.md)
-  : Transform Metabolomics Data
-- [`run_scale()`](https://jllcalorio.github.io/pondeR/reference/run_scale.md)
-  : Scale Metabolomics Data
-
-## Signal Drift and Batch Effects Correction
-
-Correcting for technical variation and instrument signal drift.
-
-- [`run_driftBatchCorrect()`](https://jllcalorio.github.io/pondeR/reference/run_driftBatchCorrect.md)
-  : Correct Signal Drift and Batch Effects Using QC Samples
-
-## Plotting Functions of Two Data Frames
-
-Plots two data frames at a time, can be before and after implementing a
-method.
-
-- [`plot_beforeafter()`](https://jllcalorio.github.io/pondeR/reference/plot_beforeafter.md)
-  : Plot Pairwise Before-and-After Comparison for Selected Features
-- [`plot_dist_beforeafter()`](https://jllcalorio.github.io/pondeR/reference/plot_dist_beforeafter.md)
-  : Plot Distribution Comparison Before and After Data Transformation
-
 ## Other Plotting Functions
 
 Other functions to plot metabolomics and metagenomics data.
@@ -200,8 +145,8 @@ Utility functions for data management, relabelling, and S3 methods.
   : Get Features with Non-Zero Coefficients from a Regularized
   Regression Result
 
-- [`as_gt(`*`<run_correl>`*`)`](https://jllcalorio.github.io/pondeR/reference/as_gt.run_correl.md)
-  : Convert a run_correl to a gt table
+- [`as_gt()`](https://jllcalorio.github.io/pondeR/reference/as_gt.md) :
+  Convert a run_correl to a gt table
 
 - [`has_inf()`](https://jllcalorio.github.io/pondeR/reference/has_inf.md)
   : Check if an Object Contains Infinite Values

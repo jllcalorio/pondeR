@@ -8,6 +8,8 @@ method footnote (if present) as a source note via
 ## Usage
 
 ``` r
+as_gt(x, ...)
+
 # S3 method for class 'run_correl'
 as_gt(x, ...)
 ```
@@ -16,13 +18,14 @@ as_gt(x, ...)
 
 - x:
 
-  A `run_correl` object.
+  An object to convert.
 
 - ...:
 
-  Additional arguments forwarded to
-  [`gt::gt()`](https://gt.rstudio.com/reference/gt.html).
+  Additional arguments.
 
 ## Value
 
-A `gt_tbl` object.
+A `gt_tbl` object. Convert an object to a gt table
+
+A gt table object.

@@ -54,7 +54,7 @@ The function automatically detects the thresholds:
 [`run_foldchange`](https://jllcalorio.github.io/pondeR/reference/run_foldchange.md),
 [`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md),
 [`plot_volcano`](https://jllcalorio.github.io/pondeR/reference/plot_volcano.md),
-[`run_DIpreprocess`](https://jllcalorio.github.io/pondeR/reference/run_DIpreprocess.md)
+`run_DIpreprocess`
 
 ## Author
 

@@ -141,8 +141,8 @@ A list with class `"run_assoc"` containing:
 - stdres:
 
   Standardized residuals as a data frame (`NULL` for
-  Fisher's/McNemar's). Values beyond ±1.96 or ±2.58 indicate cells
-  contributing to significance.
+  Fisher's/McNemar's). Values beyond \u00b1 1.96 or \u00b1 2.58 indicate
+  cells contributing to significance.
 
 - association:
 

@@ -12,13 +12,8 @@ consistent template for results.
 ## Key Features
 
 `pondeR` offers a comprehensive suite of tools for various stages of
-data analysis, particularly focused on metabolomics data preprocessing
-and general statistical reporting:
+data analysis and general statistical reporting:
 
-- **Direct-Injection Metabolomics Preprocessing Pipeline**: Orchestrates
-  a sequential preprocessing pipeline for metabolomics data by combining
-  individual `pondeR` functions for filtering, imputation, batch
-  correction, normalization, transformation, and scaling.
 - **Summarizing Data & Checking Distributions**: Generate
   publication-ready summary tables, calculate anthropometric indices
   according to WHO standards, and test for normality or skewness.
@@ -34,22 +29,12 @@ and general statistical reporting:
   dimensionality reduction and visualization tools (PCA, PLS, PCoA) for
   simplified exploration of complex datasets, including scree and score
   plots.
-- **Data Cleaning & Quality Control**: Functions for filtering features
-  based on missingness, variance, or RSD thresholds.
-- **Missing Value Imputation**: Addresses missing data using various
-  imputation algorithms.
-- **Data Normalization, Transformation, and Scaling**: Transforms and
-  scales data to ensure comparability across samples.
-- **Signal Drift and Batch Effects Correction**: Corrects for technical
-  variation and instrument signal drift.
 - **Plotting Functions**: A variety of plotting utilities, including
-  before-and-after comparisons, distribution plots, mean maps, and
-  multi-Y plots for metabolomics and metagenomics data.
+  distribution plots, mean maps, and multi-Y plots.
 - **Export Functions**: Easily export data frames to Excel/CSV files and
   figures to PNGs.
 - **Utilities & Helpers**: A collection of utility functions for data
-  management, relabelling, randomization, and retrieving group sizes or
-  significant features.
+  management, relabelling, and randomization.
 
 ## Installation
 
@@ -57,12 +42,11 @@ You can install the development version of `pondeR` directly from
 GitHub:
 
 ``` r
-# Install devtools if you haven't already
-if (!requireNamespace("devtools", quietly = TRUE)) {
-  install.packages("devtools")
-}
+# Install pak if you haven't already
+install.packages("pak")
 
-devtools::install_github("jllcalorio/pondeR")
+# Install the GitHub package
+pak::pak("jllcalorio/pondeR")
 ```
 
 ## Quick Start

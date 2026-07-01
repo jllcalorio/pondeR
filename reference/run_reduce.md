@@ -103,7 +103,7 @@ subsetting behaviour would be ambiguous.
 ### Performance note
 
 Name intersection/union is computed once via `Reduce(intersect, ...)` or
-`Reduce(union, ...)` — an idiomatic base-R approach that avoids repeated
+`Reduce(union, ...)` - an idiomatic base-R approach that avoids repeated
 pairwise comparisons and scales well with the number of inputs.
 
 ## Author

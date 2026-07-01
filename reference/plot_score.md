@@ -43,7 +43,8 @@ plot_score(
   legend_title_size = NULL,
   legend_text_size = NULL,
   zoom = 1,
-  verbose = TRUE
+  verbose = TRUE,
+  ...
 )
 
 # S3 method for class 'run_pls'
@@ -52,10 +53,10 @@ plot_score(res, pc = c(1, 2), title = NULL, subtitle = NULL, ...)
 # S3 method for class 'run_pcoa'
 plot_score(
   res,
-  metadata,
   pc = c(1, 2),
   color_by,
   points_from,
+  metadata = NULL,
   title = NULL,
   subtitle = NULL,
   caption = NULL,
@@ -80,7 +81,8 @@ plot_score(
   legend_title_size = NULL,
   legend_text_size = NULL,
   zoom = 1,
-  verbose = TRUE
+  verbose = TRUE,
+  ...
 )
 
 # Default S3 method
@@ -98,6 +100,10 @@ plot_score(res, ...)
   [`run_pcoa()`](https://jllcalorio.github.io/pondeR/reference/run_pcoa.md).
   The appropriate plot method is selected automatically via S3 dispatch
   based on the class of `res`.
+
+- ...:
+
+  Additional arguments passed to methods.
 
 - pc:
 
@@ -157,7 +163,7 @@ plot_score(res, ...)
 
 - ellipse_level:
 
-  Numeric. Confidence level for ellipses (0–1). Default: `0.95`.
+  Numeric. Confidence level for ellipses (0-1). Default: `0.95`.
 
 - legend:
 
@@ -194,7 +200,7 @@ plot_score(res, ...)
 
 - point_alpha:
 
-  Numeric. Transparency of points (0–1). Default: `0.8`.
+  Numeric. Transparency of points (0-1). Default: `0.8`.
 
 - theme:
 
@@ -321,7 +327,7 @@ confidence region defined by `ellipse_level`. The default (`0.95`)
 identifies samples outside the 95% confidence region. This exactly
 mirrors
 [`ggplot2::stat_ellipse()`](https://ggplot2.tidyverse.org/reference/stat_ellipse.html)
-behaviour.
+behavior.
 
 Outlier detection requires:
 
@@ -340,7 +346,7 @@ the plot stage.
 **Themes:**
 
 The `"nature"` theme (default) is a clean, publication-ready style with
-a white background, minimal gridlines, and no top/right panel border —
+a white background, minimal gridlines, and no top/right panel border -
 suitable for journal figures. Other options map directly to their
 ggplot2 equivalents.
 
@@ -351,7 +357,7 @@ London: Academic Press.
 
 Brereton, R.G., & Lloyd, G.R. (2014). Partial least squares discriminant
 analysis: taking the magic away. *Journal of Chemometrics*, 28(4),
-213–225. [doi:10.1002/cem.2609](https://doi.org/10.1002/cem.2609)
+213-225. [doi:10.1002/cem.2609](https://doi.org/10.1002/cem.2609)
 
 Okabe, M., & Ito, K. (2002). *Color Universal Design (CUD): How to make
 figures and presentations that are friendly to colorblind people*.
@@ -359,7 +365,7 @@ figures and presentations that are friendly to colorblind people*.
 
 ## See also
 
-[`run_DIpreprocess`](https://jllcalorio.github.io/pondeR/reference/run_DIpreprocess.md),
+`run_DIpreprocess`,
 [`run_pca`](https://jllcalorio.github.io/pondeR/reference/run_pca.md),
 [`run_pls`](https://jllcalorio.github.io/pondeR/reference/run_pls.md)
 
@@ -391,7 +397,7 @@ res    <- run_pca(scaled_result$data, metadata,
                          group   = "Group",
                          exclude = "QC")
 
-# Basic scores plot — nature theme, Okabe-Ito colors (defaults)
+# Basic scores plot - nature theme, Okabe-Ito colors (defaults)
 plot_score(res,
            color_by    = "Group",
            points_from = "Sample")

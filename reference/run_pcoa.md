@@ -43,11 +43,11 @@ run_pcoa(
 
   A single character string specifying the dissimilarity index passed to
   [`vegdist`](https://vegandevs.github.io/vegan/reference/vegdist.html).
-  Common choices include `"bray"` (Bray–Curtis), `"euclidean"`,
+  Common choices include `"bray"` (Bray-Curtis), `"euclidean"`,
   `"aitchison"`, and `"robust.aitchison"`; see
   [`?vegan::vegdist`](https://vegandevs.github.io/vegan/reference/vegdist.html)
   for the full list. Ignored when `x` is already a `"dist"` object. The
-  same dissimilarity matrix is reused for PERMANOVA — the method is
+  same dissimilarity matrix is reused for PERMANOVA - the method is
   never applied twice. Default: `"bray"`.
 
 - correction:
@@ -223,7 +223,8 @@ when groups differ in spread.
 
 Key output fields from `adonis2`:
 
-- **R²**: proportion of total variance explained by the grouping factor.
+- **R\\^2\\**: proportion of total variance explained by the grouping
+  factor.
 
 - **F**: pseudo-F statistic.
 
@@ -247,48 +248,48 @@ with columns `PC1`, `PC2`, ... so that
 [`pondeR::plot_score`](https://jllcalorio.github.io/pondeR/reference/plot_score.md)
 can dispatch correctly. When PERMANOVA results are present,
 `plot_score.run_pcoa` formats and injects them automatically as the plot
-subtitle (R² and p-value).
+subtitle (R\\^2\\ and p-value).
 
 ## References
 
 Anderson, M.J. (2001) A new method for non-parametric multivariate
-analysis of variance. *Austral Ecology*, **26**, 32–46.
+analysis of variance. *Austral Ecology*, **26**, 32-46.
 
 Cailliez, F. (1983) The analytical solution of the additive constant
-problem. *Psychometrika*, **48**, 305–308.
+problem. *Psychometrika*, **48**, 305-308.
 
 Excoffier, L., Smouse, P.E., and Quattro, J.M. (1992) Analysis of
 molecular variance inferred from metric distances among DNA haplotypes:
 Application to human mitochondrial DNA restriction data. *Genetics*,
-**131**, 479–491.
+**131**, 479-491.
 
 Gower, J.C. (1966) Some distance properties of latent root and vector
-methods used in multivariate analysis. *Biometrika*, **53**, 325–338.
+methods used in multivariate analysis. *Biometrika*, **53**, 325-338.
 
 Gower, J.C. and Legendre, P. (1986) Metric and Euclidean properties of
-dissimilarity coefficients. *Journal of Classification*, **3**, 5–48.
+dissimilarity coefficients. *Journal of Classification*, **3**, 5-48.
 
 Legendre, P. and Anderson, M.J. (1999) Distance-based redundancy
 analysis: Testing multispecies responses in multifactorial ecological
-experiments. *Ecological Monographs*, **69**, 1–24.
+experiments. *Ecological Monographs*, **69**, 1-24.
 
 Legendre, P. and Gallagher, E.D. (2001) Ecologically meaningful
 transformations for ordination of species data. *Oecologia*, **129**,
-271–280.
+271-280.
 
 Legendre, P. and Legendre, L. (1998) *Numerical Ecology*, 2nd English
 edition. Amsterdam: Elsevier Science BV.
 
 Lingoes, J.C. (1971) Some boundary conditions for a monotone analysis of
-symmetric matrices. *Psychometrika*, **36**, 195–203.
+symmetric matrices. *Psychometrika*, **36**, 195-203.
 
 McArdle, B.H. and Anderson, M.J. (2001) Fitting multivariate models to
 community data: A comment on distance-based redundancy analysis.
-*Ecology*, **82**, 290–297.
+*Ecology*, **82**, 290-297.
 
 Warton, D.I., Wright, T.W., and Wang, Y. (2012) Distance-based
 multivariate analyses confound location and dispersion effects. *Methods
-in Ecology and Evolution*, **3**, 89–101.
+in Ecology and Evolution*, **3**, 89-101.
 
 ## Author
 
@@ -297,7 +298,7 @@ John Lennon L. Calorio
 ## Examples
 
 ``` r
-## ── Example 1: Bray–Curtis PCoA on the dune dataset ──────────────────────
+## -- Example 1: Bray-Curtis PCoA on the dune dataset ----------------------
 if (requireNamespace("vegan", quietly = TRUE) &&
     requireNamespace("ape",   quietly = TRUE)) {
 
@@ -328,7 +329,7 @@ if (requireNamespace("vegan", quietly = TRUE) &&
 #>   PC5: 6.08%
 #> 
 #> ======================================================= 
-#> Principal Coordinate Analysis — Summary
+#> Principal Coordinate Analysis - Summary
 #> ======================================================= 
 #> 
 #> Call:
@@ -351,7 +352,7 @@ if (requireNamespace("vegan", quietly = TRUE) &&
 #>      PC1      PC2      PC3 
 #> 37.35930 22.25533 10.04505 
 
-## ── Example 2: PCoA + PERMANOVA ───────────────────────────────────────────
+## -- Example 2: PCoA + PERMANOVA -------------------------------------------
 if (requireNamespace("vegan", quietly = TRUE) &&
     requireNamespace("ape",   quietly = TRUE)) {
 
@@ -380,7 +381,7 @@ if (requireNamespace("vegan", quietly = TRUE) &&
 #> Residual   16 2.830430 0.6583893       NA     NA
 #> Total      19 4.299022 1.0000000       NA     NA
 
-## ── Example 3: Lingoes correction ─────────────────────────────────────────
+## -- Example 3: Lingoes correction -----------------------------------------
 if (requireNamespace("vegan", quietly = TRUE) &&
     requireNamespace("ape",   quietly = TRUE)) {
 
@@ -391,7 +392,7 @@ if (requireNamespace("vegan", quietly = TRUE) &&
 #>       PC1       PC2       PC3 
 #> 29.538396 18.233837  9.095053 
 
-## ── Example 4: Precomputed dist + PERMANOVA ───────────────────────────────
+## -- Example 4: Precomputed dist + PERMANOVA -------------------------------
 if (requireNamespace("vegan", quietly = TRUE) &&
     requireNamespace("ape",   quietly = TRUE)) {
 

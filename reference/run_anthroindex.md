@@ -425,8 +425,8 @@ categories. Atlanta: CDC.
 ## See also
 
 [`run_summarytable`](https://jllcalorio.github.io/pondeR/reference/run_summarytable.md),
-[`anthro::anthro_zscores`](https://rdrr.io/pkg/anthro/man/anthro_zscores.html),
-[`anthroplus::anthroplus_zscores`](https://rdrr.io/pkg/anthroplus/man/anthroplus_zscores.html)
+[`anthro_zscores`](https://rdrr.io/pkg/anthro/man/anthro_zscores.html),
+[`anthroplus_zscores`](https://rdrr.io/pkg/anthroplus/man/anthroplus_zscores.html)
 
 ## Author
 

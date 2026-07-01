@@ -38,22 +38,6 @@
     </div>
 
     <div class="section level2">
-      <h2 id="direct-injection-metabolomics-preprocessing-pipeline">Direct-Injection Metabolomics Preprocessing Pipeline<a class="anchor" aria-label="anchor" href="#direct-injection-metabolomics-preprocessing-pipeline"></a></h2>
-
-      <div class="section-desc"><p>Function for running a sequential preprocessing pipeline for metabolomics data by orchestrating the individual run_* functions of pondeR.</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="run_DIpreprocess.html">run_DIpreprocess()</a></code>
-
-        </dt>
-        <dd>Direct-Injection Metabolomics Preprocessing Pipeline</dd>
-      </dl></div><div class="section level2">
       <h2 id="summarizing-data-checking-distributions">Summarizing Data &amp; Checking Distributions<a class="anchor" aria-label="anchor" href="#summarizing-data-checking-distributions"></a></h2>
 
       <div class="section-desc"><p>Functions for generating publication-ready summary tables and anthropometric indices according to WHO standards.</p></div>
@@ -265,121 +249,6 @@
         </dt>
         <dd>Reduce Multiple Data Frames by Common or Unique Column/Row Names</dd>
       </dl></div><div class="section level2">
-      <h2 id="data-cleaning-quality-control">Data Cleaning &amp; Quality Control<a class="anchor" aria-label="anchor" href="#data-cleaning-quality-control"></a></h2>
-
-      <div class="section-desc"><p>Filtering features based on missingness, variance, or RSD thresholds.</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="run_filtermissing.html">run_filtermissing()</a></code>
-
-        </dt>
-        <dd>Filter Features by Missing Value Threshold</dd>
-
-        <dt>
-
-          <code><a href="run_filterRSD.html">run_filterRSD()</a></code>
-
-        </dt>
-        <dd>Filter Features by Relative Standard Deviation in QC Samples</dd>
-
-        <dt>
-
-          <code><a href="run_filtervariance.html">run_filtervariance()</a></code>
-
-        </dt>
-        <dd>Filter Features by Low Variance</dd>
-      </dl></div><div class="section level2">
-      <h2 id="missing-value-imputation">Missing Value Imputation<a class="anchor" aria-label="anchor" href="#missing-value-imputation"></a></h2>
-
-      <div class="section-desc"><p>Addressing missing data using various imputation algorithms.</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="run_mvimpute.html">run_mvimpute()</a></code>
-
-        </dt>
-        <dd>Impute Missing Values in Metabolomics Data</dd>
-      </dl></div><div class="section level2">
-      <h2 id="data-normalization-transformation-and-scaling">Data Normalization, Transformation, and Scaling<a class="anchor" aria-label="anchor" href="#data-normalization-transformation-and-scaling"></a></h2>
-
-      <div class="section-desc"><p>Transforming and scaling data to ensure comparability across samples.</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="run_normalize.html">run_normalize()</a></code>
-
-        </dt>
-        <dd>Normalize Metabolomics Data</dd>
-
-        <dt>
-
-          <code><a href="run_transform.html">run_transform()</a></code>
-
-        </dt>
-        <dd>Transform Metabolomics Data</dd>
-
-        <dt>
-
-          <code><a href="run_scale.html">run_scale()</a></code>
-
-        </dt>
-        <dd>Scale Metabolomics Data</dd>
-      </dl></div><div class="section level2">
-      <h2 id="signal-drift-and-batch-effects-correction">Signal Drift and Batch Effects Correction<a class="anchor" aria-label="anchor" href="#signal-drift-and-batch-effects-correction"></a></h2>
-
-      <div class="section-desc"><p>Correcting for technical variation and instrument signal drift.</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="run_driftBatchCorrect.html">run_driftBatchCorrect()</a></code>
-
-        </dt>
-        <dd>Correct Signal Drift and Batch Effects Using QC Samples</dd>
-      </dl></div><div class="section level2">
-      <h2 id="plotting-functions-of-two-data-frames">Plotting Functions of Two Data Frames<a class="anchor" aria-label="anchor" href="#plotting-functions-of-two-data-frames"></a></h2>
-
-      <div class="section-desc"><p>Plots two data frames at a time, can be before and after implementing a method.</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="plot_beforeafter.html">plot_beforeafter()</a></code>
-
-        </dt>
-        <dd>Plot Pairwise Before-and-After Comparison for Selected Features</dd>
-
-        <dt>
-
-          <code><a href="plot_dist_beforeafter.html">plot_dist_beforeafter()</a></code>
-
-        </dt>
-        <dd>Plot Distribution Comparison Before and After Data Transformation</dd>
-      </dl></div><div class="section level2">
       <h2 id="other-plotting-functions">Other Plotting Functions<a class="anchor" aria-label="anchor" href="#other-plotting-functions"></a></h2>
 
       <div class="section-desc"><p>Other functions to plot metabolomics and metagenomics data.</p></div>
@@ -523,7 +392,7 @@
 
         <dt>
 
-          <code><a href="as_gt.run_correl.html">as_gt(<i>&lt;run_correl&gt;</i>)</a></code>
+          <code><a href="as_gt.html">as_gt()</a></code>
 
         </dt>
         <dd>Convert a run_correl to a gt table</dd>

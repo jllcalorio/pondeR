@@ -100,12 +100,6 @@ The input data should ideally be relative abundances (e.g., from
 `run_relabund` or similar). The function assumes that higher values
 indicate higher abundance.
 
-## See also
-
-`plot_lefse` for visualization (if implemented),
-[`run_assoc`](https://jllcalorio.github.io/pondeR/reference/run_assoc.md)
-for association testing.
-
 ## Examples
 
 ``` r

@@ -65,14 +65,13 @@ plot_volcano(
   result (with `summary_table = TRUE`). Column names may contain special
   characters.
 
-  **List input — supported combinations:**
+  **List input - supported combinations:**
 
   `list(fc = <run_foldchange>, diff = <run_diff>)`
 
-  :   Both objects are supplied. Log2 fold changes are sourced from
+  :   Both objects are supplied. Fold changes are sourced from
       [`run_foldchange()`](https://jllcalorio.github.io/pondeR/reference/run_foldchange.md)'s
-      `$summary_table` (requires `log2 = TRUE`, the default) and
-      p-values are sourced from
+      `$summary_table` and p-values are sourced from
       [`run_diff()`](https://jllcalorio.github.io/pondeR/reference/run_diff.md)'s
       `$summary_table`, matched on feature name. When
       [`run_foldchange()`](https://jllcalorio.github.io/pondeR/reference/run_foldchange.md)
@@ -83,9 +82,10 @@ plot_volcano(
 
   `list(fc = <run_foldchange>)`
 
-  :   Fold-change object only. p-values are unavailable; all features
-      are classified as non-significant and the significance threshold
-      line is not meaningful. A warning is issued.
+  :   Fold-change object only. Log2 fold changes are available but
+      p-values are unavailable; all features are classified as
+      non-significant and the significance threshold line is not
+      meaningful. A warning is issued.
 
   `list(diff = <run_diff>)`
 
@@ -100,10 +100,9 @@ plot_volcano(
 - y:
 
   A single character string naming the column in `x` that contains
-  **log2** fold change values (numeric). Note that the `up` and `down`
-  thresholds are specified as raw fold changes (e.g., `up = 1.5`), which
-  are converted to log2 scale internally before being applied to this
-  column.
+  **raw** fold change values (numeric). The function automatically
+  applies a log2 transformation internally. The `up` and `down`
+  thresholds are also specified as raw fold changes (e.g., `up = 1.5`).
 
 - z:
 
@@ -310,7 +309,7 @@ A named list with elements:
 [`run_foldchange`](https://jllcalorio.github.io/pondeR/reference/run_foldchange.md),
 [`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md),
 [`get_volcanodata`](https://jllcalorio.github.io/pondeR/reference/get_volcanodata.md),
-[`run_DIpreprocess`](https://jllcalorio.github.io/pondeR/reference/run_DIpreprocess.md)
+`run_DIpreprocess`
 
 ## Author
 
@@ -319,48 +318,45 @@ John Lennon L. Calorio
 ## Examples
 
 ``` r
+if (FALSE) { # \dontrun{
 ## -----------------------------------------------------------------------
-## Example 1 — minimal synthetic data, no group
+## Example 1 - minimal synthetic data, no group
 ## -----------------------------------------------------------------------
 set.seed(42)
 n   <- 200
 dat <- data.frame(
-  feature = paste0("feat_", seq_len(n)),
-  log2fc  = rnorm(n, 0, 2),
-  pvalue  = runif(n, 0, 0.5)
+  feature     = paste0("feat_", seq_len(n)),
+  fold_change = 2^rnorm(n, 0, 2),
+  pvalue      = runif(n, 0, 0.5)
 )
 
-res <- plot_volcano(x = dat, y = "log2fc", z = "pvalue")
-#> Error: Column `y` ("log2fc") contains non-positive values. Fold changes must be positive (e.g., 0.5 for a 2-fold decrease).
+res <- plot_volcano(x = dat, y = "fold_change", z = "pvalue")
 print(res$plots[[1]])
-#> Error: object 'res' not found
 
 ## -----------------------------------------------------------------------
-## Example 2 — asymmetric thresholds as raw fold changes, with labels
+## Example 2 - asymmetric thresholds as raw fold changes, with labels
 ## -----------------------------------------------------------------------
 ann <- setNames(c("feat_1", "feat_2", "feat_3"),
                 c("Marker A", "Marker B", "Marker C"))
 
 res2 <- plot_volcano(
   x        = dat,
-  y        = "log2fc",
+  y        = "fold_change",
   z        = "pvalue",
   features = "feature",
   up       = 1.5,
   down     = 1/1.5,
   annotate = ann
 )
-#> Error: Column `y` ("log2fc") contains non-positive values. Fold changes must be positive (e.g., 0.5 for a 2-fold decrease).
 print(res2$plots[[1]])
-#> Error: object 'res2' not found
 
 ## -----------------------------------------------------------------------
-## Example 3 — multi-group overlay
+## Example 3 - multi-group overlay
 ## -----------------------------------------------------------------------
 set.seed(7)
 dat_multi <- data.frame(
   feature    = rep(paste0("feat_", seq_len(50)), 3),
-  log2fc     = rnorm(150, 0, 1.5),
+  fold_change = 2^rnorm(150, 0, 1.5),
   pvalue     = runif(150, 0, 0.3),
   comparison = rep(c("Severe_vs_Healthy", "Nonsevere_vs_Healthy",
                      "Severe_vs_Nonsevere"), each = 50)
@@ -368,7 +364,7 @@ dat_multi <- data.frame(
 
 res3 <- plot_volcano(
   x           = dat_multi,
-  y           = "log2fc",
+  y           = "fold_change",
   z           = "pvalue",
   group       = "comparison",
   features    = "feature",
@@ -376,24 +372,21 @@ res3 <- plot_volcano(
   alpha       = 0.5,
   legend_nrow = 2
 )
-#> Error: Column `y` ("log2fc") contains non-positive values. Fold changes must be positive (e.g., 0.5 for a 2-fold decrease).
 print(res3$plots[[1]])
-#> Error: object 'res3' not found
 
 ## -----------------------------------------------------------------------
-## Example 4 — threshold-based annotation (annotate2)
+## Example 4 - threshold-based annotation (annotate2)
 ## -----------------------------------------------------------------------
 # Label everything with a 4-fold change that is also significant (p < 0.05)
 res4 <- plot_volcano(
   x         = dat,
-  y         = "log2fc",
+  y         = "fold_change",
   z         = "pvalue",
   features  = "feature",
   annotate2 = c(0.25, 4),
   up        = 1.5,
   down      = 0.5
 )
-#> Error: Column `y` ("log2fc") contains non-positive values. Fold changes must be positive (e.g., 0.5 for a 2-fold decrease).
 print(res4$plots[[1]])
-#> Error: object 'res4' not found
+} # }
 ```

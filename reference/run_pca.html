@@ -68,7 +68,7 @@ has not been pre-scaled. Supports sample exclusion by group.</p>
 
 <dl><dt id="arg-x">x<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
 <dd><p>Matrix or data frame. Numeric data with samples in rows and features in columns.
-Can be output from <code><a href="run_scale.html">run_scale()</a></code> or raw data (which will be scaled if <code>scale_method</code>
+Can be output from <code>run_scale()</code> or raw data (which will be scaled if <code>scale_method</code>
 is specified).</p></dd>
 
 
@@ -80,7 +80,7 @@ Must contain columns for grouping, batch information, and sample identifiers.</p
 <dt id="arg-scale-method">scale_method<a class="anchor" aria-label="anchor" href="#arg-scale-method"></a></dt>
 <dd><p>Character or NULL. Scaling method to apply before PCA if <code>x</code> is not
 already scaled. Options: "mean", "auto", "pareto". If NULL (default) and <code>x</code> is not
-from <code><a href="run_scale.html">run_scale()</a></code>, a warning is issued and PCA proceeds without additional scaling.</p></dd>
+from <code>run_scale()</code>, a warning is issued and PCA proceeds without additional scaling.</p></dd>
 
 
 <dt id="arg-transform-method">transform_method<a class="anchor" aria-label="anchor" href="#arg-transform-method"></a></dt>
@@ -166,7 +166,7 @@ labels. Default: NULL (include all samples).</p></dd>
 <li><p>Exclusion is performed before any preprocessing steps</p></li>
 <li><p>Excluded samples are not included in transformation/scaling calculations</p></li>
 </ul><p><strong>Input Data Requirements:</strong></p>
-<p>The function accepts data in two forms:</p><ol><li><p><strong>Pre-scaled data</strong> from <code><a href="run_scale.html">run_scale()</a></code>: PCA is performed directly without
+<p>The function accepts data in two forms:</p><ol><li><p><strong>Pre-scaled data</strong> from <code>run_scale()</code>: PCA is performed directly without
 additional preprocessing. This is the recommended workflow.</p></li>
 <li><p><strong>Raw data</strong>: If <code>scale_method</code> is specified, the function will first apply
 optional transformation (via <code>transform_method</code>), then scaling (via <code>scale_method</code>),
@@ -206,7 +206,7 @@ metabolomics data. BMC Genomics, 7, 142. <a href="https://doi.org/10.1186/1471-2
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
-    <div class="dont-index"><p><code><a href="run_DIpreprocess.html">run_DIpreprocess</a></code></p></div>
+    <div class="dont-index"><p><code>run_DIpreprocess</code></p></div>
     </div>
     <div class="section level2">
     <h2 id="author">Author<a class="anchor" aria-label="anchor" href="#author"></a></h2>
@@ -231,7 +231,7 @@ metabolomics data. BMC Genomics, 7, 142. <a href="https://doi.org/10.1186/1471-2
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># PCA on pre-scaled data (recommended)</span></span></span>
-<span class="r-in"><span><span class="va">scaled_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="run_scale.html">run_scale</a></span><span class="op">(</span><span class="va">x</span>, method <span class="op">=</span> <span class="st">"auto"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">scaled_result</span> <span class="op">&lt;-</span> <span class="fu">run_scale</span><span class="op">(</span><span class="va">x</span>, method <span class="op">=</span> <span class="st">"auto"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">pca_result</span> <span class="op">&lt;-</span> <span class="fu">run_pca</span><span class="op">(</span><span class="va">scaled_result</span><span class="op">$</span><span class="va">data</span>, <span class="va">metadata</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># PCA excluding QC samples</span></span></span>

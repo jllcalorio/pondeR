@@ -12,13 +12,8 @@ consistent template for results.
 ## Key Features
 
 `pondeR` offers a comprehensive suite of tools for various stages of
-data analysis, particularly focused on metabolomics data preprocessing
-and general statistical reporting:
+data analysis and general statistical reporting:
 
-- **Direct-Injection Metabolomics Preprocessing Pipeline**: Orchestrates
-  a sequential preprocessing pipeline for metabolomics data by combining
-  individual `pondeR` functions for filtering, imputation, batch
-  correction, normalization, transformation, and scaling.
 - **Summarizing Data & Checking Distributions**: Generate
   publication-ready summary tables, calculate anthropometric indices
   according to WHO standards, and test for normality or skewness.
@@ -34,22 +29,12 @@ and general statistical reporting:
   dimensionality reduction and visualization tools (PCA, PLS, PCoA) for
   simplified exploration of complex datasets, including scree and score
   plots.
-- **Data Cleaning & Quality Control**: Functions for filtering features
-  based on missingness, variance, or RSD thresholds.
-- **Missing Value Imputation**: Addresses missing data using various
-  imputation algorithms.
-- **Data Normalization, Transformation, and Scaling**: Transforms and
-  scales data to ensure comparability across samples.
-- **Signal Drift and Batch Effects Correction**: Corrects for technical
-  variation and instrument signal drift.
 - **Plotting Functions**: A variety of plotting utilities, including
-  before-and-after comparisons, distribution plots, mean maps, and
-  multi-Y plots for metabolomics and metagenomics data.
+  distribution plots, mean maps, and multi-Y plots.
 - **Export Functions**: Easily export data frames to Excel/CSV files and
   figures to PNGs.
 - **Utilities & Helpers**: A collection of utility functions for data
-  management, relabelling, randomization, and retrieving group sizes or
-  significant features.
+  management, relabelling, and randomization.
 
 ## Installation
 
@@ -57,12 +42,11 @@ You can install the development version of `pondeR` directly from
 GitHub:
 
 ``` r
-# Install devtools if you haven't already
-if (!requireNamespace("devtools", quietly = TRUE)) {
-  install.packages("devtools")
-}
+# Install pak if you haven't already
+install.packages("pak")
 
-devtools::install_github("jllcalorio/pondeR")
+# Install the GitHub package
+pak::pak("jllcalorio/pondeR")
 ```
 
 ## Quick Start
@@ -121,15 +105,6 @@ More functions are continuously being added to `pondeR` to further
 enhance its capabilities and ease of use. Stay tuned for updates!
 
 # Package index
-
-## Direct-Injection Metabolomics Preprocessing Pipeline
-
-Function for running a sequential preprocessing pipeline for
-metabolomics data by orchestrating the individual run\_\* functions of
-pondeR.
-
-- [`run_DIpreprocess()`](https://jllcalorio.github.io/pondeR/reference/run_DIpreprocess.md)
-  : Direct-Injection Metabolomics Preprocessing Pipeline
 
 ## Summarizing Data & Checking Distributions
 
@@ -209,52 +184,6 @@ exploration of complex datasets.
 - [`run_reduce()`](https://jllcalorio.github.io/pondeR/reference/run_reduce.md)
   : Reduce Multiple Data Frames by Common or Unique Column/Row Names
 
-## Data Cleaning & Quality Control
-
-Filtering features based on missingness, variance, or RSD thresholds.
-
-- [`run_filtermissing()`](https://jllcalorio.github.io/pondeR/reference/run_filtermissing.md)
-  : Filter Features by Missing Value Threshold
-- [`run_filterRSD()`](https://jllcalorio.github.io/pondeR/reference/run_filterRSD.md)
-  : Filter Features by Relative Standard Deviation in QC Samples
-- [`run_filtervariance()`](https://jllcalorio.github.io/pondeR/reference/run_filtervariance.md)
-  : Filter Features by Low Variance
-
-## Missing Value Imputation
-
-Addressing missing data using various imputation algorithms.
-
-- [`run_mvimpute()`](https://jllcalorio.github.io/pondeR/reference/run_mvimpute.md)
-  : Impute Missing Values in Metabolomics Data
-
-## Data Normalization, Transformation, and Scaling
-
-Transforming and scaling data to ensure comparability across samples.
-
-- [`run_normalize()`](https://jllcalorio.github.io/pondeR/reference/run_normalize.md)
-  : Normalize Metabolomics Data
-- [`run_transform()`](https://jllcalorio.github.io/pondeR/reference/run_transform.md)
-  : Transform Metabolomics Data
-- [`run_scale()`](https://jllcalorio.github.io/pondeR/reference/run_scale.md)
-  : Scale Metabolomics Data
-
-## Signal Drift and Batch Effects Correction
-
-Correcting for technical variation and instrument signal drift.
-
-- [`run_driftBatchCorrect()`](https://jllcalorio.github.io/pondeR/reference/run_driftBatchCorrect.md)
-  : Correct Signal Drift and Batch Effects Using QC Samples
-
-## Plotting Functions of Two Data Frames
-
-Plots two data frames at a time, can be before and after implementing a
-method.
-
-- [`plot_beforeafter()`](https://jllcalorio.github.io/pondeR/reference/plot_beforeafter.md)
-  : Plot Pairwise Before-and-After Comparison for Selected Features
-- [`plot_dist_beforeafter()`](https://jllcalorio.github.io/pondeR/reference/plot_dist_beforeafter.md)
-  : Plot Distribution Comparison Before and After Data Transformation
-
 ## Other Plotting Functions
 
 Other functions to plot metabolomics and metagenomics data.
@@ -322,8 +251,8 @@ Utility functions for data management, relabelling, and S3 methods.
   : Get Features with Non-Zero Coefficients from a Regularized
   Regression Result
 
-- [`as_gt(`*`<run_correl>`*`)`](https://jllcalorio.github.io/pondeR/reference/as_gt.run_correl.md)
-  : Convert a run_correl to a gt table
+- [`as_gt()`](https://jllcalorio.github.io/pondeR/reference/as_gt.md) :
+  Convert a run_correl to a gt table
 
 - [`has_inf()`](https://jllcalorio.github.io/pondeR/reference/has_inf.md)
   : Check if an Object Contains Infinite Values

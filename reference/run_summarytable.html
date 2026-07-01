@@ -89,6 +89,7 @@ are shown as <code>---†</code> with a corresponding footnote.</p>
 <span>  split_by_header <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  strata_by <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  rename_variables <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  combine_categories <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  continuous_statistics <span class="op">=</span> <span class="st">"meanSD"</span>,</span>
 <span>  categorical_statistics <span class="op">=</span> <span class="st">"n_percent"</span>,</span>
 <span>  force_continuous <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -161,6 +162,27 @@ with at least 2 unique levels) by which to stratify <em>before</em>
 <dd><p>List. Formulas of the form
 <code>list("original" ~ "new", ...)</code> used to relabel variables in the
 table.</p></dd>
+
+
+<dt id="arg-combine-categories">combine_categories<a class="anchor" aria-label="anchor" href="#arg-combine-categories"></a></dt>
+<dd><p>Named list of named lists. Used to combine levels
+of categorical variables. The top-level names correspond to column names in
+<code>x</code>. Each column's value is a named list where the names are the new
+category labels and the values are character vectors of original levels to
+combine. If a column is not categorical by default, it must be listed in
+<code>force_categorical</code> first. Defaults to <code>NULL</code>.</p>
+<p>Example format:
+<code>
+combine_categories = list(
+  Education = list(
+    "Higher Ed" = c("Bachelors", "Masters"),
+    "Schooling" = c("Elementary", "High School")
+  ),
+  Gender = list(
+    "Non-Male" = c("Female", "Other")
+  )
+)
+</code></p></dd>
 
 
 <dt id="arg-continuous-statistics">continuous_statistics<a class="anchor" aria-label="anchor" href="#arg-continuous-statistics"></a></dt>

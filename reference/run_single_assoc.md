@@ -57,6 +57,10 @@ A list with the following components:
 - `raw_results`: A named list containing the full test objects returned
   by the underlying R functions.
 
+## Author
+
+John Lennon L. Calorio
+
 ## Examples
 
 ``` r
