@@ -51,6 +51,16 @@
 #'   size. Defaults to \code{global_font_size}.
 #' @param label_size A single positive numeric controlling the font size of
 #'   leaf labels. Defaults to \code{global_font_size * 0.8}.
+#' @param leaf_label_angle A single numeric specifying the rotation angle (in
+#'   degrees) for leaf label text. Default \code{NULL}. When \code{NULL}, the
+#'   angle defaults to 0 if \code{orientation = "rows"} (horizontal labels) or
+#'   90 if \code{orientation = "cols"} (vertical labels).
+#' @param leaf_label_size A single positive numeric controlling the font size of
+#'   leaf labels. Defaults to \code{global_font_size * 0.8}. When provided,
+#'   overrides \code{label_size}.
+#' @param leaf_labels A character vector of custom names for the leaf labels.
+#'   Default \code{NULL}. When provided, must have length equal to the number of
+#'   columns in \code{x}, and will override the default leaf names.
 #' @param line_width A single positive numeric for dendrogram branch width.
 #'   Default \code{0.5}.
 #' @param line_color A single character string for branch colour.
@@ -106,6 +116,9 @@ plot_dend <- function(x,
                        plot_title_size          = NULL,
                        plot_subtitle_size       = NULL,
                        label_size               = NULL,
+                       leaf_label_angle         = NULL,
+                       leaf_label_size          = NULL,
+                       leaf_labels              = NULL,
                        line_width               = 0.5,
                        line_color               = "black",
                        ...) {
@@ -181,11 +194,37 @@ plot_dend <- function(x,
   if (!is.character(line_color) || length(line_color) != 1L)
     stop("`line_color` must be a single character string.", call. = FALSE)
 
+  # Determine leaf label angle based on orientation if not provided
+  if (is.null(leaf_label_angle)) {
+    leaf_label_angle <- if (orientation == "rows") 0 else 90
+  } else {
+    if (!is.numeric(leaf_label_angle) || length(leaf_label_angle) != 1L)
+      stop("`leaf_label_angle` must be a single numeric value or NULL.",
+           call. = FALSE)
+  }
+
+  # Determine leaf label size; defaults to label_size, which defaults to global_font_size * 0.8
+  fs_leaf_label <- .fs(leaf_label_size, .fs(label_size, global_font_size * 0.8))
+
+  # Validate leaf_labels if provided
+  if (!is.null(leaf_labels)) {
+    if (!is.character(leaf_labels))
+      stop("`leaf_labels` must be a character vector or NULL.", call. = FALSE)
+    if (length(leaf_labels) != ncol(x))
+      stop("`leaf_labels` must have length equal to the number of columns in `x`.",
+           call. = FALSE)
+  }
+
   # --- Prepare numeric matrix -------------------------------------------------
   num_cols <- vapply(x, is.numeric, logical(1L))
   if (!any(num_cols))
     stop("No numeric columns found in `x`.", call. = FALSE)
   mat <- as.matrix(x[, num_cols, drop = FALSE])
+
+  # Apply custom row names if provided (before any row filtering)
+  if (!is.null(leaf_labels)) {
+    colnames(mat) <- leaf_labels
+  }
 
   row_ok <- rowSums(!is.na(mat)) > 0L
   col_ok <- colSums(!is.na(mat)) > 0L
@@ -233,7 +272,8 @@ plot_dend <- function(x,
         data    = lab,
         ggplot2::aes(x = x, y = y, label = label),
         hjust   = 1,
-        size    = fs_label / ggplot2::.pt,
+        angle   = leaf_label_angle,
+        size    = fs_leaf_label / ggplot2::.pt,
         nudge_y = -max(seg$y, na.rm = TRUE) * 0.02
       ) +
       ggplot2::labs(title = plot_title, subtitle = plot_subtitle)
