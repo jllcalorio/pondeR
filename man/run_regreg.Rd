@@ -6,11 +6,12 @@
 \usage{
 run_regreg(
   x,
-  metadata,
+  metadata = NULL,
   pred,
   ref = NULL,
   not_penalized = NULL,
   is_numeric = NULL,
+  qc_types = c("QC", "EQC", "SQC"),
   train_percent = 0.8,
   alpha = 0.5,
   lambda = "1se",
@@ -23,15 +24,20 @@ run_regreg(
 )
 }
 \arguments{
-\item{x}{A \code{data.frame}, \code{tibble}, or \code{matrix} of predictor
-variables. Must have column names (special characters are supported). All
+\item{x}{A \code{data.frame}, \code{tibble}, \code{matrix}, or an object of
+class \code{"run_DIpreprocess"}. When a \code{run_DIpreprocess} object is
+supplied, \code{$data_nonpls} is used as the feature matrix and
+\code{$metadata} is used as sample metadata (both auto-extracted; an explicit
+\code{metadata} argument overrides the auto-extracted value). All
 columns are treated as features to be penalized unless overridden by
 \code{not_penalized}. Rows must correspond to the same samples as
 \code{metadata}.}
 
 \item{metadata}{A \code{data.frame} or \code{tibble} containing sample-level
 metadata. Must have the same number of rows as \code{x} and in the same
-order. Must contain the column specified by \code{pred}.}
+order. Must contain the column specified by \code{pred}. Required when
+\code{x} is a data frame or matrix; auto-extracted from \code{x$metadata}
+when \code{x} is a \code{run_DIpreprocess} object (explicit value overrides).}
 
 \item{pred}{A single character string naming a column in \code{metadata} to
 use as the dependent variable. If the column is numeric, Gaussian regression
@@ -55,6 +61,14 @@ when a column is genuinely numeric but is stored as \code{character} or
 \code{factor} (e.g. due to upstream data import). All names must exist in
 \code{metadata} or \code{x} and must also appear in \code{not_penalized}.
 Default: \code{NULL}.}
+
+\item{qc_types}{A character vector of values in \code{metadata[[pred]]} that
+identify QC or non-study samples to be excluded before modelling. Rows whose
+\code{pred} value matches any element of \code{qc_types} are dropped from both
+\code{x} and \code{metadata}. When \code{x} is a \code{run_DIpreprocess}
+object, this is automatically set from \code{x$parameters$qc_types} (the
+argument value is ignored). Pass \code{NULL} to skip filtering.
+Default: \code{c("QC", "EQC", "SQC")}.}
 
 \item{train_percent}{A numeric scalar in \code{(0, 1)} specifying the
 proportion of samples used for model training. The remaining

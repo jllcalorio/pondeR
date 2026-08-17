@@ -38,20 +38,32 @@
 #' regularized variable selection. Report cross-validated performance metrics and
 #' coefficient magnitudes instead.
 #'
-#' @param x A \code{data.frame}, \code{tibble}, or \code{matrix} of predictor
-#'   variables. Must have column names (special characters are supported). All
+#' @param x A \code{data.frame}, \code{tibble}, \code{matrix}, or an object of
+#'   class \code{"run_DIpreprocess"}. When a \code{run_DIpreprocess} object is
+#'   supplied, \code{$data_nonpls} is used as the feature matrix and
+#'   \code{$metadata} is used as sample metadata (both auto-extracted; an explicit
+#'   \code{metadata} argument overrides the auto-extracted value). All
 #'   columns are treated as features to be penalized unless overridden by
 #'   \code{not_penalized}. Rows must correspond to the same samples as
 #'   \code{metadata}.
 #' @param metadata A \code{data.frame} or \code{tibble} containing sample-level
 #'   metadata. Must have the same number of rows as \code{x} and in the same
-#'   order. Must contain the column specified by \code{pred}.
+#'   order. Must contain the column specified by \code{pred}. Required when
+#'   \code{x} is a data frame or matrix; auto-extracted from \code{x$metadata}
+#'   when \code{x} is a \code{run_DIpreprocess} object (explicit value overrides).
 #' @param pred A single character string naming a column in \code{metadata} to
 #'   use as the dependent variable. If the column is numeric, Gaussian regression
 #'   is performed. If it is character or factor, classification is performed.
 #' @param ref A single character string specifying the reference level for
 #'   categorical \code{pred}. Required when \code{pred} is categorical; ignored
 #'   otherwise. Must be a value present in the \code{pred} column.
+#' @param qc_types A character vector of values in \code{metadata[[pred]]} that
+#'   identify QC or non-study samples to be excluded before modelling. Rows whose
+#'   \code{pred} value matches any element of \code{qc_types} are dropped from both
+#'   \code{x} and \code{metadata}. When \code{x} is a \code{run_DIpreprocess}
+#'   object, this is automatically set from \code{x$parameters$qc_types} (the
+#'   argument value is ignored). Pass \code{NULL} to skip filtering.
+#'   Default: \code{c("QC", "EQC", "SQC")}.
 #' @param not_penalized Optional character vector of column names from
 #'   \code{metadata} and/or \code{x} to include in the model without
 #'   penalization (penalty factor = 0). Useful for known confounders or
@@ -254,11 +266,12 @@
 #' @export
 run_regreg <- function(
     x,
-    metadata,
+    metadata      = NULL,
     pred,
     ref           = NULL,
     not_penalized = NULL,
     is_numeric    = NULL,
+    qc_types      = c("QC", "EQC", "SQC"),
     train_percent = 0.8,
     alpha         = 0.5,
     lambda        = "1se",
@@ -271,11 +284,28 @@ run_regreg <- function(
 ) {
 
   # ---------------------------------------------------------------------------
+  # 0. run_DIpreprocess extraction
+  # ---------------------------------------------------------------------------
+  if (inherits(x, "run_DIpreprocess")) {
+    if (is.null(metadata))
+      metadata <- if (!is.null(x$metadata_merged)) x$metadata_merged else x$metadata
+    qc_types <- if (!is.null(x$parameters$qc_types)) x$parameters$qc_types else qc_types
+    x <- if (!is.null(x$data_nonpls_merged)) x$data_nonpls_merged else x$data_nonpls
+  } else if (!is.data.frame(x) && !is.matrix(x)) {
+    stop("'x' must be a data.frame, matrix, or an object of class 'run_DIpreprocess'.",
+         call. = FALSE)
+  }
+
+  # ---------------------------------------------------------------------------
   # 1. Input validation
   # ---------------------------------------------------------------------------
   .rr_check_x(x)
+  if (is.null(metadata))
+    stop("'metadata' must be provided when 'x' is not a 'run_DIpreprocess' object.",
+         call. = FALSE)
   .rr_check_metadata(metadata, x)
   .rr_check_pred(pred, metadata)
+  .rr_check_qc_types(qc_types)
   .rr_check_scalar_numeric(train_percent, "train_percent", lo = 0, hi = 1,
                            exclusive = TRUE)
   .rr_check_alpha(alpha)
@@ -287,6 +317,20 @@ run_regreg <- function(
   .rr_check_maxit(maxit)
   .rr_check_seed(seed)
   .rr_check_is_numeric(is_numeric, not_penalized, metadata, x)
+
+  # ---------------------------------------------------------------------------
+  # 1b. QC filtering
+  # ---------------------------------------------------------------------------
+  if (!is.null(qc_types) && length(qc_types) > 0L) {
+    grp_raw  <- as.character(metadata[[pred]])
+    keep     <- !grp_raw %in% qc_types
+    n_removed <- sum(!keep)
+    if (n_removed > 0L) {
+      message(n_removed, " row(s) removed based on 'qc_types'.")
+      x        <- x[keep, , drop = FALSE]
+      metadata <- metadata[keep, , drop = FALSE]
+    }
+  }
 
   # ---------------------------------------------------------------------------
   # 2. Build feature matrix and response vector
@@ -546,6 +590,12 @@ run_regreg <- function(
 .rr_check_seed <- function(seed) {
   if (!is.null(seed) && (!is.numeric(seed) || length(seed) != 1L))
     stop("'seed' must be a single numeric value or NULL.", call. = FALSE)
+}
+
+.rr_check_qc_types <- function(qc_types) {
+  if (is.null(qc_types)) return(invisible(NULL))
+  if (!is.character(qc_types) || length(qc_types) < 1L)
+    stop("'qc_types' must be a non-empty character vector or NULL.", call. = FALSE)
 }
 
 # ---- Data preparation -------------------------------------------------------
