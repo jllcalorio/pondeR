@@ -40,20 +40,7 @@
 #'   \code{x}. Each column's value is a named list where the names are the new 
 #'   category labels and the values are character vectors of original levels to 
 #'   combine. If a column is not categorical by default, it must be listed in 
-#'   \code{force_categorical} first. Defaults to \code{NULL}.
-#'   
-#'   Example format:
-#'   \code{
-#'   combine_categories = list(
-#'     Education = list(
-#'       "Higher Ed" = c("Bachelors", "Masters"),
-#'       "Schooling" = c("Elementary", "High School")
-#'     ),
-#'     Gender = list(
-#'       "Non-Male" = c("Female", "Other")
-#'     )
-#'   )
-#'   }
+#'   \code{force_categorical} first. Defaults to \code{NULL}. See examples for usage.
 #' @param continuous_statistics String. Summary statistic(s) for continuous
 #'   variables. One of: \code{"meanSD"}, \code{"meanSD2"},
 #'   \code{"medianIQR"}, \code{"mean"}, \code{"sd"}, \code{"median"},
@@ -96,6 +83,17 @@
 #' @param calc_col_percent_using String. Denominator when
 #'   \code{calc_percent_by = "column"}: \code{"n_valid_in_column"} (default)
 #'   or \code{"n_in_column"}.
+#' @param include_missing_in_denom Logical. Only applies when
+#'   \code{calc_percent_by = "column"}. Controls whether missing observations
+#'   are included in the percentage denominator for categorical levels.
+#'   When \code{FALSE} (default), non-missing level percentages are calculated
+#'   using only the valid (non-missing) observations as the denominator, while
+#'   the "No data/missing" row uses the total group N. When \code{TRUE}, all
+#'   level percentages - including the missing row - are calculated using the
+#'   total group N (i.e., missing observations count toward the denominator).
+#'   For example, with 2 Normocardia, 2 Tachycardia, and 41 missing (N = 45):
+#'   \code{FALSE} gives 50\%, 50\%, 91.11\%; \code{TRUE} gives 4.44\%, 4.44\%,
+#'   91.11\%. Defaults to \code{FALSE}.
 #' @param add_inferential_pvalues Logical. If \code{TRUE}, p-values are
 #'   computed via \code{\link{run_diff}} (continuous variables) and
 #'   \code{\link{run_assoc}} (categorical variables) and injected into the
@@ -217,6 +215,17 @@
 #'     add_inferential_pvalues = TRUE,
 #'     paired                  = TRUE
 #'   )
+#'
+#' # Combining categorical levels
+#' sample_df |>
+#'   run_summarytable(
+#'     combine_categories = list(
+#'       Education = list(
+#'         "Higher Ed" = c("Bachelors", "Masters"),
+#'         "Schooling" = c("Elementary", "High School")
+#'       )
+#'     )
+#'   )
 #' }
 #'
 #' @export
@@ -243,6 +252,7 @@ run_summarytable <- function(
     sort_categorical_variables_by = "alphanumeric",
     calc_percent_by               = "column",
     calc_col_percent_using        = "n_valid_in_column",
+    include_missing_in_denom      = FALSE,
     add_inferential_pvalues       = FALSE,
     test_type_continuous          = c("auto", "parametric", "nonparametric"),
     test_type_categorical         = c("auto", "chisq", "fisher"),
@@ -504,6 +514,12 @@ run_summarytable <- function(
   if (!calc_col_percent_using %in% valid_calc_col)
     stop(paste0("'calc_col_percent_using' must be one of: ",
                 paste(valid_calc_col, collapse = ", "), "."))
+
+  if (!is.logical(include_missing_in_denom) || length(include_missing_in_denom) != 1)
+    stop("'include_missing_in_denom' must be TRUE or FALSE.")
+  if (isTRUE(include_missing_in_denom) && !calc_percent_by %in% c("column", "total"))
+    warning("'include_missing_in_denom = TRUE' has no effect when 'calc_percent_by' is not \"column\".")
+
 
   valid_cont_stats <- c("meanSD", "meanSD2", "medianIQR", "mean", "sd",
                         "median", "p0", "p25", "p50", "p75", "p100", "IQR")
@@ -899,35 +915,48 @@ run_summarytable <- function(
           denom_group <- grp_ns[idx]
           
           tb[[col_nm]] <- purrr::imap_chr(tb[[col_nm]], function(cell, i) {
-            if (is.na(cell) || !nzchar(cell) || tb$row_type[i] != "missing") return(cell)
-            
-            var_nm <- tb$variable[i]
-            n_miss <- if (is.null(split_by)) miss_counts_map[[var_nm]] else miss_counts_map[[var_nm]][idx]
-            if (is.na(n_miss)) n_miss <- 0
-            
-            # Determine denominator based on parameters
-            final_denom <- if (calc_percent_by == "total") {
-              total_n
-            } else if (calc_percent_by == "column") {
-              if (calc_col_percent_using == "n_in_column") denom_group else denom_group - n_miss
-            } else {
-              denom_group
-            }
-            
-            if (is.na(final_denom) || final_denom <= 0) return(cell)
-            
-            p_val <- (n_miss / final_denom) * 100
-            dig   <- if (!is.null(n_digits_categorical)) n_digits_categorical[2] else 2
-            p_str <- formatC(p_val, digits = dig, format = "f")
-            
-            # Reconstruct string based on existing content
-            if (grepl("\\(", cell)) {
-              return(sprintf("%d (%s%%)", n_miss, p_str))
-            } else if (grepl("%", cell)) {
-              return(sprintf("%s%%", p_str))
-            } else {
+            if (is.na(cell) || !nzchar(cell)) return(cell)
+
+            row_t  <- tb$row_type[i]
+            dig    <- if (!is.null(n_digits_categorical)) n_digits_categorical[2] else 2
+
+            # ---- missing row ------------------------------------------------
+            # Bug fix: always use denom_group (total group N) as denominator,
+            # never denom_group - n_miss (which produced > 100% when most
+            # observations were missing).
+            if (row_t == "missing") {
+              var_nm <- tb$variable[i]
+              n_miss <- if (is.null(split_by)) miss_counts_map[[var_nm]] else miss_counts_map[[var_nm]][idx]
+              if (is.na(n_miss)) n_miss <- 0
+
+              final_denom <- if (calc_percent_by == "total") total_n else denom_group
+              if (is.na(final_denom) || final_denom <= 0) return(cell)
+
+              p_val <- (n_miss / final_denom) * 100
+              p_str <- formatC(p_val, digits = dig, format = "f")
+
+              if (grepl("\\(", cell)) return(sprintf("%d (%s%%)", n_miss, p_str))
+              if (grepl("%", cell))   return(sprintf("%s%%", p_str))
               return(as.character(n_miss))
             }
+
+            # ---- level rows when include_missing_in_denom = TRUE ------------
+            # Recalculate non-missing category percentages using total group N
+            # so that all percentages share the same denominator (valid + missing).
+            if (row_t == "level" && isTRUE(include_missing_in_denom) && calc_percent_by == "column") {
+              n_match <- regmatches(cell, regexpr("^\\d+", cell))
+              if (!length(n_match)) return(cell)
+              n_val <- as.integer(n_match)
+
+              p_val <- (n_val / denom_group) * 100
+              p_str <- formatC(p_val, digits = dig, format = "f")
+
+              if (grepl("\\(", cell)) return(sprintf("%d (%s%%)", n_val, p_str))
+              if (grepl("%", cell))   return(sprintf("%s%%", p_str))
+              return(as.character(n_val))
+            }
+
+            cell
           })
         }
         tb
@@ -1168,7 +1197,7 @@ run_summarytable <- function(
     # -- 19e. Inject p.value column into table body ---------------------------
     result_table <- result_table |>
       gtsummary::modify_table_body(function(tb) {
-        # Add p.value column if absent (Option B — we never called add_p())
+        # Add p.value column if absent (Option B - we never called add_p())
         if (!"p.value" %in% names(tb))
           tb$p.value <- NA_character_
 

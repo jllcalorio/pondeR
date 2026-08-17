@@ -27,6 +27,7 @@ run_summarytable(
   sort_categorical_variables_by = "alphanumeric",
   calc_percent_by = "column",
   calc_col_percent_using = "n_valid_in_column",
+  include_missing_in_denom = FALSE,
   add_inferential_pvalues = FALSE,
   test_type_continuous = c("auto", "parametric", "nonparametric"),
   test_type_categorical = c("auto", "chisq", "fisher"),
@@ -74,20 +75,7 @@ of categorical variables. The top-level names correspond to column names in
 \code{x}. Each column's value is a named list where the names are the new
 category labels and the values are character vectors of original levels to
 combine. If a column is not categorical by default, it must be listed in
-\code{force_categorical} first. Defaults to \code{NULL}.
-
-Example format:
-\code{
-combine_categories = list(
-  Education = list(
-    "Higher Ed" = c("Bachelors", "Masters"),
-    "Schooling" = c("Elementary", "High School")
-  ),
-  Gender = list(
-    "Non-Male" = c("Female", "Other")
-  )
-)
-}}
+\code{force_categorical} first. Defaults to \code{NULL}. See examples for usage.}
 
 \item{continuous_statistics}{String. Summary statistic(s) for continuous
 variables. One of: \code{"meanSD"}, \code{"meanSD2"},
@@ -144,6 +132,18 @@ variables: \code{"alphanumeric"} (default) or \code{"frequency"}.}
 \item{calc_col_percent_using}{String. Denominator when
 \code{calc_percent_by = "column"}: \code{"n_valid_in_column"} (default)
 or \code{"n_in_column"}.}
+
+\item{include_missing_in_denom}{Logical. Only applies when
+\code{calc_percent_by = "column"}. Controls whether missing observations
+are included in the percentage denominator for categorical levels.
+When \code{FALSE} (default), non-missing level percentages are calculated
+using only the valid (non-missing) observations as the denominator, while
+the "No data/missing" row uses the total group N. When \code{TRUE}, all
+level percentages - including the missing row - are calculated using the
+total group N (i.e., missing observations count toward the denominator).
+For example, with 2 Normocardia, 2 Tachycardia, and 41 missing (N = 45):
+\code{FALSE} gives 50\\%, 50\\%, 91.11\\%; \code{TRUE} gives 4.44\\%, 4.44\\%,
+91.11\\%. Defaults to \code{FALSE}.}
 
 \item{add_inferential_pvalues}{Logical. If \code{TRUE}, p-values are
 computed via \code{\link{run_diff}} (continuous variables) and
@@ -285,6 +285,17 @@ sample_df |>
     split_by                = "Gender",
     add_inferential_pvalues = TRUE,
     paired                  = TRUE
+  )
+
+# Combining categorical levels
+sample_df |>
+  run_summarytable(
+    combine_categories = list(
+      Education = list(
+        "Higher Ed" = c("Bachelors", "Masters"),
+        "Schooling" = c("Elementary", "High School")
+      )
+    )
   )
 }
 
