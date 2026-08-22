@@ -11,6 +11,7 @@ run_summarytable(
   filter = NULL,
   split_by_header = NULL,
   strata_by = NULL,
+  subgroup = NULL,
   rename_variables = NULL,
   combine_categories = NULL,
   continuous_statistics = "meanSD",
@@ -40,7 +41,8 @@ run_summarytable(
   bold_labels = TRUE,
   italicize_levels = TRUE,
   clean_table = TRUE,
-  table_name = "auto"
+  table_name = "auto",
+  .in_subgroup_recursion = FALSE
 )
 }
 \arguments{
@@ -65,6 +67,12 @@ variable. Defaults to the value of \code{split_by}.}
 with at least 2 unique levels) by which to stratify \emph{before}
 \code{split_by}. Cannot be combined with
 \code{add_inferential_pvalues = TRUE}. Default is \code{NULL}.}
+
+\item{subgroup}{String or \code{NULL}. A column name in \code{x} (must be
+categorical) for subgroup analysis. When provided, the function computes
+separate summary tables for each unique value in the column and returns
+a list of tables. Cannot be the same column as \code{split_by} or
+\code{strata_by}. Default is \code{NULL}.}
 
 \item{rename_variables}{List. Formulas of the form
 \code{list("original" ~ "new", ...)} used to relabel variables in the
@@ -142,8 +150,8 @@ the "No data/missing" row uses the total group N. When \code{TRUE}, all
 level percentages - including the missing row - are calculated using the
 total group N (i.e., missing observations count toward the denominator).
 For example, with 2 Normocardia, 2 Tachycardia, and 41 missing (N = 45):
-\code{FALSE} gives 50\\%, 50\\%, 91.11\\%; \code{TRUE} gives 4.44\\%, 4.44\\%,
-91.11\\%. Defaults to \code{FALSE}.}
+\code{FALSE} gives 50\\\%, 50\\\%, 91.11\\\%; \code{TRUE} gives 4.44\\\%, 4.44\\\%,
+91.11\\\%. Defaults to \code{FALSE}.}
 
 \item{add_inferential_pvalues}{Logical. If \code{TRUE}, p-values are
 computed via \code{\link{run_diff}} (continuous variables) and
@@ -296,6 +304,14 @@ sample_df |>
         "Schooling" = c("Elementary", "High School")
       )
     )
+  )
+
+# Subgroup analysis: separate tables for each Education level,
+# with Gender comparison within each
+sample_df |>
+  run_summarytable(
+    subgroup = "Education",
+    split_by = "Gender"
   )
 }
 

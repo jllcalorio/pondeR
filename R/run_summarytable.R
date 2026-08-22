@@ -32,6 +32,11 @@
 #'   with at least 2 unique levels) by which to stratify \emph{before}
 #'   \code{split_by}. Cannot be combined with
 #'   \code{add_inferential_pvalues = TRUE}. Default is \code{NULL}.
+#' @param subgroup String or \code{NULL}. A column name in \code{x} (must be
+#'   categorical) for subgroup analysis. When provided, the function computes
+#'   separate summary tables for each unique value in the column and returns
+#'   a list of tables. Cannot be the same column as \code{split_by} or
+#'   \code{strata_by}. Default is \code{NULL}.
 #' @param rename_variables List. Formulas of the form
 #'   \code{list("original" ~ "new", ...)} used to relabel variables in the
 #'   table.
@@ -92,8 +97,8 @@
 #'   level percentages - including the missing row - are calculated using the
 #'   total group N (i.e., missing observations count toward the denominator).
 #'   For example, with 2 Normocardia, 2 Tachycardia, and 41 missing (N = 45):
-#'   \code{FALSE} gives 50\%, 50\%, 91.11\%; \code{TRUE} gives 4.44\%, 4.44\%,
-#'   91.11\%. Defaults to \code{FALSE}.
+#'   \code{FALSE} gives 50\\%, 50\\%, 91.11\\%; \code{TRUE} gives 4.44\\%, 4.44\\%,
+#'   91.11\\%. Defaults to \code{FALSE}.
 #' @param add_inferential_pvalues Logical. If \code{TRUE}, p-values are
 #'   computed via \code{\link{run_diff}} (continuous variables) and
 #'   \code{\link{run_assoc}} (categorical variables) and injected into the
@@ -226,6 +231,14 @@
 #'       )
 #'     )
 #'   )
+#'
+#' # Subgroup analysis: separate tables for each Education level,
+#' # with Gender comparison within each
+#' sample_df |>
+#'   run_summarytable(
+#'     subgroup = "Education",
+#'     split_by = "Gender"
+#'   )
 #' }
 #'
 #' @export
@@ -236,6 +249,7 @@ run_summarytable <- function(
     filter                        = NULL,
     split_by_header               = NULL,
     strata_by                     = NULL,
+    subgroup                      = NULL,
     rename_variables              = NULL,
     combine_categories            = NULL,
     continuous_statistics         = "meanSD",
@@ -265,7 +279,8 @@ run_summarytable <- function(
     bold_labels                   = TRUE,
     italicize_levels              = TRUE,
     clean_table                   = TRUE,
-    table_name                    = "auto"
+    table_name                    = "auto",
+    .in_subgroup_recursion        = FALSE  # Internal: TRUE when called from subgroup loop
 ) {
 
   # ---------------------------------------------------------------------------
@@ -313,6 +328,105 @@ run_summarytable <- function(
     if (!split_by %in% names(x)) stop(paste0("Split variable '", split_by, "' not found."))
     keep_rows <- !as.character(x[[split_by]]) %in% filter
     x <- x[keep_rows, , drop = FALSE]
+  }
+
+  # ---------------------------------------------------------------------------
+  # 0.75 Subgroup processing (do this early, before all other processing)
+  # ---------------------------------------------------------------------------
+  # ponytail: Handle subgroup at entry point, before any validation. This avoids
+  # the issue where recursive calls on subsetted data fail validation because the
+  # subgroup column now has only 1 level. We extract and validate once, then recurse.
+  if (!is.null(subgroup)) {
+    # Validate subgroup once on the full dataset
+    if (!is.character(subgroup) || length(subgroup) != 1)
+      stop("'subgroup' must be a single string representing a column name.")
+    
+    # Prevent using the same column for both subgroup and split_by/strata_by
+    if (!is.null(split_by) && identical(subgroup, split_by))
+      stop("'subgroup' and 'split_by' cannot be the same column. ",
+           "Use subgroup to create separate tables, and split_by to compare within tables.")
+    if (!is.null(strata_by) && identical(subgroup, strata_by))
+      stop("'subgroup' and 'strata_by' cannot be the same column.")
+    if (!(subgroup %in% names(x)))
+      stop(paste0("'subgroup' column '", subgroup, "' not found in data."))
+    
+    col_data <- x[[subgroup]]
+    if (!is.factor(col_data) && !is.character(col_data))
+      stop(paste0("Column '", subgroup,
+                  "' must be categorical (factor or character)."))
+    if (length(unique(stats::na.omit(col_data))) < 2)
+      stop(paste0("Column '", subgroup,
+                  "' must have at least 2 unique non-missing levels."))
+    
+    # Get unique subgroup levels, excluding NAs
+    subgroup_levels <- unique(stats::na.omit(x[[subgroup]]))
+    if (is.factor(subgroup_levels)) {
+      subgroup_levels <- levels(subgroup_levels)[levels(subgroup_levels) %in% subgroup_levels]
+    } else {
+      subgroup_levels <- sort(subgroup_levels)
+    }
+
+    # Create a named list of tables, one per subgroup
+    result_tables <- stats::setNames(vector("list", length(subgroup_levels)), 
+                                     as.character(subgroup_levels))
+    
+    for (sg_level in subgroup_levels) {
+      # Subset data for this subgroup (preserve all other params)
+      # ponytail: We don't drop the subgroup column from the data—it's not part of
+      # summarize_what anyway (excluded at line ~630). Passing it through does no harm.
+      x_sg <- x[x[[subgroup]] == sg_level, , drop = FALSE]
+      
+      # Recursively call run_summarytable on the subgroup with subgroup = NULL
+      # to avoid infinite recursion. Set .in_subgroup_recursion = TRUE to allow
+      # graceful degradation if split_by has insufficient levels in this subgroup.
+      result_tables[[as.character(sg_level)]] <- run_summarytable(
+        x                             = x_sg,
+        summarize_what                = summarize_what,
+        split_by                      = split_by,
+        filter                        = filter,
+        split_by_header               = split_by_header,
+        strata_by                     = strata_by,
+        subgroup                      = NULL,  # Must be NULL to prevent recursion
+        rename_variables              = rename_variables,
+        combine_categories            = combine_categories,
+        continuous_statistics         = continuous_statistics,
+        categorical_statistics        = categorical_statistics,
+        force_continuous              = force_continuous,
+        force_categorical             = force_categorical,
+        n_digits_continuous           = n_digits_continuous,
+        n_digits_categorical          = n_digits_categorical,
+        zero_as_exp                   = zero_as_exp,
+        display_missing               = display_missing,
+        missing_text                  = missing_text,
+        missing_stat                  = missing_stat,
+        include_missing_in_splits     = include_missing_in_splits,
+        sort_categorical_variables_by = sort_categorical_variables_by,
+        calc_percent_by               = calc_percent_by,
+        calc_col_percent_using        = calc_col_percent_using,
+        include_missing_in_denom      = include_missing_in_denom,
+        add_inferential_pvalues       = add_inferential_pvalues,
+        test_type_continuous          = test_type_continuous,
+        test_type_categorical         = test_type_categorical,
+        paired                        = paired,
+        n_digits_pvalues              = n_digits_pvalues,
+        bold_significant_pvalues      = bold_significant_pvalues,
+        bold_significant_pvalues_at   = bold_significant_pvalues_at,
+        header                        = header,
+        show_n_header                 = show_n_header,
+        bold_labels                   = bold_labels,
+        italicize_levels              = italicize_levels,
+        clean_table                   = clean_table,
+        table_name                    = if (identical(table_name, "auto"))
+                                          paste0("auto (", sg_level, ")")
+                                        else if (is.null(table_name))
+                                          NULL
+                                        else
+                                          paste0(table_name, " - ", sg_level),
+        .in_subgroup_recursion        = TRUE
+      )
+    }
+    
+    return(result_tables)
   }
 
   # Filter by NAs in split/strata if they are not to be included in the analysis.
@@ -448,11 +562,26 @@ run_summarytable <- function(
     if (!is.factor(col_data) && !is.character(col_data))
       stop(paste0("Column '", split_by,
                   "' must be categorical (factor or character) for splitting."))
-    if (length(unique(stats::na.omit(col_data))) < 2)
-      stop(paste0("Column '", split_by,
-                  "' must have at least 2 unique non-missing levels."))
-    if (is.null(split_by_header))
-      split_by_header <- split_by
+    
+    n_split_levels <- length(unique(stats::na.omit(col_data)))
+    if (n_split_levels < 2) {
+      # ponytail: In a subgroup recursion, gracefully disable split_by if a subgroup
+      # happens to have insufficient levels. Issue a message and proceed without splits.
+      if (.in_subgroup_recursion) {
+        message(sprintf(
+          "Subgroup has insufficient levels for 'split_by' ('%s': %d level only). Proceeding without splits.",
+          split_by, n_split_levels
+        ))
+        split_by <- NULL
+        split_by_header <- NULL
+      } else {
+        stop(paste0("Column '", split_by,
+                    "' must have at least 2 unique non-missing levels."))
+      }
+    } else {
+      if (is.null(split_by_header))
+        split_by_header <- split_by
+    }
   }
 
   # ---------------------------------------------------------------------------
@@ -477,8 +606,16 @@ run_summarytable <- function(
   # 6. Inferential p-value pre-conditions
   # ---------------------------------------------------------------------------
   if (add_inferential_pvalues) {
-    if (is.null(split_by))
-      stop("'add_inferential_pvalues = TRUE' requires 'split_by' to be non-NULL.")
+    if (is.null(split_by)) {
+      # ponytail: If split_by was disabled due to insufficient subgroup levels,
+      # gracefully disable p-values as well.
+      if (.in_subgroup_recursion) {
+        message("'add_inferential_pvalues' requires 'split_by'; disabling for this subgroup.")
+        add_inferential_pvalues <- FALSE
+      } else {
+        stop("'add_inferential_pvalues = TRUE' requires 'split_by' to be non-NULL.")
+      }
+    }
     if (!is.null(strata_by))
       stop("'add_inferential_pvalues' cannot be TRUE when 'strata_by' is present.")
   }
@@ -487,7 +624,7 @@ run_summarytable <- function(
   # 7. Resolve summarize_what
   # ---------------------------------------------------------------------------
   if (is.null(summarize_what)) {
-    summarize_what <- setdiff(names(x), c(split_by, strata_by))
+    summarize_what <- setdiff(names(x), c(split_by, strata_by, subgroup))
   } else {
     if (!is.character(summarize_what))
       stop("'summarize_what' must be a character vector of column names or NULL.")
@@ -496,9 +633,9 @@ run_summarytable <- function(
       stop(paste0("Columns in 'summarize_what' not found in data: ",
                   paste(missing_cols, collapse = ", "), "."))
     
-    # FIX: Ensure split and strata variables are removed from summarize_what
+    # FIX: Ensure split, strata, and subgroup variables are removed from summarize_what
     # because gtsummary strips them out from the underlying subsets.
-    summarize_what <- setdiff(summarize_what, c(split_by, strata_by))
+    summarize_what <- setdiff(summarize_what, c(split_by, strata_by, subgroup))
   }
   
   if (length(summarize_what) == 0L)
@@ -1306,7 +1443,7 @@ run_summarytable <- function(
     }
     if (any_failed) {
       footnote_lines <- c(footnote_lines,
-        "\u2020 P-value could not be computed for this variable.")
+        "\u2020 p-value could not be computed for this variable.")
     }
 
     # Append all footnote lines as a single source note so gt renders them
