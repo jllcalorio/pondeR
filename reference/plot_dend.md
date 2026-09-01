@@ -25,6 +25,9 @@ plot_dend(
   plot_title_size = NULL,
   plot_subtitle_size = NULL,
   label_size = NULL,
+  leaf_label_angle = NULL,
+  leaf_label_size = NULL,
+  leaf_labels = NULL,
   line_width = 0.5,
   line_color = "black",
   ...
@@ -118,6 +121,25 @@ plot_dend(
 
   A single positive numeric controlling the font size of leaf labels.
   Defaults to `global_font_size * 0.8`.
+
+- leaf_label_angle:
+
+  A single numeric specifying the rotation angle (in degrees) for leaf
+  label text. Default `NULL`. When `NULL`, the angle defaults to 0 if
+  `orientation = "rows"` (horizontal labels) or 90 if
+  `orientation = "cols"` (vertical labels).
+
+- leaf_label_size:
+
+  A single positive numeric controlling the font size of leaf labels.
+  Defaults to `global_font_size * 0.8`. When provided, overrides
+  `label_size`.
+
+- leaf_labels:
+
+  A character vector of custom names for the leaf labels. Default
+  `NULL`. When provided, must have length equal to the number of columns
+  in `x`, and will override the default leaf names.
 
 - line_width:
 

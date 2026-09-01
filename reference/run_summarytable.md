@@ -27,6 +27,7 @@ run_summarytable(
   filter = NULL,
   split_by_header = NULL,
   strata_by = NULL,
+  subgroup = NULL,
   rename_variables = NULL,
   combine_categories = NULL,
   continuous_statistics = "meanSD",
@@ -43,6 +44,7 @@ run_summarytable(
   sort_categorical_variables_by = "alphanumeric",
   calc_percent_by = "column",
   calc_col_percent_using = "n_valid_in_column",
+  include_missing_in_denom = FALSE,
   add_inferential_pvalues = FALSE,
   test_type_continuous = c("auto", "parametric", "nonparametric"),
   test_type_categorical = c("auto", "chisq", "fisher"),
@@ -55,7 +57,8 @@ run_summarytable(
   bold_labels = TRUE,
   italicize_levels = TRUE,
   clean_table = TRUE,
-  table_name = "auto"
+  table_name = "auto",
+  .in_subgroup_recursion = FALSE
 )
 ```
 
@@ -94,6 +97,14 @@ run_summarytable(
   unique levels) by which to stratify *before* `split_by`. Cannot be
   combined with `add_inferential_pvalues = TRUE`. Default is `NULL`.
 
+- subgroup:
+
+  String or `NULL`. A column name in `x` (must be categorical) for
+  subgroup analysis. When provided, the function computes separate
+  summary tables for each unique value in the column and returns a list
+  of tables. Cannot be the same column as `split_by` or `strata_by`.
+  Default is `NULL`.
+
 - rename_variables:
 
   List. Formulas of the form `list("original" ~ "new", ...)` used to
@@ -106,10 +117,8 @@ run_summarytable(
   column's value is a named list where the names are the new category
   labels and the values are character vectors of original levels to
   combine. If a column is not categorical by default, it must be listed
-  in `force_categorical` first. Defaults to `NULL`.
-
-  Example format:
-  ` combine_categories = list( Education = list( "Higher Ed" = c("Bachelors", "Masters"), "Schooling" = c("Elementary", "High School") ), Gender = list( "Non-Male" = c("Female", "Other") ) ) `
+  in `force_categorical` first. Defaults to `NULL`. See examples for
+  usage.
 
 - continuous_statistics:
 
@@ -189,6 +198,20 @@ run_summarytable(
 
   String. Denominator when `calc_percent_by = "column"`:
   `"n_valid_in_column"` (default) or `"n_in_column"`.
+
+- include_missing_in_denom:
+
+  Logical. Only applies when `calc_percent_by = "column"`. Controls
+  whether missing observations are included in the percentage
+  denominator for categorical levels. When `FALSE` (default),
+  non-missing level percentages are calculated using only the valid
+  (non-missing) observations as the denominator, while the "No
+  data/missing" row uses the total group N. When `TRUE`, all level
+  percentages - including the missing row - are calculated using the
+  total group N (i.e., missing observations count toward the
+  denominator). For example, with 2 Normocardia, 2 Tachycardia, and 41
+  missing (N = 45): `FALSE` gives 50\\, 50\\, 91.11\\; `TRUE` gives
+  4.44\\, 4.44\\, 91.11\\. Defaults to `FALSE`.
 
 - add_inferential_pvalues:
 
@@ -359,6 +382,25 @@ sample_df |>
     split_by                = "Gender",
     add_inferential_pvalues = TRUE,
     paired                  = TRUE
+  )
+
+# Combining categorical levels
+sample_df |>
+  run_summarytable(
+    combine_categories = list(
+      Education = list(
+        "Higher Ed" = c("Bachelors", "Masters"),
+        "Schooling" = c("Elementary", "High School")
+      )
+    )
+  )
+
+# Subgroup analysis: separate tables for each Education level,
+# with Gender comparison within each
+sample_df |>
+  run_summarytable(
+    subgroup = "Education",
+    split_by = "Gender"
   )
 } # }
 ```

@@ -71,6 +71,9 @@ Returns a <span class="pkg">ggplot2</span> object via <span class="pkg">ggdendro
 <span>  plot_title_size <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  plot_subtitle_size <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  label_size <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  leaf_label_angle <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  leaf_label_size <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  leaf_labels <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  line_width <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>  line_color <span class="op">=</span> <span class="st">"black"</span>,</span>
 <span>  <span class="va">...</span></span>
@@ -167,6 +170,25 @@ size. Defaults to <code>global_font_size</code>.</p></dd>
 <dt id="arg-label-size">label_size<a class="anchor" aria-label="anchor" href="#arg-label-size"></a></dt>
 <dd><p>A single positive numeric controlling the font size of
 leaf labels. Defaults to <code>global_font_size * 0.8</code>.</p></dd>
+
+
+<dt id="arg-leaf-label-angle">leaf_label_angle<a class="anchor" aria-label="anchor" href="#arg-leaf-label-angle"></a></dt>
+<dd><p>A single numeric specifying the rotation angle (in
+degrees) for leaf label text. Default <code>NULL</code>. When <code>NULL</code>, the
+angle defaults to 0 if <code>orientation = "rows"</code> (horizontal labels) or
+90 if <code>orientation = "cols"</code> (vertical labels).</p></dd>
+
+
+<dt id="arg-leaf-label-size">leaf_label_size<a class="anchor" aria-label="anchor" href="#arg-leaf-label-size"></a></dt>
+<dd><p>A single positive numeric controlling the font size of
+leaf labels. Defaults to <code>global_font_size * 0.8</code>. When provided,
+overrides <code>label_size</code>.</p></dd>
+
+
+<dt id="arg-leaf-labels">leaf_labels<a class="anchor" aria-label="anchor" href="#arg-leaf-labels"></a></dt>
+<dd><p>A character vector of custom names for the leaf labels.
+Default <code>NULL</code>. When provided, must have length equal to the number of
+columns in <code>x</code>, and will override the default leaf names.</p></dd>
 
 
 <dt id="arg-line-width">line_width<a class="anchor" aria-label="anchor" href="#arg-line-width"></a></dt>

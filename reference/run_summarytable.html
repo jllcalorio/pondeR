@@ -88,6 +88,7 @@ are shown as <code>---†</code> with a corresponding footnote.</p>
 <span>  filter <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  split_by_header <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  strata_by <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  subgroup <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  rename_variables <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  combine_categories <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  continuous_statistics <span class="op">=</span> <span class="st">"meanSD"</span>,</span>
@@ -104,6 +105,7 @@ are shown as <code>---†</code> with a corresponding footnote.</p>
 <span>  sort_categorical_variables_by <span class="op">=</span> <span class="st">"alphanumeric"</span>,</span>
 <span>  calc_percent_by <span class="op">=</span> <span class="st">"column"</span>,</span>
 <span>  calc_col_percent_using <span class="op">=</span> <span class="st">"n_valid_in_column"</span>,</span>
+<span>  include_missing_in_denom <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  add_inferential_pvalues <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  test_type_continuous <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"parametric"</span>, <span class="st">"nonparametric"</span><span class="op">)</span>,</span>
 <span>  test_type_categorical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"chisq"</span>, <span class="st">"fisher"</span><span class="op">)</span>,</span>
@@ -116,7 +118,8 @@ are shown as <code>---†</code> with a corresponding footnote.</p>
 <span>  bold_labels <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  italicize_levels <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  clean_table <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  table_name <span class="op">=</span> <span class="st">"auto"</span></span>
+<span>  table_name <span class="op">=</span> <span class="st">"auto"</span>,</span>
+<span>  .in_subgroup_recursion <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -158,6 +161,14 @@ with at least 2 unique levels) by which to stratify <em>before</em>
 <code>add_inferential_pvalues = TRUE</code>. Default is <code>NULL</code>.</p></dd>
 
 
+<dt id="arg-subgroup">subgroup<a class="anchor" aria-label="anchor" href="#arg-subgroup"></a></dt>
+<dd><p>String or <code>NULL</code>. A column name in <code>x</code> (must be
+categorical) for subgroup analysis. When provided, the function computes
+separate summary tables for each unique value in the column and returns
+a list of tables. Cannot be the same column as <code>split_by</code> or
+<code>strata_by</code>. Default is <code>NULL</code>.</p></dd>
+
+
 <dt id="arg-rename-variables">rename_variables<a class="anchor" aria-label="anchor" href="#arg-rename-variables"></a></dt>
 <dd><p>List. Formulas of the form
 <code>list("original" ~ "new", ...)</code> used to relabel variables in the
@@ -170,19 +181,7 @@ of categorical variables. The top-level names correspond to column names in
 <code>x</code>. Each column's value is a named list where the names are the new
 category labels and the values are character vectors of original levels to
 combine. If a column is not categorical by default, it must be listed in
-<code>force_categorical</code> first. Defaults to <code>NULL</code>.</p>
-<p>Example format:
-<code>
-combine_categories = list(
-  Education = list(
-    "Higher Ed" = c("Bachelors", "Masters"),
-    "Schooling" = c("Elementary", "High School")
-  ),
-  Gender = list(
-    "Non-Male" = c("Female", "Other")
-  )
-)
-</code></p></dd>
+<code>force_categorical</code> first. Defaults to <code>NULL</code>. See examples for usage.</p></dd>
 
 
 <dt id="arg-continuous-statistics">continuous_statistics<a class="anchor" aria-label="anchor" href="#arg-continuous-statistics"></a></dt>
@@ -267,6 +266,20 @@ variables: <code>"alphanumeric"</code> (default) or <code>"frequency"</code>.</p
 <dd><p>String. Denominator when
 <code>calc_percent_by = "column"</code>: <code>"n_valid_in_column"</code> (default)
 or <code>"n_in_column"</code>.</p></dd>
+
+
+<dt id="arg-include-missing-in-denom">include_missing_in_denom<a class="anchor" aria-label="anchor" href="#arg-include-missing-in-denom"></a></dt>
+<dd><p>Logical. Only applies when
+<code>calc_percent_by = "column"</code>. Controls whether missing observations
+are included in the percentage denominator for categorical levels.
+When <code>FALSE</code> (default), non-missing level percentages are calculated
+using only the valid (non-missing) observations as the denominator, while
+the "No data/missing" row uses the total group N. When <code>TRUE</code>, all
+level percentages - including the missing row - are calculated using the
+total group N (i.e., missing observations count toward the denominator).
+For example, with 2 Normocardia, 2 Tachycardia, and 41 missing (N = 45):
+<code>FALSE</code> gives 50\%, 50\%, 91.11\%; <code>TRUE</code> gives 4.44\%, 4.44\%,
+91.11\%. Defaults to <code>FALSE</code>.</p></dd>
 
 
 <dt id="arg-add-inferential-pvalues">add_inferential_pvalues<a class="anchor" aria-label="anchor" href="#arg-add-inferential-pvalues"></a></dt>
@@ -431,6 +444,25 @@ the descriptive (and optionally inferential) statistics table.</p>
 <span class="r-in"><span>    split_by                <span class="op">=</span> <span class="st">"Gender"</span>,</span></span>
 <span class="r-in"><span>    add_inferential_pvalues <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
 <span class="r-in"><span>    paired                  <span class="op">=</span> <span class="cn">TRUE</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Combining categorical levels</span></span></span>
+<span class="r-in"><span><span class="va">sample_df</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu">run_summarytable</span><span class="op">(</span></span></span>
+<span class="r-in"><span>    combine_categories <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>      Education <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>        <span class="st">"Higher Ed"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Bachelors"</span>, <span class="st">"Masters"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>        <span class="st">"Schooling"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Elementary"</span>, <span class="st">"High School"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>      <span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Subgroup analysis: separate tables for each Education level,</span></span></span>
+<span class="r-in"><span><span class="co"># with Gender comparison within each</span></span></span>
+<span class="r-in"><span><span class="va">sample_df</span> <span class="op">|&gt;</span></span></span>
+<span class="r-in"><span>  <span class="fu">run_summarytable</span><span class="op">(</span></span></span>
+<span class="r-in"><span>    subgroup <span class="op">=</span> <span class="st">"Education"</span>,</span></span>
+<span class="r-in"><span>    split_by <span class="op">=</span> <span class="st">"Gender"</span></span></span>
 <span class="r-in"><span>  <span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>

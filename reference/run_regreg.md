@@ -19,11 +19,12 @@ regularization.
 ``` r
 run_regreg(
   x,
-  metadata,
+  metadata = NULL,
   pred,
   ref = NULL,
   not_penalized = NULL,
   is_numeric = NULL,
+  qc_types = c("QC", "EQC", "SQC"),
   train_percent = 0.8,
   alpha = 0.5,
   lambda = "1se",
@@ -40,17 +41,21 @@ run_regreg(
 
 - x:
 
-  A `data.frame`, `tibble`, or `matrix` of predictor variables. Must
-  have column names (special characters are supported). All columns are
-  treated as features to be penalized unless overridden by
-  `not_penalized`. Rows must correspond to the same samples as
-  `metadata`.
+  A `data.frame`, `tibble`, `matrix`, or an object of class
+  `"run_DIpreprocess"`. When a `run_DIpreprocess` object is supplied,
+  `$data_nonpls` is used as the feature matrix and `$metadata` is used
+  as sample metadata (both auto-extracted; an explicit `metadata`
+  argument overrides the auto-extracted value). All columns are treated
+  as features to be penalized unless overridden by `not_penalized`. Rows
+  must correspond to the same samples as `metadata`.
 
 - metadata:
 
   A `data.frame` or `tibble` containing sample-level metadata. Must have
   the same number of rows as `x` and in the same order. Must contain the
-  column specified by `pred`.
+  column specified by `pred`. Required when `x` is a data frame or
+  matrix; auto-extracted from `x$metadata` when `x` is a
+  `run_DIpreprocess` object (explicit value overrides).
 
 - pred:
 
@@ -82,6 +87,16 @@ run_regreg(
   or `factor` (e.g. due to upstream data import). All names must exist
   in `metadata` or `x` and must also appear in `not_penalized`. Default:
   `NULL`.
+
+- qc_types:
+
+  A character vector of values in `metadata[[pred]]` that identify QC or
+  non-study samples to be excluded before modelling. Rows whose `pred`
+  value matches any element of `qc_types` are dropped from both `x` and
+  `metadata`. When `x` is a `run_DIpreprocess` object, this is
+  automatically set from `x$parameters$qc_types` (the argument value is
+  ignored). Pass `NULL` to skip filtering. Default:
+  `c("QC", "EQC", "SQC")`.
 
 - train_percent:
 

@@ -74,11 +74,12 @@ estimated freely while all other predictors remain subject to regularization.</p
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">run_regreg</span><span class="op">(</span></span>
 <span>  <span class="va">x</span>,</span>
-<span>  <span class="va">metadata</span>,</span>
+<span>  metadata <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">pred</span>,</span>
 <span>  ref <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  not_penalized <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  is_numeric <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  qc_types <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"QC"</span>, <span class="st">"EQC"</span>, <span class="st">"SQC"</span><span class="op">)</span>,</span>
 <span>  train_percent <span class="op">=</span> <span class="fl">0.8</span>,</span>
 <span>  alpha <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>  lambda <span class="op">=</span> <span class="st">"1se"</span>,</span>
@@ -96,8 +97,11 @@ estimated freely while all other predictors remain subject to regularization.</p
 
 
 <dl><dt id="arg-x">x<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
-<dd><p>A <code>data.frame</code>, <code>tibble</code>, or <code>matrix</code> of predictor
-variables. Must have column names (special characters are supported). All
+<dd><p>A <code>data.frame</code>, <code>tibble</code>, <code>matrix</code>, or an object of
+class <code>"run_DIpreprocess"</code>. When a <code>run_DIpreprocess</code> object is
+supplied, <code>$data_nonpls</code> is used as the feature matrix and
+<code>$metadata</code> is used as sample metadata (both auto-extracted; an explicit
+<code>metadata</code> argument overrides the auto-extracted value). All
 columns are treated as features to be penalized unless overridden by
 <code>not_penalized</code>. Rows must correspond to the same samples as
 <code>metadata</code>.</p></dd>
@@ -106,7 +110,9 @@ columns are treated as features to be penalized unless overridden by
 <dt id="arg-metadata">metadata<a class="anchor" aria-label="anchor" href="#arg-metadata"></a></dt>
 <dd><p>A <code>data.frame</code> or <code>tibble</code> containing sample-level
 metadata. Must have the same number of rows as <code>x</code> and in the same
-order. Must contain the column specified by <code>pred</code>.</p></dd>
+order. Must contain the column specified by <code>pred</code>. Required when
+<code>x</code> is a data frame or matrix; auto-extracted from <code>x$metadata</code>
+when <code>x</code> is a <code>run_DIpreprocess</code> object (explicit value overrides).</p></dd>
 
 
 <dt id="arg-pred">pred<a class="anchor" aria-label="anchor" href="#arg-pred"></a></dt>
@@ -138,6 +144,16 @@ when a column is genuinely numeric but is stored as <code>character</code> or
 <code>factor</code> (e.g. due to upstream data import). All names must exist in
 <code>metadata</code> or <code>x</code> and must also appear in <code>not_penalized</code>.
 Default: <code>NULL</code>.</p></dd>
+
+
+<dt id="arg-qc-types">qc_types<a class="anchor" aria-label="anchor" href="#arg-qc-types"></a></dt>
+<dd><p>A character vector of values in <code>metadata[[pred]]</code> that
+identify QC or non-study samples to be excluded before modelling. Rows whose
+<code>pred</code> value matches any element of <code>qc_types</code> are dropped from both
+<code>x</code> and <code>metadata</code>. When <code>x</code> is a <code>run_DIpreprocess</code>
+object, this is automatically set from <code>x$parameters$qc_types</code> (the
+argument value is ignored). Pass <code>NULL</code> to skip filtering.
+Default: <code>c("QC", "EQC", "SQC")</code>.</p></dd>
 
 
 <dt id="arg-train-percent">train_percent<a class="anchor" aria-label="anchor" href="#arg-train-percent"></a></dt>
