@@ -198,6 +198,9 @@ run_pca <- function(
   if (!group %in% colnames(metadata)) {
     stop(sprintf("Column '%s' not found in metadata", group))
   }
+  # Coerce group column to character so integer/numeric batch IDs compare
+  # correctly against the character 'exclude' vector.
+  metadata[[group]] <- as.character(metadata[[group]])
   if (!is.null(exclude)) {
     if (!is.character(exclude)) {
       stop("'exclude' must be NULL or a character vector of group labels")

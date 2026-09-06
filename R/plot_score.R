@@ -42,6 +42,18 @@
 #'   `ellipse_level`. Only works when ellipses are drawn (categorical coloring). Default: `FALSE`.
 #' @param label_outliers Character. Which groups to check for outliers. Use `"all"` (default)
 #'   or a character vector of specific group names from the `color_by` variable.
+#' @param outlier_margin Numeric. Multiplier applied to the Mahalanobis squared-distance
+#'   threshold that exactly matches the drawn `stat_ellipse` boundary (same covariance
+#'   estimator and critical value formula). Default `1.0` labels any sample that falls outside
+#'   that boundary. Values > 1 require the sample to be proportionally farther beyond it:
+#'   `1.0`–`1.5` labels most ellipse-breaching samples; `1.5`–`3.0` labels clearly
+#'   separated samples; `> 3.0` labels only extreme outliers.
+#' @param outlier_label_size Numeric or `NULL`. Font size (ggplot2 text units) for outlier
+#'   labels. Default: `NULL` (resolves to `base_size / 3.5`, consistent with `base_size`).
+#' @param show_groups Character vector or `NULL`. Subset of group values from `color_by` to
+#'   include in the plot. Samples not in `show_groups` are hidden. Default: `NULL` (all groups
+#'   plotted). Only applies when `color_by` is categorical. When supplied, axis labels are
+#'   removed because variance explained is computed on the full dataset, not the shown subset.
 #' @param colors Character vector. Custom color palette for discrete groups. If `NULL`
 #'   (default), the Okabe-Ito colorblind-friendly palette is used. Ignored when `color_by`
 #'   is numeric (continuous scale is always used for numeric variables).
@@ -145,7 +157,8 @@
 #' @importFrom ggplot2 theme_light theme_dark theme element_text element_blank element_line element_rect unit
 #' @importFrom viridis scale_color_viridis
 #' @importFrom ggrepel geom_label_repel
-#' @importFrom stats mahalanobis cov qt qnorm
+#' @importFrom stats mahalanobis cov qt qnorm qf qchisq
+#' @importFrom MASS cov.trob
 #'
 #' @seealso \code{\link[dimsprepr]{run_DIpreprocess}}, \code{\link{run_pca}}, \code{\link{run_pls}}
 #' 
@@ -239,6 +252,9 @@ plot_score.run_pca <- function(
     legend_position  = "bottom",
     show_outliers    = FALSE,
     label_outliers   = "all",
+    outlier_margin   = 1.0,
+    outlier_label_size = NULL,
+    show_groups      = NULL,
     colors           = NULL,
     point_size       = 10,
     point_alpha      = 0.8,
@@ -343,6 +359,36 @@ plot_score.run_pca <- function(
     )
   }
 
+  if (!is.numeric(outlier_margin) || length(outlier_margin) != 1L || outlier_margin <= 0) {
+    stop(
+      "'outlier_margin' must be a single positive numeric value.\n",
+      "Solution: Use outlier_margin = 1.0 (default) or a larger value such as 1.5 or 2.0."
+    )
+  }
+
+  if (!is.null(show_groups)) {
+    if (!is.character(show_groups)) {
+      stop(
+        "'show_groups' must be NULL or a character vector of group values.\n",
+        "Solution: Use show_groups = c('GroupA', 'GroupB') or NULL (all groups)."
+      )
+    }
+    available_groups <- unique(as.character(res$metadata[[color_by]]))
+    missing_sg       <- show_groups[!show_groups %in% available_groups]
+    if (length(missing_sg) > 0L) {
+      warning(sprintf(
+        "Groups in 'show_groups' not found in '%s': %s\nAvailable: %s",
+        color_by,
+        paste(missing_sg, collapse = ", "),
+        paste(sort(available_groups), collapse = ", ")
+      ))
+      show_groups <- show_groups[show_groups %in% available_groups]
+    }
+    if (length(show_groups) == 0L) {
+      stop("No valid groups remain in 'show_groups'. Check group names match the 'color_by' column.")
+    }
+  }
+
   if (!is.numeric(zoom) || length(zoom) != 1L || zoom <= 0) {
     stop(
       "'zoom' must be a single positive numeric value.\n",
@@ -369,7 +415,8 @@ plot_score.run_pca <- function(
   axis_text_size    <- if (is.null(axis_text_size))    base_size - 1 else axis_text_size
   plot_title_size   <- if (is.null(plot_title_size))   base_size + 3 else plot_title_size
   legend_title_size <- if (is.null(legend_title_size)) base_size     else legend_title_size
-  legend_text_size  <- if (is.null(legend_text_size))  base_size - 1 else legend_text_size
+  legend_text_size   <- if (is.null(legend_text_size))   base_size - 1   else legend_text_size
+  outlier_label_size <- if (is.null(outlier_label_size)) base_size / 3.5 else outlier_label_size
 
   # Apply zoom uniformly
   .z <- function(x) x * zoom
@@ -431,7 +478,11 @@ plot_score.run_pca <- function(
   metadata <- res$metadata
   scores   <- res$scores
 
-  is_numeric_color <- is.numeric(metadata[[color_by]])
+  # ponytail: is.double() excludes integer, so batch numbers / integer IDs are
+  # always treated as categorical. True continuous variables (dose, time, age)
+  # are typically stored as double — upgrade path: expose an explicit argument
+  # if users ever need integer-typed continuous coloring.
+  is_numeric_color <- is.double(metadata[[color_by]])
 
   if (is_numeric_color) {
     msg(sprintf("Using continuous coloring by '%s'", color_by))
@@ -511,6 +562,12 @@ plot_score.run_pca <- function(
     names(pal) <- levels(plot_data$ColorGroup)
   }
 
+  # Filter to requested groups (categorical only; no-op for continuous color_by)
+  if (!is.null(show_groups) && !is_numeric_color) {
+    plot_data <- plot_data[as.character(plot_data$ColorGroup) %in% show_groups, , drop = FALSE]
+    plot_data$ColorGroup <- droplevels(plot_data$ColorGroup)
+  }
+
   # ============================================================================
   # OUTLIER COMPUTATION
   # ============================================================================
@@ -526,7 +583,7 @@ plot_score.run_pca <- function(
       msg(sprintf("Computing outliers (ellipse level: %.1f%%)...", ellipse_level * 100))
 
       plot_data  <- .compute_outliers_discrete(plot_data, pc_x_col, pc_y_col,
-                                               ellipse_type, ellipse_level)
+                                               ellipse_type, ellipse_level, outlier_margin)
       n_outliers <- sum(plot_data$is_outlier, na.rm = TRUE)
       msg(sprintf("Outliers detected: %d (%.1f%%)",
                   n_outliers, 100 * n_outliers / nrow(plot_data)))
@@ -644,6 +701,14 @@ plot_score.run_pca <- function(
     grp_counts     <- table(plot_data$ColorGroup)
     grps_for_ellipse <- names(grp_counts)[grp_counts >= 3L]
 
+    # Drop groups with a singular covariance matrix (collinear points);
+    # cov.trob() inside stat_ellipse(type="t") crashes on them.
+    grps_for_ellipse <- grps_for_ellipse[vapply(grps_for_ellipse, function(g) {
+      pts     <- as.matrix(plot_data[plot_data$ColorGroup == g, c(pc_x_col, pc_y_col)])
+      cov_mat <- tryCatch(stats::cov(pts), error = function(e) NULL)
+      !is.null(cov_mat) && det(cov_mat) > .Machine$double.eps
+    }, logical(1L))]
+
     if (length(grps_for_ellipse) > 0L) {
       df_ell <- plot_data[plot_data$ColorGroup %in% grps_for_ellipse, ]
       p <- p + ggplot2::stat_ellipse(
@@ -680,30 +745,39 @@ plot_score.run_pca <- function(
 
     if (nrow(df_out) > 0L) {
       p <- p + ggrepel::geom_label_repel(
-        data              = df_out,
+        data               = df_out,
         ggplot2::aes(label = Label, color = ColorGroup),
-        fill              = "white",
-        family            = font_family,
-        size              = .z(base_size / 3.5),
-        label.padding     = ggplot2::unit(0.15, "lines"),
-        box.padding       = ggplot2::unit(0.5,  "lines"),
-        point.padding     = ggplot2::unit(0.3,  "lines"),
-        segment.color     = "grey40",
+        fill               = "white",
+        family             = font_family,
+        size               = .z(outlier_label_size),
+        label.padding      = ggplot2::unit(0.15, "lines"),
+        box.padding        = ggplot2::unit(0.8,  "lines"),
+        point.padding      = ggplot2::unit(0.5,  "lines"),
+        segment.color      = "grey40",
+        segment.size       = 0.4,
         min.segment.length = 0,
-        max.overlaps      = Inf,
-        show.legend       = FALSE
+        force              = 3,
+        force_pull         = 0.5,
+        max.overlaps       = Inf,
+        max.iter           = 10000,
+        seed               = 1L,
+        show.legend        = FALSE
       )
     }
   }
 
   # Labels + theme
+  # .or_null: treat empty/whitespace-only strings as NULL so ggplot2 reserves no
+  # space for blank titles, subtitles, or captions.
+  .or_null <- function(x) if (!is.null(x) && identical(trimws(x), "")) NULL else x
+
   p <- p +
     ggplot2::labs(
-      x        = x_label,
-      y        = y_label,
-      title    = title,
-      subtitle = subtitle,
-      caption  = caption
+      x        = if (!is.null(show_groups) && !is_numeric_color) NULL else x_label,
+      y        = if (!is.null(show_groups) && !is_numeric_color) NULL else y_label,
+      title    = .or_null(title),
+      subtitle = .or_null(subtitle),
+      caption  = .or_null(caption)
     ) +
     base_theme +
     custom_theme
@@ -861,39 +935,81 @@ plot_score.run_pls <- function(
 # HELPER FUNCTIONS FOR OUTLIER DETECTION
 # ==============================================================================
 
-.compute_outliers_discrete <- function(df, pc1_col, pc2_col, ellipse_type, level) {
+.compute_outliers_discrete <- function(df, pc1_col, pc2_col, ellipse_type, level,
+                                       outlier_margin = 1.0) {
   mahal_d   <- rep(NA_real_, nrow(df))
   threshold <- rep(NA_real_, nrow(df))
   is_out    <- rep(NA,       nrow(df))
 
+  # Use the same covariance estimator and critical-value formula as stat_ellipse:
+  #   type = "t"   -> MASS::cov.trob (robust M-estimator) + 2 * qf(level, 2, n-1)
+  #   type = "norm" -> stats::cov (MLE) + qchisq(level, df=2)
+  # This ensures a point flagged here is truly outside the drawn ellipse.
+
+  n_global  <- nrow(df)
+  all_pts   <- as.matrix(df[, c(pc1_col, pc2_col), drop = FALSE])
+
+  # Global geometry for the small-group fallback (n < 3).
+  # A single-point group IS its own centroid — within-group distance is always 0.
+  if (ellipse_type == "t") {
+    gfit          <- tryCatch(MASS::cov.trob(all_pts), error = function(e) NULL)
+    global_center <- if (!is.null(gfit)) gfit$center else colMeans(all_pts)
+    global_cov    <- if (!is.null(gfit)) gfit$cov    else NULL
+    crit_global   <- 2 * stats::qf(level, df1 = 2L, df2 = n_global - 1L)
+  } else {
+    global_center <- colMeans(all_pts)
+    global_cov    <- tryCatch(stats::cov(all_pts), error = function(e) NULL)
+    crit_global   <- stats::qchisq(level, df = 2L)
+  }
+  global_usable <- !is.null(global_cov) && det(global_cov) > .Machine$double.eps
+
   for (grp in levels(df$ColorGroup)) {
     idx <- which(df$ColorGroup == grp)
     n   <- length(idx)
-    if (n < 3L) next
+    pts <- as.matrix(df[idx, c(pc1_col, pc2_col), drop = FALSE])
 
-    pts     <- as.matrix(df[idx, c(pc1_col, pc2_col), drop = FALSE])
-    cov_mat <- tryCatch(stats::cov(pts), error = function(e) NULL)
-    if (is.null(cov_mat) || det(cov_mat) <= .Machine$double.eps) next
-
-    crit <- if (ellipse_type == "t") {
-      stats::qt(level / 2 + 0.5, df = n - 1L)^2
-    } else {
-      stats::qnorm(level / 2 + 0.5)^2
+    if (n < 3L) {
+      # Small group: measure isolation against the full data cloud
+      if (!global_usable) next
+      d2             <- tryCatch(
+        stats::mahalanobis(pts, global_center, global_cov),
+        error = function(e) rep(NA_real_, n)
+      )
+      eff_crit       <- crit_global * outlier_margin
+      mahal_d[idx]   <- d2
+      threshold[idx] <- eff_crit
+      is_out[idx]    <- !is.na(d2) & (d2 > eff_crit)
+      next
     }
 
-    d2 <- tryCatch(
-      stats::mahalanobis(pts, colMeans(pts), cov_mat),
+    if (ellipse_type == "t") {
+      fit     <- tryCatch(MASS::cov.trob(pts), error = function(e) NULL)
+      if (is.null(fit)) next
+      center  <- fit$center
+      cov_mat <- fit$cov
+      crit    <- 2 * stats::qf(level, df1 = 2L, df2 = n - 1L)
+    } else {
+      center  <- colMeans(pts)
+      cov_mat <- tryCatch(stats::cov(pts), error = function(e) NULL)
+      if (is.null(cov_mat) || det(cov_mat) <= .Machine$double.eps) next
+      crit    <- stats::qchisq(level, df = 2L)
+    }
+
+    if (is.null(cov_mat) || det(cov_mat) <= .Machine$double.eps) next
+
+    d2             <- tryCatch(
+      stats::mahalanobis(pts, center, cov_mat),
       error = function(e) rep(NA_real_, n)
     )
-
+    eff_crit       <- crit * outlier_margin
     mahal_d[idx]   <- d2
-    threshold[idx] <- crit
-    is_out[idx]    <- !is.na(d2) & (d2 > crit)
+    threshold[idx] <- eff_crit
+    is_out[idx]    <- !is.na(d2) & (d2 > eff_crit)
   }
 
-  df$mahal_dist      <- mahal_d
+  df$mahal_dist        <- mahal_d
   df$ellipse_threshold <- threshold
-  df$is_outlier      <- is_out
+  df$is_outlier        <- is_out
   df
 }
 

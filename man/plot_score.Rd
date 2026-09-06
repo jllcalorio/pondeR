@@ -27,6 +27,9 @@ plot_score(res, ...)
   legend_position = "bottom",
   show_outliers = FALSE,
   label_outliers = "all",
+  outlier_margin = 1,
+  outlier_label_size = NULL,
+  show_groups = NULL,
   colors = NULL,
   point_size = 10,
   point_alpha = 0.8,
@@ -132,6 +135,21 @@ column name).}
 
 \item{label_outliers}{Character. Which groups to check for outliers. Use \code{"all"} (default)
 or a character vector of specific group names from the \code{color_by} variable.}
+
+\item{outlier_margin}{Numeric. Multiplier applied to the Mahalanobis squared-distance
+threshold that exactly matches the drawn \code{stat_ellipse} boundary (same covariance
+estimator and critical value formula). Default \code{1.0} labels any sample that falls outside
+that boundary. Values > 1 require the sample to be proportionally farther beyond it:
+\code{1.0}–\code{1.5} labels most ellipse-breaching samples; \code{1.5}–\code{3.0} labels clearly
+separated samples; \verb{> 3.0} labels only extreme outliers.}
+
+\item{outlier_label_size}{Numeric or \code{NULL}. Font size (ggplot2 text units) for outlier
+labels. Default: \code{NULL} (resolves to \code{base_size / 3.5}, consistent with \code{base_size}).}
+
+\item{show_groups}{Character vector or \code{NULL}. Subset of group values from \code{color_by} to
+include in the plot. Samples not in \code{show_groups} are hidden. Default: \code{NULL} (all groups
+plotted). Only applies when \code{color_by} is categorical. When supplied, axis labels are
+removed because variance explained is computed on the full dataset, not the shown subset.}
 
 \item{colors}{Character vector. Custom color palette for discrete groups. If \code{NULL}
 (default), the Okabe-Ito colorblind-friendly palette is used. Ignored when \code{color_by}
