@@ -34,12 +34,16 @@ run_diff(
 )
 }
 \arguments{
-\item{x}{A data frame, or an object of class \code{"run_DIpreprocess"}.
-If a data frame, it should contain only the numeric features/metabolites
-to be analysed.}
+\item{x}{A data frame (or an object of class \code{"run_DIpreprocess"})
+containing at least the numeric outcome column(s). Non-numeric columns
+are permitted and ignored; only the column(s) named in \code{outcome}
+must be numeric. When \code{metadata} is \code{NULL}, \code{x} is also
+used as the metadata source (single data-frame workflow).}
 
 \item{metadata}{A data frame containing sample-level metadata (e.g.,
-grouping, subgroups, subject IDs). Required if \code{x} is a data frame.}
+grouping, subgroups, subject IDs). When \code{NULL} (default),
+\code{x} is used for both feature values and metadata — useful when a
+single data frame holds all columns (see Examples).}
 
 \item{outcome}{A character string or character vector naming the numeric
 outcome variable(s) found in \code{x}.}
@@ -57,10 +61,29 @@ When supplied, \code{subject_id} must also be provided. Triggers
 repeated-measures or mixed-ANOVA logic.}
 
 \item{subject_id}{Character string naming the subject identifier column
-found in \code{metadata}.
-Required when \code{within} is non-\code{NULL}.}
+found in \code{metadata}. Used in two contexts:
+\enumerate{
+\item \strong{Repeated-measures / mixed ANOVA} (\code{within} is
+non-\code{NULL}): required.
+\item \strong{Paired two-sample test} (\code{paired = TRUE},
+two groups): optional but strongly recommended. When supplied,
+rows are sorted by subject within each group so that
+\code{group1[i]} and \code{group2[i]} refer to the same subject,
+and subject presence is verified across both groups. Without
+\code{subject_id}, row order is assumed to define the pairing
+(a warning is issued).
+}}
 
-\item{paired}{Logical; whether observations are paired. Default \code{FALSE}.}
+\item{paired}{Logical; whether to treat observations as paired (two-sample
+designs only). Default \code{FALSE}.
+\itemize{
+\item Normality is assessed on the \strong{within-subject differences}
+rather than per group.
+\item Homogeneity of variance is not tested (irrelevant for paired
+designs).
+\item Provide \code{subject_id} to guarantee correct pair alignment
+when rows are not already sorted by subject within each group.
+}}
 
 \item{test_type}{One of \code{"auto"} (default), \code{"parametric"}, or
 \code{"nonparametric"}.}
@@ -188,30 +211,57 @@ Cohen's d / paired Cohen's d (t-tests), rank-biserial correlation
 For non-parametric tests the \code{interpretation} column reads
 "X tends to have larger/smaller values than Y".
 }
+\note{
+\strong{Paired-test workflow:}
+\code{paired = TRUE} applies only to two-group comparisons. When the data
+are in long format (one row per observation, a group column, and a subject
+ID column), pass the data frame as \code{x} (with \code{metadata = NULL}
+or the same frame) and supply \code{subject_id}. The function will sort
+both groups by subject, verify that every subject appears in each group,
+and test normality on the within-subject differences. Example:
+\preformatted{
+  # sleep: 'extra' is outcome, 'group' is the two-level factor,
+  # 'ID' identifies the subject.
+  run_diff(sleep, outcome = "extra", group = "group",
+           paired = TRUE, subject_id = "ID")
+}
+Without \code{subject_id}, pairs are assumed to be defined by row order
+within each group (a warning is emitted). Use \code{within} +
+\code{subject_id} instead of \code{paired} for repeated-measures ANOVA
+(> 2 time points / conditions).
+}
 \examples{
 \dontrun{
-# --- 3+ Groups (auto) ---
-res_iris <- run_diff(iris, "Sepal.Length", "Species")
+# --- Single data frame: x serves as its own metadata ---
+
+# 3+ groups (auto test selection)
+res_iris <- run_diff(iris, outcome = "Sepal.Length", group = "Species")
 print(res_iris); summary(res_iris)
 
-# --- Two-sample independent ---
+# Two-sample independent
 mtcars$am <- factor(mtcars$am, labels = c("automatic", "manual"))
-run_diff(mtcars, "mpg", "am")
+run_diff(mtcars, outcome = "mpg", group = "am")
 
-# --- Paired ---
-run_diff(sleep, "extra", "group", paired = TRUE)
+# Paired (with subject alignment)
+run_diff(sleep, outcome = "extra", group = "group",
+         paired = TRUE, subject_id = "ID")
 
-# --- Multi-outcome with summary table ---
+# --- Separate x / metadata data frames ---
+
+# Multi-outcome with summary table
 outcomes <- c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width")
-res_multi <- run_diff(iris, outcomes, "Species",
+x_iris   <- iris[, outcomes]
+meta_iris <- iris["Species"]
+res_multi <- run_diff(x_iris, meta_iris, outcomes, "Species",
                       summary_table = TRUE, verbose = FALSE)
 res_multi$summary_table
 
 # --- One-way RM ANOVA ---
-run_diff(df_long, "HeartRate", within = "Time", subject_id = "ID")
+run_diff(df_long, outcome = "HeartRate",
+         within = "Time", subject_id = "ID")
 
 # --- Mixed ANOVA ---
-run_diff(df_long, "HeartRate", group = "Group",
+run_diff(df_long, outcome = "HeartRate", group = "Group",
          within = "Time", subject_id = "ID")
 }
 

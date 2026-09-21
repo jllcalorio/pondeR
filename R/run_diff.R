@@ -958,11 +958,15 @@
 #' For non-parametric tests the \code{interpretation} column reads
 #' "X tends to have larger/smaller values than Y".
 #'
-#' @param x A data frame, or an object of class \code{"run_DIpreprocess"}.
-#'   If a data frame, it should contain only the numeric features/metabolites
-#'   to be analysed.
+#' @param x A data frame (or an object of class \code{"run_DIpreprocess"})
+#'   containing at least the numeric outcome column(s). Non-numeric columns
+#'   are permitted and ignored; only the column(s) named in \code{outcome}
+#'   must be numeric. When \code{metadata} is \code{NULL}, \code{x} is also
+#'   used as the metadata source (single data-frame workflow).
 #' @param metadata A data frame containing sample-level metadata (e.g.,
-#'   grouping, subgroups, subject IDs). Required if \code{x} is a data frame.
+#'   grouping, subgroups, subject IDs). When \code{NULL} (default),
+#'   \code{x} is used for both feature values and metadata — useful when a
+#'   single data frame holds all columns (see Examples).
 #' @param outcome A character string or character vector naming the numeric
 #'   outcome variable(s) found in \code{x}.
 #' @param group A character string naming the grouping variable found in
@@ -975,9 +979,28 @@
 #'   When supplied, \code{subject_id} must also be provided. Triggers
 #'   repeated-measures or mixed-ANOVA logic.
 #' @param subject_id Character string naming the subject identifier column
-#'   found in \code{metadata}.
-#'   Required when \code{within} is non-\code{NULL}.
-#' @param paired Logical; whether observations are paired. Default \code{FALSE}.
+#'   found in \code{metadata}. Used in two contexts:
+#'   \enumerate{
+#'     \item \strong{Repeated-measures / mixed ANOVA} (\code{within} is
+#'       non-\code{NULL}): required.
+#'     \item \strong{Paired two-sample test} (\code{paired = TRUE},
+#'       two groups): optional but strongly recommended. When supplied,
+#'       rows are sorted by subject within each group so that
+#'       \code{group1[i]} and \code{group2[i]} refer to the same subject,
+#'       and subject presence is verified across both groups. Without
+#'       \code{subject_id}, row order is assumed to define the pairing
+#'       (a warning is issued).
+#'   }
+#' @param paired Logical; whether to treat observations as paired (two-sample
+#'   designs only). Default \code{FALSE}.
+#'   \itemize{
+#'     \item Normality is assessed on the \strong{within-subject differences}
+#'       rather than per group.
+#'     \item Homogeneity of variance is not tested (irrelevant for paired
+#'       designs).
+#'     \item Provide \code{subject_id} to guarantee correct pair alignment
+#'       when rows are not already sorted by subject within each group.
+#'   }
 #' @param test_type One of \code{"auto"} (default), \code{"parametric"}, or
 #'   \code{"nonparametric"}.
 #' @param normality_method One of \code{"auto"} (default), \code{"shapiro"},
@@ -1044,30 +1067,57 @@
 #'
 #' @seealso \code{\link[dimsprepr]{run_DIpreprocess}}, \code{\link{run_summarytable}}, \code{\link{get_volcanodata}}
 #' 
+#' @note
+#' \strong{Paired-test workflow:}
+#' \code{paired = TRUE} applies only to two-group comparisons. When the data
+#' are in long format (one row per observation, a group column, and a subject
+#' ID column), pass the data frame as \code{x} (with \code{metadata = NULL}
+#' or the same frame) and supply \code{subject_id}. The function will sort
+#' both groups by subject, verify that every subject appears in each group,
+#' and test normality on the within-subject differences. Example:
+#' \preformatted{
+#'   # sleep: 'extra' is outcome, 'group' is the two-level factor,
+#'   # 'ID' identifies the subject.
+#'   run_diff(sleep, outcome = "extra", group = "group",
+#'            paired = TRUE, subject_id = "ID")
+#' }
+#' Without \code{subject_id}, pairs are assumed to be defined by row order
+#' within each group (a warning is emitted). Use \code{within} +
+#' \code{subject_id} instead of \code{paired} for repeated-measures ANOVA
+#' (> 2 time points / conditions).
+#'
 #' @examples
 #' \dontrun{
-#' # --- 3+ Groups (auto) ---
-#' res_iris <- run_diff(iris, "Sepal.Length", "Species")
+#' # --- Single data frame: x serves as its own metadata ---
+#'
+#' # 3+ groups (auto test selection)
+#' res_iris <- run_diff(iris, outcome = "Sepal.Length", group = "Species")
 #' print(res_iris); summary(res_iris)
 #'
-#' # --- Two-sample independent ---
+#' # Two-sample independent
 #' mtcars$am <- factor(mtcars$am, labels = c("automatic", "manual"))
-#' run_diff(mtcars, "mpg", "am")
+#' run_diff(mtcars, outcome = "mpg", group = "am")
 #'
-#' # --- Paired ---
-#' run_diff(sleep, "extra", "group", paired = TRUE)
+#' # Paired (with subject alignment)
+#' run_diff(sleep, outcome = "extra", group = "group",
+#'          paired = TRUE, subject_id = "ID")
 #'
-#' # --- Multi-outcome with summary table ---
+#' # --- Separate x / metadata data frames ---
+#'
+#' # Multi-outcome with summary table
 #' outcomes <- c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width")
-#' res_multi <- run_diff(iris, outcomes, "Species",
+#' x_iris   <- iris[, outcomes]
+#' meta_iris <- iris["Species"]
+#' res_multi <- run_diff(x_iris, meta_iris, outcomes, "Species",
 #'                       summary_table = TRUE, verbose = FALSE)
 #' res_multi$summary_table
 #'
 #' # --- One-way RM ANOVA ---
-#' run_diff(df_long, "HeartRate", within = "Time", subject_id = "ID")
+#' run_diff(df_long, outcome = "HeartRate",
+#'          within = "Time", subject_id = "ID")
 #'
 #' # --- Mixed ANOVA ---
-#' run_diff(df_long, "HeartRate", group = "Group",
+#' run_diff(df_long, outcome = "HeartRate", group = "Group",
 #'          within = "Time", subject_id = "ID")
 #' }
 #'
@@ -1131,16 +1181,20 @@ run_diff <- function(
 
   # --- Basic Alignment Validation --------------------------------------------
   if (!is.data.frame(x)) stop("'x' must be a data frame or matrix of features.")
-  if (is.null(metadata)) stop("'metadata' must be provided.")
+  # Allow metadata = NULL: treat x as its own metadata (single-df usage).
+  if (is.null(metadata)) metadata <- x
   if (nrow(x) != nrow(metadata)) {
     stop(sprintf("Row mismatch: 'x' has %d rows, but 'metadata' has %d rows.", 
                  nrow(x), nrow(metadata)))
   }
 
-  # --- Validate x contains only numeric features -----------------------------
-  non_numeric_cols <- names(x)[!vapply(x, is.numeric, logical(1))]
+  # --- Validate that the requested outcome column(s) are numeric -------------
+  # We only enforce this on the outcome column(s); non-outcome columns in x
+  # are ignored so a caller can pass a mixed data frame as x.
+  check_cols <- intersect(outcome, names(x))
+  non_numeric_cols <- check_cols[!vapply(x[check_cols], is.numeric, logical(1))]
   if (length(non_numeric_cols) > 0) {
-    stop(sprintf("All columns in 'x' must be numeric. Non-numeric column(s) found: %s",
+    stop(sprintf("Outcome column(s) in 'x' must be numeric. Non-numeric: %s",
                  paste(non_numeric_cols, collapse = ", ")))
   }
 
@@ -1541,6 +1595,36 @@ summary.run_diff <- function(object, ...) {
   if (paired && n_groups == 2 && group_ns[1] != group_ns[2])
     stop("Paired tests require equal group sizes after removing missing values.")
 
+  # --- Pair alignment by subject_id ------------------------------------------
+  # When paired = TRUE, rows must be sorted so g1[i] <-> g2[i] is the same
+  # subject.  If subject_id is given, sort each group by that column and verify
+  # every subject appears in both groups.  Without subject_id, row order is
+  # assumed to define the pairing (a warning is emitted).
+  if (paired && n_groups == 2) {
+    if (!is.null(subject_id)) {
+      if (!subject_id %in% names(metadata_cc))
+        stop(sprintf("subject_id column '%s' not found in metadata.", subject_id))
+      subj_vec <- as.character(metadata_cc[[subject_id]])
+      subj1    <- subj_vec[grp == groups[1]]
+      subj2    <- subj_vec[grp == groups[2]]
+      ord1     <- order(subj1)
+      ord2     <- order(subj2)
+      if (!all(sort(subj1) == sort(subj2)))
+        stop("Subject IDs do not match between groups for paired analysis. ",
+             "Ensure every subject appears in exactly one row per group.")
+      idx1        <- which(grp == groups[1])[ord1]
+      idx2        <- which(grp == groups[2])[ord2]
+      y           <- y[c(idx1, idx2)]
+      grp         <- grp[c(idx1, idx2)]
+      metadata_cc <- metadata_cc[c(idx1, idx2), , drop = FALSE]
+    } else {
+      warnings_list <- c(warnings_list,
+        paste0("paired = TRUE but 'subject_id' was not supplied. Pairs are assumed to be",
+               " defined by row order within each group. Provide 'subject_id' to guarantee",
+               " correct alignment."))
+    }
+  }
+
   # --- Assumption checks -----------------------------------------------------
   normality_violated <- FALSE
   variance_violated  <- FALSE
@@ -1549,7 +1633,19 @@ summary.run_diff <- function(object, ...) {
   variance_method    <- NA_character_
 
   if (test_type == "auto") {
-    if (n_groups == 2) {
+    if (n_groups == 2 && paired) {
+      # For paired designs, normality of the within-subject *differences* is
+      # what matters, not per-group normality.
+      g1_vals  <- y[grp == groups[1]]
+      g2_vals  <- y[grp == groups[2]]
+      diffs    <- g1_vals - g2_vals
+      nr_diff  <- .check_normality(
+        diffs,
+        sprintf("differences (%s \u2212 %s)", groups[1], groups[2]),
+        normality_method, alpha_normality
+      )
+      norm_results_raw <- list(nr_diff)
+    } else if (n_groups == 2) {
       norm_results_raw <- .parallel_normality(
         groups, y, grp, normality_method, alpha_normality, num_cores
       )
@@ -1592,6 +1688,22 @@ summary.run_diff <- function(object, ...) {
   fitted_model    <- test_exec$fitted_model
   parametric_used <- test_exec$parametric
   warnings_list   <- test_exec$warnings_list
+
+  # --- Assumptions data frame ------------------------------------------------
+  assumptions <- data.frame(
+    check    = character(), result   = character(),
+    p_value  = numeric(),  decision = character(),
+    stringsAsFactors = FALSE
+  )
+  for (nr in norm_results_raw) {
+    if (!inherits(nr, "try-error"))
+      assumptions <- rbind(assumptions,
+        .assumption_row(nr$label, nr$method, nr$p_value, nr$violated))
+  }
+  if (!paired && !is.na(variance_p))
+    assumptions <- rbind(assumptions,
+      .assumption_row("Homogeneity of variance", variance_method,
+                      variance_p, variance_violated))
 
   # --- Effect size -----------------------------------------------------------
   es_out <- .compute_effect_size(
@@ -1676,6 +1788,7 @@ summary.run_diff <- function(object, ...) {
     test_result        = test_result,
     effect_size        = es_result,
     posthoc_result     = posthoc_result,
+    assumptions        = assumptions,
     norm_results       = norm_results_raw,
     variance_p         = variance_p,
     variance_method    = variance_method,
