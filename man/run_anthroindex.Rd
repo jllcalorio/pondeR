@@ -25,12 +25,12 @@ run_anthroindex(
   subscapularskinfold_col = NULL,
   subscapularskinfold_unit = c("mm", "cm", "m", "ft", "in"),
   oedema_col = NULL,
-  merge_obese = FALSE,
-  merge_wasted = merge_obese,
-  merge_malnourished = merge_obese,
-  merge_underweight = merge_obese,
-  merge_stunted = merge_obese,
-  merge_thinness = merge_obese,
+  merge_categories = FALSE,
+  merge_wasted = merge_categories,
+  merge_malnourished = merge_categories,
+  merge_underweight = merge_categories,
+  merge_stunted = merge_categories,
+  merge_thinness = merge_categories,
   status_col_name = "Nutritional Status",
   simplify = TRUE,
   return = c("wfa", "hfa", "wfh", "bmifa", "hcfa", "acfa", "tsfa", "ssfa")
@@ -113,29 +113,36 @@ the bilateral pitting oedema variable in \code{x}. Valid cell values are
 \code{"n"}, \code{"N"}, or \code{"2"} (no oedema) and \code{"y"},
 \code{"Y"}, or \code{"1"} (oedema present).}
 
-\item{merge_obese}{Logical. When \code{TRUE}, combines all stages of Obesity
+\item{merge_categories}{Logical. Master switch for collapsing granular
+WHO severity labels into a single category, across \emph{all} indices
+(not just BMI-for-age). When \code{TRUE}, combines all stages of Obesity
 ("Stage 1 Obesity", "Stage 2 Obesity", "Stage 3 Obesity", and "Obesity")
-into just \code{"Obese"}. Defaults to \code{FALSE}.}
+into just \code{"Obese"}, and — via the \code{merge_wasted},
+\code{merge_malnourished}, \code{merge_underweight}, \code{merge_stunted},
+and \code{merge_thinness} arguments below, each of which defaults to this
+value — also collapses the wasted, malnourished, underweight, stunted,
+and thinness categories for wfa, hfa, wfh, and acfa. Defaults to
+\code{FALSE}.}
 
 \item{merge_wasted}{Logical. When \code{TRUE}, combines all categories of
 wasted (\code{"Severely wasted"}, \code{"Moderately wasted"}) into just
-\code{"Wasted"}. Defaults to the value of \code{merge_obese}.}
+\code{"Wasted"}. Defaults to the value of \code{merge_categories}.}
 
 \item{merge_malnourished}{Logical. When \code{TRUE}, combines \code{"Severe acute malnutrition"}
 and \code{"Moderate acute malnutrition"} into just \code{"Malnourished"}.
-Defaults to the value of \code{merge_obese}.}
+Defaults to the value of \code{merge_categories}.}
 
 \item{merge_underweight}{Logical. When \code{TRUE}, combines \code{"Severely underweight"}
 and \code{"Moderately underweight"} into just \code{"Underweight"}.
-Defaults to the value of \code{merge_obese}.}
+Defaults to the value of \code{merge_categories}.}
 
 \item{merge_stunted}{Logical. When \code{TRUE}, combines \code{"Severely stunted"}
 and \code{"Moderately stunted"} into just \code{"Stunted"}.
-Defaults to the value of \code{merge_obese}.}
+Defaults to the value of \code{merge_categories}.}
 
 \item{merge_thinness}{Logical. When \code{TRUE}, combines all categories of
 thinness (\code{"Severe thinness"}, \code{"Thinness"}, \code{"Moderate and severe thinness"})
-into just \code{"Thinness"}. Defaults to the value of \code{merge_obese}.}
+into just \code{"Thinness"}. Defaults to the value of \code{merge_categories}.}
 
 \item{status_col_name}{A single character string specifying the name of the
 column to be created for the WHO nutritional status classification.
@@ -149,7 +156,12 @@ primary \code{z_score}.}
 \item{return}{A character string or vector specifying which anthropometric
 indices to compute. One or more of: \code{"wfa"}, \code{"hfa"},
 \code{"wfh"}, \code{"bmifa"}, \code{"hcfa"}, \code{"acfa"},
-\code{"tsfa"}, \code{"ssfa"}. Defaults to all eight.}
+\code{"tsfa"}, \code{"ssfa"}, or \code{"bmi"}. Defaults to the original
+eight WHO indices (\code{"bmi"} is not included by default). Unlike the
+other indices, \code{"bmi"} does not use \code{\link[anthro]{anthro_zscores}}
+or \code{\link[anthroplus]{anthroplus_zscores}}; it is classified using
+the WHO adult BMI cut-offs applied to every row regardless of age — see
+\strong{Details}.}
 }
 \value{
 Each result is an object from \code{"run_anthroindex"} and is a
@@ -175,6 +187,11 @@ raw BMI instead).
 classification label based on z-score (ages < 20 years) or raw BMI
 (ages \eqn{\geq} 20 years, BMIFA only).
 }
+
+For \code{"bmi"}, the result instead contains the original columns from
+\code{x} plus a single numeric \code{bmi} column, with
+\code{status_col_name} classified using the WHO adult BMI cut-offs applied
+to every row regardless of age (see \strong{Details}).
 
 If a single index is requested via \code{return}, the object is returned
 directly. If multiple indices are requested, a named \code{list} of such
@@ -266,7 +283,28 @@ skipped. Required columns per index:
 \item \code{acfa}  — \code{armcircumference_col}
 \item \code{tsfa}  — \code{tricepskinfold_col}
 \item \code{ssfa}  — \code{subscapularskinfold_col}
+\item \code{bmi}   — \code{weight_col} + \code{height_col}
 }
+}
+
+\subsection{Raw BMI (age-independent)}{
+
+Requesting \code{"bmi"} in \code{return} skips the WHO z-score machinery
+entirely (no call to \code{anthro_zscores()}/\code{anthroplus_zscores()}
+for this index, and no age restriction). BMI is computed directly from the
+already unit-converted weight and height:
+\deqn{BMI = \frac{weight_{kg}}{height_{m}^2}}
+\code{weight_kg} is the input weight converted to kilograms according to
+\code{weight_unit}; \code{height_m} is the input height converted to
+centimetres according to \code{height_unit} and then divided by 100 to
+obtain metres (an exact conversion, since 1 m = 100 cm exactly). The
+resulting data frame has a numeric \code{bmi} column, and
+\code{status_col_name} is populated using the WHO \strong{adult} BMI
+cut-offs (see the 20 years and above table below) applied to every row
+regardless of age — no z-score is involved. This differs from
+\code{bmifa}, whose \code{cbmi} column is also raw BMI but is only
+classified with these adult cut-offs for participants aged
+\eqn{\geq} 20 years; younger ages use z-score-based classification instead.
 }
 
 \subsection{WHO nutritional status classifications}{
