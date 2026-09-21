@@ -17,7 +17,12 @@ run_logreg(
   crude = FALSE,
   add_vif = TRUE,
   apply_firth = TRUE,
-  force_apply_firth = FALSE
+  force_apply_firth = FALSE,
+  firth_control = NULL,
+  firth_plcontrol = NULL,
+  stepwise = FALSE,
+  step_n = 1L,
+  verbose = FALSE
 )
 }
 \arguments{
@@ -80,6 +85,40 @@ Firth's correction was applied to each model. Applicable in both standard and cr
 zero-cell detection of \code{apply_firth} and applies Firth's correction to \emph{all} models
 regardless of whether zero cells are present. Ignored if \code{apply_firth = FALSE}.
 Applicable in both standard and crude modes.}
+
+\item{firth_control}{Optional \code{\link[logistf]{logistf.control}} object passed through to
+\code{logistf()}'s \code{control} argument, governing the iterative fitting algorithm (e.g.
+\code{logistf::logistf.control(maxit = 200)}). Use this when a Firth-corrected model reports
+"Maximum number of iterations ... exceeded" for the main fit. Ignored for \code{glm()} models
+and when no model in the run requires Firth's correction. Default is \code{NULL} (logistf's
+own default control).}
+
+\item{firth_plcontrol}{Optional \code{\link[logistf]{logistf.control}} object (despite the name,
+built the same way as \code{firth_control}) passed through to \code{logistf()}'s
+\code{plcontrol} argument, governing convergence of the profile-likelihood confidence
+intervals. Use this when a Firth-corrected model reports "Nonconverged PL confidence limits".
+Default is \code{NULL} (logistf's own default control).}
+
+\item{stepwise}{Logical; if \code{TRUE} (default \code{FALSE}), performs VIF-based backward
+elimination on \code{indep} before the final model is fitted. At each step, a VIF is computed
+per variable (via a parallel \code{glm()} fit, one value per variable rather than per dummy
+level of a factor) for the current \code{confounders + indep} set; if any \code{indep}
+variable has \code{VIF >= 5}, the \code{step_n} variable(s) with the highest VIF are dropped
+and the process repeats. It stops once no remaining \code{indep} variable has \code{VIF >= 5},
+or when only one \code{indep} variable remains (VIF is undefined for a single predictor).
+\code{confounders} are never removed. Mutually exclusive with \code{iterate} (an error is
+raised if both are \code{TRUE}) and ignored (with a warning) when \code{crude = TRUE}. Forces
+\code{add_vif = TRUE} if it was set to \code{FALSE}.}
+
+\item{step_n}{A positive integer (default \code{1}), at most \code{length(indep) + length(confounders)},
+giving how many high-VIF \code{indep} variables are removed per step when \code{stepwise = TRUE}.
+Ignored otherwise.}
+
+\item{verbose}{Logical; if \code{TRUE} (default \code{FALSE}), prints progress messages via
+\code{message()}. When \code{iterate = TRUE}, a running \code{X/Y} counter (completed
+combinations out of the total) is printed as each combination finishes fitting. When
+\code{iterate = FALSE} (and \code{crude = FALSE}), a single message reports the number of
+observations used and whether Firth's correction was applied to the base model.}
 }
 \value{
 If \code{crude = TRUE}, returns a single tidy data frame with rows for all \code{indep}
@@ -91,7 +130,9 @@ Inline model metrics are placed in the first (intercept) row of each variable's 
 If \code{crude = FALSE} and \code{iterate = FALSE}, returns a data frame containing Predictor,
 Log Odds, Std Error, p-value, Significance, OR, 95\\% CIs, VIF, and inline model metrics
 (Deviance, AIC, BIC, McFadden R2, CoxSnell R2, Nagelkerke R2, Tjur R2, Firth Corrected) in
-the first row. Model metrics are also attached as \code{attr(result, "model_metrics")}.
+the first row. Model metrics are also attached as \code{attr(result, "model_metrics")}. When
+\code{stepwise = TRUE}, the variables removed at each step (and their triggering VIF) are
+additionally attached as \code{attr(result, "stepwise_removed")}.
 
 If \code{crude = FALSE} and \code{iterate = TRUE}, returns a named list containing:
 \describe{

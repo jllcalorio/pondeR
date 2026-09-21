@@ -64,6 +64,35 @@
 #'   zero-cell detection of \code{apply_firth} and applies Firth's correction to \emph{all} models
 #'   regardless of whether zero cells are present. Ignored if \code{apply_firth = FALSE}.
 #'   Applicable in both standard and crude modes.
+#' @param firth_control Optional \code{\link[logistf]{logistf.control}} object passed through to
+#'   \code{logistf()}'s \code{control} argument, governing the iterative fitting algorithm (e.g.
+#'   \code{logistf::logistf.control(maxit = 200)}). Use this when a Firth-corrected model reports
+#'   "Maximum number of iterations ... exceeded" for the main fit. Ignored for \code{glm()} models
+#'   and when no model in the run requires Firth's correction. Default is \code{NULL} (logistf's
+#'   own default control).
+#' @param firth_plcontrol Optional \code{\link[logistf]{logistf.control}} object (despite the name,
+#'   built the same way as \code{firth_control}) passed through to \code{logistf()}'s
+#'   \code{plcontrol} argument, governing convergence of the profile-likelihood confidence
+#'   intervals. Use this when a Firth-corrected model reports "Nonconverged PL confidence limits".
+#'   Default is \code{NULL} (logistf's own default control).
+#' @param stepwise Logical; if \code{TRUE} (default \code{FALSE}), performs VIF-based backward
+#'   elimination on \code{indep} before the final model is fitted. At each step, a VIF is computed
+#'   per variable (via a parallel \code{glm()} fit, one value per variable rather than per dummy
+#'   level of a factor) for the current \code{confounders + indep} set; if any \code{indep}
+#'   variable has \code{VIF >= 5}, the \code{step_n} variable(s) with the highest VIF are dropped
+#'   and the process repeats. It stops once no remaining \code{indep} variable has \code{VIF >= 5},
+#'   or when only one \code{indep} variable remains (VIF is undefined for a single predictor).
+#'   \code{confounders} are never removed. Mutually exclusive with \code{iterate} (an error is
+#'   raised if both are \code{TRUE}) and ignored (with a warning) when \code{crude = TRUE}. Forces
+#'   \code{add_vif = TRUE} if it was set to \code{FALSE}.
+#' @param step_n A positive integer (default \code{1}), at most \code{length(indep) + length(confounders)},
+#'   giving how many high-VIF \code{indep} variables are removed per step when \code{stepwise = TRUE}.
+#'   Ignored otherwise.
+#' @param verbose Logical; if \code{TRUE} (default \code{FALSE}), prints progress messages via
+#'   \code{message()}. When \code{iterate = TRUE}, a running \code{X/Y} counter (completed
+#'   combinations out of the total) is printed as each combination finishes fitting. When
+#'   \code{iterate = FALSE} (and \code{crude = FALSE}), a single message reports the number of
+#'   observations used and whether Firth's correction was applied to the base model.
 #'
 #' @details
 #' \strong{Crude odds ratios (\code{crude = TRUE}):} Each variable in \code{indep} is fitted in
@@ -135,7 +164,9 @@
 #' If \code{crude = FALSE} and \code{iterate = FALSE}, returns a data frame containing Predictor,
 #' Log Odds, Std Error, p-value, Significance, OR, 95\% CIs, VIF, and inline model metrics
 #' (Deviance, AIC, BIC, McFadden R2, CoxSnell R2, Nagelkerke R2, Tjur R2, Firth Corrected) in
-#' the first row. Model metrics are also attached as \code{attr(result, "model_metrics")}.
+#' the first row. Model metrics are also attached as \code{attr(result, "model_metrics")}. When
+#' \code{stepwise = TRUE}, the variables removed at each step (and their triggering VIF) are
+#' additionally attached as \code{attr(result, "stepwise_removed")}.
 #'
 #' If \code{crude = FALSE} and \code{iterate = TRUE}, returns a named list containing:
 #' \describe{
@@ -220,7 +251,10 @@
 #' @export
 run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels = NULL,
                        remove = NULL, exclude = NULL, iterate = FALSE, crude = FALSE,
-                       add_vif = TRUE, apply_firth = TRUE, force_apply_firth = FALSE) {
+                       add_vif = TRUE, apply_firth = TRUE, force_apply_firth = FALSE,
+                       firth_control = NULL, firth_plcontrol = NULL,
+                       stepwise = FALSE, step_n = 1L,
+                       verbose = FALSE) {
 
   # --- Integration with run_DIpreprocess ---
   if (inherits(x, "run_DIpreprocess")) {
@@ -254,6 +288,13 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
         call. = FALSE
       )
     }
+    if (stepwise) {
+      warning(
+        "Constructive Warning: 'stepwise' is ignored when 'crude = TRUE'. ",
+        "Crude models have a single predictor each, so VIF-based removal does not apply.",
+        call. = FALSE
+      )
+    }
   } else {
     if (is.null(confounders) && is.null(indep)) {
       stop("Error: Both 'confounders' and 'indep' cannot be NULL at the same time.")
@@ -264,6 +305,30 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
   missing_vars <- setdiff(all_vars, names(x))
   if (length(missing_vars) > 0) {
     stop(sprintf("Error: Predictors not found in data: %s", paste(missing_vars, collapse = ", ")))
+  }
+
+  if (!crude && stepwise) {
+    if (iterate) {
+      stop("Error: 'stepwise' and 'iterate' cannot both be TRUE; choose one variable-selection strategy.")
+    }
+    if (is.null(indep) || length(indep) == 0) {
+      stop("Error: 'stepwise = TRUE' requires 'indep' variables to be specified (confounders are never removed).")
+    }
+    if (!is.numeric(step_n) || length(step_n) != 1L || is.na(step_n) ||
+        step_n != as.integer(step_n) || step_n < 1L) {
+      stop("Error: 'step_n' must be a single positive integer.")
+    }
+    step_n <- as.integer(step_n)
+    if (step_n > length(all_vars)) {
+      stop(sprintf(
+        "Error: 'step_n' (%d) cannot exceed the number of variables in 'indep' + 'confounders' (%d).",
+        step_n, length(all_vars)
+      ))
+    }
+    if (!add_vif) {
+      message("Note: 'add_vif' forced to TRUE because 'stepwise = TRUE' relies on VIF diagnostics.")
+      add_vif <- TRUE
+    }
   }
 
   # ---------------------------------------------------------------------------
@@ -371,7 +436,11 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
   has_zero_cells <- function(pred_vars, data, y_var) {
     for (v in pred_vars) {
       col <- data[[v]]
-      if (is.factor(col) || is.character(col)) {
+      # ponytail: numeric 0/1-coded indicator columns (common for yes/no clinical
+      # flags) are categorical in spirit; without this branch a numeric binary
+      # predictor with a zero cell silently skips Firth detection.
+      is_binary_numeric <- is.numeric(col) && length(unique(col[!is.na(col)])) <= 2L
+      if (is.factor(col) || is.character(col) || is_binary_numeric) {
         tbl <- table(col, data[[y_var]], useNA = "no")
         if (any(tbl == 0L)) return(TRUE)
       }
@@ -383,23 +452,47 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
   # Helper: extract model-fit metrics into a one-row data frame.
   # ---------------------------------------------------------------------------
   get_metrics <- function(model, model_name, firth_used) {
-    suppressWarnings({
-      r2_mcf <- tryCatch(performance::r2_mcfadden(model),  error = function(e) list(NA_real_))
-      r2_cs  <- tryCatch(performance::r2_coxsnell(model),  error = function(e) list(NA_real_))
-      r2_nag <- tryCatch(performance::r2_nagelkerke(model), error = function(e) list(NA_real_))
-      r2_tjr <- tryCatch(performance::r2_tjur(model),       error = function(e) list(NA_real_))
-    })
+    n_obs <- tryCatch(as.numeric(stats::nobs(model)), error = function(e) NA_real_)
 
     extract_num <- function(val) {
       if (is.null(val) || length(val) == 0) return(NA_real_)
       as.numeric(val[[1]])
     }
 
-    n_obs        <- tryCatch(as.numeric(stats::nobs(model)), error = function(e) NA_real_)
-    deviance_val <- tryCatch(as.numeric(model$deviance),     error = function(e) NA_real_)
-    if (is.null(deviance_val) || length(deviance_val) == 0) deviance_val <- NA_real_
-    aic_val      <- tryCatch(as.numeric(stats::AIC(model)),  error = function(e) NA_real_)
-    bic_val      <- tryCatch(as.numeric(stats::BIC(model)),  error = function(e) NA_real_)
+    if (inherits(model, "logistf")) {
+      # logistf has no logLik method; derive metrics directly from stored slots.
+      # ponytail: R2 values use Firth penalized log-likelihoods, not directly
+      #   comparable to glm R2; upgrade path is a logLik.logistf S3 method.
+      ll_null      <- model$loglik[1]
+      ll_fit       <- model$loglik[2]
+      k            <- length(model$coefficients)
+      deviance_val <- -2 * ll_fit
+      aic_val      <- deviance_val + 2 * k
+      bic_val      <- deviance_val + log(model$n) * k
+      r2_cs_val    <- 1 - exp(2 * (ll_null - ll_fit) / model$n)
+      r2_max       <- 1 - exp(2 * ll_null / model$n)
+      r2_mcf_val   <- 1 - ll_fit / ll_null
+      r2_nag_val   <- if (isTRUE(r2_max != 0)) r2_cs_val / r2_max else NA_real_
+      r2_tjr_val   <- tryCatch(
+        as.numeric(performance::r2_tjur(model)[[1]]),
+        error = function(e) NA_real_
+      )
+    } else {
+      suppressWarnings({
+        r2_mcf <- tryCatch(performance::r2_mcfadden(model),   error = function(e) list(NA_real_))
+        r2_cs  <- tryCatch(performance::r2_coxsnell(model),   error = function(e) list(NA_real_))
+        r2_nag <- tryCatch(performance::r2_nagelkerke(model), error = function(e) list(NA_real_))
+        r2_tjr <- tryCatch(performance::r2_tjur(model),       error = function(e) list(NA_real_))
+      })
+      r2_mcf_val   <- extract_num(r2_mcf)
+      r2_cs_val    <- extract_num(r2_cs)
+      r2_nag_val   <- extract_num(r2_nag)
+      r2_tjr_val   <- extract_num(r2_tjr)
+      deviance_val <- tryCatch(as.numeric(model$deviance), error = function(e) NA_real_)
+      if (is.null(deviance_val) || length(deviance_val) == 0) deviance_val <- NA_real_
+      aic_val      <- tryCatch(as.numeric(stats::AIC(model)), error = function(e) NA_real_)
+      bic_val      <- tryCatch(as.numeric(stats::BIC(model)), error = function(e) NA_real_)
+    }
 
     data.frame(
       Model              = model_name,
@@ -407,10 +500,10 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
       Deviance           = deviance_val,
       AIC                = aic_val,
       BIC                = bic_val,
-      `McFadden R2`      = extract_num(r2_mcf),
-      `CoxSnell R2`      = extract_num(r2_cs),
-      `Nagelkerke R2`    = extract_num(r2_nag),
-      `Tjur R2`          = extract_num(r2_tjr),
+      `McFadden R2`      = r2_mcf_val,
+      `CoxSnell R2`      = r2_cs_val,
+      `Nagelkerke R2`    = r2_nag_val,
+      `Tjur R2`          = r2_tjr_val,
       `Firth Corrected`  = firth_used,
       stringsAsFactors   = FALSE,
       check.names        = FALSE
@@ -562,8 +655,10 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
             }
           }, error = function(e) {
             warning(
-              "Constructive Warning: Could not compute VIF. ",
-              "Perfect multicollinearity or a single-predictor model is likely.",
+              "Constructive Warning: Could not compute VIF for model with predictors [",
+              paste(pred_vars, collapse = ", "), "]. ",
+              "Perfect multicollinearity or a rank-deficient model matrix is likely. ",
+              "Consider removing or combining collinear predictors.",
               call. = FALSE
             )
           })
@@ -574,6 +669,39 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
 
     rownames(res_df) <- NULL
     return(res_df)
+  }
+
+  # ---------------------------------------------------------------------------
+  # Helper: one VIF value per (whole) predictor variable, keyed by the plain
+  # variable name -- unlike build_table()'s per-coefficient VIF, this collapses
+  # multi-level factors to a single value so stepwise removal can rank variables
+  # rather than dummy levels. Always fit via glm() (car::vif() doesn't support
+  # logistf), mirroring the Firth VIF fallback already used elsewhere.
+  # ---------------------------------------------------------------------------
+  compute_variable_vif <- function(pred_vars, data) {
+    na_out <- stats::setNames(rep(NA_real_, length(pred_vars)), pred_vars)
+    if (length(pred_vars) < 2) return(na_out)
+
+    form_str <- paste0("`", y, "` ~ ", paste(wrap_backticks(pred_vars), collapse = " + "))
+    vmod <- tryCatch(
+      stats::glm(stats::as.formula(form_str), data = data, family = stats::binomial(link = "logit")),
+      error = function(e) NULL
+    )
+    if (is.null(vmod)) return(na_out)
+
+    vif_raw <- tryCatch(car::vif(vmod), error = function(e) NULL)
+    if (is.null(vif_raw)) return(na_out)
+
+    vif_vec <- if (is.matrix(vif_raw)) {
+      stats::setNames(vif_raw[, "GVIF"], rownames(vif_raw))
+    } else {
+      vif_raw
+    }
+    names(vif_vec) <- gsub("`", "", names(vif_vec))
+
+    matched <- intersect(pred_vars, names(vif_vec))
+    na_out[matched] <- vif_vec[matched]
+    na_out
   }
 
   # ---------------------------------------------------------------------------
@@ -610,8 +738,12 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
     }
 
     if (use_firth) {
+      logistf_args <- list(formula = stats::as.formula(form_str), data = data)
+      if (!is.null(firth_control))   logistf_args$control   <- firth_control
+      if (!is.null(firth_plcontrol)) logistf_args$plcontrol <- firth_plcontrol
+
       mod <- tryCatch(
-        logistf::logistf(stats::as.formula(form_str), data = data, plconf = NULL),
+        do.call(logistf::logistf, logistf_args),
         error = function(e) {
           warning(sprintf(
             "Constructive Warning: Firth model failed for '%s'. Falling back to glm(). Error: %s",
@@ -738,7 +870,49 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
   # ============================================================
   if (!iterate) {
 
-    pred_vars  <- c(confounders, indep)
+    working_indep  <- indep
+    stepwise_steps <- list()
+
+    # -------------------------------------------------------------------------
+    # Stepwise (backward) removal: repeatedly drop the 'step_n' indep
+    # variable(s) with the highest VIF, as long as any remaining indep
+    # variable has VIF >= 5. Confounders are never removed. Each removal
+    # shrinks 'working_indep' by at least one variable, so the loop always
+    # terminates (worst case: one variable left, where VIF is undefined).
+    # -------------------------------------------------------------------------
+    if (stepwise) {
+      step_i <- 0L
+      repeat {
+        vif_now   <- compute_variable_vif(working_indep, x)
+        offenders <- names(vif_now)[!is.na(vif_now) & vif_now >= 5]
+        if (length(offenders) == 0) break
+
+        offenders <- offenders[order(vif_now[offenders], decreasing = TRUE)]
+        n_drop    <- min(step_n, length(offenders), length(working_indep) - 1L)
+        if (n_drop <= 0) break
+        to_drop   <- offenders[seq_len(n_drop)]
+
+        step_i <- step_i + 1L
+        stepwise_steps[[step_i]] <- data.frame(
+          Step    = step_i,
+          Removed = to_drop,
+          VIF     = as.numeric(vif_now[to_drop]),
+          stringsAsFactors = FALSE
+        )
+
+        if (verbose) {
+          message(sprintf(
+            "Stepwise step %d: removing %s (VIF = %s)",
+            step_i, paste(to_drop, collapse = ", "),
+            paste(round(vif_now[to_drop], 2), collapse = ", ")
+          ))
+        }
+
+        working_indep <- setdiff(working_indep, to_drop)
+      }
+    }
+
+    pred_vars  <- c(confounders, working_indep)
     predictors <- wrap_backticks(pred_vars)
     form_str   <- paste0("`", y, "` ~ ", paste(predictors, collapse = " + "))
 
@@ -753,6 +927,21 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
     tbl_out <- append_metrics(tbl_out, metrics_out)
 
     attr(tbl_out, "model_metrics") <- metrics_out
+    if (stepwise) {
+      attr(tbl_out, "stepwise_removed") <- if (length(stepwise_steps) > 0) {
+        do.call(rbind, stepwise_steps)
+      } else {
+        data.frame(Step = integer(0), Removed = character(0), VIF = numeric(0))
+      }
+    }
+
+    if (verbose) {
+      message(sprintf(
+        "Base Model fitted | n = %s observations | Firth's correction: %s",
+        format(metrics_out$N), ifelse(firth_used, "applied", "not applied")
+      ))
+    }
+
     return(tbl_out)
 
   } else {
@@ -768,8 +957,10 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
 
     results_tables <- list()
     metrics_list   <- list()
+    n_combos       <- length(combo_list)
 
-    for (combo in combo_list) {
+    for (i in seq_along(combo_list)) {
+      combo      <- combo_list[[i]]
       combo_name <- paste(combo, collapse = " + ")
       pred_vars  <- c(confounders, combo)
       predictors <- wrap_backticks(pred_vars)
@@ -791,6 +982,10 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
         tbl <- append_metrics(tbl, metrics_row)
 
         results_tables[[combo_name]] <- tbl
+      }
+
+      if (verbose) {
+        message(sprintf("%d/%d | %s", i, n_combos, combo_name))
       }
     }
 
