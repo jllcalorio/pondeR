@@ -197,6 +197,9 @@ coefficient magnitudes instead.
 }
 \examples{
 \dontrun{
+if (requireNamespace("glmnet", quietly = TRUE) &&
+    requireNamespace("caret", quietly = TRUE) &&
+    requireNamespace("foreach", quietly = TRUE)) {
 ## ---- Simulate data -------------------------------------------------------
 set.seed(42)
 n  <- 80
@@ -274,6 +277,7 @@ res_multi <- run_regreg(
   seed          = 1
 )
 res_multi$BestModel$Coefficients
+}
 }
 
 }

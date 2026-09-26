@@ -184,6 +184,9 @@
 #'
 #' @examples
 #' \dontrun{
+#' if (requireNamespace("glmnet", quietly = TRUE) &&
+#'     requireNamespace("caret", quietly = TRUE) &&
+#'     requireNamespace("foreach", quietly = TRUE)) {
 #' ## ---- Simulate data -------------------------------------------------------
 #' set.seed(42)
 #' n  <- 80
@@ -262,6 +265,7 @@
 #' )
 #' res_multi$BestModel$Coefficients
 #' }
+#' }
 #'
 #' @export
 run_regreg <- function(
@@ -284,7 +288,16 @@ run_regreg <- function(
 ) {
 
   # ---------------------------------------------------------------------------
-  # 0. run_DIpreprocess extraction
+  # 0. Dependency check
+  # ---------------------------------------------------------------------------
+  for (pkg in c("glmnet", "caret", "foreach")) {
+    if (!requireNamespace(pkg, quietly = TRUE))
+      stop("Package '", pkg, "' is required by run_regreg(). Install with: install.packages(\"",
+           pkg, "\")", call. = FALSE)
+  }
+
+  # ---------------------------------------------------------------------------
+  # 0.5 run_DIpreprocess extraction
   # ---------------------------------------------------------------------------
   if (inherits(x, "run_DIpreprocess")) {
     if (is.null(metadata))
