@@ -4,3 +4,5 @@
 ^doc$
 ^Meta$
 ^dev$
+^using new\.csv$
+^using old\.csv$
