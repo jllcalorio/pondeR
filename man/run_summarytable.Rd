@@ -203,6 +203,10 @@ zero count (e.g., \code{0 (0.00\%)}) are replaced with empty strings.}
 \item{table_name}{String or \code{NULL}. Table title. \code{"auto"}
 (default) generates a title automatically. \code{NULL} suppresses the
 title.}
+
+\item{.in_subgroup_recursion}{Internal use only. Logical flag set to
+\code{TRUE} when \code{run_summarytable()} calls itself recursively to
+build subgroup tables; not intended to be set by users.}
 }
 \value{
 A \code{gt_tbl} object (via \code{gtsummary::as_gt()}) representing
@@ -226,6 +230,8 @@ are shown as \code{---†} with a corresponding footnote.
 }
 \examples{
 \dontrun{
+if (requireNamespace("forcats", quietly = TRUE) &&
+    requireNamespace("purrr", quietly = TRUE)) {
 library(gtsummary)
 library(dplyr)
 
@@ -313,6 +319,7 @@ sample_df |>
     subgroup = "Education",
     split_by = "Gender"
   )
+}
 }
 
 }

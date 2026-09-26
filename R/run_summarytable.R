@@ -137,6 +137,9 @@
 #' @param table_name String or \code{NULL}. Table title. \code{"auto"}
 #'   (default) generates a title automatically. \code{NULL} suppresses the
 #'   title.
+#' @param .in_subgroup_recursion Internal use only. Logical flag set to
+#'   \code{TRUE} when \code{run_summarytable()} calls itself recursively to
+#'   build subgroup tables; not intended to be set by users.
 #'
 #' @return A \code{gt_tbl} object (via \code{gtsummary::as_gt()}) representing
 #'   the descriptive (and optionally inferential) statistics table.
@@ -152,6 +155,8 @@
 #'
 #' @examples
 #' \dontrun{
+#' if (requireNamespace("forcats", quietly = TRUE) &&
+#'     requireNamespace("purrr", quietly = TRUE)) {
 #' library(gtsummary)
 #' library(dplyr)
 #'
@@ -240,6 +245,7 @@
 #'     split_by = "Gender"
 #'   )
 #' }
+#' }
 #'
 #' @export
 run_summarytable <- function(
@@ -284,7 +290,16 @@ run_summarytable <- function(
 ) {
 
   # ---------------------------------------------------------------------------
-  # 0. Coerce input to data frame
+  # 0. Dependency check
+  # ---------------------------------------------------------------------------
+  for (pkg in c("forcats", "purrr")) {
+    if (!requireNamespace(pkg, quietly = TRUE))
+      stop("Package '", pkg, "' is required by run_summarytable(). Install with: install.packages(\"",
+           pkg, "\")", call. = FALSE)
+  }
+
+  # ---------------------------------------------------------------------------
+  # 0.5 Coerce input to data frame
   # ---------------------------------------------------------------------------
   if (inherits(x, "run_DIpreprocess")) {
     if (is.null(filter)) filter <- eval(x$parameters$qc_types)
