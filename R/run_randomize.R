@@ -586,7 +586,9 @@ run_randomize <- function(
     }
 
     # ── Column name(s): first unnamed element ──────────────────────────────────
-    unnamed_idx <- which(is.null(el_names) | el_names == "")
+    # el_names is NULL when none of el's elements are named (e.g. list("Species"))
+    if (is.null(el_names)) el_names <- rep("", length(el))
+    unnamed_idx <- which(el_names == "")
     cols <- if (length(unnamed_idx) >= 1L) el[[unnamed_idx[1L]]] else NULL
 
     if (is.null(cols) || !is.character(cols) || length(cols) == 0L ||
