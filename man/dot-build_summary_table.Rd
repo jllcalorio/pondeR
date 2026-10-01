@@ -4,7 +4,12 @@
 \alias{.build_summary_table}
 \title{Build a summary_table data frame from a list of run_diff objects}
 \usage{
-.build_summary_table(results_list, outcome_names, test_alpha)
+.build_summary_table(
+  results_list,
+  outcome_names,
+  test_alpha,
+  p_adjust_method = "BH"
+)
 }
 \arguments{
 \item{results_list}{Named list of \code{"run_diff"} objects (one per outcome).}
