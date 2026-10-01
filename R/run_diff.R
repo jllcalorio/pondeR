@@ -1250,7 +1250,8 @@ run_diff <- function(
     names(results) <- outcome
 
     if (summary_table) {
-      results[["summary_table"]] <- .build_summary_table(results, outcome, test_alpha)
+      results[["summary_table"]] <- .build_summary_table(results, outcome, test_alpha, 
+                                                          p_adjust_method)
 
       if (!is.null(subgroup)) {
         for (sg in subgroup) { # Subgroup analysis for multi-outcome summary table
@@ -1270,7 +1271,7 @@ run_diff <- function(
                 }),
                 outcome
               )
-              .build_summary_table(level_results, outcome, test_alpha)
+              .build_summary_table(level_results, outcome, test_alpha, p_adjust_method)
             }
           )
           results[[paste0("summary_table_", sg)]] <- sg_tables
@@ -1831,7 +1832,8 @@ summary.run_diff <- function(object, ...) {
 #'
 #' @return A data frame with one row per outcome.
 #' @keywords internal
-.build_summary_table <- function(results_list, outcome_names, test_alpha) {
+.build_summary_table <- function(results_list, outcome_names, test_alpha,
+                                 p_adjust_method = "BH") {
 
   # Collect the union of all group names across outcomes for average_* columns
   all_groups <- character(0)
@@ -1953,5 +1955,12 @@ summary.run_diff <- function(object, ...) {
 
   tbl           <- do.call(rbind, tbl_rows)
   rownames(tbl) <- NULL
+
+  # multiple-testing correction across outcomes/features. NA p-values
+  # (failed outcomes) pass through unchanged — stats::p.adjust preserves NA
+  # positions natively.
+  tbl$p_value_adj     <- stats::p.adjust(tbl$p_value, method = p_adjust_method)
+  tbl$significant_adj <- !is.na(tbl$p_value_adj) & tbl$p_value_adj < test_alpha
+
   tbl
 }
