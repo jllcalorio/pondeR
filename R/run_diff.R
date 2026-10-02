@@ -1956,11 +1956,17 @@ summary.run_diff <- function(object, ...) {
   tbl           <- do.call(rbind, tbl_rows)
   rownames(tbl) <- NULL
 
-  # multiple-testing correction across outcomes/features. NA p-values
-  # (failed outcomes) pass through unchanged — stats::p.adjust preserves NA
-  # positions natively.
-  tbl$p_value_adj     <- stats::p.adjust(tbl$p_value, method = p_adjust_method)
-  tbl$significant_adj <- !is.na(tbl$p_value_adj) & tbl$p_value_adj < test_alpha
+  # p-value adjustment only added when nrow > 1; rename columns
+  # when adjustment is applied so downstream functions use adjusted values.
+  if (nrow(tbl) > 1) {
+    # multiple-testing correction across outcomes/features. NA p-values
+    # (failed outcomes) pass through unchanged — stats::p.adjust preserves NA
+    # positions natively.
+    tbl$p_value_adj     <- stats::p.adjust(tbl$p_value, method = p_adjust_method)
+    # Drop raw p_value and rename adjusted to standard column name
+    tbl$p_value <- tbl$p_value_adj
+    tbl$p_value_adj <- NULL
+  }
 
   tbl
 }
