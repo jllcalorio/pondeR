@@ -32,8 +32,8 @@ The function automatically detects the thresholds:
 \item \code{up} and \code{down} are retrieved from the \code{run_foldchange} parameters.
 \item Significance threshold (\code{pval}) is retrieved from \code{run_diff} parameters
 (defaulting to 0.05 if not found).
-\item When \code{run_diff} result has multiple outcomes (nrow > 1), the \code{p_value}
-column contains adjusted p-values; otherwise it contains raw p-values.
+\item When \code{run_diff} result has multiple outcomes (nrow > 1), a \code{p_value_adj}
+column is present; this function prefers it over \code{p_value} for the volcano plot.
 }
 }
 \examples{

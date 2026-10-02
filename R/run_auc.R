@@ -364,7 +364,9 @@ run_auc <- function(
         # Handles run_diff multi-outcome with summary_table = TRUE
         st <- diff_obj$summary_table
         col_nm <- if ("outcome" %in% colnames(st)) "outcome" else "feature"
-        pass_diff <- st[[col_nm]][!is.na(st$p_value) & st$p_value < p_value]
+        # ponytail: prefer p_value_adj when present (multi-outcome), else p_value
+        p_col <- if ("p_value_adj" %in% names(st)) "p_value_adj" else "p_value"
+        pass_diff <- st[[col_nm]][!is.na(st[[p_col]]) & st[[p_col]] < p_value]
         
       } else if (inherits(diff_obj, "run_diff")) {
         # Handles a single run_diff object

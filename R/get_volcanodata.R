@@ -22,8 +22,8 @@
 #'   \item \code{up} and \code{down} are retrieved from the \code{run_foldchange} parameters.
 #'   \item Significance threshold (\code{pval}) is retrieved from \code{run_diff} parameters
 #'         (defaulting to 0.05 if not found).
-#'   \item When \code{run_diff} result has multiple outcomes (nrow > 1), the \code{p_value}
-#'         column contains adjusted p-values; otherwise it contains raw p-values.
+#'   \item When \code{run_diff} result has multiple outcomes (nrow > 1), a \code{p_value_adj}
+#'         column is present; this function prefers it over \code{p_value} for the volcano plot.
 #' }
 #'
 #' @examples
@@ -80,13 +80,14 @@ get_volcanodata <- function(..., up = NULL, down = NULL, pval = NULL, filter = T
               diff_obj$params$pval %||% diff_obj$params$adj_pval %||% 0.05
 
   # 3. Construct base table and merge
-  # p_value column in df_diff is already adjusted if needed
-  # (run_diff does this internally), so just use p_value directly
+  # ponytail: prefer p_value_adj when present (multi-outcome, nrow > 1),
+  # otherwise use p_value (single outcome or when no adjustment applied)
   if (!is.null(df_fc)) {
     res <- df_fc
     if (!is.null(df_diff)) {
+      p_col <- if ("p_value_adj" %in% names(df_diff)) "p_value_adj" else "p_value"
       idx <- match(res$feature, df_diff$outcome)
-      res$p_value_used <- df_diff$p_value[idx]
+      res$p_value_used <- df_diff[[p_col]][idx]
     } else {
       warning("No 'run_diff' object provided; p-values set to 1.", call. = FALSE)
       res$p_value_used <- 1
@@ -97,7 +98,8 @@ get_volcanodata <- function(..., up = NULL, down = NULL, pval = NULL, filter = T
     names(res)[names(res) == "outcome"] <- "feature"
     res$fold_change <- 1
     res$log2_fc <- 0
-    res$p_value_used <- df_diff$p_value
+    p_col <- if ("p_value_adj" %in% names(df_diff)) "p_value_adj" else "p_value"
+    res$p_value_used <- df_diff[[p_col]]
   }
 
   # Handle zero p-values to match plot_volcano logic
