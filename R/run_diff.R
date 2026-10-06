@@ -1028,7 +1028,9 @@
 #' @param min_n_threshold Minimum per-group sample size. Default \code{3}.
 #' @param calculate_effect_size Logical. Default \code{TRUE}.
 #' @param perform_posthoc Logical. Default \code{TRUE}.
-#' @param p_adjust_method P-value adjustment method for post-hoc comparisons.
+#' @param p_adjust_method P-value adjustment method for multiple testing correction.
+#'   Applied to post-hoc comparison p-values (when available) and to main test 
+#'   p-values in summary tables when multiple outcomes are analyzed.
 #'   Default \code{"BH"}.
 #' @param group_order Optional character vector specifying group level order.
 #' @param subgroup Optional character vector of column names in \code{metadata}
@@ -1036,6 +1038,23 @@
 #' @param summary_table Logical; when \code{outcome} has length > 1 and
 #'   \code{TRUE}, appends \code{$summary_table} (and subgroup summary tables)
 #'   to the returned list. Default \code{FALSE}.
+#' @param simplify Logical; when \code{summary_table = TRUE}, controls whether
+#'   \code{$summary_table} (and subgroup tables) are post-processed into a
+#'   compact, presentation-ready form (class \code{"run_diff_summary"}, with
+#'   an \code{\link{as_gt}} method). See \code{\link{.simplify_summary_table}}
+#'   for the full set of transformations. Default \code{TRUE}.
+#' @param n_digits_pvalues Numeric or \code{NULL}; decimal places for
+#'   \code{p_value} / \code{p_value_adj} in \code{$summary_table} when
+#'   \code{simplify = TRUE}. \code{NULL} auto-formats (3 d.p. when
+#'   \eqn{p < 0.10}, otherwise 1 d.p.), matching \code{run_summarytable}'s
+#'   \code{n_digits_pvalues}. Default \code{3}.
+#' @param n_digits Integer; decimal places for numeric \code{$summary_table}
+#'   columns (\code{statistic}, \code{mean_*}, effect-size estimate/CI) when
+#'   \code{simplify = TRUE}. Default \code{2}.
+#' @param zero_as_exp Logical; when \code{TRUE} (default) and
+#'   \code{simplify = TRUE}, numeric \code{$summary_table} values that round
+#'   to \code{0} at \code{n_digits} but are genuinely non-zero are shown in
+#'   scientific notation, matching \code{run_summarytable}'s \code{zero_as_exp}.
 #' @param verbose Logical. Default \code{TRUE}.
 #' @param num_cores Integer or \code{"max"}. Default \code{1}.
 #'
@@ -1147,6 +1166,10 @@ run_diff <- function(
     group_order           = NULL,
     subgroup              = NULL,
     summary_table         = FALSE,
+    simplify              = TRUE,
+    n_digits_pvalues      = 3,
+    n_digits              = 2,
+    zero_as_exp           = TRUE,
     verbose               = TRUE,
     num_cores             = 1
 ) {
@@ -1222,6 +1245,15 @@ run_diff <- function(
   if (length(outcome) > 1) {
     if (!is.logical(summary_table) || length(summary_table) != 1L)
       stop("'summary_table' must be a single logical value (TRUE or FALSE).")
+    if (!is.logical(simplify) || length(simplify) != 1L)
+      stop("'simplify' must be a single logical value (TRUE or FALSE).")
+    if (!is.null(n_digits_pvalues) &&
+        (!is.numeric(n_digits_pvalues) || n_digits_pvalues <= 0))
+      stop("'n_digits_pvalues' must be a positive numeric value or NULL.")
+    if (!is.numeric(n_digits) || length(n_digits) != 1L || n_digits < 0)
+      stop("'n_digits' must be a single non-negative numeric value.")
+    if (!is.logical(zero_as_exp) || length(zero_as_exp) != 1L)
+      stop("'zero_as_exp' must be TRUE or FALSE.")
 
     results <- lapply(outcome, function(oc) {
       tryCatch(
@@ -1250,8 +1282,11 @@ run_diff <- function(
     names(results) <- outcome
 
     if (summary_table) {
-      results[["summary_table"]] <- .build_summary_table(results, outcome, test_alpha, 
-                                                          p_adjust_method)
+      results[["summary_table"]] <- .build_summary_table(
+        results, outcome, test_alpha, p_adjust_method,
+        simplify = simplify, n_digits_pvalues = n_digits_pvalues,
+        n_digits = n_digits, zero_as_exp = zero_as_exp
+      )
 
       if (!is.null(subgroup)) {
         for (sg in subgroup) { # Subgroup analysis for multi-outcome summary table
@@ -1271,7 +1306,11 @@ run_diff <- function(
                 }),
                 outcome
               )
-              .build_summary_table(level_results, outcome, test_alpha, p_adjust_method)
+              .build_summary_table(
+                level_results, outcome, test_alpha, p_adjust_method,
+                simplify = simplify, n_digits_pvalues = n_digits_pvalues,
+                n_digits = n_digits, zero_as_exp = zero_as_exp
+              )
             }
           )
           results[[paste0("summary_table_", sg)]] <- sg_tables
@@ -1829,11 +1868,28 @@ summary.run_diff <- function(object, ...) {
 #' @param results_list Named list of \code{"run_diff"} objects (one per outcome).
 #' @param outcome_names Character vector of outcome names (defines row order).
 #' @param test_alpha Significance threshold for the \code{significant} column.
+#' @param simplify Logical. When \code{TRUE} (default), the table is
+#'   post-processed into a compact, presentation-ready form via
+#'   \code{\link{.simplify_summary_table}}: \code{df} drops its
+#'   \code{name = } labels (meanings moved to a footnote), \code{p_value} /
+#'   \code{p_value_adj} are formatted per \code{n_digits_pvalues} and carry
+#'   test-identity superscripts (in place of the dropped \code{test_used}
+#'   column), numeric columns are formatted per \code{n_digits} /
+#'   \code{zero_as_exp}, effect-size columns are compacted into a single
+#'   \code{"ES (95\% CI)"} column with symbolic metric notation, and
+#'   \code{interpretation} line-breaks at each \code{"; "}.
+#' @param n_digits_pvalues Passed to \code{\link{.simplify_summary_table}}.
+#' @param n_digits Passed to \code{\link{.simplify_summary_table}}.
+#' @param zero_as_exp Passed to \code{\link{.simplify_summary_table}}.
 #'
 #' @return A data frame with one row per outcome.
 #' @keywords internal
 .build_summary_table <- function(results_list, outcome_names, test_alpha,
-                                 p_adjust_method = "BH") {
+                                 p_adjust_method  = "BH",
+                                 simplify         = TRUE,
+                                 n_digits_pvalues = 3,
+                                 n_digits         = 2,
+                                 zero_as_exp      = TRUE) {
 
   # Collect the union of all group names across outcomes for average_* columns
   all_groups <- character(0)
@@ -1845,25 +1901,70 @@ summary.run_diff <- function(object, ...) {
   avg_col_names <- if (length(all_groups) > 0)
     paste0("mean_", all_groups) else character(0)
 
-  tbl_rows <- lapply(outcome_names, function(oc) {
+  # ---- Pass 1: raw p-values per outcome, so adjustment can gate interpretation
+  raw_parts <- lapply(outcome_names, function(oc) results_list[[oc]])
+  p_raw <- vapply(raw_parts, function(res) {
+    if (is.null(res) || is.null(res$test_result$p.value))
+      NA_real_ else res$test_result$p.value
+  }, numeric(1))
+  has_adj <- length(p_raw) > 1
+  p_adj   <- if (has_adj) stats::p.adjust(p_raw, method = p_adjust_method) else p_raw
+
+  # Builds the "interpretation" text, gated by whichever p-value (adjusted
+  # when available, raw otherwise) decides significance.
+  .interp_for <- function(gate_p, res, ph, ds) {
+    if (is.na(gate_p) || gate_p >= test_alpha) return("No significant difference")
+    if (!is.null(ph) && nrow(ph) > 0) {
+      sig_interps <- ph$interpretation[
+        ph$significant %in% TRUE &
+        ph$interpretation != "No significant difference between groups"
+      ]
+      return(if (length(sig_interps) > 0)
+        paste(sig_interps, collapse = "; ")
+      else
+        "No significant difference in post hoc")
+    }
+    if (!is.null(ds) && nrow(ds) == 2 && "group" %in% names(ds)) {
+      gn <- as.character(ds$group)
+      if (isTRUE(res$parametric)) {
+        return(if (ds$mean[1] < ds$mean[2])
+          paste0(gn[1], " has lower mean than ",  gn[2])
+        else
+          paste0(gn[1], " has higher mean than ", gn[2]))
+      }
+      y_raw <- res$raw_data$outcome
+      g_raw <- res$raw_data$group
+      rks   <- rank(y_raw)
+      mr    <- tapply(rks, g_raw, mean)
+      return(if (mr[gn[1]] < mr[gn[2]])
+        paste0(gn[1], " tends to have smaller values than ", gn[2])
+      else
+        paste0(gn[1], " tends to have larger values than ", gn[2]))
+    }
+    "No significant difference"
+  }
+
+  tbl_rows <- lapply(seq_along(outcome_names), function(i) {
+    oc  <- outcome_names[i]
     res <- results_list[[oc]]
 
-    # Skeleton row for failed/NULL outcomes
+    # Skeleton row for failed/NULL outcomes — column set must match the
+    # populated-row branch below (rbind.data.frame matches by name, not position).
     if (is.null(res)) {
       base <- data.frame(
         outcome               = oc,
         test_used             = NA_character_,
         statistic             = NA_real_,
         df                    = NA_character_,
+        posthoc_pairs         = NA_integer_,
+        n_significant_posthoc = NA_integer_,
         p_value               = NA_real_,
+        significant           = NA,
         effect_size_metric    = NA_character_,
         effect_size_estimate  = NA_real_,
         effect_size_ci_low    = NA_real_,
         effect_size_ci_high   = NA_real_,
         effect_size_magnitude = NA_character_,
-        significant           = NA,
-        n_significant_posthoc = NA_integer_,
-        posthoc_pairs         = NA_integer_,
         interpretation        = NA_character_,
         stringsAsFactors      = FALSE
       )
@@ -1883,43 +1984,8 @@ summary.run_diff <- function(object, ...) {
       sum(ph$significant, na.rm = TRUE) else NA_integer_
     total_ph <- if (!is.null(ph) && nrow(ph) > 0) nrow(ph) else NA_integer_
 
-    # Interpretation
-    interp_val <- "No significant difference"
-    if (!is.null(tr$p.value) && tr$p.value < test_alpha) {
-      if (!is.null(ph) && nrow(ph) > 0) {
-        sig_interps <- ph$interpretation[
-          ph$significant %in% TRUE &
-          ph$interpretation != "No significant difference between groups"
-        ]
-        interp_val <- if (length(sig_interps) > 0)
-          paste(sig_interps, collapse = "; ")
-        else
-          "No significant difference in post hoc"
-      } else if (!is.null(ds) && nrow(ds) == 2 && "group" %in% names(ds)) {
-        gn <- as.character(ds$group)
-        if (isTRUE(res$parametric)) {
-          interp_val <- if (ds$mean[1] < ds$mean[2])
-            paste0(gn[1], " has lower mean than ",  gn[2])
-          else
-            paste0(gn[1], " has higher mean than ", gn[2])
-        } else {
-          y_raw <- res$raw_data$outcome
-          g_raw <- res$raw_data$group
-          rks   <- rank(y_raw)
-          mr    <- tapply(rks, g_raw, mean)
-          interp_val <- if (mr[gn[1]] < mr[gn[2]])
-            paste0(gn[1], " tends to have smaller values than ", gn[2])
-          else
-            paste0(gn[1], " tends to have larger values than ", gn[2])
-        }
-      }
-    }
-
-    # Significance stars
-    p_signif <- ifelse(is.null(tr$p.value), NA_character_,
-                ifelse(tr$p.value < 0.001, "***",
-                ifelse(tr$p.value < 0.01,  "**",
-                ifelse(tr$p.value < 0.05,  "*", "ns"))))
+    gate_p     <- if (has_adj) p_adj[i] else p_raw[i]
+    interp_val <- .interp_for(gate_p, res, ph, ds)
 
     # Per-group averages
     avg_vals <- stats::setNames(
@@ -1936,19 +2002,18 @@ summary.run_diff <- function(object, ...) {
       test_used        = res$test_used,
       statistic        = if (!is.null(tr$statistic)) as.numeric(tr$statistic[[1]]) else NA_real_,
       df               = df_val,
-      p_value          = if (!is.null(tr$p.value)) tr$p.value else NA_real_,
-      p_signif         = p_signif,
       stringsAsFactors = FALSE
     )
     for (cn in avg_col_names) row[[cn]] <- as.numeric(avg_vals[[cn]])
+    row$posthoc_pairs         <- total_ph
+    row$n_significant_posthoc <- n_sig_ph
+    row$p_value               <- p_raw[i]
+    row$significant           <- if (!is.na(p_raw[i])) p_raw[i] < test_alpha else NA
     row$effect_size_metric    <- if (!is.null(es)) es$metric    else NA_character_
     row$effect_size_estimate  <- if (!is.null(es)) es$estimate  else NA_real_
     row$effect_size_ci_low    <- if (!is.null(es)) es$ci_low    else NA_real_
     row$effect_size_ci_high   <- if (!is.null(es)) es$ci_high   else NA_real_
     row$effect_size_magnitude <- if (!is.null(es)) es$magnitude else NA_character_
-    row$significant           <- if (!is.null(tr$p.value)) tr$p.value < test_alpha else NA
-    row$n_significant_posthoc <- n_sig_ph
-    row$posthoc_pairs         <- total_ph
     row$interpretation        <- interp_val
     row
   })
@@ -1957,14 +2022,299 @@ summary.run_diff <- function(object, ...) {
   rownames(tbl) <- NULL
 
   # ponytail: p-value adjustment only added when nrow > 1.
-  # Keep both raw p_value and add new p_value_adj column when nrow > 1.
   # Downstream functions that need adjusted p-values should check for this column.
-  if (nrow(tbl) > 1) {
-    # multiple-testing correction across outcomes/features. NA p-values
-    # (failed outcomes) pass through unchanged — stats::p.adjust preserves NA
-    # positions natively.
-    tbl$p_value_adj <- stats::p.adjust(tbl$p_value, method = p_adjust_method)
+  if (has_adj) tbl$p_value_adj <- p_adj
+
+  # ---- canonical column order: df | means | effect size | posthoc counts |
+  #      p_value (+ p_value_adj) | significant | interpretation (last) ----
+  col_order <- c("outcome", "test_used", "statistic", "df", avg_col_names,
+                 "effect_size_metric", "effect_size_estimate",
+                 "effect_size_ci_low", "effect_size_ci_high",
+                 "effect_size_magnitude",
+                 "n_significant_posthoc", "posthoc_pairs",
+                 "p_value", if (has_adj) "p_value_adj",
+                 "significant", "interpretation")
+  tbl <- tbl[, intersect(col_order, names(tbl)), drop = FALSE]
+
+  if (isTRUE(simplify))
+    tbl <- .simplify_summary_table(tbl, n_digits_pvalues = n_digits_pvalues,
+                                   n_digits = n_digits, zero_as_exp = zero_as_exp)
+
+  tbl
+}
+
+
+# -----------------------------------------------------------------------------
+#' Format a single numeric value, falling back to scientific notation when it
+#' would otherwise round to zero (mirrors run_summarytable's zero_as_exp).
+#' Whole numbers (e.g. df counts, exact-0/1 CI bounds) are shown bare, with
+#' no decimal places, regardless of \code{dig}.
+#' @keywords internal
+.format_num_simplify <- function(v, dig = 2, zero_as_exp = TRUE) {
+  if (is.na(v)) return(NA_character_)
+  if (abs(v - round(v)) < 1e-8) return(formatC(round(v), format = "d"))
+  if (zero_as_exp && round(v, dig) == 0) {
+    sci <- formatC(v, digits = dig, format = "e")
+    sci <- sub("e\\+0*", "e",  sci)
+    sci <- sub("e-0*",   "e-", sci)
+    return(sci)
+  }
+  formatC(v, format = "f", digits = dig)
+}
+
+
+# -----------------------------------------------------------------------------
+#' Format a p-value string (mirrors run_summarytable's n_digits_pvalues logic)
+#' @keywords internal
+.format_pvalue_simplify <- function(p, n_digits_pvalues = 3) {
+  if (is.na(p)) return(NA_character_)
+  dig <- if (is.null(n_digits_pvalues)) (if (p < 0.10) 3 else 1) else n_digits_pvalues
+  if (p == 1 || round(p, dig) >= 1)
+    return(paste0(">.", strrep("9", dig)))
+  if (p < 0.001) return("<.001")
+  formatted_p <- if (is.null(n_digits_pvalues)) {
+    if (p < 0.10) formatC(p, digits = 3, format = "f") else formatC(p, digits = 1, format = "f")
+  } else {
+    formatC(p, digits = n_digits_pvalues, format = "f")
+  }
+  sub("^0\\.", ".", formatted_p)
+}
+
+
+# -----------------------------------------------------------------------------
+#' Strip "name = " labels from a .format_df() string and reformat the
+#' numbers per n_digits / zero_as_exp, e.g. "df1 = 2, df2 = 27" -> "2, 27",
+#' or "num df = 2, denom df = 24.316" -> "2, 24.32" (n_digits = 2). Needed
+#' because non-integer df (e.g. Welch's ANOVA denom df) otherwise keeps
+#' .format_df()'s fixed 4-decimal rounding regardless of n_digits.
+#' @keywords internal
+.strip_df_labels <- function(x, dig = 2, zero_as_exp = TRUE) {
+  if (is.na(x)) return(x)
+  parts <- strsplit(x, ",\\s*")[[1]]
+  nums  <- suppressWarnings(as.numeric(sub("^.*=\\s*", "", parts)))
+  paste(vapply(nums, .format_num_simplify, character(1),
+              dig = dig, zero_as_exp = zero_as_exp),
+       collapse = ", ")
+}
+
+
+# -----------------------------------------------------------------------------
+#' Footnote explaining what the (now unlabelled) df column holds, per test family
+#' @keywords internal
+.df_footnote_for_tests <- function(test_used_vec) {
+  tu    <- unique(stats::na.omit(test_used_vec))
+  notes <- character(0)
+  if (any(grepl("Kruskal-Wallis", tu)))
+    notes <- c(notes, "Kruskal-Wallis test: df")
+  if (any(grepl("^One-way ANOVA", tu)))
+    notes <- c(notes, "One-way ANOVA: df1 (between-groups), df2 (within-groups)")
+  if (any(grepl("Welch's ANOVA", tu)))
+    notes <- c(notes, "Welch's ANOVA: num df, denom df")
+  if (any(grepl("t-test", tu)))
+    notes <- c(notes, "t-test: df")
+  if (length(notes) == 0) return(NULL)
+  paste0("df: ", paste(notes, collapse = "; "))
+}
+
+
+# -----------------------------------------------------------------------------
+#' Unicode superscript letters a-z, for marking p-values with their test
+#' identity in place of the dropped test_used column. Unicode has no
+#' superscript "q"; it falls back to a parenthesised "(q)".
+#' @keywords internal
+.superscript_letters <- stats::setNames(
+  c("\u1d43","\u1d47","\u1d9c","\u1d48","\u1d49","\u1da0","\u1d4d","\u02b0",
+    "\u2071","\u02b2","\u1d4f","\u02e1","\u1d50","\u207f","\u1d52","\u1d56",
+    "(q)","\u02b3","\u02e2","\u1d57","\u1d58","\u1d5b","\u02b7","\u02e3",
+    "\u02b8","\u1dbb"),
+  letters
+)
+
+
+# -----------------------------------------------------------------------------
+#' Symbolic notation for effect-size metric names, to keep columns narrow
+#' @keywords internal
+.es_metric_symbol <- c(
+  "Cohen's d"                          = "d",
+  "Cohen's d (paired)"                 = "d (paired)",
+  "Rank-biserial correlation"          = "r (rb)",
+  "Rank-biserial correlation (paired)" = "r (rb, paired)",
+  "Eta-squared"                        = "\u03b7\u00b2",
+  "Rank epsilon-squared"               = "\u03b5\u00b2",
+  "Generalized eta-squared (ges)"      = "\u03b7\u00b2G",
+  "Partial eta-squared (pes)"          = "\u03b7\u00b2p"
+)
+
+
+# -----------------------------------------------------------------------------
+#' Simplify a run_diff $summary_table into a compact, presentation-ready table
+#'
+#' Called by \code{\link{.build_summary_table}} when \code{simplify = TRUE}.
+#' Strips verbose \code{df} labels (meaning moved to a footnote), formats
+#' p-values / numeric columns, compacts effect-size columns into a single
+#' \code{"ES (95\% CI)"} column with symbolic metric notation, drops
+#' \code{test_used} in favour of superscript markers on \code{p_value} /
+#' \code{p_value_adj}, and line-breaks \code{interpretation} at each \code{"; "}.
+#' The table's footnotes are attached as the \code{"df_footnote"} and
+#' \code{"pvalue_legend"} attributes, rendered by \code{\link{as_gt.run_diff_summary}}.
+#'
+#' @param tbl A \code{summary_table} data frame as built by
+#'   \code{\link{.build_summary_table}} (pre-simplification column order).
+#' @keywords internal
+.simplify_summary_table <- function(tbl, n_digits_pvalues = 3,
+                                    n_digits = 2, zero_as_exp = TRUE) {
+
+  test_used_vec <- tbl$test_used
+
+  # ---- df: strip "name = " labels and reformat numbers per n_digits ----
+  if ("df" %in% names(tbl))
+    tbl$df <- vapply(tbl$df, .strip_df_labels, character(1),
+                     dig = n_digits, zero_as_exp = zero_as_exp)
+  df_footnote <- .df_footnote_for_tests(test_used_vec)
+
+  # ---- p_value / p_value_adj: format + superscript test-identity marker
+  #      (replaces the dropped test_used column) ----
+  distinct_tests <- unique(stats::na.omit(test_used_vec))
+  letters_map    <- stats::setNames(letters[seq_along(distinct_tests)], distinct_tests)
+  sup_map        <- stats::setNames(.superscript_letters[letters_map], distinct_tests)
+  # ponytail: 26 distinct tests max (letters a-z; Unicode has no superscript
+  # "q", which falls back to a parenthesised "(q)"); extend if ever needed.
+
+  .add_marker <- function(p_str, test_nm) {
+    if (is.na(p_str) || is.na(test_nm) || !test_nm %in% names(sup_map)) return(p_str)
+    paste0(p_str, sup_map[[test_nm]])
   }
 
+  for (pcol in intersect(c("p_value", "p_value_adj"), names(tbl))) {
+    fmt <- vapply(tbl[[pcol]], .format_pvalue_simplify, character(1),
+                 n_digits_pvalues = n_digits_pvalues)
+    tbl[[pcol]] <- mapply(.add_marker, fmt, test_used_vec, USE.NAMES = FALSE)
+  }
+  tbl$test_used <- NULL
+
+  pvalue_legend <- if (length(letters_map) > 0)
+    paste0("Test used: ", paste(paste0(sup_map, " = ", names(sup_map)), collapse = "; "))
+  else NULL
+
+  # ---- statistic / mean_* : zero_as_exp numeric formatting ----
+  for (cn in grep("^statistic$|^mean_", names(tbl), value = TRUE)) {
+    tbl[[cn]] <- vapply(tbl[[cn]], .format_num_simplify, character(1),
+                        dig = n_digits, zero_as_exp = zero_as_exp)
+  }
+
+  # ---- effect size: format + merge estimate/CI into "ES (95% CI)" ----
+  es_cols <- c("effect_size_estimate", "effect_size_ci_low", "effect_size_ci_high")
+  if (all(es_cols %in% names(tbl))) {
+    est <- vapply(tbl$effect_size_estimate, .format_num_simplify, character(1), dig = n_digits, zero_as_exp = zero_as_exp)
+    lo  <- vapply(tbl$effect_size_ci_low,   .format_num_simplify, character(1), dig = n_digits, zero_as_exp = zero_as_exp)
+    hi  <- vapply(tbl$effect_size_ci_high,  .format_num_simplify, character(1), dig = n_digits, zero_as_exp = zero_as_exp)
+    es_merged  <- ifelse(is.na(tbl$effect_size_estimate), NA_character_,
+                         sprintf("%s (%s, %s)", est, lo, hi))
+    insert_pos <- which(names(tbl) == "effect_size_estimate") - 1L
+    tbl[es_cols] <- NULL
+    tbl <- as.data.frame(
+      append(tbl, stats::setNames(list(es_merged), "ES (95% CI)"), after = insert_pos),
+      stringsAsFactors = FALSE, check.names = FALSE
+    )
+  }
+
+  if ("effect_size_magnitude" %in% names(tbl))
+    names(tbl)[names(tbl) == "effect_size_magnitude"] <- "ES_magnitude"
+
+  if ("effect_size_metric" %in% names(tbl)) {
+    sym <- .es_metric_symbol[tbl$effect_size_metric]
+    sym[is.na(sym)] <- tbl$effect_size_metric[is.na(sym)]
+    tbl$effect_size_metric <- unname(sym)
+    names(tbl)[names(tbl) == "effect_size_metric"] <- "ES_metric"
+  }
+
+  # ---- interpretation: break onto a new line after each "; " ----
+  if ("interpretation" %in% names(tbl))
+    tbl$interpretation <- gsub("; ", ";\n", tbl$interpretation, fixed = TRUE)
+
+  attr(tbl, "df_footnote")   <- df_footnote
+  attr(tbl, "pvalue_legend") <- pvalue_legend
+  class(tbl) <- c("run_diff_summary", "data.frame")
+  tbl
+}
+
+
+# -----------------------------------------------------------------------------
+#' Subset a run_diff_summary table while keeping its footnote attributes
+#'
+#' Base \code{`[.data.frame`} keeps \code{class} on subsetting but drops
+#' other attributes, so a plain \code{tbl[rows, ]} (e.g. filtering to
+#' significant rows) silently loses the \code{df_footnote} /
+#' \code{pvalue_legend} attributes that \code{\link{as_gt.run_diff_summary}}
+#' relies on even though \code{class(tbl)} still reads
+#' \code{"run_diff_summary"}. This method re-attaches them after subsetting.
+#' It does not help across \code{rbind()} / \code{dplyr} verbs /
+#' \code{as.data.frame()}, which bypass this method entirely; recombine
+#' \code{run_diff_summary} tables \emph{after} calling \code{\link{as_gt}} on
+#' each (or re-attach the attributes manually) if you need the footnotes to
+#' survive a merge.
+#'
+#' @param x A \code{run_diff_summary} data frame.
+#' @param ... Forwarded to \code{`[.data.frame`}.
+#' @return The subset, re-classed as \code{run_diff_summary} when the result
+#'   is still a data frame.
+#' @export
+`[.run_diff_summary` <- function(x, ...) {
+  df_fn <- attr(x, "df_footnote",   exact = TRUE)
+  pv_fn <- attr(x, "pvalue_legend", exact = TRUE)
+  out   <- NextMethod()
+  if (is.data.frame(out)) {
+    attr(out, "df_footnote")   <- df_fn
+    attr(out, "pvalue_legend") <- pv_fn
+    class(out) <- c("run_diff_summary", "data.frame")
+  }
+  out
+}
+
+
+# -----------------------------------------------------------------------------
+#' Convert a simplified run_diff summary_table to a gt table
+#'
+#' Renders the \code{df_footnote} and \code{pvalue_legend} attributes
+#' attached by \code{\link{.simplify_summary_table}} as source notes, mirroring
+#' \code{\link{as_gt.run_correl}}'s footnote pattern. Row-subsetting via
+#' \code{`[`} (see \code{\link{[.run_diff_summary}}) preserves these
+#' attributes; operations that bypass it (\code{rbind()}, \code{dplyr}
+#' verbs, \code{as.data.frame()}) do not, even though \code{class(x)} still
+#' reads \code{"run_diff_summary"} — in that case a generic fallback note is
+#' shown instead of nothing.
+#'
+#' @param x A \code{run_diff_summary} data frame (i.e. \code{$summary_table}
+#'   from \code{run_diff(..., summary_table = TRUE)} with \code{simplify = TRUE}).
+#' @param ... Additional arguments forwarded to \code{gt::gt()}.
+#' @return A \code{gt_tbl} object.
+#' @export
+as_gt.run_diff_summary <- function(x, ...) {
+  if (!requireNamespace("gt", quietly = TRUE))
+    stop("Package 'gt' is required. Install it with: install.packages('gt')",
+         call. = FALSE)
+
+  df_fn <- attr(x, "df_footnote",   exact = TRUE)
+  pv_fn <- attr(x, "pvalue_legend", exact = TRUE)
+
+  # ponytail: df_footnote/pvalue_legend are plain attributes — anything that
+  # doesn't dispatch through `[.run_diff_summary` (rbind(), dplyr verbs,
+  # as.data.frame()) drops them while leaving class(x) untouched. Fall back
+  # to a generic note rather than silently showing no footnote at all.
+  if (is.null(df_fn) && "df" %in% names(x))
+    df_fn <- paste("df: meaning depends on the test used per row (see run_diff()",
+                   "documentation); specific wording was lost when this table was",
+                   "reshaped (e.g. via rbind(), dplyr verbs) after being built by run_diff().")
+  if (is.null(pv_fn) && "p_value" %in% names(x) && any(!is.na(x$p_value)))
+    pv_fn <- paste("Superscripts in p_value/p_value_adj denote the test used per row;",
+                   "the letter-to-test legend was lost when this table was reshaped",
+                   "after being built by run_diff().")
+
+  tmp        <- x
+  class(tmp) <- "data.frame"
+
+  tbl <- gt::gt(tmp, ...)
+  if (!is.null(df_fn)) tbl <- gt::tab_source_note(tbl, source_note = df_fn)
+  if (!is.null(pv_fn)) tbl <- gt::tab_source_note(tbl, source_note = pv_fn)
   tbl
 }

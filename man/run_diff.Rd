@@ -29,6 +29,10 @@ run_diff(
   group_order = NULL,
   subgroup = NULL,
   summary_table = FALSE,
+  simplify = TRUE,
+  n_digits_pvalues = 3,
+  n_digits = 2,
+  zero_as_exp = TRUE,
   verbose = TRUE,
   num_cores = 1
 )
@@ -124,7 +128,9 @@ Greenhouse-Geisser when sphericity is violated), \code{"GG"},
 
 \item{perform_posthoc}{Logical. Default \code{TRUE}.}
 
-\item{p_adjust_method}{P-value adjustment method for post-hoc comparisons.
+\item{p_adjust_method}{P-value adjustment method for multiple testing correction.
+Applied to post-hoc comparison p-values (when available) and to main test
+p-values in summary tables when multiple outcomes are analyzed.
 Default \code{"BH"}.}
 
 \item{group_order}{Optional character vector specifying group level order.}
@@ -135,6 +141,27 @@ for stratified analysis.}
 \item{summary_table}{Logical; when \code{outcome} has length > 1 and
 \code{TRUE}, appends \code{$summary_table} (and subgroup summary tables)
 to the returned list. Default \code{FALSE}.}
+
+\item{simplify}{Logical; when \code{summary_table = TRUE}, controls whether
+\code{$summary_table} (and subgroup tables) are post-processed into a
+compact, presentation-ready form (class \code{"run_diff_summary"}, with
+an \code{\link{as_gt}} method). See \code{\link{.simplify_summary_table}}
+for the full set of transformations. Default \code{TRUE}.}
+
+\item{n_digits_pvalues}{Numeric or \code{NULL}; decimal places for
+\code{p_value} / \code{p_value_adj} in \code{$summary_table} when
+\code{simplify = TRUE}. \code{NULL} auto-formats (3 d.p. when
+\eqn{p < 0.10}, otherwise 1 d.p.), matching \code{run_summarytable}'s
+\code{n_digits_pvalues}. Default \code{3}.}
+
+\item{n_digits}{Integer; decimal places for numeric \code{$summary_table}
+columns (\code{statistic}, \code{mean_*}, effect-size estimate/CI) when
+\code{simplify = TRUE}. Default \code{2}.}
+
+\item{zero_as_exp}{Logical; when \code{TRUE} (default) and
+\code{simplify = TRUE}, numeric \code{$summary_table} values that round
+to \code{0} at \code{n_digits} but are genuinely non-zero are shown in
+scientific notation, matching \code{run_summarytable}'s \code{zero_as_exp}.}
 
 \item{verbose}{Logical. Default \code{TRUE}.}
 

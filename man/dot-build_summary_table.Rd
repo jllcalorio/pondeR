@@ -8,7 +8,11 @@
   results_list,
   outcome_names,
   test_alpha,
-  p_adjust_method = "BH"
+  p_adjust_method = "BH",
+  simplify = TRUE,
+  n_digits_pvalues = 3,
+  n_digits = 2,
+  zero_as_exp = TRUE
 )
 }
 \arguments{
@@ -17,6 +21,23 @@
 \item{outcome_names}{Character vector of outcome names (defines row order).}
 
 \item{test_alpha}{Significance threshold for the \code{significant} column.}
+
+\item{simplify}{Logical. When \code{TRUE} (default), the table is
+post-processed into a compact, presentation-ready form via
+\code{\link{.simplify_summary_table}}: \code{df} drops its
+\code{name = } labels (meanings moved to a footnote), \code{p_value} /
+\code{p_value_adj} are formatted per \code{n_digits_pvalues} and carry
+test-identity superscripts (in place of the dropped \code{test_used}
+column), numeric columns are formatted per \code{n_digits} /
+\code{zero_as_exp}, effect-size columns are compacted into a single
+\code{"ES (95\% CI)"} column with symbolic metric notation, and
+\code{interpretation} line-breaks at each \code{"; "}.}
+
+\item{n_digits_pvalues}{Passed to \code{\link{.simplify_summary_table}}.}
+
+\item{n_digits}{Passed to \code{\link{.simplify_summary_table}}.}
+
+\item{zero_as_exp}{Passed to \code{\link{.simplify_summary_table}}.}
 }
 \value{
 A data frame with one row per outcome.
