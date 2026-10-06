@@ -6,8 +6,8 @@
 \usage{
 plot_diff(
   x,
-  outcome,
-  group,
+  outcome = NULL,
+  group = NULL,
   metadata = NULL,
   plot_vars = NULL,
   plot_type = "boxplot",
@@ -47,17 +47,30 @@ plot_diff(
 )
 }
 \arguments{
-\item{x}{A data frame containing the variables to plot.}
+\item{x}{A data frame containing the variables to plot, OR a pre-computed
+multi-outcome \code{"run_diff"} object (i.e. the result of
+\code{run_diff(..., summary_table = TRUE)} with more than one
+\code{outcome}). When \code{x} is a \code{"run_diff"} object,
+\code{plot_diff} reuses its statistics instead of recomputing them, and
+prefers the \code{p_value_adj} column of \code{x$summary_table} (falling
+back to \code{p_value} when adjustment was not performed, i.e. a single
+outcome) for determining significance. \code{subgroup} and
+\code{sample_id}/\code{label_points} are not supported in this mode;
+run \code{run_diff(..., subgroup = ...)} beforehand, or pass the
+underlying data frame instead.}
 
 \item{outcome}{Character string specifying the column name for the numeric
 outcome variable. Used as the default for \code{plot_vars} if it is not
-specified.}
+specified. Ignored when \code{x} is a \code{"run_diff"} object (use
+\code{plot_vars} to select outcomes instead).}
 
 \item{group}{Character string specifying the column name for the grouping
-variable.}
+variable. Ignored when \code{x} is a \code{"run_diff"} object (the
+grouping variable used by \code{run_diff} is reused automatically).}
 
 \item{metadata}{A data frame containing metadata (e.g., grouping variables).
-If \code{NULL}, \code{x} is used as metadata. Default is \code{NULL}.}
+If \code{NULL}, \code{x} is used as metadata. Default is \code{NULL}.
+Not used when \code{x} is a \code{"run_diff"} object.}
 
 \item{plot_vars}{Character vector specifying column name(s) for numeric
 variables to plot. If \code{NULL} (default), uses the value of
