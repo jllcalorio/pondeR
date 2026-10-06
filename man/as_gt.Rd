@@ -7,12 +7,19 @@
 \usage{
 as_gt(x, ...)
 
-\method{as_gt}{run_correl}(x, ...)
+\method{as_gt}{run_correl}(x, format_p = TRUE, ...)
 }
 \arguments{
 \item{x}{An object to convert.}
 
 \item{...}{Additional arguments.}
+
+\item{format_p}{Logical. If \code{TRUE} (default), the \code{p_value} and
+\code{p_value_adj} columns (when present) are displayed via
+\code{\link{format.pval}} so that values indistinguishable from zero at
+double precision render as \code{"< 2.2e-16"}, matching
+\code{stats::cor.test}'s convention. Cosmetic only; does not affect the
+source \code{x}.}
 }
 \value{
 A \code{gt_tbl} object.
