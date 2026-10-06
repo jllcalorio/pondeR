@@ -9,14 +9,27 @@
 #' performed internally via \code{\link{.run_diff_single}}, the unexported
 #' single-outcome engine that powers \code{\link{run_diff}}.
 #'
-#' @param x A data frame containing the variables to plot.
+#' @param x A data frame containing the variables to plot, OR a pre-computed
+#'   multi-outcome \code{"run_diff"} object (i.e. the result of
+#'   \code{run_diff(..., summary_table = TRUE)} with more than one
+#'   \code{outcome}). When \code{x} is a \code{"run_diff"} object,
+#'   \code{plot_diff} reuses its statistics instead of recomputing them, and
+#'   prefers the \code{p_value_adj} column of \code{x$summary_table} (falling
+#'   back to \code{p_value} when adjustment was not performed, i.e. a single
+#'   outcome) for determining significance. \code{subgroup} and
+#'   \code{sample_id}/\code{label_points} are not supported in this mode;
+#'   run \code{run_diff(..., subgroup = ...)} beforehand, or pass the
+#'   underlying data frame instead.
 #' @param outcome Character string specifying the column name for the numeric
 #'   outcome variable. Used as the default for \code{plot_vars} if it is not
-#'   specified.
+#'   specified. Ignored when \code{x} is a \code{"run_diff"} object (use
+#'   \code{plot_vars} to select outcomes instead).
 #' @param group Character string specifying the column name for the grouping
-#'   variable.
+#'   variable. Ignored when \code{x} is a \code{"run_diff"} object (the
+#'   grouping variable used by \code{run_diff} is reused automatically).
 #' @param metadata A data frame containing metadata (e.g., grouping variables).
 #'   If \code{NULL}, \code{x} is used as metadata. Default is \code{NULL}.
+#'   Not used when \code{x} is a \code{"run_diff"} object.
 #' @param plot_vars Character vector specifying column name(s) for numeric
 #'   variables to plot. If \code{NULL} (default), uses the value of
 #'   \code{outcome}.
@@ -156,8 +169,8 @@
 #'
 #' @export
 plot_diff <- function(x,
-                      outcome,
-                      group,
+                      outcome           = NULL,
+                      group             = NULL,
                       metadata          = NULL,
                       plot_vars         = NULL,
                       plot_type         = "boxplot",
@@ -270,36 +283,71 @@ plot_diff <- function(x,
   # ---------------------------------------------------------------------------
   # 4. Input validation
   # ---------------------------------------------------------------------------
-  if (!is.data.frame(x))
-    stop("'x' must be a data frame.")
+  use_rundiff_input <- inherits(x, "run_diff")
 
-  if (is.null(metadata)) metadata <- x
+  if (!is.data.frame(x) && !use_rundiff_input)
+    stop("'x' must be a data frame, or a 'run_diff' object (see ?run_diff).")
 
-  if (!all(outcome %in% names(x)))
-    stop("Outcome variable not found in x.")
-  if (!group %in% names(metadata))
-    stop("Group variable not found in metadata.")
+  if (use_rundiff_input) {
+    if (is.null(x$summary_table) || !is.data.frame(x$summary_table))
+      stop(paste(
+        "When 'x' is a 'run_diff' object, it must include '$summary_table'.",
+        "Call run_diff(x, ..., outcome = <length > 1>, summary_table = TRUE)."
+      ))
+    if (!is.null(subgroup))
+      stop(paste(
+        "'subgroup' is not supported when 'x' is a 'run_diff' object.",
+        "Run run_diff(x, ..., subgroup = ...) first, or pass the",
+        "underlying data frame as 'x' instead."
+      ))
+    if (!is.null(sample_id) || !is.null(label_points))
+      stop(paste(
+        "'sample_id'/'label_points' are not supported when 'x' is a",
+        "'run_diff' object; pass the underlying data frame as 'x' instead."
+      ))
 
-  if (!is.null(subgroup)) {
-    if (!is.character(subgroup))
-      stop("'subgroup' must be a character vector of column names.")
-    missing_sg <- setdiff(subgroup, names(metadata))
-    if (length(missing_sg) > 0)
-      stop(paste("Subgroup column(s) not found in metadata:", paste(missing_sg, collapse = ", ")))
-    non_cat <- subgroup[sapply(subgroup, function(s) is.numeric(metadata[[s]]) && !is.factor(metadata[[s]]))]
-    if (length(non_cat) > 0)
-      stop(paste("Subgroup column(s) must be categorical:", paste(non_cat, collapse = ", ")))
+    run_diff_obj   <- x
+    summary_tbl    <- x$summary_table
+    avail_outcomes <- summary_tbl$outcome
+
+    if (is.null(plot_vars)) plot_vars <- if (!is.null(outcome)) outcome else avail_outcomes
+    if (!all(plot_vars %in% avail_outcomes))
+      stop(paste("Variable(s) to plot not found in x$summary_table:",
+                 paste(setdiff(plot_vars, avail_outcomes), collapse = ", ")))
+
+    # Grouping variable is reused from the run_diff object (all outcomes
+    # share the same 'group'; take it from the first requested outcome).
+    group <- run_diff_obj[[plot_vars[1]]]$group_var
+  } else {
+    if (is.null(metadata)) metadata <- x
+
+    if (is.null(outcome) || !all(outcome %in% names(x)))
+      stop("Outcome variable not found in x.")
+    if (is.null(group) || !group %in% names(metadata))
+      stop("Group variable not found in metadata.")
+
+    if (!is.null(subgroup)) {
+      if (!is.character(subgroup))
+        stop("'subgroup' must be a character vector of column names.")
+      missing_sg <- setdiff(subgroup, names(metadata))
+      if (length(missing_sg) > 0)
+        stop(paste("Subgroup column(s) not found in metadata:", paste(missing_sg, collapse = ", ")))
+      non_cat <- subgroup[sapply(subgroup, function(s) is.numeric(metadata[[s]]) && !is.factor(metadata[[s]]))]
+      if (length(non_cat) > 0)
+        stop(paste("Subgroup column(s) must be categorical:", paste(non_cat, collapse = ", ")))
+    }
+
+    if (is.null(plot_vars)) plot_vars <- outcome
+    if (!all(plot_vars %in% names(x)))
+      stop(paste("Variable(s) to plot not found in data:",
+                 paste(setdiff(plot_vars, names(x)), collapse = ", ")))
   }
-
-  if (is.null(plot_vars)) plot_vars <- outcome
-  if (!all(plot_vars %in% names(x)))
-    stop(paste("Variable(s) to plot not found in data:",
-               paste(setdiff(plot_vars, names(x)), collapse = ", ")))
 
   # ---------------------------------------------------------------------------
   # 5. Internal stat engine (calls the unexported helper directly)
   # ---------------------------------------------------------------------------
   .get_stats <- function(data_in, meta_in, var) {
+    if (use_rundiff_input) return(run_diff_obj[[var]])
     res <- NULL
     tryCatch({
       res <- .run_diff_single(
@@ -340,7 +388,7 @@ plot_diff <- function(x,
 
   for (i in seq_along(plot_vars)) {
     var <- plot_vars[i]
-    if (!is.numeric(x[[var]])) {
+    if (!use_rundiff_input && !is.numeric(x[[var]])) {
       warning(paste("Variable", var, "is not numeric. Skipping."))
       next
     }
@@ -348,10 +396,20 @@ plot_diff <- function(x,
     stat_results <- .get_stats(x, metadata, var)
     if (is.null(stat_results)) next
 
-    n_groups        <- stat_results$n_groups
-    main_test_p_val <- stat_results$test_result$p.value
-    posthoc_data    <- stat_results$posthoc_result
-    is_parametric   <- isTRUE(stat_results$parametric)
+    n_groups      <- stat_results$n_groups
+    posthoc_data  <- stat_results$posthoc_result
+    is_parametric <- isTRUE(stat_results$parametric)
+
+    # Prefer the multiple-testing-adjusted p-value from x$summary_table
+    # (p_value_adj) when available; otherwise fall back to the raw main-test
+    # p-value. p_value_adj is only present when summary_table was built from
+    # more than one outcome (see .build_summary_table()).
+    main_test_p_val <- if (use_rundiff_input) {
+      p_col <- if ("p_value_adj" %in% names(summary_tbl)) "p_value_adj" else "p_value"
+      summary_tbl[[p_col]][summary_tbl$outcome == var]
+    } else {
+      stat_results$test_result$p.value
+    }
 
     # # Prepare plotting data from raw_data stored in the rich list
     # plot_data           <- stat_results$raw_data
