@@ -17,8 +17,10 @@ run_correl(
   sig_threshold = 0.05,
   normality_method = "auto",
   alpha_normality = 0.05,
+  exact = NULL,
   interpretation = NULL,
   summary_table_only = FALSE,
+  p_adjust_method = "BH",
   method_in_row = TRUE,
   verbose = FALSE,
   ...
@@ -93,6 +95,10 @@ Shapiro-Wilk for \eqn{n < 50} and Lilliefors otherwise.}
 the significance threshold used internally for normality and variance
 tests when \code{method = "auto"}. Default \code{0.05}.}
 
+\item{exact}{Logical or \code{NULL}. When \code{method} is \code{"spearman"}
+or \code{"kendall"}, controls whether an exact p-value should be computed.
+Passed to \code{\link[stats]{cor.test}}. Default \code{NULL} (let \code{cor.test} decide).}
+
 \item{interpretation}{Character string or \code{NULL}. If not \code{NULL} and
 \code{summary_table_only = TRUE}, adds a qualitative interpretation column
 based on \code{"psychology"}, \code{"politics"}, or \code{"medicine"}
@@ -100,6 +106,13 @@ thresholds. Default \code{NULL}.}
 
 \item{summary_table_only}{Logical. If \code{TRUE}, returns only a single
 data frame with all result columns. Default is \code{FALSE}.}
+
+\item{p_adjust_method}{P-value adjustment method for multiple testing correction.
+One of \code{"holm"}, \code{"hochberg"}, \code{"hommel"}, \code{"bonferroni"},
+\code{"BH"} (default), \code{"BY"}, \code{"fdr"}, or \code{"none"}.
+Applied only when \code{summary_table_only = TRUE} and the number of
+variable pairs is greater than 1. A \code{p_value_adj} column is added to
+the returned data frame when applicable. Default \code{"BH"}.}
 
 \item{method_in_row}{Logical. When summary_table_only = TRUE and
 method_in_row = FALSE, the method column is removed.
@@ -112,8 +125,8 @@ assumption checks and method selection are printed. Default \code{FALSE}.}
 \item{...}{Additional arguments passed to \code{\link[stats]{cor.test}}.}
 }
 \value{
-A named list of class \code{"run_correl"} with the following
-elements:
+When \code{summary_table_only = FALSE}, returns a named list of class
+\code{"run_correl"} with the following elements:
 \describe{
 \item{\code{correlations}}{A tidy data frame of pairwise correlation
 estimates with columns \code{var1}, \code{var2}, \code{estimate},
@@ -129,6 +142,13 @@ estimates with columns \code{var1}, \code{var2}, \code{estimate},
 \item{\code{method}}{The method argument as supplied.}
 \item{\code{call}}{The matched call.}
 }
+
+When \code{summary_table_only = TRUE}, returns a data frame of class
+\code{"run_correl"} with columns \code{var1}, \code{var2}, \code{estimate},
+\code{ci_lower}, \code{ci_upper}, \code{p_value}, and \code{method}.
+When the number of variable pairs is greater than 1, an additional
+\code{p_value_adj} column contains adjusted p-values. Optional columns
+\code{interpretation} may be present if requested.
 }
 \description{
 Computes pairwise or targeted correlation analysis between numeric, ordinal,
@@ -163,6 +183,17 @@ Levene's test (requires \pkg{car}) with Bartlett's test as fallback.
 Confidence intervals for Cramer's V and polychoric/polyserial correlations
 are not available and are returned as \code{NA}. When \code{summary_table_only = TRUE},
 the function returns a flat data frame instead of the structured list.
+
+\strong{P-value adjustment:} When \code{summary_table_only = TRUE} and the number
+of variable pairs is greater than 1, p-values are adjusted using the method
+specified in \code{p_adjust_method}, with results stored in a \code{p_value_adj}
+column. This accounts for multiple comparisons across pairs.
+
+\strong{Exact p-values:} For Kendall's tau and Spearman's rho, the \code{exact}
+parameter determines whether an exact p-value is computed. When \code{NULL} (default),
+\code{cor.test} automatically decides based on sample size and ties; when \code{TRUE}
+or \code{FALSE}, the choice is forced. See \code{\link[stats]{cor.test}} details
+for the meaning of \code{NULL}.
 
 \strong{Interpretation thresholds} (\code{interpretation}):
 
