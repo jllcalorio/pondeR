@@ -102,6 +102,14 @@ get_volcanodata <- function(..., up = NULL, down = NULL, pval = NULL, filter = T
     res$p_value_used <- df_diff[[p_col]]
   }
 
+  # Coerce character p-values back to numeric (run_diff with simplify=TRUE produces
+  # formatted character strings with superscript test markers; strip those markers)
+  if (is.character(res$p_value_used)) {
+    res$p_value_used <- suppressWarnings(
+      as.numeric(gsub("[^0-9.]", "", res$p_value_used))
+    )
+  }
+
   # Handle zero p-values to match plot_volcano logic
   zero_p <- !is.na(res$p_value_used) & res$p_value_used == 0
   if (any(zero_p)) {
