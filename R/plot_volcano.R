@@ -361,6 +361,22 @@ plot_volcano <- function(
   if (nrow(x) == 0L) stop("`x` has zero rows.", call. = FALSE)
 
   # ---------------------------------------------------------------------------
+  # 1b. Coerce character p-values back to numeric
+  # ---------------------------------------------------------------------------
+  # When run_diff() returns a summary_table with simplify = TRUE, p-value
+  # columns are formatted as character strings (with superscript test markers).
+  # Strip any non-numeric characters (superscripts, letters, etc.) and coerce
+  # back to numeric for plotting.
+  for (pcol in intersect(c("p_value", "p_value_adj"), names(x))) {
+    if (is.character(x[[pcol]])) {
+      # Remove all non-numeric characters except "." and convert to numeric
+      x[[pcol]] <- suppressWarnings(
+        as.numeric(gsub("[^0-9.]", "", x[[pcol]]))
+      )
+    }
+  }
+
+  # ---------------------------------------------------------------------------
   # 2.  Validate y, z
   # ---------------------------------------------------------------------------
   .chk_col <- function(nm, arg) {
