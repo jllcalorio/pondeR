@@ -1980,12 +1980,14 @@ summary.run_diff <- function(object, ...) {
     # Consistent df formatting via .format_df
     df_val <- .format_df(tr$parameter)
 
-    n_sig_ph <- if (!is.null(ph) && nrow(ph) > 0)
-      sum(ph$significant, na.rm = TRUE) else NA_integer_
-    total_ph <- if (!is.null(ph) && nrow(ph) > 0) nrow(ph) else NA_integer_
-
     gate_p     <- if (has_adj) p_adj[i] else p_raw[i]
     interp_val <- .interp_for(gate_p, res, ph, ds)
+
+    # Post-hoc counts only reported when gate_p indicates significance
+    n_sig_ph <- if (!is.na(gate_p) && gate_p < test_alpha && !is.null(ph) && nrow(ph) > 0)
+      sum(ph$significant, na.rm = TRUE) else NA_integer_
+    total_ph <- if (!is.na(gate_p) && gate_p < test_alpha && !is.null(ph) && nrow(ph) > 0)
+      nrow(ph) else NA_integer_
 
     # Per-group averages
     avg_vals <- stats::setNames(
@@ -2008,7 +2010,7 @@ summary.run_diff <- function(object, ...) {
     row$posthoc_pairs         <- total_ph
     row$n_significant_posthoc <- n_sig_ph
     row$p_value               <- p_raw[i]
-    row$significant           <- if (!is.na(p_raw[i])) p_raw[i] < test_alpha else NA
+    row$significant           <- if (!is.na(gate_p)) gate_p < test_alpha else NA
     row$effect_size_metric    <- if (!is.null(es)) es$metric    else NA_character_
     row$effect_size_estimate  <- if (!is.null(es)) es$estimate  else NA_real_
     row$effect_size_ci_low    <- if (!is.null(es)) es$ci_low    else NA_real_
