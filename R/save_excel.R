@@ -351,8 +351,9 @@ save_excel <- function(
     }
 
     # Check if any direct element is tabular / pondeR
+    # tabular check first; don't treat data frames as pondeR results
     direct_tab  <- vapply(x, .is_tabular,       logical(1L))
-    direct_pond <- vapply(x, .is_ponder_result,  logical(1L))
+    direct_pond <- vapply(x, .is_ponder_result,  logical(1L)) & !direct_tab
     any_direct  <- direct_tab | direct_pond
 
     if (!any(any_direct)) {
@@ -390,7 +391,10 @@ save_excel <- function(
     for (i in seq_along(x)) {
       el <- x[[i]]
       nm <- names(x)[i] %||% paste0("Sheet", i)
-      if (.is_ponder_result(el)) {
+      # if tabular, use directly; only unpack non-tabular pondeR results
+      if (.is_tabular(el)) {
+        expanded[[nm]] <- as.data.frame(el)
+      } else if (.is_ponder_result(el)) {
         tbls <- .extract_tables_from_ponder(el)
         if (!length(tbls)) {
           warning(sprintf("pondeR result at position %d has no tabular data; skipping.", i),
@@ -401,8 +405,6 @@ save_excel <- function(
         pfx <- if (nzchar(nm)) paste0(nm, "_") else ""
         names(tbls) <- paste0(pfx, names(tbls) %||% seq_along(tbls))
         expanded <- c(expanded, tbls)
-      } else {
-        expanded[[nm]] <- as.data.frame(el)
       }
     }
     sheets <- coerce_list(expanded)
