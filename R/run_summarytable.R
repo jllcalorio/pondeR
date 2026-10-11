@@ -124,6 +124,35 @@
 #'   below \code{bold_significant_pvalues_at} are bolded.
 #' @param bold_significant_pvalues_at Numeric. Significance threshold for
 #'   bolding. Default is \code{0.05}.
+#' @param mark_posthoc_significance Logical. Only takes effect when
+#'   \code{add_inferential_pvalues = TRUE}. When \code{TRUE}, performs
+#'   post-hoc testing for variables whose omnibus p-value is below
+#'   \code{bold_significant_pvalues_at} and marks the significant summary
+#'   cells with numeric superscripts (numbering restarts at 1 for each
+#'   variable). For continuous variables with \eqn{>2} groups (ANOVA /
+#'   Welch's ANOVA / Kruskal-Wallis), pairwise post-hoc comparisons
+#'   (Tukey HSD / Games-Howell / Dunn's test, as already computed by
+#'   \code{\link{run_diff}}) mark the two group columns involved in each
+#'   significant pair. Not applicable to two-group comparisons (t-test /
+#'   Mann-Whitney), which have no post-hoc step. For categorical variables
+#'   (Chi-square / Fisher's exact / McNemar's), adjusted standardized
+#'   residuals (Z-tests for proportions) are computed per cell of the
+#'   level-by-group table; cells with an adjusted p-value below
+#'   \code{bold_significant_pvalues_at} are individually marked. This
+#'   includes binary variables that \code{gtsummary} collapses to a single
+#'   dichotomous row (e.g. Yes/No): the displayed level is identified from
+#'   its printed count, and only the ambiguous case of tied counts across
+#'   levels is left unmarked. A footnote block lists each numbered
+#'   comparison/cell per variable. Has no effect when
+#'   \code{add_inferential_pvalues = FALSE}. Default is \code{TRUE}.
+#' @param p_adjust_method String. P-value adjustment method used for
+#'   post-hoc comparisons when \code{mark_posthoc_significance = TRUE}.
+#'   Forwarded to \code{\link{run_diff}} and \code{\link{run_assoc}} (affects
+#'   Dunn's test pairwise p-values for Kruskal-Wallis follow-up), and used
+#'   directly to adjust the per-cell adjusted-standardized-residual p-values
+#'   for categorical variables. One of \code{stats::p.adjust.methods}
+#'   (\code{"holm"}, \code{"hochberg"}, \code{"hommel"}, \code{"bonferroni"}
+#'   (default), \code{"BH"}, \code{"BY"}, \code{"fdr"}, \code{"none"}).
 #' @param header String. Header for the variable-label column. Default is
 #'   \code{"Variable"}.
 #' @param show_n_header Logical. When \code{TRUE} (default), appends the total
@@ -280,6 +309,8 @@ run_summarytable <- function(
     n_digits_pvalues              = 3,
     bold_significant_pvalues      = TRUE,
     bold_significant_pvalues_at   = 0.05,
+    mark_posthoc_significance     = TRUE,
+    p_adjust_method               = "bonferroni",
     header                        = "Variable",
     show_n_header                 = TRUE,
     bold_labels                   = TRUE,
@@ -426,6 +457,8 @@ run_summarytable <- function(
         n_digits_pvalues              = n_digits_pvalues,
         bold_significant_pvalues      = bold_significant_pvalues,
         bold_significant_pvalues_at   = bold_significant_pvalues_at,
+        mark_posthoc_significance     = mark_posthoc_significance,
+        p_adjust_method               = p_adjust_method,
         header                        = header,
         show_n_header                 = show_n_header,
         bold_labels                   = bold_labels,
@@ -756,6 +789,16 @@ run_summarytable <- function(
     stop("'bold_significant_pvalues' must be TRUE or FALSE.")
   if (!is.numeric(bold_significant_pvalues_at))
     stop("'bold_significant_pvalues_at' must be numeric.")
+  if (!is.logical(mark_posthoc_significance) || length(mark_posthoc_significance) != 1)
+    stop("'mark_posthoc_significance' must be TRUE or FALSE.")
+  if (!is.character(p_adjust_method) || length(p_adjust_method) != 1L ||
+      !p_adjust_method %in% stats::p.adjust.methods)
+    stop(paste0("'p_adjust_method' must be one of: ",
+                paste(stats::p.adjust.methods, collapse = ", "), "."))
+  if (mark_posthoc_significance && !add_inferential_pvalues) {
+    warning("'mark_posthoc_significance = TRUE' has no effect when 'add_inferential_pvalues = FALSE'.")
+    mark_posthoc_significance <- FALSE
+  }
   if (!is.logical(show_n_header) || length(show_n_header) != 1)
     stop("'show_n_header' must be TRUE or FALSE.")
   if (!is.logical(bold_labels) || length(bold_labels) != 1)
@@ -1251,12 +1294,21 @@ run_summarytable <- function(
     #   test_map   : variable -> test name string (or NA)
     #   error_map  : variable -> TRUE if engine failed
 
-    p_map     <- stats::setNames(rep(NA_character_, length(label_vars)),
-                                 label_vars)
-    test_map  <- stats::setNames(rep(NA_character_, length(label_vars)),
-                                 label_vars)
-    error_map <- stats::setNames(rep(FALSE,          length(label_vars)),
-                                 label_vars)
+    p_map         <- stats::setNames(rep(NA_character_, length(label_vars)),
+                                     label_vars)
+    p_numeric_map <- stats::setNames(rep(NA_real_,       length(label_vars)),
+                                     label_vars)
+    test_map      <- stats::setNames(rep(NA_character_, length(label_vars)),
+                                     label_vars)
+    error_map     <- stats::setNames(rep(FALSE,          length(label_vars)),
+                                     label_vars)
+    # engine_map / cat_level_map retain raw engine output for post-hoc marking
+    # (section 19d.5); harmless to populate even when mark_posthoc_significance
+    # is FALSE since we merely keep references already computed above.
+    engine_map    <- stats::setNames(vector("list", length(label_vars)),
+                                     label_vars)
+    cat_level_map <- stats::setNames(vector("list", length(label_vars)),
+                                     label_vars)
 
     for (var_nm in label_vars) {
 
@@ -1271,6 +1323,9 @@ run_summarytable <- function(
             filter                = NULL, # already filtered globally
             paired                = paired,
             test_type             = test_type_continuous,
+            test_alpha            = bold_significant_pvalues_at,
+            perform_posthoc       = TRUE,
+            p_adjust_method       = p_adjust_method,
             verbose               = FALSE
           )
         }, error = function(e) {
@@ -1281,11 +1336,14 @@ run_summarytable <- function(
           NULL
         })
 
+        engine_map[[var_nm]] <- engine_result
+
         if (!is.null(engine_result) &&
             !is.null(engine_result$test_result) &&
             !is.na(engine_result$test_result$p.value)) {
-          p_map[var_nm]   <- .fmt_p(engine_result$test_result$p.value)
-          test_map[var_nm] <- engine_result$test_used
+          p_map[var_nm]         <- .fmt_p(engine_result$test_result$p.value)
+          p_numeric_map[var_nm] <- engine_result$test_result$p.value
+          test_map[var_nm]      <- engine_result$test_used
         } else {
           error_map[var_nm] <- TRUE
         }
@@ -1298,6 +1356,7 @@ run_summarytable <- function(
             !is.character(x_assoc[[var_nm]])) {
           x_assoc[[var_nm]] <- as.factor(x_assoc[[var_nm]])
         }
+        cat_level_map[[var_nm]] <- x_assoc[[var_nm]]
 
         engine_result <- tryCatch({
           run_assoc(
@@ -1306,6 +1365,9 @@ run_summarytable <- function(
             var2              = split_by,
             paired            = paired,
             test_type         = test_type_categorical,
+            test_alpha        = bold_significant_pvalues_at,
+            perform_posthoc   = TRUE,
+            p_adjust_method   = p_adjust_method,
             verbose           = FALSE
           )
         }, error = function(e) {
@@ -1316,11 +1378,14 @@ run_summarytable <- function(
           NULL
         })
 
+        engine_map[[var_nm]] <- engine_result
+
         if (!is.null(engine_result) &&
             !is.null(engine_result$test_result) &&
             !is.na(engine_result$test_result$p.value)) {
-          p_map[var_nm]    <- .fmt_p(engine_result$test_result$p.value)
-          test_map[var_nm] <- engine_result$test_used
+          p_map[var_nm]         <- .fmt_p(engine_result$test_result$p.value)
+          p_numeric_map[var_nm] <- engine_result$test_result$p.value
+          test_map[var_nm]      <- engine_result$test_used
         } else {
           error_map[var_nm] <- TRUE
         }
@@ -1345,6 +1410,124 @@ run_summarytable <- function(
     )
 
     any_failed <- any(error_map)
+
+    # -- 19d.5. Post-hoc significance marking ---------------------------------
+    # Only runs when requested; gated separately from the p-value/test-letter
+    # machinery above since it needs the raw engine objects (posthoc_result /
+    # contingency tables), not just the summarised p-value and test name.
+    #
+    # posthoc_marks : variable -> list(row_type = "label"|"level",
+    #                                   cells    = list(stat_col -> numbers)      [continuous]
+    #                                   by_level = list(level -> list(stat_col -> numbers)) [categorical]
+    # posthoc_notes : variable -> character vector of footnote lines (numbered 1..k, restarting per variable)
+    posthoc_marks <- list()
+    posthoc_notes <- list()
+
+    if (mark_posthoc_significance) {
+      # Maps split_by level -> stat_<index> column, following the same factor
+      # level order gtsummary assigns to stat_1..stat_k (verified empirically:
+      # tbl_summary orders `by` groups via `levels(factor(by_column))`).
+      split_levels <- levels(factor(x_clean[[split_by]]))
+
+      for (var_nm in label_vars) {
+        if (error_map[var_nm]) next
+        omnibus_p <- p_numeric_map[[var_nm]]
+        if (is.na(omnibus_p) || omnibus_p >= bold_significant_pvalues_at) next
+        engine_result <- engine_map[[var_nm]]
+        if (is.null(engine_result)) next
+
+        if (.is_continuous(var_nm)) {
+          # ---- continuous: pairwise post-hoc already computed by run_diff ----
+          ph <- engine_result$posthoc_result
+          if (is.null(ph) || !is.data.frame(ph) || nrow(ph) == 0) next
+          sig_ph <- ph[!is.na(ph$significant) & ph$significant, , drop = FALSE]
+          if (nrow(sig_ph) == 0) next
+
+          lines    <- character(0)
+          cell_tbl <- list()
+          for (k in seq_len(nrow(sig_ph))) {
+            g1 <- sig_ph$group1[k]; g2 <- sig_ph$group2[k]
+            idx1 <- match(g1, split_levels); idx2 <- match(g2, split_levels)
+            lines <- c(lines, sprintf(
+              "<sup>%d</sup> %s vs %s, p_adj = %s",
+              k, g1, g2, .fmt_p(sig_ph$p.adj[k])
+            ))
+            for (idx in c(idx1, idx2)) {
+              if (is.na(idx)) next
+              key <- as.character(idx)
+              cell_tbl[[key]] <- c(cell_tbl[[key]], k)
+            }
+          }
+          if (length(lines) > 0) {
+            posthoc_notes[[var_nm]] <- lines
+            posthoc_marks[[var_nm]] <- list(row_type = "label", cells = cell_tbl)
+          }
+
+        } else {
+          # ---- categorical: adjusted standardized residuals (Z-tests) --------
+          # Computed independently of which omnibus test was used (chi-square,
+          # Fisher's exact, or McNemar's): the residual is a property of the
+          # observed/expected cell counts, not of the omnibus test itself.
+          lvl_vec <- cat_level_map[[var_nm]]
+          grp_vec <- x_clean[[split_by]]
+          ct <- tryCatch(table(lvl_vec, grp_vec), error = function(e) NULL)
+          if (is.null(ct) || any(dim(ct) < 2)) next
+
+          chi <- tryCatch(suppressWarnings(stats::chisq.test(ct, correct = FALSE)),
+                          error = function(e) NULL)
+          if (is.null(chi) || is.null(chi$stdres)) next
+
+          resid_m <- chi$stdres
+          p_cells <- 2 * stats::pnorm(-abs(resid_m))
+          p_adj_v <- stats::p.adjust(as.vector(p_cells), method = p_adjust_method)
+          p_adj_m <- matrix(p_adj_v, nrow = nrow(p_cells), dimnames = dimnames(p_cells))
+
+          lines            <- character(0)
+          cell_tbl_by_level <- list()
+          num   <- 0L
+          row_lvls <- rownames(resid_m)
+          col_lvls <- colnames(resid_m)
+          for (ri in seq_along(row_lvls)) {
+            for (ci in seq_along(col_lvls)) {
+              if (is.na(p_adj_m[ri, ci]) || p_adj_m[ri, ci] >= bold_significant_pvalues_at) next
+              num <- num + 1L
+              lvl_i <- row_lvls[ri]; grp_i <- col_lvls[ci]
+              z_val <- resid_m[ri, ci]
+              direction <- if (z_val > 0) "over-represented" else "under-represented"
+              lines <- c(lines, sprintf(
+                "<sup>%d</sup> %s \u00d7 %s: z = %.2f, p_adj = %s (%s)",
+                num, lvl_i, grp_i, z_val, .fmt_p(p_adj_m[ri, ci]), direction
+              ))
+              idx <- match(grp_i, split_levels)
+              if (is.na(idx)) next
+              if (is.null(cell_tbl_by_level[[lvl_i]])) cell_tbl_by_level[[lvl_i]] <- list()
+              key <- as.character(idx)
+              cell_tbl_by_level[[lvl_i]][[key]] <- c(cell_tbl_by_level[[lvl_i]][[key]], num)
+            }
+          }
+          if (length(lines) > 0) {
+            posthoc_notes[[var_nm]] <- lines
+            # level_counts (level -> stat_col_index -> observed n) lets the
+            # injection step below identify the level shown on a gtsummary
+            # "dichotomous" row (e.g. a Yes/No variable collapsed to a single
+            # label row rather than two level rows) by matching its displayed
+            # count, since such a row carries no level label to key on.
+            level_counts <- list()
+            for (ri in seq_along(row_lvls)) {
+              cv <- list()
+              for (ci in seq_along(col_lvls)) {
+                idx <- match(col_lvls[ci], split_levels)
+                if (is.na(idx)) next
+                cv[[as.character(idx)]] <- as.numeric(ct[ri, ci])
+              }
+              level_counts[[row_lvls[ri]]] <- cv
+            }
+            posthoc_marks[[var_nm]] <- list(row_type = "level", by_level = cell_tbl_by_level,
+                                            level_counts = level_counts)
+          }
+        }
+      }
+    }
 
     # -- 19e. Inject p.value column into table body ---------------------------
     result_table <- result_table |>
@@ -1376,12 +1559,86 @@ run_summarytable <- function(
         tb
       })
 
+    # -- 19e.5. Inject post-hoc superscript sentinels into stat_ cells --------
+    # Append a " #n[,n...]#" sentinel to the relevant stat_<i> cell(s); this is
+    # converted to a real <sup> after as_gt() (section 19g.5), mirroring the
+    # p.value letter-superscript approach above.
+    if (mark_posthoc_significance && length(posthoc_marks) > 0) {
+      result_table <- result_table |>
+        gtsummary::modify_table_body(function(tb) {
+          stat_cols_all <- names(tb)[grepl("^stat_", names(tb))]
+
+          .append_mark <- function(col_nm, i, nums) {
+            if (!col_nm %in% stat_cols_all) return(invisible())
+            cell <- tb[[col_nm]][i]
+            if (is.na(cell) || !nzchar(cell)) return(invisible())
+            tb[[col_nm]][i] <<- paste0(cell, " #", paste(sort(unique(nums)), collapse = ","), "#")
+          }
+
+          for (i in seq_len(dim(tb)[1])) {
+            var_nm <- tb$variable[i]
+            if (is.null(var_nm) || is.na(var_nm) || !var_nm %in% names(posthoc_marks)) next
+            mk <- posthoc_marks[[var_nm]]
+
+            if (mk$row_type == "label" && tb$row_type[i] == "label") {
+              for (key in names(mk$cells)) {
+                .append_mark(paste0("stat_", key), i, mk$cells[[key]])
+              }
+            } else if (mk$row_type == "level" && tb$row_type[i] == "level") {
+              lvl_label <- tb$label[i]
+              if (!is.null(lvl_label) && lvl_label %in% names(mk$by_level)) {
+                cell_map <- mk$by_level[[lvl_label]]
+                for (key in names(cell_map)) {
+                  .append_mark(paste0("stat_", key), i, cell_map[[key]])
+                }
+              }
+            } else if (mk$row_type == "level" && tb$row_type[i] == "label" &&
+                       !is.null(mk$level_counts)) {
+              # gtsummary "dichotomous" display: a binary variable (e.g.
+              # Yes/No) collapsed to a single label row showing counts for
+              # just one level, with no level label to key on. Identify the
+              # shown level per group column by matching its displayed count
+              # against each candidate level's known count; skip ambiguous
+              # (tied) or unparseable cells rather than guess.
+              for (col_nm in stat_cols_all) {
+                cell <- tb[[col_nm]][i]
+                if (is.na(cell) || !nzchar(cell)) next
+                n_match <- regmatches(cell, regexpr("^[0-9]+", cell))
+                if (!length(n_match)) next
+                n_val <- as.numeric(n_match)
+                key   <- sub("^stat_", "", col_nm)
+                matching_levels <- names(mk$level_counts)[vapply(
+                  mk$level_counts,
+                  function(lc) !is.null(lc[[key]]) && isTRUE(lc[[key]] == n_val),
+                  logical(1)
+                )]
+                if (length(matching_levels) != 1L) next
+                nums <- mk$by_level[[matching_levels]][[key]]
+                if (!is.null(nums)) .append_mark(col_nm, i, nums)
+              }
+            }
+          }
+          tb
+        })
+    }
+
     # -- 19f. Modify p.value column header ------------------------------------
     result_table <- result_table |>
       gtsummary::modify_header(p.value = "**p-value**")
 
     # -- 19g. Convert to gt --------------------------------------------------
     result_table <- result_table |> gtsummary::as_gt()
+
+    # -- 19g.5. Convert post-hoc sentinels to real superscripts ---------------
+    if (mark_posthoc_significance && length(posthoc_marks) > 0) {
+      result_table <- result_table |>
+        gt::text_transform(
+          locations = gt::cells_body(columns = dplyr::starts_with("stat_")),
+          fn = function(x_cell) {
+            gsub(" #([0-9]+(?:,[0-9]+)*)#$", "<sup>\\1</sup>", x_cell, perl = TRUE)
+          }
+        )
+    }
 
     # Reformat p-value cells: "0.043 (a)" -> "0.043<sup>a</sup>"
     result_table <- result_table |>
@@ -1403,7 +1660,7 @@ run_summarytable <- function(
         vapply(label_vars, function(v) {
           pv_str <- p_map[v]
           if (is.na(pv_str)) return(NA_real_)
-          if (pv_str == "<0.001") return(0.0005)
+          if (pv_str == "<.001") return(0.0005)
           suppressWarnings(as.numeric(pv_str))
         }, numeric(1)),
         label_vars
@@ -1459,6 +1716,23 @@ run_summarytable <- function(
     if (any_failed) {
       footnote_lines <- c(footnote_lines,
         "\u2020 p-value could not be computed for this variable.")
+    }
+
+    # Post-hoc footnote block: numbering restarts at 1 for each variable, so
+    # the variable label must be included to disambiguate across variables.
+    if (mark_posthoc_significance && length(posthoc_notes) > 0) {
+      footnote_lines <- c(footnote_lines, "")
+      footnote_lines <- c(footnote_lines, sprintf(
+        "Post-hoc significance (p-value adjustment: %s):", p_adjust_method
+      ))
+      for (var_nm in label_vars) {
+        if (!var_nm %in% names(posthoc_notes)) next
+        var_lbl <- unique(tb_body$var_label[tb_body$variable == var_nm])[1]
+        if (is.null(var_lbl) || is.na(var_lbl)) var_lbl <- var_nm
+        footnote_lines <- c(footnote_lines, sprintf(
+          "<b>%s</b>: %s", var_lbl, paste(posthoc_notes[[var_nm]], collapse = "; ")
+        ))
+      }
     }
 
     # Append all footnote lines as a single source note so gt renders them

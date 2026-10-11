@@ -36,6 +36,8 @@ run_summarytable(
   n_digits_pvalues = 3,
   bold_significant_pvalues = TRUE,
   bold_significant_pvalues_at = 0.05,
+  mark_posthoc_significance = TRUE,
+  p_adjust_method = "bonferroni",
   header = "Variable",
   show_n_header = TRUE,
   bold_labels = TRUE,
@@ -184,6 +186,37 @@ below \code{bold_significant_pvalues_at} are bolded.}
 
 \item{bold_significant_pvalues_at}{Numeric. Significance threshold for
 bolding. Default is \code{0.05}.}
+
+\item{mark_posthoc_significance}{Logical. Only takes effect when
+\code{add_inferential_pvalues = TRUE}. When \code{TRUE}, performs
+post-hoc testing for variables whose omnibus p-value is below
+\code{bold_significant_pvalues_at} and marks the significant summary
+cells with numeric superscripts (numbering restarts at 1 for each
+variable). For continuous variables with \eqn{>2} groups (ANOVA /
+Welch's ANOVA / Kruskal-Wallis), pairwise post-hoc comparisons
+(Tukey HSD / Games-Howell / Dunn's test, as already computed by
+\code{\link{run_diff}}) mark the two group columns involved in each
+significant pair. Not applicable to two-group comparisons (t-test /
+Mann-Whitney), which have no post-hoc step. For categorical variables
+(Chi-square / Fisher's exact / McNemar's), adjusted standardized
+residuals (Z-tests for proportions) are computed per cell of the
+level-by-group table; cells with an adjusted p-value below
+\code{bold_significant_pvalues_at} are individually marked. This
+includes binary variables that \code{gtsummary} collapses to a single
+dichotomous row (e.g. Yes/No): the displayed level is identified from
+its printed count, and only the ambiguous case of tied counts across
+levels is left unmarked. A footnote block lists each numbered
+comparison/cell per variable. Has no effect when
+\code{add_inferential_pvalues = FALSE}. Default is \code{TRUE}.}
+
+\item{p_adjust_method}{String. P-value adjustment method used for
+post-hoc comparisons when \code{mark_posthoc_significance = TRUE}.
+Forwarded to \code{\link{run_diff}} and \code{\link{run_assoc}} (affects
+Dunn's test pairwise p-values for Kruskal-Wallis follow-up), and used
+directly to adjust the per-cell adjusted-standardized-residual p-values
+for categorical variables. One of \code{stats::p.adjust.methods}
+(\code{"holm"}, \code{"hochberg"}, \code{"hommel"}, \code{"bonferroni"}
+(default), \code{"BH"}, \code{"BY"}, \code{"fdr"}, \code{"none"}).}
 
 \item{header}{String. Header for the variable-label column. Default is
 \code{"Variable"}.}
