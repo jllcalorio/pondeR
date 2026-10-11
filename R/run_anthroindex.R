@@ -397,6 +397,84 @@
   df
 }
 
+#' @keywords internal
+.anth_order_status_levels <- function(x, index, merge_obese, merge_wasted,
+                                      merge_malnourished, merge_underweight,
+                                      merge_stunted, merge_thinness) {
+  # Define the canonical category order for each index.
+  # Categories are ordered from least to most severe (or normal in the middle).
+  # Only levels actually present in the data are used.
+  
+  order_map <- list(
+    bmi = c(
+      "Moderate and severe thinness",
+      "Underweight",
+      "Normal",
+      "Overweight",
+      "Stage 1 Obesity",
+      "Stage 2 Obesity",
+      "Stage 3 Obesity",
+      "Obese"  # Used when merge_obese = TRUE
+    ),
+    bmifa = c(
+      "Severe acute malnutrition",
+      "Moderate acute malnutrition",
+      "Malnourished",  # Merged version
+      "Normal",
+      "Overweight",
+      "Obesity",
+      "Obese"  # Used when merge_obese = TRUE
+    ),
+    wfh = c(
+      "Severely wasted",
+      "Moderately wasted",
+      "Wasted",  # Merged version
+      "Normal",
+      "Overweight",
+      "Obese",
+      "Obesity"
+    ),
+    wfa = c(
+      "Severely underweight",
+      "Moderately underweight",
+      "Underweight",  # Merged version
+      "Normal"
+    ),
+    hfa = c(
+      "Severely stunted",
+      "Moderately stunted",
+      "Stunted",  # Merged version
+      "Normal"
+    ),
+    acfa = c(
+      "Severe acute malnutrition",
+      "Moderate acute malnutrition",
+      "Malnourished",  # Merged version
+      "Normal"
+    ),
+    hcfa = c("Normal"),  # No classification available
+    tsfa = c("Normal"),  # No classification available
+    ssfa = c("Normal")   # No classification available
+  )
+  
+  if (!index %in% names(order_map)) {
+    return(x)
+  }
+  
+  # Get the canonical order for this index
+  all_levels <- order_map[[index]]
+  
+  # Filter to only levels present in the data
+  present_levels <- intersect(all_levels, unique(x))
+  
+  # Convert to ordered factor
+  if (length(present_levels) > 0) {
+    factor(x, levels = present_levels, ordered = TRUE)
+  } else {
+    x
+  }
+}
+
 
 # ---- Main exported function ------------------------------------------------
 
@@ -1102,7 +1180,26 @@ run_anthroindex <- function(
       df_idx <- cbind(x, bmi = bmi_val)
       # WHO adult cut-offs applied regardless of age, since "bmi" is
       # explicitly the age-independent index.
-      df_idx[[status_col_name]] <- .anth_classify_adult_bmi(bmi_val)
+      status <- .anth_classify_adult_bmi(bmi_val)
+      
+      # Apply merge logic if requested
+      if (merge_categories) {
+        status[status %in% c("Stage 1 Obesity", "Stage 2 Obesity", "Stage 3 Obesity", "Obesity")] <- "Obese"
+      }
+      
+      # Apply ordered factor levels
+      status <- .anth_order_status_levels(
+        status,
+        index = "bmi",
+        merge_obese        = merge_categories,
+        merge_wasted       = merge_wasted,
+        merge_malnourished = merge_malnourished,
+        merge_underweight  = merge_underweight,
+        merge_stunted      = merge_stunted,
+        merge_thinness     = merge_thinness
+      )
+      
+      df_idx[[status_col_name]] <- status
       results[[idx]] <- df_idx
       next
     }
@@ -1133,6 +1230,18 @@ run_anthroindex <- function(
       merge_stunted      = merge_stunted,
       merge_thinness     = merge_thinness,
       status_col_name    = status_col_name
+    )
+    
+    # Apply ordered factor levels to the status column
+    df_idx[[status_col_name]] <- .anth_order_status_levels(
+      df_idx[[status_col_name]],
+      index = idx,
+      merge_obese        = merge_categories,
+      merge_wasted       = merge_wasted,
+      merge_malnourished = merge_malnourished,
+      merge_underweight  = merge_underweight,
+      merge_stunted      = merge_stunted,
+      merge_thinness     = merge_thinness
     )
 
     results[[idx]] <- df_idx
