@@ -16,6 +16,7 @@ run_auc(
   compute_auc = TRUE,
   compute_ci = TRUE,
   ci_level = 0.95,
+  compute_performance_metrics = TRUE,
   plot = "none",
   theme = "nature",
   ncol = NULL,
@@ -93,6 +94,11 @@ confidence intervals for the AUC. Default \code{TRUE}.}
 
 \item{ci_level}{A numeric scalar in \eqn{(0, 1)} specifying the confidence
 level. Default \code{0.95}.}
+
+\item{compute_performance_metrics}{Logical. Whether to compute additional
+performance metrics (sensitivity, specificity, NPV, PPV, accuracy, Youden
+index, J-stat) at the optimal threshold determined by Youden's index.
+Default \code{TRUE}.}
 
 \item{plot}{Controls ROC plot generation. Accepted values:
 \describe{
@@ -189,8 +195,13 @@ A named list with the following elements:
 analysed predictor.}
 \item{\code{auc_table}}{A \code{data.frame} with columns
 \code{predictor}, \code{auc}, \code{ci_lower}, \code{ci_upper},
-\code{ci_level}, \code{direction}, and \code{n_cases} /
-\code{n_controls}.}
+\code{ci_level}, \code{direction}, \code{n_cases}, and
+\code{n_controls}. When \code{compute_performance_metrics = TRUE},
+additional columns are included: \code{sensitivity},
+\code{specificity}, \code{ppv} (positive predictive value),
+\code{npv} (negative predictive value), \code{accuracy},
+\code{youden_index}, and \code{optimal_threshold} (all computed at
+the threshold that maximizes Youden's index: sensitivity + specificity - 1).}
 \item{\code{plots}}{A named list of \code{ggplot} objects (or
 \code{NULL} when \code{plot = "none"}). The element \code{"combined"}
 is present for combined-mode plots; individual predictor names are used
@@ -275,21 +286,35 @@ res2 <- run_auc(
 print(res2$auc_table)
 
 ## -----------------------------------------------------------------------
-## Example 3 - column names with spaces, select top-2 by AUC
+## Example 3 - access performance metrics at optimal Youden threshold
 ## -----------------------------------------------------------------------
-df3 <- data.frame(
+res3 <- run_auc(
+  x                     = df,
+  y                     = "group",
+  plot                  = "none",
+  compute_performance_metrics = TRUE
+)
+# The auc_table now includes sensitivity, specificity, PPV, NPV, accuracy,
+# Youden index, and optimal threshold values
+head(res3$auc_table[, c("predictor", "auc", "sensitivity", "specificity", 
+                          "ppv", "npv", "youden_index")])
+
+## -----------------------------------------------------------------------
+## Example 4 - column names with spaces, select top-2 by AUC
+## -----------------------------------------------------------------------
+df4 <- data.frame(
   `my group`  = sample(0:1, n, replace = TRUE),
   `feature 1` = rnorm(n, mean = 0.5),
   `feature 2` = rnorm(n),
   check.names = FALSE
 )
 
-res3 <- run_auc(
-  x    = df3,
+res4 <- run_auc(
+  x    = df4,
   y    = "my group",
   plot = "none"
 )
-print(res3$auc_table)
+print(res4$auc_table)
 
 }
 \seealso{

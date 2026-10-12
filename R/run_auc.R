@@ -49,6 +49,10 @@
 #'   confidence intervals for the AUC. Default \code{TRUE}.
 #' @param ci_level A numeric scalar in \eqn{(0, 1)} specifying the confidence
 #'   level. Default \code{0.95}.
+#' @param compute_performance_metrics Logical. Whether to compute additional
+#'   performance metrics (sensitivity, specificity, NPV, PPV, accuracy, Youden
+#'   index, J-stat) at the optimal threshold determined by Youden's index.
+#'   Default \code{TRUE}.
 #' @param plot Controls ROC plot generation. Accepted values:
 #'   \describe{
 #'     \item{\code{"none"}}{No plots are produced.}
@@ -157,8 +161,13 @@
 #'     analysed predictor.}
 #'   \item{\code{auc_table}}{A \code{data.frame} with columns
 #'     \code{predictor}, \code{auc}, \code{ci_lower}, \code{ci_upper},
-#'     \code{ci_level}, \code{direction}, and \code{n_cases} /
-#'     \code{n_controls}.}
+#'     \code{ci_level}, \code{direction}, \code{n_cases}, and
+#'     \code{n_controls}. When \code{compute_performance_metrics = TRUE},
+#'     additional columns are included: \code{sensitivity},
+#'     \code{specificity}, \code{ppv} (positive predictive value),
+#'     \code{npv} (negative predictive value), \code{accuracy},
+#'     \code{youden_index}, and \code{optimal_threshold} (all computed at
+#'     the threshold that maximizes Youden's index: sensitivity + specificity - 1).}
 #'   \item{\code{plots}}{A named list of \code{ggplot} objects (or
 #'     \code{NULL} when \code{plot = "none"}). The element \code{"combined"}
 #'     is present for combined-mode plots; individual predictor names are used
@@ -203,21 +212,35 @@
 #' print(res2$auc_table)
 #'
 #' ## -----------------------------------------------------------------------
-#' ## Example 3 - column names with spaces, select top-2 by AUC
+#' ## Example 3 - access performance metrics at optimal Youden threshold
 #' ## -----------------------------------------------------------------------
-#' df3 <- data.frame(
+#' res3 <- run_auc(
+#'   x                     = df,
+#'   y                     = "group",
+#'   plot                  = "none",
+#'   compute_performance_metrics = TRUE
+#' )
+#' # The auc_table now includes sensitivity, specificity, PPV, NPV, accuracy,
+#' # Youden index, and optimal threshold values
+#' head(res3$auc_table[, c("predictor", "auc", "sensitivity", "specificity", 
+#'                           "ppv", "npv", "youden_index")])
+#'
+#' ## -----------------------------------------------------------------------
+#' ## Example 4 - column names with spaces, select top-2 by AUC
+#' ## -----------------------------------------------------------------------
+#' df4 <- data.frame(
 #'   `my group`  = sample(0:1, n, replace = TRUE),
 #'   `feature 1` = rnorm(n, mean = 0.5),
 #'   `feature 2` = rnorm(n),
 #'   check.names = FALSE
 #' )
 #'
-#' res3 <- run_auc(
-#'   x    = df3,
+#' res4 <- run_auc(
+#'   x    = df4,
 #'   y    = "my group",
 #'   plot = "none"
 #' )
-#' print(res3$auc_table)
+#' print(res4$auc_table)
 #'
 #' @author John Lennon L. Calorio
 #'
@@ -244,6 +267,7 @@ run_auc <- function(
     compute_auc        = TRUE,
     compute_ci         = TRUE,
     ci_level           = 0.95,
+    compute_performance_metrics = TRUE,
     plot               = "none",
     theme              = "nature",
     ncol               = NULL,
@@ -514,6 +538,7 @@ run_auc <- function(
   }
   .check_bool(compute_auc, "compute_auc")
   .check_bool(compute_ci,  "compute_ci")
+  .check_bool(compute_performance_metrics, "compute_performance_metrics")
 
   if (!is.numeric(ci_level) || length(ci_level) != 1L ||
       is.na(ci_level) || ci_level <= 0 || ci_level >= 1) {
@@ -854,6 +879,17 @@ run_auc <- function(
   ci_lower   <- rep(NA_real_, length(pred_cols))
   ci_upper   <- rep(NA_real_, length(pred_cols))
   dir_used   <- character(length(pred_cols))
+  
+  # Performance metrics matrices (computed if compute_performance_metrics = TRUE)
+  if (compute_performance_metrics) {
+    sens_vec   <- rep(NA_real_, length(pred_cols))
+    spec_vec   <- rep(NA_real_, length(pred_cols))
+    ppv_vec    <- rep(NA_real_, length(pred_cols))
+    npv_vec    <- rep(NA_real_, length(pred_cols))
+    acc_vec    <- rep(NA_real_, length(pred_cols))
+    youden_vec <- rep(NA_real_, length(pred_cols))
+    threshold_vec <- rep(NA_real_, length(pred_cols))
+  }
 
   for (i in seq_along(pred_cols)) {
     col_nm  <- pred_cols[i]
@@ -922,6 +958,36 @@ run_auc <- function(
         ci_upper[i] <- as.numeric(ci_i)[3L]
       }
     }
+    
+    # Compute performance metrics at optimal threshold (Youden's index)
+    if (compute_performance_metrics && !is.null(roc_i)) {
+      # Youden's index: J = sensitivity + specificity - 1
+      youden_idx <- roc_i$sensitivities + roc_i$specificities - 1
+      optimal_pos <- which.max(youden_idx)
+      
+      if (length(optimal_pos) > 0L) {
+        sens_vec[i] <- roc_i$sensitivities[optimal_pos]
+        spec_vec[i] <- roc_i$specificities[optimal_pos]
+        youden_vec[i] <- youden_idx[optimal_pos]
+        
+        # Get the threshold at optimal point
+        threshold_vec[i] <- roc_i$thresholds[optimal_pos]
+        
+        # Compute PPV and NPV using the observed case/control rates
+        # PPV = TP / (TP + FP) = sensitivity * prevalence / (sensitivity * prevalence + (1 - specificity) * (1 - prevalence))
+        # NPV = TN / (TN + FN) = specificity * (1 - prevalence) / (specificity * (1 - prevalence) + (1 - sensitivity) * prevalence)
+        prevalence <- n_cases / (n_cases + n_controls)
+        
+        sens <- sens_vec[i]
+        spec <- spec_vec[i]
+        
+        ppv_vec[i] <- (sens * prevalence) / (sens * prevalence + (1 - spec) * (1 - prevalence))
+        npv_vec[i] <- (spec * (1 - prevalence)) / (spec * (1 - prevalence) + (1 - sens) * prevalence)
+        
+        # Accuracy = (TP + TN) / (TP + TN + FP + FN) = sensitivity * prevalence + specificity * (1 - prevalence)
+        acc_vec[i] <- sens * prevalence + spec * (1 - prevalence)
+      }
+    }
   }
 
   # ---------------------------------------------------------------------------
@@ -952,6 +1018,17 @@ run_auc <- function(
       n_controls = n_controls,
       stringsAsFactors = FALSE
     )
+    
+    # Add performance metrics if computed
+    if (compute_performance_metrics) {
+      auc_table$sensitivity <- sens_vec
+      auc_table$specificity <- spec_vec
+      auc_table$ppv <- ppv_vec
+      auc_table$npv <- npv_vec
+      auc_table$accuracy <- acc_vec
+      auc_table$youden_index <- youden_vec
+      auc_table$optimal_threshold <- threshold_vec
+    }
   }
 
   # ---------------------------------------------------------------------------
@@ -1271,6 +1348,7 @@ run_auc <- function(
       compute_auc        = compute_auc,
       compute_ci         = compute_ci,
       ci_level           = ci_level,
+      compute_performance_metrics = compute_performance_metrics,
       plot               = plot,
       theme              = theme,
       min_vip            = min_vip,
@@ -1329,8 +1407,23 @@ print.run_auc <- function(x, ...) {
     tbl$auc      <- round(tbl$auc,      4)
     tbl$ci_lower <- round(tbl$ci_lower, 4)
     tbl$ci_upper <- round(tbl$ci_upper, 4)
-    print(tbl[, c("predictor", "auc", "ci_lower", "ci_upper", "direction")],
-          row.names = FALSE)
+    
+    # Determine which columns to print
+    cols_to_print <- c("predictor", "auc", "ci_lower", "ci_upper", "direction")
+    
+    # Check if performance metrics are present
+    perf_cols <- c("sensitivity", "specificity", "ppv", "npv", "accuracy", "youden_index")
+    has_perf <- all(perf_cols %in% colnames(tbl))
+    
+    if (has_perf) {
+      # Round performance metrics
+      for (col in perf_cols) {
+        tbl[[col]] <- round(tbl[[col]], 4)
+      }
+      cols_to_print <- c(cols_to_print, perf_cols)
+    }
+    
+    print(tbl[, cols_to_print, drop = FALSE], row.names = FALSE)
   } else {
     cat("\n  Status: No features passed the filtering criteria.\n")
   }
