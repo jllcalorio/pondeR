@@ -79,7 +79,12 @@
   # Both anthro::anthro_zscores() and anthroplus::anthroplus_zscores() require
   # numeric sex coded as 1 = male, 2 = female. This helper always returns
   # an integer vector using that convention.
-  u <- unique(as.character(col_vals[!is.na(col_vals)]))
+  #
+  # Blank strings ("", possibly with surrounding whitespace) are treated the
+  # same as NA: they're missing data, not an unrecognised code.
+  is_blank <- function(v) is.na(v) | trimws(as.character(v)) == ""
+
+  u <- unique(as.character(col_vals[!is_blank(col_vals)]))
 
   # Default recognisable male/female labels (character and legacy numeric 0/1)
   male_defaults   <- c("m", "M", "male", "Male", "MALE", "0")
@@ -101,8 +106,10 @@
   }
 
   str_vals <- as.character(col_vals)
-  if (all(str_vals[!is.na(str_vals)] %in% c(male_defaults, female_defaults))) {
-    # Encode as 1 = male, 2 = female (required by anthro and anthroplus)
+  blank    <- is_blank(col_vals)
+  if (all(str_vals[!blank] %in% c(male_defaults, female_defaults))) {
+    # Encode as 1 = male, 2 = female (required by anthro and anthroplus);
+    # blanks fall through to NA since they match neither default list.
     out <- ifelse(str_vals %in% male_defaults, 1L,
            ifelse(str_vals %in% female_defaults, 2L, NA_integer_))
     return(out)
