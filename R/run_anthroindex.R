@@ -131,13 +131,18 @@
   valid_H <- c("H", "h", "Height", "height")
   valid   <- c(valid_L, valid_H)
 
+  # anthro::anthro_zscores()'s 'measure' argument only accepts the single
+  # letters "L"/"l"/"H"/"h" (it errors on anything else, e.g. "Length"), so
+  # whatever form the user supplies is normalised to "L"/"H" before return.
+  .normalize <- function(v) ifelse(v %in% valid_L, "L", "H")
+
   if (length(height_measured) == 1L && height_measured %in% names(x)) {
     col <- as.character(x[[height_measured]])
     bad <- !col %in% valid
     if (any(bad))
       stop("Column '", height_measured, "' contains invalid values: ",
            paste(unique(col[bad]), collapse = ", "), ".", call. = FALSE)
-    return(col)
+    return(.normalize(col))
   }
 
   if (length(height_measured) == 1L) {
@@ -145,7 +150,7 @@
     if (!hm %in% valid)
       stop("'height_measured' must be one of: ",
            paste(valid, collapse = ", "), ".", call. = FALSE)
-    return(rep(hm, n))
+    return(rep(.normalize(hm), n))
   }
 
   if (length(height_measured) == n) {
@@ -154,7 +159,7 @@
       stop("'height_measured' vector contains invalid values: ",
            paste(unique(height_measured[bad]), collapse = ", "),
            ". Accepted: ", paste(valid, collapse = ", "), ".", call. = FALSE)
-    return(as.character(height_measured))
+      return(.normalize(as.character(height_measured)))
   }
 
   stop(
