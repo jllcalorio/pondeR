@@ -15,7 +15,7 @@ run_anthroindex(
   weight_unit = c("kg", "g", "oz", "lb"),
   height_col = NULL,
   height_unit = c("cm", "m", "ft", "in"),
-  height_measured = "L",
+  height_measured = NULL,
   headcircumference_col = NULL,
   headcircumference_unit = c("cm", "m", "ft", "in"),
   armcircumference_col = NULL,
@@ -77,7 +77,13 @@ One of \code{"cm"} (default), \code{"m"}, \code{"ft"}, or \code{"in"}.}
 \code{"H"}, \code{"h"}, \code{"Height"}, \code{"height"} for standing),
 \emph{or} a character vector of length \code{nrow(x)} giving the mode
 for each row, \emph{or} the name of a column in \code{x} containing
-those codes.}
+those codes. Defaults to \code{NULL}, in which case the mode is
+determined automatically per row using the same rule as
+\code{\link[anthro]{anthro_zscores}}'s \code{measure} argument when it is
+left unspecified: if age is available, recumbent length is assumed below
+24 months (731 days) and standing height at or above 24 months; if age is
+missing, recumbent length is assumed when the measurement is below 87 cm
+and standing height at or above 87 cm.}
 
 \item{headcircumference_col}{Optional single character string giving the
 column name of the head circumference variable in \code{x}.}

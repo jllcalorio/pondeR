@@ -54,6 +54,27 @@
 }
 
 #' @keywords internal
+.anth_convert_age_to_days <- function(age, unit) {
+  switch(unit,
+    day   = age,
+    week  = age * 7,
+    month = age * 30.4375,
+    year  = age * 365.25,
+    stop("'age_unit' must be one of: 'day', 'week', 'month', 'year'.",
+         call. = FALSE)
+  )
+}
+
+#' @keywords internal
+.anth_default_measure <- function(age_days, height_cm) {
+  # Mirrors anthro::anthro_zscores()'s own rule for an unspecified 'measure':
+  #   - age known:    length (<24 months, i.e. < 731 days) vs height (>=731 days)
+  #   - age missing:  length (<87 cm) vs height (>=87 cm)
+  ifelse(!is.na(age_days), ifelse(age_days < 731, "L", "H"),
+         ifelse(!is.na(height_cm) & height_cm < 87, "L", "H"))
+}
+
+#' @keywords internal
 .anth_resolve_sex <- function(col_vals, male_code, female_code) {
   # Both anthro::anthro_zscores() and anthroplus::anthroplus_zscores() require
   # numeric sex coded as 1 = male, 2 = female. This helper always returns
@@ -535,7 +556,13 @@
 #'   \code{"H"}, \code{"h"}, \code{"Height"}, \code{"height"} for standing),
 #'   \emph{or} a character vector of length \code{nrow(x)} giving the mode
 #'   for each row, \emph{or} the name of a column in \code{x} containing
-#'   those codes.
+#'   those codes. Defaults to \code{NULL}, in which case the mode is
+#'   determined automatically per row using the same rule as
+#'   \code{\link[anthro]{anthro_zscores}}'s \code{measure} argument when it is
+#'   left unspecified: if age is available, recumbent length is assumed below
+#'   24 months (731 days) and standing height at or above 24 months; if age is
+#'   missing, recumbent length is assumed when the measurement is below 87 cm
+#'   and standing height at or above 87 cm.
 #' @param headcircumference_col Optional single character string giving the
 #'   column name of the head circumference variable in \code{x}.
 #' @param headcircumference_unit A single character string specifying the head
@@ -897,7 +924,7 @@ run_anthroindex <- function(
     weight_unit              = c("kg", "g", "oz", "lb"),
     height_col               = NULL,
     height_unit              = c("cm", "m", "ft", "in"),
-    height_measured          = "L",
+    height_measured          = NULL,
     headcircumference_col    = NULL,
     headcircumference_unit   = c("cm", "m", "ft", "in"),
     armcircumference_col     = NULL,
@@ -1020,9 +1047,15 @@ run_anthroindex <- function(
          call. = FALSE)
 
   is_age_in_month <- age_unit != "day"
-  # age_months is always in months (or raw days if age_unit == "day");
-  # anthroplus always receives months, so this vector is used directly for it.
+  # age_months is in the unit anthro::anthro_zscores() expects given
+  # is_age_in_month: months for every unit except "day", where it is left as
+  # raw days (anthro interprets it correctly via is_age_in_month = FALSE).
+  # It must only be used for the anthro_zscores() call below.
   age_months <- .anth_convert_age_to_months(age_raw, age_unit)
+  # age_months_true is always genuine months, regardless of age_unit, for
+  # downstream age-stratification (0-<5y / 5-<20y / 20y+) and for
+  # anthroplus::anthroplus_zscores(), which always requires months.
+  age_months_true <- if (age_unit == "day") age_raw / 30.4375 else age_months
 
   # ---- 7. Resolve measurements --------------------------------------------
   weight_kg <- if (!is.null(weight_col)) {
@@ -1046,7 +1079,12 @@ run_anthroindex <- function(
   } else NULL
 
   measure_vec <- if (!is.null(height_col)) {
-    .anth_resolve_measure(x, height_measured, n)
+    if (is.null(height_measured)) {
+      age_days <- .anth_convert_age_to_days(age_raw, age_unit)
+      .anth_default_measure(age_days, height_cm)
+    } else {
+      .anth_resolve_measure(x, height_measured, n)
+    }
   } else rep("H", n)
 
   headc_cm <- if (!is.null(headcircumference_col)) {
@@ -1126,7 +1164,7 @@ run_anthroindex <- function(
 
   # Warn early if anthroplus will be needed but is not installed
   needs_plus <- any(c("wfa", "hfa", "bmifa") %in% return_feasible) &&
-                any(!is.na(age_months) & age_months >= 60 & age_months < 240)
+                any(!is.na(age_months_true) & age_months_true >= 60 & age_months_true < 240)
   if (needs_plus && !requireNamespace("anthroplus", quietly = TRUE))
     warning(
       "Participants aged 5 to < 20 years are present and at least one of ",
@@ -1219,7 +1257,7 @@ run_anthroindex <- function(
     df_idx <- .anth_add_status(
       df         = df_idx,
       index      = idx,
-      age_months = age_months,
+      age_months = age_months_true,
       sex_int    = sex_int,
       weight_kg  = if (!is.null(weight_kg)) weight_kg else rep(NA_real_, n),
       height_cm  = if (!is.null(height_cm)) height_cm else rep(NA_real_, n),
