@@ -17,3 +17,97 @@ knitr::opts_chunk$set(
 ```{r setup}
 library(pondeR)
 ```
+
+
+## Fold change against significance and against other metrics
+
+`plot_volcano()` shows fold change against significance. When nothing is
+significant, `plot_fcmetric()` still shows how fold change relates to a
+per-feature metric. The simulated data below have a few truly changed features
+and many low-intensity features.
+
+```{r sim}
+set.seed(2718)
+n <- 40
+meta <- data.frame(Group = factor(rep(c("A", "B"), each = n / 2)))
+base <- 10^runif(60, 0, 3)
+x <- as.data.frame(sapply(base, function(b) rnorm(n, b, 0.2 * b)))
+colnames(x) <- paste0("feat_", seq_along(base))
+x[meta$Group == "B", 1:5] <- x[meta$Group == "B", 1:5] * 3
+
+fc   <- run_foldchange(x, metadata = meta, group = "Group")
+diff <- run_diff(x, metadata = meta, outcome = colnames(x), group = "Group",
+                 test_type = "parametric", summary_table = TRUE, verbose = FALSE)
+```
+
+### Volcano plot
+
+```{r volcano, fig.width = 7, fig.height = 5}
+plot_volcano(list(fc = fc, diff = diff))$plots[[1]]
+```
+
+### Mean abundance (MA plot)
+
+Large fold changes at low abundance are likely noise.
+
+```{r abundance, fig.width = 7, fig.height = 5}
+plot_fcmetric(fc)$plots[[1]]
+```
+
+### Variance and standard deviation
+
+Pooled within-group values for the two groups in each comparison.
+
+```{r sd, fig.width = 7, fig.height = 5}
+plot_fcmetric(fc, metric = "variance")$plots[[1]]
+plot_fcmetric(fc, metric = "sd")$plots[[1]]
+```
+
+### Effect size
+
+Needs a multi-outcome `run_diff()` result. `x_cut` marks reference values.
+
+```{r effect, fig.width = 7, fig.height = 5}
+plot_fcmetric(list(fc = fc, diff = diff), metric = "effect_size",
+              x_cut = c(-0.5, 0.5))$plots[[1]]
+```
+
+### VIP score
+
+Needs a `run_pls()` result (PLS-DA or OPLS-DA) and the suggested package
+`ropls`.
+
+```{r vip-fit, eval = requireNamespace("ropls", quietly = TRUE), fig.show = "hide"}
+# ropls draws diagnostic plots while fitting; hide them here
+pls <- run_pls(scale(x), metadata = meta, group = "Group", method = "plsda",
+               crossvalI = 5, permI = 0, verbose = FALSE)
+```
+
+```{r vip, fig.width = 7, fig.height = 5, eval = requireNamespace("ropls", quietly = TRUE)}
+plot_fcmetric(list(fc = fc, pls = pls), metric = "vip", x_cut = 1)$plots[[1]]
+```
+
+### When nothing is significant
+
+Here the groups do not differ, but measurement noise is roughly constant, so
+low-abundance features still show large fold changes. The volcano plot cannot
+tell these apart from real effects. It shows only non-significant points.
+`plot_fcmetric()` shows that the large fold changes sit at low abundance.
+
+```{r null-sim}
+set.seed(5309)
+x0 <- as.data.frame(sapply(base, function(b) pmax(rnorm(n, b, 30 + 0.05 * b), 0.5)))
+colnames(x0) <- colnames(x)
+
+fc0   <- run_foldchange(x0, metadata = meta, group = "Group")
+diff0 <- run_diff(x0, metadata = meta, outcome = colnames(x0), group = "Group",
+                  test_type = "parametric", summary_table = TRUE, verbose = FALSE)
+```
+
+```{r null-volcano, fig.width = 7, fig.height = 5}
+plot_volcano(list(fc = fc0, diff = diff0))$plots[[1]]
+```
+
+```{r null-ma, fig.width = 7, fig.height = 5}
+plot_fcmetric(fc0)$plots[[1]]
+```
