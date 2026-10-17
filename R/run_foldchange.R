@@ -382,6 +382,15 @@ run_foldchange <- function(
     means_shift[lvl, ] <- colMeans(x_shifted[idx, , drop = FALSE], na.rm = TRUE)
   }
 
+  # Per-group SD and n (unshifted; SD is shift-invariant). Used by plot_fcmetric().
+  sd_mat <- n_mat <- means_mat
+  for (lvl in lvl_order) {
+    idx <- which(grp_factor == lvl)
+    if (length(idx) == 0L) next
+    sd_mat[lvl, ] <- vapply(x[idx, , drop = FALSE], stats::sd, numeric(1L), na.rm = TRUE)
+    n_mat[lvl, ]  <- colSums(!is.na(x[idx, , drop = FALSE]))
+  }
+
   group_means_df          <- as.data.frame(means_mat)
   group_means_df[[group]] <- lvl_order
   group_means_df          <- group_means_df[, c(group, feat_cols), drop = FALSE]
@@ -446,11 +455,6 @@ run_foldchange <- function(
     mean_num <- means_mat[g_num, ]
     mean_den <- means_mat[g_den, ]
 
-    regulation <- ifelse(
-      is.na(fc_col), NA_character_,
-      ifelse(fc_col > 1, "Up", ifelse(fc_col < 1, "Down", "Unchanged"))
-    )
-
     # Keep fixed column names so rbind() succeeds across all comparisons.
     # Group identity is recorded in num_group / den_group instead.
     df <- data.frame(
@@ -460,9 +464,12 @@ run_foldchange <- function(
       feature      = feat_cols,
       mean_num     = mean_num,
       mean_den     = mean_den,
+      sd_num       = sd_mat[g_num, ],
+      sd_den       = sd_mat[g_den, ],
+      n_num        = n_mat[g_num, ],
+      n_den        = n_mat[g_den, ],
       fold_change  = fc_col,
       log2_fc      = l2fc_col,
-      regulation   = regulation,
       stringsAsFactors = FALSE,
       row.names    = NULL
     )

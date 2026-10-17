@@ -886,7 +886,8 @@ plot_volcano <- function(
         legend_title = legend_title,
         legend_nrow  = legend_nrow
       )
-    )
+    ),
+    class = c("plot_volcano", "list")
   )
 }
 
