@@ -143,7 +143,15 @@
 #'   dichotomous row (e.g. Yes/No): the displayed level is identified from
 #'   its printed count, and only the ambiguous case of tied counts across
 #'   levels is left unmarked. A footnote block lists each numbered
-#'   comparison/cell per variable. Has no effect when
+#'   comparison/cell per variable. For two-group categorical variables
+#'   (2 x 2 tables) cell-level post-hoc is skipped, since the cells mirror
+#'   the omnibus test; a one-line direction note (which level is more common
+#'   in the second group, with column percentages) is added to the footnote
+#'   instead. For other tables with a two-level \code{split_by}, the cell
+#'   p-values are adjusted over one column only (the two columns mirror each
+#'   other, so there are only as many independent tests as levels). When the
+#'   omnibus test is significant but no pair/cell is significant after
+#'   adjustment, a footnote says so. Has no effect when
 #'   \code{add_inferential_pvalues = FALSE}. Default is \code{TRUE}.
 #' @param p_adjust_method String. P-value adjustment method used for
 #'   post-hoc comparisons when \code{mark_posthoc_significance = TRUE}.
@@ -1422,6 +1430,10 @@ run_summarytable <- function(
     # posthoc_notes : variable -> character vector of footnote lines (numbered 1..k, restarting per variable)
     posthoc_marks <- list()
     posthoc_notes <- list()
+    omnibus_notes <- list()
+    .no_posthoc_note <- paste(
+      "omnibus test significant, but no pairwise comparison/cell remained",
+      "significant after post-hoc adjustment")
 
     if (mark_posthoc_significance) {
       # Maps split_by level -> stat_<index> column, following the same factor
@@ -1441,7 +1453,10 @@ run_summarytable <- function(
           ph <- engine_result$posthoc_result
           if (is.null(ph) || !is.data.frame(ph) || nrow(ph) == 0) next
           sig_ph <- ph[!is.na(ph$significant) & ph$significant, , drop = FALSE]
-          if (nrow(sig_ph) == 0) next
+          if (nrow(sig_ph) == 0) {
+            omnibus_notes[[var_nm]] <- .no_posthoc_note
+            next
+          }
 
           lines    <- character(0)
           cell_tbl <- list()
@@ -1479,8 +1494,27 @@ run_summarytable <- function(
 
           resid_m <- chi$stdres
           p_cells <- 2 * stats::pnorm(-abs(resid_m))
-          p_adj_v <- stats::p.adjust(as.vector(p_cells), method = p_adjust_method)
-          p_adj_m <- matrix(p_adj_v, nrow = nrow(p_cells), dimnames = dimnames(p_cells))
+          # With two columns the cell residuals mirror each other, so only
+          # nrow(p_cells) independent tests exist: adjust over one column.
+          if (ncol(p_cells) == 2) {
+            p_adj_m <- p_cells
+            p_adj_m[] <- stats::p.adjust(p_cells[, 1], method = p_adjust_method)
+          } else {
+            p_adj_v <- stats::p.adjust(as.vector(p_cells), method = p_adjust_method)
+            p_adj_m <- matrix(p_adj_v, nrow = nrow(p_cells), dimnames = dimnames(p_cells))
+          }
+
+          # 2x2: cell-level post hoc just repeats the omnibus test, so give a
+          # one-line direction note for the omnibus footnote instead.
+          if (all(dim(ct) == 2)) {
+            pct  <- prop.table(ct, 2) * 100
+            ri   <- which.max(resid_m[, 2])
+            omnibus_notes[[var_nm]] <- sprintf(
+              "%s more common in %s (%.1f%% vs %.1f%% in %s)",
+              rownames(ct)[ri], colnames(ct)[2], pct[ri, 2], pct[ri, 1], colnames(ct)[1]
+            )
+            next
+          }
 
           lines            <- character(0)
           cell_tbl_by_level <- list()
@@ -1495,8 +1529,9 @@ run_summarytable <- function(
               z_val <- resid_m[ri, ci]
               direction <- if (z_val > 0) "over-represented" else "under-represented"
               lines <- c(lines, sprintf(
-                "<sup>%d</sup> %s \u00d7 %s: z = %.2f, p_adj = %s (%s)",
-                num, lvl_i, grp_i, z_val, .fmt_p(p_adj_m[ri, ci]), direction
+                "<sup>%d</sup> %s \u00d7 %s: z = %.2f, p_adj = %s (%s: observed n = %d vs %.1f expected if independent)",
+                num, lvl_i, grp_i, z_val, .fmt_p(p_adj_m[ri, ci]), direction,
+                as.integer(ct[ri, ci]), chi$expected[ri, ci]
               ))
               idx <- match(grp_i, split_levels)
               if (is.na(idx)) next
@@ -1524,6 +1559,8 @@ run_summarytable <- function(
             }
             posthoc_marks[[var_nm]] <- list(row_type = "level", by_level = cell_tbl_by_level,
                                             level_counts = level_counts)
+          } else {
+            omnibus_notes[[var_nm]] <- .no_posthoc_note
           }
         }
       }
@@ -1716,6 +1753,16 @@ run_summarytable <- function(
     if (any_failed) {
       footnote_lines <- c(footnote_lines,
         "\u2020 p-value could not be computed for this variable.")
+    }
+
+    # Direction of significant 2x2 associations
+    if (length(omnibus_notes) > 0) {
+      footnote_lines <- c(footnote_lines, "")
+      for (var_nm in names(omnibus_notes)) {
+        var_lbl <- unique(tb_body$var_label[tb_body$variable == var_nm])[1]
+        if (is.null(var_lbl) || is.na(var_lbl)) var_lbl <- var_nm
+        footnote_lines <- c(footnote_lines, sprintf("<b>%s</b>: %s", var_lbl, omnibus_notes[[var_nm]]))
+      }
     }
 
     # Post-hoc footnote block: numbering restarts at 1 for each variable, so

@@ -206,7 +206,15 @@ includes binary variables that \code{gtsummary} collapses to a single
 dichotomous row (e.g. Yes/No): the displayed level is identified from
 its printed count, and only the ambiguous case of tied counts across
 levels is left unmarked. A footnote block lists each numbered
-comparison/cell per variable. Has no effect when
+comparison/cell per variable. For two-group categorical variables
+(2 x 2 tables) cell-level post-hoc is skipped, since the cells mirror
+the omnibus test; a one-line direction note (which level is more common
+in the second group, with column percentages) is added to the footnote
+instead. For other tables with a two-level \code{split_by}, the cell
+p-values are adjusted over one column only (the two columns mirror each
+other, so there are only as many independent tests as levels). When the
+omnibus test is significant but no pair/cell is significant after
+adjustment, a footnote says so. Has no effect when
 \code{add_inferential_pvalues = FALSE}. Default is \code{TRUE}.}
 
 \item{p_adjust_method}{String. P-value adjustment method used for
