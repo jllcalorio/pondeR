@@ -191,8 +191,8 @@ bolding. Default is \code{0.05}.}
 \code{add_inferential_pvalues = TRUE}. When \code{TRUE}, performs
 post-hoc testing for variables whose omnibus p-value is below
 \code{bold_significant_pvalues_at} and marks the significant summary
-cells with numeric superscripts (numbering restarts at 1 for each
-variable). For continuous variables with \eqn{>2} groups (ANOVA /
+cells with numeric superscripts (numbering starts at 2 for each
+variable, as 1 is the summary-statistic footnote). For continuous variables with \eqn{>2} groups (ANOVA /
 Welch's ANOVA / Kruskal-Wallis), pairwise post-hoc comparisons
 (Tukey HSD / Games-Howell / Dunn's test, as already computed by
 \code{\link{run_diff}}) mark the two group columns involved in each

@@ -128,8 +128,8 @@
 #'   \code{add_inferential_pvalues = TRUE}. When \code{TRUE}, performs
 #'   post-hoc testing for variables whose omnibus p-value is below
 #'   \code{bold_significant_pvalues_at} and marks the significant summary
-#'   cells with numeric superscripts (numbering restarts at 1 for each
-#'   variable). For continuous variables with \eqn{>2} groups (ANOVA /
+#'   cells with numeric superscripts (numbering starts at 2 for each
+#'   variable, as 1 is the summary-statistic footnote). For continuous variables with \eqn{>2} groups (ANOVA /
 #'   Welch's ANOVA / Kruskal-Wallis), pairwise post-hoc comparisons
 #'   (Tukey HSD / Games-Howell / Dunn's test, as already computed by
 #'   \code{\link{run_diff}}) mark the two group columns involved in each
@@ -1465,12 +1465,12 @@ run_summarytable <- function(
             idx1 <- match(g1, split_levels); idx2 <- match(g2, split_levels)
             lines <- c(lines, sprintf(
               "<sup>%d</sup> %s vs %s, p_adj = %s",
-              k, g1, g2, .fmt_p(sig_ph$p.adj[k])
+              k + 1L, g1, g2, .fmt_p(sig_ph$p.adj[k])
             ))
             for (idx in c(idx1, idx2)) {
               if (is.na(idx)) next
               key <- as.character(idx)
-              cell_tbl[[key]] <- c(cell_tbl[[key]], k)
+              cell_tbl[[key]] <- c(cell_tbl[[key]], k + 1L)
             }
           }
           if (length(lines) > 0) {
@@ -1524,20 +1524,20 @@ run_summarytable <- function(
           for (ri in seq_along(row_lvls)) {
             for (ci in seq_along(col_lvls)) {
               if (is.na(p_adj_m[ri, ci]) || p_adj_m[ri, ci] >= bold_significant_pvalues_at) next
-              num <- num + 1L
+              num <- num + 1L  # footnote label = num + 1 (1 is gtsummary statistic footnote)
               lvl_i <- row_lvls[ri]; grp_i <- col_lvls[ci]
               z_val <- resid_m[ri, ci]
               direction <- if (z_val > 0) "over-represented" else "under-represented"
               lines <- c(lines, sprintf(
                 "<sup>%d</sup> %s \u00d7 %s: z = %.2f, p_adj = %s (%s: observed n = %d vs %.1f expected if independent)",
-                num, lvl_i, grp_i, z_val, .fmt_p(p_adj_m[ri, ci]), direction,
+                num + 1L, lvl_i, grp_i, z_val, .fmt_p(p_adj_m[ri, ci]), direction,
                 as.integer(ct[ri, ci]), chi$expected[ri, ci]
               ))
               idx <- match(grp_i, split_levels)
               if (is.na(idx)) next
               if (is.null(cell_tbl_by_level[[lvl_i]])) cell_tbl_by_level[[lvl_i]] <- list()
               key <- as.character(idx)
-              cell_tbl_by_level[[lvl_i]][[key]] <- c(cell_tbl_by_level[[lvl_i]][[key]], num)
+              cell_tbl_by_level[[lvl_i]][[key]] <- c(cell_tbl_by_level[[lvl_i]][[key]], num + 1L)
             }
           }
           if (length(lines) > 0) {
@@ -1693,15 +1693,8 @@ run_summarytable <- function(
 
     # Bold significant p-values if requested
     if (bold_significant_pvalues) {
-      num_p_map <- stats::setNames(
-        vapply(label_vars, function(v) {
-          pv_str <- p_map[v]
-          if (is.na(pv_str)) return(NA_real_)
-          if (pv_str == "<.001") return(0.0005)
-          suppressWarnings(as.numeric(pv_str))
-        }, numeric(1)),
-        label_vars
-      )
+      # Use unrounded p-values so e.g. 0.0496 (displayed "0.050") is still bolded
+      num_p_map <- p_numeric_map
 
       tb_body2 <- result_table[["_data"]]
       if (!is.null(tb_body2)) {
