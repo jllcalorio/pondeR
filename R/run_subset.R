@@ -30,7 +30,7 @@
 #' @param independent Logical; `TRUE` (default). When `match` has multiple columns:
 #'   If `TRUE`, each column is balanced independently and their results are unioned.
 #'   If `FALSE`, columns are crossed into a single interaction and balanced jointly.
-#' @param balance A string; either `"within_match"` (default) or `"within_group"`.
+#' @param balance A string; `"within_match"` (default), `"within_group"`, or `"all"`.
 #'   Controls the direction of balancing when both `match` and `group` are provided.
 #'   \itemize{
 #'     \item \strong{`"within_match"`}: For every category in `match`, the levels of `group`
@@ -39,6 +39,10 @@
 #'     \item \strong{`"within_group"`}: For every category in `group`, the levels of `match`
 #'       will have an equal number of observations. For example, within the Diseased
 #'       group, there will be an equal number of patients from each Age Group.
+#'     \item \strong{`"all"`}: Every `match` x `group` combination has exactly the
+#'       same number of observations (the size of the smallest cell). Use with
+#'       `independent = FALSE` so multiple `match` columns are crossed. If a
+#'       combination is absent from the data, nothing can be selected.
 #'   }
 #' @param group `NULL` (default) or a character vector of column names
 #'   that define additional grouping strata. 
@@ -53,6 +57,47 @@
 #' @author John Lennon L. Calorio
 #' 
 #' @return A named list of class `"run_subset"`.
+#'
+#' @examples
+#' set.seed(1)
+#' d <- data.frame(
+#'   id = 1:300,
+#'   `Age Group` = sample(c("2-5", "6-10"), 300, TRUE, prob = c(.6, .4)),
+#'   Sex = sample(c("Male", "Female"), 300, TRUE),
+#'   Status = sample(c("Stunted", "Non-stunted"), 300, TRUE, prob = c(.3, .7)),
+#'   check.names = FALSE
+#' )
+#' tab <- function(r) with(r$chosen, table(`Age Group`, Sex, Status))
+#'
+#' # 1. Simple random subset of 50 rows
+#' nrow(run_subset(d, n = 50)$chosen)
+#'
+#' # 2. Joint Age Group x Sex cells; Status is equal within every cell
+#' #    (Stunted == Non-stunted in each Age Group x Sex combination), but
+#' #    different cells may have different sizes.
+#' tab(run_subset(d, match = c("Age Group", "Sex"), group = "Status",
+#'                independent = FALSE))
+#'
+#' # 3. Default independent = TRUE balances each match column separately and
+#' #    unions the rows, so the joint cells are NOT guaranteed to be balanced.
+#' tab(run_subset(d, match = c("Age Group", "Sex"), group = "Status"))
+#'
+#' # 4. Flip the direction: within each Status, Age Group x Sex cells are equal
+#' tab(run_subset(d, match = c("Age Group", "Sex"), group = "Status",
+#'                independent = FALSE, balance = "within_group"))
+#'
+#' # 4b. Fully equal: all Age Group x Sex x Status cells have the same count
+#' tab(run_subset(d, match = c("Age Group", "Sex"), group = "Status",
+#'                independent = FALSE, balance = "all"))
+#'
+#' # 5. Cap the size; a warning is raised if n cannot be reached
+#' nrow(run_subset(d, n = 40, match = "Sex", group = "Status")$chosen)
+#'
+#' # 6. Deterministic: first rows of each stratum
+#' run_subset(d, n = 10, match = "Sex", random = FALSE)$chosen
+#'
+#' # 7. Column subsetting
+#' names(run_subset(d, n = 2, by = "col", random = FALSE)$chosen)
 #' @export
 run_subset <- function(
     x,
@@ -83,7 +128,7 @@ run_subset <- function(
   if (ncol(x) == 0L) stop("`x` has 0 columns. Nothing to subset.", call. = FALSE)
 
   by <- match.arg(by, choices = c("row", "col"))
-  balance <- match.arg(balance, choices = c("within_match", "within_group"))
+  balance <- match.arg(balance, choices = c("within_match", "within_group", "all"))
 
   .assert_scalar_logical <- function(val, nm) {
     if (!is.logical(val) || length(val) != 1L || is.na(val))
@@ -117,7 +162,15 @@ run_subset <- function(
 
   # ── 2. Row subsetting ───────────────────────────────────────────────────────
   if (by == "row") {
-    all_idx <- seq_len(nrow(x))
+    full_idx <- seq_len(nrow(x))
+    # Rows with NA in match/group can't be balanced; exclude them up front
+    all_idx <- full_idx[stats::complete.cases(x[c(match, group)])]
+    if (length(all_idx) < length(full_idx)) {
+      message(sprintf("Excluded %d row(s) with NA in `match`/`group` columns.",
+                      length(full_idx) - length(all_idx)))
+    }
+    if (length(all_idx) == 0L) stop("No rows left after removing NAs in `match`/`group`.", call. = FALSE)
+    xv <- x[all_idx, , drop = FALSE]
 
     # Helper: Mathematical Engine for Balancing
     .get_balanced_idx <- function(target_n, m_vec, g_vec) {
@@ -129,7 +182,17 @@ run_subset <- function(
       if (n_m == 0 || n_g == 0) return(integer(0))
       selected <- integer(0)
 
-      if (balance == "within_match") {
+      if (balance == "all") {
+        # Every match x group cell gets the same count (global bottleneck)
+        k <- min(table(factor(m_vec, unique_m), factor(g_vec, unique_g)))
+        if (!is.null(target_n)) k <- min(k, floor(target_n / (n_m * n_g)))
+        if (k > 0) {
+          for (mv in unique_m) for (gv in unique_g) {
+            pool <- all_idx[m_vec == mv & g_vec == gv]
+            selected <- c(selected, if (random) pool[sample.int(length(pool), k)] else if (top_to_bottom) head(pool, k) else tail(pool, k))
+          }
+        }
+      } else if (balance == "within_match") {
         # 1. Find the bottleneck (maximum balanced capacity) for each match level
         max_k_per_m <- setNames(numeric(n_m), unique_m)
         for (mv in unique_m) {
@@ -162,7 +225,7 @@ run_subset <- function(
           if (k > 0) {
             for (gv in unique_g) {
               pool <- all_idx[m_vec == mv & g_vec == gv]
-              chosen <- if (random) sample(pool, k) else if (top_to_bottom) head(pool, k) else tail(pool, k)
+              chosen <- if (random) pool[sample.int(length(pool), k)] else if (top_to_bottom) head(pool, k) else tail(pool, k)
               selected <- c(selected, chosen)
             }
           }
@@ -202,7 +265,7 @@ run_subset <- function(
           if (k > 0) {
             for (mv in unique_m) {
               pool <- all_idx[m_vec == mv & g_vec == gv]
-              chosen <- if (random) sample(pool, k) else if (top_to_bottom) head(pool, k) else tail(pool, k)
+              chosen <- if (random) pool[sample.int(length(pool), k)] else if (top_to_bottom) head(pool, k) else tail(pool, k)
               selected <- c(selected, chosen)
             }
           }
@@ -212,18 +275,18 @@ run_subset <- function(
     }
 
     # Group Vector Prep
-    g_vec <- if (!is.null(group)) do.call(paste, c(x[group], sep = "|||")) else rep("all", nrow(x))
+    g_vec <- if (!is.null(group)) do.call(paste, c(xv[group], sep = "|||")) else rep("all", nrow(xv))
 
     if (!is.null(match)) {
       if (!independent && length(match) > 1) {
         # Joint Cross-product
-        m_vec <- do.call(paste, c(x[match], sep = " x "))
+        m_vec <- do.call(paste, c(xv[match], sep = " x "))
         chosen_idx <- .get_balanced_idx(n, m_vec, g_vec)
       } else {
         # Independent draws unioned together
         sub_n <- if (!is.null(n)) floor(n / length(match)) else NULL
         idx_list <- lapply(match, function(m_col) {
-          .get_balanced_idx(sub_n, as.character(x[[m_col]]), g_vec)
+          .get_balanced_idx(sub_n, as.character(xv[[m_col]]), g_vec)
         })
         chosen_idx <- unique(unlist(idx_list))
       }
@@ -249,11 +312,11 @@ run_subset <- function(
         for (gv in unique_g) {
           pool <- all_idx[g_vec == gv]
           k <- min(target_counts[gv], length(pool))
-          if (k > 0) chosen_idx <- c(chosen_idx, if (random) sample(pool, k) else if (top_to_bottom) head(pool, k) else tail(pool, k))
+          if (k > 0) chosen_idx <- c(chosen_idx, if (random) pool[sample.int(length(pool), k)] else if (top_to_bottom) head(pool, k) else tail(pool, k))
         }
       } else {
         # Simple random sample
-        k <- if (!is.null(n)) min(n, nrow(x)) else nrow(x)
+        k <- if (!is.null(n)) min(n, length(all_idx)) else length(all_idx)
         chosen_idx <- if (random) sample(all_idx, k) else if (top_to_bottom) head(all_idx, k) else tail(all_idx, k)
       }
     }
@@ -268,7 +331,7 @@ run_subset <- function(
       ), call. = FALSE)
     }
 
-    not_chosen_idx <- setdiff(all_idx, chosen_idx)
+    not_chosen_idx <- setdiff(full_idx, chosen_idx)
     result_chosen <- x[chosen_idx, , drop = FALSE]
     result_not_chosen <- if (length(not_chosen_idx) > 0L) x[not_chosen_idx, , drop = FALSE] else NULL
     

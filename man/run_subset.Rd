@@ -31,7 +31,7 @@ column names in \code{x} containing categorical variables to balance on.}
 If \code{TRUE}, each column is balanced independently and their results are unioned.
 If \code{FALSE}, columns are crossed into a single interaction and balanced jointly.}
 
-\item{balance}{A string; either \code{"within_match"} (default) or \code{"within_group"}.
+\item{balance}{A string; \code{"within_match"} (default), \code{"within_group"}, or \code{"all"}.
 Controls the direction of balancing when both \code{match} and \code{group} are provided.
 \itemize{
 \item \strong{\code{"within_match"}}: For every category in \code{match}, the levels of \code{group}
@@ -40,6 +40,10 @@ each Age Group will have an equal number of Diseased and Healthy patients.
 \item \strong{\code{"within_group"}}: For every category in \code{group}, the levels of \code{match}
 will have an equal number of observations. For example, within the Diseased
 group, there will be an equal number of patients from each Age Group.
+\item \strong{\code{"all"}}: Every \code{match} x \code{group} combination has exactly the
+same number of observations (the size of the smallest cell). Use with
+\code{independent = FALSE} so multiple \code{match} columns are crossed. If a
+combination is absent from the data, nothing can be selected.
 }}
 
 \item{group}{\code{NULL} (default) or a character vector of column names
@@ -79,6 +83,47 @@ into a single Cartesian product of categories (e.g.
 \code{"1-2 years × Male"}), and every unique combination is represented
 equally. This guarantees perfect joint balance.
 }
+}
+\examples{
+set.seed(1)
+d <- data.frame(
+  id = 1:300,
+  `Age Group` = sample(c("2-5", "6-10"), 300, TRUE, prob = c(.6, .4)),
+  Sex = sample(c("Male", "Female"), 300, TRUE),
+  Status = sample(c("Stunted", "Non-stunted"), 300, TRUE, prob = c(.3, .7)),
+  check.names = FALSE
+)
+tab <- function(r) with(r$chosen, table(`Age Group`, Sex, Status))
+
+# 1. Simple random subset of 50 rows
+nrow(run_subset(d, n = 50)$chosen)
+
+# 2. Joint Age Group x Sex cells; Status is equal within every cell
+#    (Stunted == Non-stunted in each Age Group x Sex combination), but
+#    different cells may have different sizes.
+tab(run_subset(d, match = c("Age Group", "Sex"), group = "Status",
+               independent = FALSE))
+
+# 3. Default independent = TRUE balances each match column separately and
+#    unions the rows, so the joint cells are NOT guaranteed to be balanced.
+tab(run_subset(d, match = c("Age Group", "Sex"), group = "Status"))
+
+# 4. Flip the direction: within each Status, Age Group x Sex cells are equal
+tab(run_subset(d, match = c("Age Group", "Sex"), group = "Status",
+               independent = FALSE, balance = "within_group"))
+
+# 4b. Fully equal: all Age Group x Sex x Status cells have the same count
+tab(run_subset(d, match = c("Age Group", "Sex"), group = "Status",
+               independent = FALSE, balance = "all"))
+
+# 5. Cap the size; a warning is raised if n cannot be reached
+nrow(run_subset(d, n = 40, match = "Sex", group = "Status")$chosen)
+
+# 6. Deterministic: first rows of each stratum
+run_subset(d, n = 10, match = "Sex", random = FALSE)$chosen
+
+# 7. Column subsetting
+names(run_subset(d, n = 2, by = "col", random = FALSE)$chosen)
 }
 \author{
 John Lennon L. Calorio
