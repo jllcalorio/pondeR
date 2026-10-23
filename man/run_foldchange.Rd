@@ -65,14 +65,18 @@ positive.}
 shifted so that the global minimum of \code{x} (after filtering and
 selection) becomes \code{eps}. Default \code{1e-8}.}
 
-\item{up}{Numeric. Optional threshold for up-regulation. If supplied, a
-\code{"sig"} column is added to \code{summary_table} where features with
-\code{fold_change >= up} are labelled \code{"Significant"}. Default \code{NULL}.}
+\item{up}{Numeric. Optional threshold for up-regulation. If \code{up} or
+\code{down} is supplied, \code{summary_table} gets two columns,
+\code{regulation_num} and \code{regulation_den}, giving the regulation
+(\code{"Up"}, \code{"Down"}, \code{"Not significant"}) in the numerator and
+denominator group respectively. Features with \code{fold_change >= up} are
+\code{"Up"} in the numerator group and \code{"Down"} in the denominator
+group. Default \code{NULL}.}
 
-\item{down}{Numeric. Optional threshold for down-regulation. If supplied,
-features with \code{fold_change <= down} are labelled \code{"Significant"}
-in the \code{"sig"} column of \code{summary_table}. This value is compared
-against the raw fold change, not log2. Default \code{NULL}.}
+\item{down}{Numeric. Optional threshold for down-regulation. Features with
+\code{fold_change <= down} are \code{"Down"} in the numerator group and
+\code{"Up"} in the denominator group. Compared against the raw fold change,
+not log2. Default \code{NULL}.}
 }
 \value{
 A named list containing:

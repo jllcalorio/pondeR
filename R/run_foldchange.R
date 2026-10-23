@@ -43,13 +43,17 @@
 #' @param eps A small positive numeric value. When \code{log2 = TRUE}, data are
 #'   shifted so that the global minimum of \code{x} (after filtering and
 #'   selection) becomes \code{eps}. Default \code{1e-8}.
-#' @param up Numeric. Optional threshold for up-regulation. If supplied, a
-#'   \code{"sig"} column is added to \code{summary_table} where features with
-#'   \code{fold_change >= up} are labelled \code{"Significant"}. Default \code{NULL}.
-#' @param down Numeric. Optional threshold for down-regulation. If supplied,
-#'   features with \code{fold_change <= down} are labelled \code{"Significant"}
-#'   in the \code{"sig"} column of \code{summary_table}. This value is compared
-#'   against the raw fold change, not log2. Default \code{NULL}.
+#' @param up Numeric. Optional threshold for up-regulation. If \code{up} or
+#'   \code{down} is supplied, \code{summary_table} gets two columns,
+#'   \code{regulation_num} and \code{regulation_den}, giving the regulation
+#'   (\code{"Up"}, \code{"Down"}, \code{"Not significant"}) in the numerator and
+#'   denominator group respectively. Features with \code{fold_change >= up} are
+#'   \code{"Up"} in the numerator group and \code{"Down"} in the denominator
+#'   group. Default \code{NULL}.
+#' @param down Numeric. Optional threshold for down-regulation. Features with
+#'   \code{fold_change <= down} are \code{"Down"} in the numerator group and
+#'   \code{"Up"} in the denominator group. Compared against the raw fold change,
+#'   not log2. Default \code{NULL}.
 #'
 #' @details
 #' \strong{Fold change computation}\cr
@@ -475,10 +479,11 @@ run_foldchange <- function(
     )
 
     if (!is.null(up) || !is.null(down)) {
-      is_sig <- rep(FALSE, n_feat)
-      if (!is.null(up))   is_sig <- is_sig | (!is.na(fc_col) & fc_col >= up)
-      if (!is.null(down)) is_sig <- is_sig | (!is.na(fc_col) & fc_col <= down)
-      df$sig <- ifelse(is_sig, "Significant", "Not significant")
+      hi <- if (!is.null(up))   !is.na(fc_col) & fc_col >= up   else rep(FALSE, n_feat)
+      lo <- if (!is.null(down)) !is.na(fc_col) & fc_col <= down else rep(FALSE, n_feat)
+      # A higher fold change means up in the numerator group, down in the denominator group
+      df$regulation_num <- ifelse(hi, "Up",   ifelse(lo, "Down", "Not significant"))
+      df$regulation_den <- ifelse(hi, "Down", ifelse(lo, "Up",   "Not significant"))
     }
 
     df

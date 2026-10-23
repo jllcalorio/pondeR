@@ -3,7 +3,12 @@ set.seed(4821)
 m    <- as.data.frame(matrix(rexp(60 * 12, 0.01) + 1, 60, 12, dimnames = list(NULL, paste0("m", 1:12))))
 meta <- data.frame(g = factor(rep(c("A", "B"), 30)))
 fc   <- run_foldchange(m, metadata = meta, group = "g")
-stopifnot(!"regulation" %in% names(fc$summary_table))
+stopifnot(!"regulation_num" %in% names(fc$summary_table))
+fc_reg <- run_foldchange(m, metadata = meta, group = "g", up = 1.1, down = 0.9)$summary_table
+stopifnot(all(fc_reg$regulation_num[fc_reg$fold_change >= 1.1] == "Up"),
+          all(fc_reg$regulation_den[fc_reg$fold_change >= 1.1] == "Down"),
+          all(fc_reg$regulation_num[fc_reg$fold_change <= 0.9] == "Down"),
+          all(fc_reg$regulation_den[fc_reg$fold_change <= 0.9] == "Up"))
 
 ok <- function(r) inherits(r$plots[[1]], "ggplot")
 stopifnot(ok(plot_fcmetric(fc, annotate = c("m1", "m2"), x_cut = 100)))
