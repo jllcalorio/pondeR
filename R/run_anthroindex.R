@@ -424,6 +424,8 @@
   }
   if (merge_thinness) {
     status[status %in% c("Severe thinness", "Thinness", "Moderate and severe thinness")] <- "Thinness"
+    # Adult "Underweight" only exists for bmifa; wfa's "Underweight" is a separate merge
+    if (index == "bmifa") status[status == "Underweight"] <- "Thinness"
   }
 
   df[[status_col_name]] <- status
@@ -442,6 +444,7 @@
     bmi = c(
       "Moderate and severe thinness",
       "Underweight",
+      "Thinness",  # Merged version
       "Normal",
       "Overweight",
       "Stage 1 Obesity",
@@ -453,9 +456,16 @@
       "Severe acute malnutrition",
       "Moderate acute malnutrition",
       "Malnourished",  # Merged version
+      "Severe thinness",
+      "Moderate and severe thinness",
+      "Thinness",  # Merged version
+      "Underweight",
       "Normal",
       "Overweight",
       "Obesity",
+      "Stage 1 Obesity",
+      "Stage 2 Obesity",
+      "Stage 3 Obesity",
       "Obese"  # Used when merge_obese = TRUE
     ),
     wfh = c(
@@ -1235,6 +1245,9 @@ run_anthroindex <- function(
       # Apply merge logic if requested
       if (merge_categories) {
         status[status %in% c("Stage 1 Obesity", "Stage 2 Obesity", "Stage 3 Obesity", "Obesity")] <- "Obese"
+      }
+      if (merge_thinness) {
+        status[status %in% c("Moderate and severe thinness", "Underweight")] <- "Underweight"
       }
       
       # Apply ordered factor levels
