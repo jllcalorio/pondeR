@@ -61,7 +61,12 @@
 #' Lynn, M. R. (1986). Determination and quantification of content validity.
 #' \emph{Nursing Research}, \emph{35}(6), 382--385.
 #' \doi{10.1097/00006199-198611000-00017}
-#'
+#' 
+#' Penfield, R. D., & Giacobbi, Jr., P. R. (2004). Applying a Score Confidence 
+#' Interval to Aiken’s Item Content-Relevance Index. 
+#' \emph{Measurement in Physical Education and Exercise Science}, 
+#' \emph{8}(4), 213–225. \doi{10.1207/s15327841mpee0804_3}
+#' 
 #' Polit, D. F., & Beck, C. T. (2006). The content validity index: Are you
 #' sure you know what's being reported? Critique and recommendations.
 #' \emph{Research in Nursing & Health}, \emph{29}(5), 489--497.
