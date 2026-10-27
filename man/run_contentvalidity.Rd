@@ -4,7 +4,14 @@
 \alias{run_contentvalidity}
 \title{Run Comprehensive Item-Level and Scale-Level Content Validity Analysis}
 \usage{
-run_contentvalidity(x, threshold = 3L, low = 1L, high = 4L, na.rm = FALSE)
+run_contentvalidity(
+  x,
+  threshold = 3L,
+  low = 1L,
+  high = 4L,
+  na.rm = FALSE,
+  conf_level = 0.95
+)
 }
 \arguments{
 \item{x}{A numeric data frame or matrix where rows represent experts and
@@ -21,6 +28,9 @@ scale. Passed to \code{aiken_v()}. Defaults to \code{4}.}
 
 \item{na.rm}{Logical. If \code{TRUE}, ratings with missing values are
 removed prior to computation. Defaults to \code{FALSE}.}
+
+\item{conf_level}{Confidence level for the score confidence interval of
+Aiken's V (Penfield & Giacobbi, 2004). Defaults to \code{0.95}.}
 }
 \value{
 A list of class \code{run_contentvalidity} with two elements:

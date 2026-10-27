@@ -18,6 +18,8 @@
 #'   scale. Passed to \code{aiken_v()}. Defaults to \code{4}.
 #' @param na.rm Logical. If \code{TRUE}, ratings with missing values are
 #'   removed prior to computation. Defaults to \code{FALSE}.
+#' @param conf_level Confidence level for the score confidence interval of
+#'   Aiken's V (Penfield & Giacobbi, 2004). Defaults to \code{0.95}.
 #'
 #' @details
 #' The function merges the unrounded numeric output of
@@ -95,7 +97,8 @@ run_contentvalidity <- function(
     threshold = 3L,
     low       = 1L,
     high      = 4L,
-    na.rm     = FALSE
+    na.rm     = FALSE,
+    conf_level = 0.95
 ) {
 
   # --- package check ----------------------------------------------------------
@@ -168,6 +171,11 @@ run_contentvalidity <- function(
     stop("'na.rm' must be a single logical value (TRUE or FALSE).", call. = FALSE)
   }
 
+    if (!is.numeric(conf_level) || length(conf_level) != 1L ||
+      conf_level <= 0 || conf_level >= 1) {
+    stop("'conf_level' must be a single number between 0 and 1.", call. = FALSE)
+  }
+
   # --- computation ------------------------------------------------------------
   cv_out  <- contentValidity::content_validity(
     ratings            = x,
@@ -189,10 +197,11 @@ run_contentvalidity <- function(
   items_apa <- as.data.frame(apa_out)
 
   # Identify the Interpretation column
-  interp_col <- if ("Interpretation" %in% names(items_apa)) {
-    "Interpretation"
-  } else {
-    names(items_apa)[ncol(items_apa)]  # fallback: last column
+  # apa_table() names it "Kappa Interpretation" (contentValidity 0.2.0)
+  interp_col <- grep("Interpretation", names(items_apa), value = TRUE)[1L]
+  if (is.na(interp_col)) {
+    stop("Could not find an interpretation column in apa_table() output.",
+         call. = FALSE)
   }
 
   # Start from raw unrounded values; row names are item names
@@ -227,8 +236,55 @@ run_contentvalidity <- function(
     items_out <- items_out[, -dup_cols, drop = FALSE]
   }
 
+    # --- Aiken's V: score CI and exact significance test ------------------------
+  k     <- high - low                      # number of scale steps (categories - 1)
+  n_r   <- colSums(!is.na(x_mat))          # experts per item
+  s_sum <- colSums(x_mat - low, na.rm = TRUE)
+  nk    <- n_r * k
+  v_obs <- s_sum / nk
+
+  # Penfield & Giacobbi (2004) score interval
+  z      <- stats::qnorm(1 - (1 - conf_level) / 2)
+  centre <- 2 * nk * v_obs + z^2
+  half   <- z * sqrt(4 * nk * v_obs * (1 - v_obs) + z^2)
+  denom  <- 2 * (nk + z^2)
+  v_lwr  <- pmax(0, (centre - half) / denom)
+  v_upr  <- pmin(1, (centre + half) / denom)
+
+  # Aiken (1985) exact one-tailed p: P(S >= observed) when each rating is
+  # uniformly distributed over the (k + 1) categories
+  .conv <- function(a, b) {
+    out <- numeric(length(a) + length(b) - 1L)
+    for (i in seq_along(a)) {
+      idx <- i:(i + length(b) - 1L)
+      out[idx] <- out[idx] + a[i] * b
+    }
+    out
+  }
+  .aiken_p <- function(s_obs, n, k) {
+    if (n < 1L) return(NA_real_)
+    dist <- Reduce(.conv, rep(list(rep(1 / (k + 1), k + 1)), n))
+    sum(dist[(round(s_obs) + 1L):length(dist)])
+  }
+  v_p <- mapply(.aiken_p, s_sum, n_r, MoreArgs = list(k = k))
+
+  # Safety check: recomputed V must match the package's V
+  if ("Aiken's V" %in% names(items_out) &&
+      !isTRUE(all.equal(unname(v_obs), unname(items_out[["Aiken's V"]])))) {
+    warning("Recomputed Aiken's V differs from contentValidity output; ",
+            "check item ordering.", call. = FALSE)
+  }
+
+  items_out[["Aiken's V Lower"]] <- unname(v_lwr)
+  items_out[["Aiken's V Upper"]] <- unname(v_upr)
+  items_out[["Aiken's V p"]]     <- unname(v_p)
+
+  # remove the degenerate AC columns
+  items_out[c("gwet_ac1", "gwet_ac2")] <- NULL
+  
   # --- output -----------------------------------------------------------------
   scale_out <- cv_out$scale
+  scale_out <- scale_out[setdiff(names(scale_out), c("mean_ac1", "mean_ac2"))]
   scale_col_map <- c(
     scvi_ave   = "S-CVI/Ave",
     scvi_ua    = "S-CVI/UA",
@@ -244,6 +300,9 @@ run_contentvalidity <- function(
     items = items_out,
     scale = scale_out
   )
+
+  # summary() reads attr(object, "n_experts"), but nothing sets it
+  attr(out, "n_experts") <- nrow(x_mat)
 
   class(out) <- c("run_contentvalidity", "list")
   out
