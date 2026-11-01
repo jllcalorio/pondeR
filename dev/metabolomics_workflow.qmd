@@ -1,0 +1,149 @@
+---
+title: "Metabolomics Analysis Workflow"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    embed-resources: true
+    fig-width: 7
+    fig-height: 5
+execute:
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: setup
+library(pondeR)
+library(dimsprepr)
+library(gt)
+library(knitr)
+```
+
+## Configuration
+
+Edit only this section. Each dataset needs a samples x features table
+(`features`) and a sample table (`metadata`), either as data frames already in
+the R session or as file paths (`.csv` / `.xlsx`). Set `use_demo <- FALSE` to
+use your own data.
+
+Normalization per dataset:
+
+- `normalize_method = "median"` (e.g. serum), or
+- `norm_factor_col = "SpecificGravity"` (e.g. urine): name of the numeric
+  metadata column holding the per-sample normalization values (also set
+  `normalize_qc_method` = `"mean"`, `"median"` or `"none"` for the QC rows). This overrides
+  `normalize_method` (`"specific_factor"`). QC rows may be `NA`.
+
+```{r}
+#| label: config
+use_demo <- TRUE
+
+# Shared column names in metadata (override per dataset if they differ)
+common <- list(
+  sample_id_col = "Sample",
+  group_col     = "Group",
+  batch_col     = "Batch",
+  injection_col = "InjectionSequence",
+  qc_types      = "QC",
+  control_group = NULL,  # reference level for ROC (NULL = first alphabetically)
+  fc_up         = 1.5,   # fold change thresholds (raw scale)
+  fc_down       = 1 / 1.5,
+  extra         = list() # any other run_DIpreprocess() arguments
+)
+
+if (use_demo) {
+  make_demo <- function(n = 120, p = 60, seed, sg = FALSE, effect = 4) {
+    set.seed(seed)
+    # QC every 5th injection so each batch has >= min_qc_per_batch QCs
+    grp <- rep("QC", n)
+    grp[-seq(1, n, by = 5)] <- sample(rep(c("Control", "Case"), each = (n - n / 5) / 2))
+    meta <- data.frame(
+      Sample = paste0("S", seq_len(n)), Group = grp,
+      Batch = rep(1:3, length.out = n) |> sort(),
+      InjectionSequence = seq_len(n)
+    )
+    if (sg) meta$SpecificGravity <- ifelse(grp == "QC", NA, runif(n, 1.015, 1.025))
+    up <- rep(c(effect, rep(1, 5)), length.out = p)  # median-normalization removes effects shared by most features
+    x <- matrix(rlnorm(n * p, log(1e5), 0.4), n, p) *
+      (1 + 0.004 * meta$InjectionSequence) *
+      outer(grp == "Case", up, function(a, b) ifelse(a, b, 1))
+    dimnames(x) <- list(meta$Sample, paste0("m", seq_len(p)))
+    rownames(meta) <- meta$Sample
+    list(features = as.data.frame(x), metadata = meta)
+  }
+  serum_demo <- make_demo(seed = 5129)
+  urine_demo <- make_demo(seed = 802, sg = TRUE)
+  serum_features <- serum_demo$features; serum_metadata <- serum_demo$metadata
+  urine_features <- urine_demo$features; urine_metadata <- urine_demo$metadata
+}
+
+datasets <- list(
+  Serum = modifyList(common, list(
+    features = serum_features, metadata = serum_metadata,
+    normalize_method = "median"
+  )),
+  Urine = modifyList(common, list(
+    features = urine_features, metadata = urine_metadata,
+    norm_factor_col = "SpecificGravity",
+    normalize_qc_method = "median"  # QC rows have no SG value: how to normalize them
+  ))
+)
+
+# Results are saved here (one sub-folder per dataset)
+out_dir <- "results"
+```
+
+```{r}
+#| label: helpers
+read_any <- function(x) {
+  if (is.data.frame(x) || is.matrix(x)) return(as.data.frame(x))
+  switch(tolower(tools::file_ext(x)),
+         csv  = read.csv(x, check.names = FALSE),
+         xlsx = openxlsx::read.xlsx(x),
+         stop("Unsupported input: ", x))
+}
+
+preprocess_ds <- function(ds) {
+  feat <- read_any(ds$features)
+  meta <- read_any(ds$metadata)
+  rownames(feat) <- rownames(meta) <- meta[[ds$sample_id_col]]
+  do.call(run_DIpreprocess, c(list(
+    x = feat, metadata = meta,
+    sample_id_col = ds$sample_id_col, group_col = ds$group_col, qc_types = ds$qc_types,
+    batch_col = ds$batch_col, injection_col = ds$injection_col,
+    normalize_method = ds$normalize_method %||% "median",
+    norm_factor_col = ds$norm_factor_col,
+    normalize_qc_method = ds$normalize_qc_method %||% "none",
+    verbose = FALSE
+  ), ds$extra))
+}
+
+is_valid_pls <- function(p) {
+  !inherits(p, "error") && inherits(p, "run_pls") &&
+    NCOL(p$scores) >= 2 && !all(is.na(p$variance_explained))
+}
+```
+
+```{r}
+#| label: run-datasets
+#| results: asis
+for (nm in names(datasets)) {
+  ds <- datasets[[nm]]
+  cat("\n\n# ", nm, "\n\n", sep = "")
+  di <- tryCatch(preprocess_ds(ds), error = function(e) list(error = conditionMessage(e)))
+  if (!is.null(di$error)) {
+    cat("Preprocessing failed for ", nm, ": ", di$error, "\n\n", sep = "")
+    next
+  }
+  cat(knitr::knit_child("_metabolomics_dataset.qmd", envir = environment(), quiet = TRUE),
+      sep = "\n")
+}
+```
+
+# Session info
+
+```{r}
+sessionInfo()
+```
