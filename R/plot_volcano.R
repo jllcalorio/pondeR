@@ -300,6 +300,31 @@ plot_volcano <- function(
        any(vapply(x, function(el) inherits(el, c("run_foldchange", "run_diff")),
                   logical(1L))))) {
 
+    # No run_diff results (e.g. test failed): a volcano plot is impossible, so
+    # fall back to a mean abundance heatmap built from the fold-change group means.
+    objs0 <- if (inherits(x, "run_foldchange")) list(x) else x
+    fc0   <- Filter(function(o) inherits(o, "run_foldchange"), objs0)
+    has_p <- any(vapply(objs0, function(o) inherits(o, "run_diff") ||
+                          (is.list(o) && is.data.frame(o$summary_table) &&
+                             "p_value" %in% names(o$summary_table)), logical(1L)))
+    if (length(fc0) && !has_p) {
+      st <- fc0[[1]]$summary_table
+      means <- rbind(
+        data.frame(grp = st$num_group, feature = st$feature, m = st$mean_num),
+        data.frame(grp = st$den_group, feature = st$feature, m = st$mean_den))
+      means <- unique(means)
+      mat <- tapply(means$m, list(means$grp, means$feature), mean)
+      message("No run_diff results supplied; returning a mean abundance plot instead of a volcano plot.")
+      mm <- plot_meanmap(as.data.frame(mat),
+                         metadata = data.frame(grp = rownames(mat)), group = "grp")
+      return(structure(
+        list(plots = list(`Mean Abundance` = mm),
+             classified = data.frame(feature = colnames(mat), .regulation = "NS"),
+             params = list(up = fc0[[1]]$params$up %||% 1.5,
+                           down = fc0[[1]]$params$down %||% 0.5, pval = NA_real_)),
+        class = c("plot_volcano", "list")))
+    }
+
     # Delegate to get_volcanodata to handle merging and matching.
     # This ensures consistency between the plot and standalone data extraction.
     v_args <- list(filter = FALSE)
@@ -332,7 +357,7 @@ plot_volcano <- function(
       y <- if ("fold_change" %in% names(v_data)) "fold_change" else "log2_fc"
     }
     if (missing(z) || is.null(z)) {
-      z <- "p_value_used"
+      z <- if ("p_value_adj" %in% names(v_data)) "p_value_adj" else "p_value"
     }
     if (missing(features) || is.null(features)) {
       features <- "feature"
@@ -370,9 +395,12 @@ plot_volcano <- function(
   for (pcol in intersect(c("p_value", "p_value_adj"), names(x))) {
     if (is.character(x[[pcol]])) {
       # Remove all non-numeric characters except "." and convert to numeric
+      lt <- startsWith(x[[pcol]], "<")
       x[[pcol]] <- suppressWarnings(
         as.numeric(gsub("[^0-9.]", "", x[[pcol]]))
       )
+      # "<x" is only a bound; keep it strictly below x
+      x[[pcol]][lt %in% TRUE] <- x[[pcol]][lt %in% TRUE] * (1 - 1e-9)
     }
   }
 
@@ -911,8 +939,10 @@ print.plot_volcano <- function(x, ...) {
   cat("-- plot_volcano results ------------------------------------\n")
   cat(sprintf("  Features   : %d  (Up: %d | Down: %d | NS: %d)\n",
               nrow(clf), up_n, dn_n, ns_n))
-  cat(sprintf("  Thresholds : FC >= %.4f (up) | <= %.4f (down)  |  p < %.4f\n",
-              x$params$up, x$params$down, x$params$pval))
+  cat(sprintf("  Thresholds : FC >= %.4f (up) | <= %.4f (down)",
+              x$params$up, x$params$down),
+      if (!is.na(x$params$pval)) sprintf("  |  p < %.4f", x$params$pval),
+      "\n", sep = "")
   if (!is.null(x$params$group))
     cat(sprintf("  Group col  : %s\n", x$params$group))
   cat(sprintf("  Plots      : %s\n", paste(names(x$plots), collapse = ", ")))
