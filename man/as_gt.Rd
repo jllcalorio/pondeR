@@ -2,15 +2,23 @@
 % Please edit documentation in R/run_correl.R
 \name{as_gt}
 \alias{as_gt}
+\alias{as_gt.data.frame}
+\alias{as_gt.default}
 \alias{as_gt.run_correl}
 \title{Convert a run_correl to a gt table}
 \usage{
 as_gt(x, ...)
 
+\method{as_gt}{data.frame}(x, ...)
+
+\method{as_gt}{default}(x, ...)
+
 \method{as_gt}{run_correl}(x, format_p = TRUE, ...)
 }
 \arguments{
-\item{x}{An object to convert.}
+\item{x}{An object to convert: a \code{run_correl} result, a
+\code{data.frame}/tibble (or anything coercible with \code{as.data.frame()}),
+or a \code{gt_tbl} (returned unchanged).}
 
 \item{...}{Additional arguments.}
 
