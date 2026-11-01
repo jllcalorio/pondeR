@@ -4,7 +4,14 @@
 \alias{get_volcanodata}
 \title{Get Volcano Plot Data}
 \usage{
-get_volcanodata(..., up = NULL, down = NULL, pval = NULL, filter = TRUE)
+get_volcanodata(
+  ...,
+  up = NULL,
+  down = NULL,
+  pval = NULL,
+  filter = TRUE,
+  sort_es = c("desc", "asc", "none")
+)
 }
 \arguments{
 \item{...}{Objects of class \code{run_foldchange} and/or \code{run_diff}.}
@@ -14,17 +21,29 @@ get_volcanodata(..., up = NULL, down = NULL, pval = NULL, filter = TRUE)
 
 \item{filter}{Logical. If \code{TRUE} (default), the data frame is filtered
 to include only "Up" or "Down" regulated features.}
+
+\item{sort_es}{Row order by effect size: \code{"desc"} (default) puts the
+largest effects first, \code{"asc"} the smallest first, and \code{"none"}
+keeps the original order. Features are ordered by effect size magnitude
+(very large, large, medium, small, very small) and then by the absolute
+effect size estimate. Ignored when no \code{run_diff} effect sizes are
+available. Note that estimates from different effect size metrics (e.g.
+Cohen's d vs. rank-biserial correlation) are not strictly comparable.}
 }
 \value{
-A \code{data.frame} containing merged data from both objects,
-including columns for fold change, p-values, and a \code{.regulation}
-classification column.
+A \code{data.frame} containing merged data from both objects:
+fold change columns, effect size (95\\% CI) and magnitude, and a single
+p-value column (\code{p_value_adj} when present, otherwise \code{p_value}).
+When the \code{run_diff} summary table is simplified, the p-value column
+keeps its superscript test markers (legend stored in the
+\code{"pvalue_legend"} attribute and shown by \code{\link{as_gt}}).
+Up/Down/NS classification is used only for \code{filter} and is not returned.
 }
 \description{
 Extracts and combines results from \code{run_foldchange()} and \code{run_diff()}
 into a single data frame. This function automatically aligns features/outcomes,
 retrieves fold-change and significance thresholds from the provided objects,
-and classifies each feature as "Up", "Down", or "NS" (Non-significant).
+and (optionally) keeps only "Up" or "Down" regulated features.
 }
 \details{
 The function automatically detects the thresholds:
