@@ -1031,11 +1031,34 @@ print.run_correl <- function(x, format_p = TRUE, ...) {
 #'
 #' @return A \code{gt_tbl} object.
 #' Convert an object to a gt table
-#' @param x An object to convert.
+#' @param x An object to convert: a \code{run_correl} result, a
+#'   \code{data.frame}/tibble (or anything coercible with \code{as.data.frame()}),
+#'   or a \code{gt_tbl} (returned unchanged).
 #' @param ... Additional arguments.
 #' @return A gt table object.
 #' @export
 as_gt <- function(x, ...) UseMethod("as_gt")
+
+#' @rdname as_gt
+#' @export
+as_gt.data.frame <- function(x, ...) {
+  if (!requireNamespace("gt", quietly = TRUE))
+    stop("Package 'gt' is required. Install it with: install.packages('gt')", call. = FALSE)
+  notes <- c(attr(x, "df_footnote", exact = TRUE), attr(x, "pvalue_legend", exact = TRUE))
+  tmp <- as.data.frame(x)
+  tbl <- gt::gt(tmp, ...)
+  for (n in notes) tbl <- gt::tab_source_note(tbl, source_note = n)
+  tbl
+}
+
+#' @rdname as_gt
+#' @export
+as_gt.default <- function(x, ...) {
+  if (inherits(x, "gt_tbl")) return(x)
+  tmp <- tryCatch(as.data.frame(x), error = function(e)
+    stop("Cannot convert an object of class '", class(x)[1], "' to a gt table.", call. = FALSE))
+  as_gt.data.frame(tmp, ...)
+}
 
 #' @rdname as_gt
 #' @export
