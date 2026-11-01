@@ -1,0 +1,232 @@
+---
+title: "Metabolomics Analysis Report"
+subtitle: "`r readRDS(params$spec_file)$name`"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    embed-resources: true
+    fig-width: 7
+    fig-height: 5
+params:
+  spec_file: null
+execute:
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: setup
+library(pondeR)
+library(dimsprepr)
+library(gt)
+library(knitr)
+
+# Everything comes from render_metabolomics(): preprocessed data + user overrides
+spec <- readRDS(params$spec_file)
+di   <- spec$di
+over <- spec$over
+
+# Run a pondeR/dimsprepr function with workflow defaults; user overrides win
+wf <- function(fn, ...) pondeR:::.wf_call(fn, list(...), over)
+
+# run_DIpreprocess standardizes metadata column names
+std <- function(std_nm, user_nm) if (std_nm %in% names(di$metadata)) std_nm else user_nm
+g   <- std("Group", spec$group_col)
+sid <- std("Sample", spec$sample_id_col)
+qc  <- spec$qc_types
+groups <- setdiff(unique(as.character(di$metadata[[g]])), qc)
+multi  <- length(groups) > 2  # >2 groups: PLS-DA overall, pairwise ROC
+
+is_valid_pls <- function(p) {
+  !inherits(p, "error") && inherits(p, "run_pls") &&
+    NCOL(p$scores) >= 2 && !all(is.na(p$variance_explained))
+}
+```
+
+# Settings
+
+```{r}
+p <- di$parameters
+as_gt(data.frame(
+  Setting = c("Normalization", "Normalization factor column", "Transformation",
+              "Scaling (non-PLS / PLS)", "Drift/batch correction", "QC labels", "Groups"),
+  Value = c(paste(p$normalize_method, collapse = ", "),
+            if (is.null(p$norm_factor_col)) "none" else p$norm_factor_col,
+            paste(p$transform_method, collapse = ", "),
+            paste(p$scale_nonpls, "/", p$scale_pls),
+            if (isTRUE(p$correct_drift)) "yes" else "no",
+            paste(qc, collapse = ", "), paste(groups, collapse = ", "))))
+```
+
+```{r}
+#| results: asis
+if (length(over)) {
+  cat("User-specified arguments (everything else uses workflow defaults):\n\n")
+  ov <- do.call(rbind, lapply(names(over), function(fn)
+    data.frame(Function = fn, Argument = names(over[[fn]]),
+               Value = vapply(over[[fn]], function(v) paste(deparse(v), collapse = " "), ""))))
+  cat(knitr::knit_print(as_gt(ov)), "\n\n")
+}
+```
+
+# Preprocessing
+
+```{r}
+as_gt(di$dimensions)
+```
+
+```{r}
+tab <- table(di$metadata[[g]])
+as_gt(rbind(data.frame(Group = names(tab), n = as.integer(tab)),
+            data.frame(Group = "Total", n = sum(tab))))
+```
+
+## Before vs. after batch / drift correction
+
+```{r}
+if (isTRUE(di$parameters$correct_drift) && !is.null(di$data_corrected)) {
+  wf("plot_beforeafter", di$data_imputed, di$data_corrected, di$metadata,
+     plot_what = head(intersect(di$features_final, colnames(di$data_corrected)), 6),
+     col_injection = std("InjectionSequence", spec$injection_col),
+     col_batch = std("Batch", spec$batch_col),
+     col_group = g, col_qc_label = qc,
+     x_label = "Before correction", y_label = "After correction")
+} else cat("Drift/batch correction was not applied.")
+```
+
+## Before vs. after preprocessing
+
+```{r}
+# Same features on both sides (features removed by filtering are dropped from "before")
+raw_kept <- di$data_raw[, colnames(di$data_nonpls), drop = FALSE]
+wf("plot_dist_beforeafter", raw_kept, di$data_nonpls, group_by = "sample",
+   plot_title = "Samples view")
+wf("plot_dist_beforeafter", raw_kept, di$data_nonpls, group_by = "feature",
+   plot_title = "Features view")
+```
+
+# PCA
+
+```{r}
+pca <- suppressWarnings(wf("run_pca", di, group = g, exclude = qc, verbose = FALSE))
+wf("plot_score", pca, color_by = g, points_from = sid)
+```
+
+# OPLS-DA (PLS-DA fallback)
+
+QC samples are dropped by `run_pls()` automatically for `run_DIpreprocess`
+input. With two groups OPLS-DA is tried first and PLS-DA is the fallback; with
+more than two groups only PLS-DA is used.
+
+```{r}
+fit_pls <- function(method) tryCatch(
+  suppressWarnings(wf("run_pls", di, group = g, method = method, verbose = FALSE)),
+  error = function(e) e)
+pls <- if (multi) fit_pls("plsda") else fit_pls("oplsda")
+if (!multi && !is_valid_pls(pls)) {
+  cat("OPLS-DA produced no usable model",
+      if (inherits(pls, "error")) paste0("(", conditionMessage(pls), ")"),
+      "- falling back to PLS-DA.\n\n")
+  pls <- fit_pls("plsda")
+}
+if (is_valid_pls(pls)) {
+  wf("plot_score", pls, color_by = g, points_from = sid)
+} else {
+  cat("PLS-DA also produced no usable model - skipped.")
+  pls <- NULL
+}
+```
+
+# Differential analysis
+
+## Fold change
+
+```{r}
+fc <- wf("run_foldchange", di, from = "normalized", up = 1.5, down = 1 / 1.5)
+as_gt(head(fc$summary_table, 20))
+```
+
+## t-test / ANOVA
+
+`run_diff()` selects the test automatically (t-test / Wilcoxon for 2 groups,
+ANOVA / Kruskal-Wallis for more) and adjusts p-values across features.
+
+```{r}
+dif <- tryCatch(wf("run_diff", di, outcome = colnames(di$data_nonpls), summary_table = TRUE),
+                error = function(e) e)
+if (inherits(dif, "error")) {
+  cat("run_diff failed:", conditionMessage(dif)); dif <- NULL
+} else as_gt(dif$summary_table)
+```
+
+## Volcano plot
+
+```{r}
+vdat <- if (!is.null(dif)) wf("get_volcanodata", fc, dif) else NULL
+# Without run_diff results plot_volcano() returns a mean abundance plot instead
+vol <- wf("plot_volcano", if (is.null(dif)) list(fc) else list(fc, dif), y = "fold_change",
+          z = if (!is.null(dif) && "p_value_adj" %in% names(dif$summary_table)) "p_value_adj" else "p_value")
+invisible(lapply(vol$plots, print))
+if (is.null(vdat) || nrow(vdat) == 0) {
+  cat("\n\nNo features passed the fold change and p-value thresholds;",
+      "showing mean abundance per group instead.\n\n")
+  keep <- !di$metadata[[g]] %in% qc
+  print(wf("plot_meanmap", di$data_nonpls[keep, , drop = FALSE],
+           metadata = di$metadata[keep, , drop = FALSE], group = g))
+} else {
+  as_gt(vdat)
+}
+```
+
+# ROC analysis
+
+Uses, when available, the VIP scores (PLS-DA/OPLS-DA), fold change and
+t-test/ANOVA results to select candidate features (thresholds: VIP, `up`/`down`,
+`p_value` defaults of `run_auc()`). With more than two groups, ROC is run for
+every pair of groups, each with its own pairwise PLS-DA, fold change and test.
+
+```{r}
+#| results: asis
+pairs <- if (multi) combn(groups, 2, simplify = FALSE) else list(groups)
+
+roc_pair <- function(pr) {
+  if (!multi) {
+    inputs <- Filter(Negate(is.null), list(di, pls, fc, dif))
+    return(wf("run_auc", inputs, set_control = spec$control_group, plot = "all"))
+  }
+  drop <- c(qc, setdiff(groups, pr))
+  p_pls <- tryCatch(suppressWarnings(wf("run_pls", di, group = g, method = "plsda",
+                                         exclude = drop, verbose = FALSE)),
+                    error = function(e) NULL)
+  p_fc  <- wf("run_foldchange", di, from = "normalized", filter = drop,
+              up = 1.5, down = 1 / 1.5)
+  p_dif <- tryCatch(wf("run_diff", di, outcome = colnames(di$data_nonpls), filter = drop,
+                       summary_table = TRUE), error = function(e) NULL)
+  inputs <- Filter(Negate(is.null), list(di, if (is_valid_pls(p_pls)) p_pls, p_fc, p_dif))
+  wf("run_auc", inputs, remove = drop, set_control = pr[1], plot = "all")
+}
+
+roc <- lapply(pairs, function(pr) tryCatch(roc_pair(pr), error = function(e) e))
+names(roc) <- vapply(pairs, paste, character(1), collapse = " vs ")
+
+for (nm_pair in names(roc)) {
+  r <- roc[[nm_pair]]
+  cat("\n\n## ", nm_pair, "\n\n", sep = "")
+  if (inherits(r, "error")) {
+    cat("ROC analysis failed: ", conditionMessage(r), "\n\n", sep = "")
+  } else if (is.null(r$auc_table) || nrow(r$auc_table) == 0) {
+    cat("No features passed the filtering criteria.\n\n")
+  } else {
+    cat(knitr::knit_print(as_gt(r$auc_table)), "\n\n")
+    invisible(lapply(r$plots, print))
+  }
+}
+```
+
+```{r}
+#| include: false
+saveRDS(list(preprocess = di, pca = pca, pls = pls, foldchange = fc, diff = dif, roc = roc),
+        spec$results_file)
+```

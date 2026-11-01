@@ -2,40 +2,121 @@
 % Please edit documentation in R/render_metabolomics.R
 \name{render_metabolomics}
 \alias{render_metabolomics}
-\title{Render the metabolomics analysis workflow for a project}
+\title{Render a standalone metabolomics analysis report}
 \usage{
 render_metabolomics(
-  config = NULL,
+  features,
+  metadata = NULL,
+  features_sheet = NULL,
+  metadata_sheet = NULL,
+  metadata_cols = NULL,
+  name = NULL,
   output_dir = NULL,
-  output_file = "metabolomics_report.html",
+  sample_id_col = "Sample",
+  group_col = "Group",
+  batch_col = "Batch",
+  injection_col = "InjectionSequence",
+  qc_types = c("QC", "SQC", "EQC"),
+  normalize_method = "median",
+  norm_factor_col = NULL,
+  normalize_qc_method = "median",
+  control_group = NULL,
+  ...,
+  overwrite = FALSE,
+  timestamp = FALSE,
   quiet = TRUE
 )
 }
 \arguments{
-\item{config}{Path to an R script defining \code{datasets} (a named list, one
-entry per dataset) and optionally \code{common} and \code{out_dir}. See
-\code{system.file("workflows/config_template.R", package = "pondeR")}.
-\code{NULL} renders the built-in demo data.}
+\item{features}{Path to the features file (or the combined file), or a data frame.}
 
-\item{output_dir}{Folder for the report and \code{results/}; also the working
-directory, so relative paths in the config resolve from here. Default: the
-folder containing \code{config}.}
+\item{metadata}{Path to the metadata file, or a data frame. Omit when
+\code{metadata_sheet} is in the \code{features} workbook, or for a combined table.}
 
-\item{output_file}{Name of the HTML report.}
+\item{features_sheet, metadata_sheet}{Sheet names (workbooks only).}
 
-\item{quiet}{Set \code{FALSE} to see Quarto's progress and error output.}
+\item{metadata_cols}{Extra metadata column names for a combined table.}
+
+\item{name}{Report name; default the features file name.}
+
+\item{output_dir}{Folder that will contain \code{results/}. Default: the
+folder of the \code{features} file.}
+
+\item{sample_id_col, group_col, batch_col, injection_col}{Metadata column names.}
+
+\item{qc_types}{Group labels identifying QC samples.}
+
+\item{normalize_method}{Normalization method (e.g. \code{"median"}, \code{"sum"},
+\code{"pqn_global"}); see \code{dimsprepr::run_DIpreprocess}.}
+
+\item{norm_factor_col}{Numeric metadata column with per-sample normalization
+values (e.g. specific gravity for urine). When given, it overrides
+\code{normalize_method}.}
+
+\item{normalize_qc_method}{How QC samples are normalized when
+\code{norm_factor_col} is used (QC rows usually have no value): \code{"median"},
+\code{"mean"} or \code{"none"}. Default \code{"median"}; ignored otherwise.}
+
+\item{control_group}{Reference group for ROC (two-group designs).}
+
+\item{...}{Per-function argument lists, see above.}
+
+\item{overwrite}{If \code{FALSE} (default) an existing report is never replaced:
+a timestamp (\code{_YYYYmmdd-HHMMSS}) is appended to the new file names.
+\code{TRUE} replaces the existing report and results.}
+
+\item{timestamp}{If \code{TRUE}, always append a timestamp to the file names.}
+
+\item{quiet}{Set \code{FALSE} to see Quarto's progress output.}
 }
 \value{
-Invisibly, the path of the rendered report.
+Invisibly, the path of the HTML report.
 }
 \description{
-Renders the Quarto workflow bundled with pondeR (\code{inst/workflows}) using
-the settings in a project-specific config file. The workflow lives only in the
-package, so updating pondeR updates every project; a project folder needs just
-its config file and data.
+Runs the full direct-injection metabolomics workflow (preprocessing, batch
+correction views, PCA, OPLS-DA / PLS-DA, fold change, t-test / ANOVA, volcano
+plot, ROC) on one dataset and writes a single self-contained HTML report
+(all tables and figures embedded) plus an \code{.rds} of the results to a
+\code{results} folder next to the input file. The workflow lives in the
+package, so projects never hold their own copy.
 }
-\examples{
-\dontrun{
-render_metabolomics("P1/P1_Serum/config.R")
+\section{Data layout}{
+
+Samples are rows and features are columns in \code{features}; \code{metadata}
+has one row per sample. Supply either
+\itemize{
+\item two files (\code{features}, \code{metadata}), or one workbook with two
+sheets (\code{features_sheet}, \code{metadata_sheet}), or
+\item one table holding metadata and features together (give only
+\code{features}); all non-numeric columns plus \code{sample_id_col},
+\code{group_col}, \code{batch_col}, \code{injection_col} and
+\code{metadata_cols} are treated as metadata, the rest as features.
 }
+Supported formats: \code{.csv}, \code{.tsv}/\code{.txt}, \code{.xlsx}/\code{.xls}.
+A data frame can also be given instead of a path (then set \code{output_dir}).
+Features may carry a sample ID column, or be in the same row order as
+\code{metadata}; a features table with samples as columns is transposed
+automatically.
 }
+
+\section{Overriding function arguments}{
+
+Settings of the underlying functions are passed through \code{...} as one
+named list per function, so the same argument name in different functions is
+never ambiguous:
+\preformatted{
+render_metabolomics("serum.xlsx", features_sheet = "features",
+  metadata_sheet = "metadata",
+  run_foldchange = list(arrange = c("Control", "Case"), up = 2),
+  plot_volcano   = list(pval = 0.01),
+  run_DIpreprocess = list(missing_threshold = 0.3))
+}
+Valid names: \code{run_DIpreprocess}, \code{plot_beforeafter},
+\code{plot_dist_beforeafter}, \code{run_pca}, \code{run_pls},
+\code{plot_score} (PCA and PLS plots), \code{run_foldchange}, \code{run_diff},
+\code{get_volcanodata}, \code{plot_volcano}, \code{plot_meanmap},
+\code{run_auc}. Argument names are checked against the function, and a
+supplied value replaces the workflow's default (including \code{NULL}).
+Data inputs (\code{x}) cannot be overridden.
+}
+
