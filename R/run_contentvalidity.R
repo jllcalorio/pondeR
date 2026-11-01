@@ -20,6 +20,11 @@
 #'   removed prior to computation. Defaults to \code{FALSE}.
 #' @param conf_level Confidence level for the score confidence interval of
 #'   Aiken's V (Penfield & Giacobbi, 2004). Defaults to \code{0.95}.
+#' @param agreement Logical. If \code{TRUE} (default), computes Gwet's AC1 and
+#'   quadratic-weighted AC2 across all items (items as subjects, experts as
+#'   raters) using the \code{irrCAC} package, with confidence intervals at
+#'   \code{conf_level}. Skipped with a warning if \code{irrCAC} is not
+#'   installed.
 #'
 #' @details
 #' The function merges the unrounded numeric output of
@@ -40,12 +45,32 @@
 #'   \eqn{\kappa < 0.40} \tab Poor                     \cr
 #' }
 #'
+#' \strong{Aiken's V Confidence Interval and Significance Test}
+#'
+#' Confidence intervals for Aiken's V use the score interval of Penfield and
+#' Giacobbi (2004). The p-value is the exact one-tailed probability, from
+#' Aiken (1985), of a rating sum at least as large as observed when each
+#' rating is equally likely to fall in any scale category. With \eqn{n}
+#' experts and \eqn{c} categories, the smallest attainable p-value is
+#' \eqn{c^{-n}} (e.g., .0625 for 2 experts and 4 categories; .0156 for 3
+#' experts), so very small panels cannot reach conventional significance.
+#'
+#' \strong{Inter-Expert Agreement}
+#'
+#' If \code{agreement = TRUE}, Gwet's AC1 (unweighted) and AC2 (quadratic
+#' weights) are computed once across all items, with experts as raters, using
+#' \code{irrCAC::gwet.ac1.raw()} (Gwet, 2008, 2014). They are reported at the
+#' scale level because item-level coefficients based on a handful of raters
+#' are degenerate.
+#' 
 #' @return A list of class \code{run_contentvalidity} with two elements:
 #' \describe{
 #'   \item{\code{$items}}{A data frame of item-level indices: I-CVI,
 #'     modified kappa, Aiken's V, and Modified-Kappa Interpretation.}
 #'   \item{\code{$scale}}{A named numeric vector of scale-level indices:
 #'     S-CVI/Ave, S-CVI/UA, and mean modified kappa.}
+#'   \item{\code{$agreement}}{A data frame with Gwet's AC1 and AC2 estimates
+#'     and confidence limits, or \code{NULL} if \code{agreement = FALSE}.}
 #' }
 #'
 #' @references
@@ -58,6 +83,19 @@
 #' assessment of adaptive behavior. \emph{American Journal of Mental
 #' Deficiency}, \emph{86}(2), 127--137.
 #'
+#' Gwet, K. L. (2008). Computing inter-rater reliability and its variance in
+#' the presence of high agreement. \emph{British Journal of Mathematical and
+#' Statistical Psychology}, \emph{61}(1), 29--48.
+#' \doi{10.1348/000711006X126600}
+#'
+#' Gwet, K. L. (2014). \emph{Handbook of inter-rater reliability: The
+#' definitive guide to measuring the extent of agreement among raters}
+#' (4th ed.). Advanced Analytics, LLC.
+#'
+#' Gwet, K. L. (2019). \emph{irrCAC: Computing chance-corrected agreement
+#' coefficients (CAC)} (R package).
+#' \url{https://CRAN.R-project.org/package=irrCAC}
+#' 
 #' Lynn, M. R. (1986). Determination and quantification of content validity.
 #' \emph{Nursing Research}, \emph{35}(6), 382--385.
 #' \doi{10.1097/00006199-198611000-00017}
@@ -103,7 +141,8 @@ run_contentvalidity <- function(
     low       = 1L,
     high      = 4L,
     na.rm     = FALSE,
-    conf_level = 0.95
+    conf_level = 0.95,
+    agreement  = TRUE
 ) {
 
   # --- package check ----------------------------------------------------------
@@ -176,9 +215,13 @@ run_contentvalidity <- function(
     stop("'na.rm' must be a single logical value (TRUE or FALSE).", call. = FALSE)
   }
 
-    if (!is.numeric(conf_level) || length(conf_level) != 1L ||
+  if (!is.numeric(conf_level) || length(conf_level) != 1L ||
       conf_level <= 0 || conf_level >= 1) {
     stop("'conf_level' must be a single number between 0 and 1.", call. = FALSE)
+  }
+
+  if (!is.logical(agreement) || length(agreement) != 1L) {
+    stop("'agreement' must be a single logical value.", call. = FALSE)
   }
 
   # --- computation ------------------------------------------------------------
@@ -287,6 +330,36 @@ run_contentvalidity <- function(
   # remove the degenerate AC columns
   items_out[c("gwet_ac1", "gwet_ac2")] <- NULL
   
+    # --- Inter-expert agreement across all items (Gwet's AC1 / AC2) -------------
+  agreement_out <- NULL
+  if (agreement) {
+    if (!requireNamespace("irrCAC", quietly = TRUE)) {
+      warning("Package 'irrCAC' is required for agreement coefficients; ",
+              "skipping. Install it with: install.packages('irrCAC')",
+              call. = FALSE)
+    } else {
+      r_mat <- t(x_mat)                    # items = rows, experts = columns
+      cats  <- seq(low, high)
+      .ci   <- function(ci) {
+        as.numeric(strsplit(gsub("[()[:space:]]", "", ci), ",")[[1L]])
+      }
+      ac1 <- irrCAC::gwet.ac1.raw(r_mat, categ.labels = cats,
+                                  conflev = conf_level)$est
+      ac2 <- irrCAC::gwet.ac1.raw(r_mat, weights = "quadratic",
+                                  categ.labels = cats,
+                                  conflev = conf_level)$est
+      ci1 <- .ci(ac1$conf.int)
+      ci2 <- .ci(ac2$conf.int)
+      agreement_out <- data.frame(
+        Coefficient = c("Gwet's AC1", "Gwet's AC2 (quadratic)"),
+        Estimate    = c(ac1$coeff.val, ac2$coeff.val),
+        Lower       = c(ci1[1L], ci2[1L]),
+        Upper       = c(ci1[2L], ci2[2L]),
+        stringsAsFactors = FALSE
+      )
+    }
+  }
+
   # --- output -----------------------------------------------------------------
   scale_out <- cv_out$scale
   scale_out <- scale_out[setdiff(names(scale_out), c("mean_ac1", "mean_ac2"))]
@@ -302,8 +375,9 @@ run_contentvalidity <- function(
   }
 
   out <- list(
-    items = items_out,
-    scale = scale_out
+    items     = items_out,
+    scale     = scale_out,
+    agreement = agreement_out
   )
 
   # summary() reads attr(object, "n_experts"), but nothing sets it
@@ -330,6 +404,14 @@ print.run_contentvalidity <- function(x, digits = 3L, ...) {
   cat("\nScale-level indices:\n")
   scale_vals <- round(x$scale, digits = digits)
   print(scale_vals)
+
+  if (!is.null(x$agreement)) {
+    cat("\nInter-expert agreement (all items):\n")
+    ag <- x$agreement
+    num <- vapply(ag, is.numeric, logical(1L))
+    ag[num] <- lapply(ag[num], round, digits = digits)
+    print(ag, row.names = FALSE)
+  }
 
   invisible(x)
 }

@@ -10,7 +10,8 @@ run_contentvalidity(
   low = 1L,
   high = 4L,
   na.rm = FALSE,
-  conf_level = 0.95
+  conf_level = 0.95,
+  agreement = TRUE
 )
 }
 \arguments{
@@ -31,6 +32,12 @@ removed prior to computation. Defaults to \code{FALSE}.}
 
 \item{conf_level}{Confidence level for the score confidence interval of
 Aiken's V (Penfield & Giacobbi, 2004). Defaults to \code{0.95}.}
+
+\item{agreement}{Logical. If \code{TRUE} (default), computes Gwet's AC1 and
+quadratic-weighted AC2 across all items (items as subjects, experts as
+raters) using the \code{irrCAC} package, with confidence intervals at
+\code{conf_level}. Skipped with a warning if \code{irrCAC} is not
+installed.}
 }
 \value{
 A list of class \code{run_contentvalidity} with two elements:
@@ -39,6 +46,8 @@ A list of class \code{run_contentvalidity} with two elements:
 modified kappa, Aiken's V, and Modified-Kappa Interpretation.}
 \item{\code{$scale}}{A named numeric vector of scale-level indices:
 S-CVI/Ave, S-CVI/UA, and mean modified kappa.}
+\item{\code{$agreement}}{A data frame with Gwet's AC1 and AC2 estimates
+and confidence limits, or \code{NULL} if \code{agreement = FALSE}.}
 }
 }
 \description{
@@ -67,6 +76,24 @@ Cicchetti and Sparrow (1981), as adopted by Polit, Beck, and Owen (2007):
 \eqn{0.40 \le \kappa \le 0.59} \tab Fair          \cr
 \eqn{\kappa < 0.40} \tab Poor                     \cr
 }
+
+\strong{Aiken's V Confidence Interval and Significance Test}
+
+Confidence intervals for Aiken's V use the score interval of Penfield and
+Giacobbi (2004). The p-value is the exact one-tailed probability, from
+Aiken (1985), of a rating sum at least as large as observed when each
+rating is equally likely to fall in any scale category. With \eqn{n}
+experts and \eqn{c} categories, the smallest attainable p-value is
+\eqn{c^{-n}} (e.g., .0625 for 2 experts and 4 categories; .0156 for 3
+experts), so very small panels cannot reach conventional significance.
+
+\strong{Inter-Expert Agreement}
+
+If \code{agreement = TRUE}, Gwet's AC1 (unweighted) and AC2 (quadratic
+weights) are computed once across all items, with experts as raters, using
+\code{irrCAC::gwet.ac1.raw()} (Gwet, 2008, 2014). They are reported at the
+scale level because item-level coefficients based on a handful of raters
+are degenerate.
 }
 \examples{
 \dontrun{
@@ -90,6 +117,19 @@ Cicchetti, D. V., & Sparrow, S. A. (1981). Developing criteria for
 establishing interrater reliability of specific items: Applications to
 assessment of adaptive behavior. \emph{American Journal of Mental
 Deficiency}, \emph{86}(2), 127--137.
+
+Gwet, K. L. (2008). Computing inter-rater reliability and its variance in
+the presence of high agreement. \emph{British Journal of Mathematical and
+Statistical Psychology}, \emph{61}(1), 29--48.
+\doi{10.1348/000711006X126600}
+
+Gwet, K. L. (2014). \emph{Handbook of inter-rater reliability: The
+definitive guide to measuring the extent of agreement among raters}
+(4th ed.). Advanced Analytics, LLC.
+
+Gwet, K. L. (2019). \emph{irrCAC: Computing chance-corrected agreement
+coefficients (CAC)} (R package).
+\url{https://CRAN.R-project.org/package=irrCAC}
 
 Lynn, M. R. (1986). Determination and quantification of content validity.
 \emph{Nursing Research}, \emph{35}(6), 382--385.
