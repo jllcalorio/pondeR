@@ -53,6 +53,7 @@ Suggests:
     glmnet,
     gt,
     htmlwidgets,
+    irrCAC,
     knitr,
     mixOmics,
     OmicFlow,
