@@ -1,8 +1,9 @@
 ```{r}
-knitr::opts_chunk$set(fig.path = paste0("figures/", nm, "-"))
-g   <- ds$group_col
+# run_DIpreprocess standardizes metadata column names (Group, Sample, Batch, InjectionSequence)
+std <- function(std_nm, user_nm) if (std_nm %in% names(di$metadata)) std_nm else user_nm
+g   <- std("Group", ds$group_col)
 qc  <- ds$qc_types
-sid <- ds$sample_id_col
+sid <- std("Sample", ds$sample_id_col)
 groups <- setdiff(unique(as.character(di$metadata[[g]])), qc)
 multi  <- length(groups) > 2  # >2 groups: PLS-DA overall, pairwise ROC
 out <- file.path(out_dir, nm); dir.create(out, recursive = TRUE, showWarnings = FALSE)
@@ -28,7 +29,8 @@ as_gt(rbind(data.frame(Group = names(tab), n = as.integer(tab)),
 if (isTRUE(di$parameters$correct_drift) && !is.null(di$data_corrected)) {
   plot_beforeafter(di$data_imputed, di$data_corrected, di$metadata,
                    plot_what = head(intersect(di$features_final, colnames(di$data_corrected)), 6),
-                   col_injection = ds$injection_col, col_batch = ds$batch_col,
+                   col_injection = std("InjectionSequence", ds$injection_col),
+                   col_batch = std("Batch", ds$batch_col),
                    col_group = g, col_qc_label = qc,
                    x_label = "Before correction", y_label = "After correction")
 } else cat("Drift/batch correction was not applied.")

@@ -60,6 +60,7 @@ Suggests:
     plotly,
     polycor,
     purrr,
+    quarto,
     reshape2,
     rmarkdown,
     ropls,

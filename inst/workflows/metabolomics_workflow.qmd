@@ -8,6 +8,9 @@ format:
     embed-resources: true
     fig-width: 7
     fig-height: 5
+params:
+  config_file: null
+  child_file: "_metabolomics_dataset.qmd"
 execute:
   warning: false
   message: false
@@ -23,23 +26,21 @@ library(knitr)
 
 ## Configuration
 
-Edit only this section. Each dataset needs a samples x features table
-(`features`) and a sample table (`metadata`), either as data frames already in
-the R session or as file paths (`.csv` / `.xlsx`). Set `use_demo <- FALSE` to
-use your own data.
+Normally rendered with `pondeR::render_metabolomics("<project>/config.R")`; the
+settings come from that project's config file (see
+`system.file("workflows/config_template.R", package = "pondeR")`).
+Without a config file the built-in demo data are used.
 
 Normalization per dataset:
 
 - `normalize_method = "median"` (e.g. serum), or
 - `norm_factor_col = "SpecificGravity"` (e.g. urine): name of the numeric
   metadata column holding the per-sample normalization values (also set
-  `normalize_qc_method` = `"mean"`, `"median"` or `"none"` for the QC rows). This overrides
-  `normalize_method` (`"specific_factor"`). QC rows may be `NA`.
+  `normalize_qc_method` = `"mean"`, `"median"` or `"none"` for the QC rows). This
+  overrides `normalize_method` (`"specific_factor"`).
 
 ```{r}
 #| label: config
-use_demo <- TRUE
-
 # Shared column names in metadata (override per dataset if they differ)
 common <- list(
   sample_id_col = "Sample",
@@ -53,6 +54,7 @@ common <- list(
   extra         = list() # any other run_DIpreprocess() arguments
 )
 
+use_demo <- is.null(params$config_file)
 if (use_demo) {
   make_demo <- function(n = 120, p = 60, seed, sg = FALSE, effect = 4,
                         groups = c("Control", "Case")) {
@@ -81,20 +83,26 @@ if (use_demo) {
   urine_features <- urine_demo$features; urine_metadata <- urine_demo$metadata
 }
 
-datasets <- list(
-  Serum = modifyList(common, list(
-    features = serum_features, metadata = serum_metadata,
-    normalize_method = "median"
-  )),
-  Urine = modifyList(common, list(
-    features = urine_features, metadata = urine_metadata,
-    norm_factor_col = "SpecificGravity",
-    normalize_qc_method = "median"  # QC rows have no SG value: how to normalize them
-  ))
-)
-
-# Results are saved here (one sub-folder per dataset)
-out_dir <- "results"
+if (use_demo) {
+  datasets <- list(
+    Serum = modifyList(common, list(
+      features = serum_features, metadata = serum_metadata,
+      normalize_method = "median"
+    )),
+    Urine = modifyList(common, list(
+      features = urine_features, metadata = urine_metadata,
+      norm_factor_col = "SpecificGravity",
+      normalize_qc_method = "median"  # QC rows have no SG value: how to normalize them
+    ))
+  )
+  out_dir <- "results"
+} else {
+  # Config file defines `datasets` (named list) and optionally `common`, `out_dir`
+  cfg <- new.env()
+  sys.source(params$config_file, envir = cfg)
+  datasets <- lapply(cfg$datasets, function(d) modifyList(modifyList(common, cfg$common %||% list()), d))
+  out_dir  <- cfg$out_dir %||% "results"
+}
 ```
 
 ```{r}
@@ -139,7 +147,7 @@ for (nm in names(datasets)) {
     cat("Preprocessing failed for ", nm, ": ", di$error, "\n\n", sep = "")
     next
   }
-  cat(knitr::knit_child("_metabolomics_dataset.qmd", envir = environment(), quiet = TRUE),
+  cat(knitr::knit_child(params$child_file, envir = environment(), quiet = TRUE),
       sep = "\n")
 }
 ```
