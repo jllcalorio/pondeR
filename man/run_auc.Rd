@@ -196,6 +196,10 @@ analysed predictor.}
 \item{\code{auc_table}}{A \code{data.frame} with columns
 \code{predictor}, \code{auc}, \code{ci_lower}, \code{ci_upper},
 \code{ci_level}, \code{direction}, \code{n_cases}, and
+\code{n_controls}, plus \code{auc_interpretation} (conventional
+label; see Details) right after \code{ci_upper}. When a \code{run_diff}
+object with effect sizes is supplied in the \code{x} list,
+\code{ES (95\% CI)} and \code{ES_magnitude} columns are added after
 \code{n_controls}. When \code{compute_performance_metrics = TRUE},
 additional columns are included: \code{sensitivity},
 \code{specificity}, \code{ppv} (positive predictive value),
@@ -236,6 +240,23 @@ values that round to \code{1.00} are progressively displayed to more
 decimal places (up to five), after which scientific notation with two
 significant figures is used.
 }
+
+\strong{AUC interpretation}\cr
+The \code{auc_interpretation} column of \code{auc_table} labels each AUC
+using the conventional thresholds below. These are only a convention (a
+rule of thumb), not a rule; acceptable discrimination depends on the
+clinical or scientific context, and the confidence interval should be
+considered alongside the point estimate.
+\tabular{ll}{
+\strong{AUC} \tab \strong{Conventional threshold} \cr
+0.5 \tab No discrimination \cr
+0.5 to < 0.7 \tab Poor \cr
+0.7 to < 0.8 \tab Acceptable \cr
+0.8 to < 0.9 \tab Excellent \cr
+0.9 or above \tab Outstanding \cr
+}
+AUC values below 0.5 (possible when \code{direction} is forced) are labelled
+\code{"Worse than chance"}.
 
 \strong{Reference line}\cr
 A grey dashed diagonal line representing an AUC of 0.5 (random classifier)

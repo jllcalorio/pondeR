@@ -142,6 +142,23 @@
 #'     significant figures is used.
 #' }
 #'
+#' \strong{AUC interpretation}\cr
+#' The \code{auc_interpretation} column of \code{auc_table} labels each AUC
+#' using the conventional thresholds below. These are only a convention (a
+#' rule of thumb), not a rule; acceptable discrimination depends on the
+#' clinical or scientific context, and the confidence interval should be
+#' considered alongside the point estimate.
+#' \tabular{ll}{
+#'   \strong{AUC} \tab \strong{Conventional threshold} \cr
+#'   0.5 \tab No discrimination \cr
+#'   0.5 to < 0.7 \tab Poor \cr
+#'   0.7 to < 0.8 \tab Acceptable \cr
+#'   0.8 to < 0.9 \tab Excellent \cr
+#'   0.9 or above \tab Outstanding \cr
+#' }
+#' AUC values below 0.5 (possible when \code{direction} is forced) are labelled
+#' \code{"Worse than chance"}.
+#'
 #' \strong{Reference line}\cr
 #' A grey dashed diagonal line representing an AUC of 0.5 (random classifier)
 #' is always drawn.
@@ -162,6 +179,10 @@
 #'   \item{\code{auc_table}}{A \code{data.frame} with columns
 #'     \code{predictor}, \code{auc}, \code{ci_lower}, \code{ci_upper},
 #'     \code{ci_level}, \code{direction}, \code{n_cases}, and
+#'     \code{n_controls}, plus \code{auc_interpretation} (conventional
+#'     label; see Details) right after \code{ci_upper}. When a \code{run_diff}
+#'     object with effect sizes is supplied in the \code{x} list,
+#'     \code{ES (95\% CI)} and \code{ES_magnitude} columns are added after
 #'     \code{n_controls}. When \code{compute_performance_metrics = TRUE},
 #'     additional columns are included: \code{sensitivity},
 #'     \code{specificity}, \code{ppv} (positive predictive value),
@@ -292,6 +313,7 @@ run_auc <- function(
 ) {
 
   mc <- match.call(expand.dots = FALSE) # Capture call here to check for explicitly passed arguments
+  diff_obj <- NULL
 
   # ---------------------------------------------------------------------------
   # --- Integration with run_* Ecosystem & Feature Filtering ---
@@ -390,7 +412,9 @@ run_auc <- function(
         col_nm <- if ("outcome" %in% colnames(st)) "outcome" else "feature"
         # ponytail: prefer p_value_adj when present (multi-outcome), else p_value
         p_col <- if ("p_value_adj" %in% names(st)) "p_value_adj" else "p_value"
-        pass_diff <- st[[col_nm]][!is.na(st[[p_col]]) & st[[p_col]] < p_value]
+        # simplified tables hold formatted strings (e.g. ".047a", "<.001")
+        pv <- .p_to_num(st[[p_col]])
+        pass_diff <- st[[col_nm]][!is.na(pv) & pv < p_value]
         
       } else if (inherits(diff_obj, "run_diff")) {
         # Handles a single run_diff object
@@ -443,6 +467,11 @@ run_auc <- function(
     # Auto-detect y if missing
     if (is.null(y) && !is.null(x$parameters$group_col)) {
       y <- x$parameters$group_col
+    }
+
+    # Same QC default as the list (ensemble) branch
+    if (!("remove" %in% names(mc)) && !is.null(x$parameters$qc_types)) {
+      remove <- eval(x$parameters$qc_types)
     }
 
     metadata <- target_meta
@@ -1006,6 +1035,7 @@ run_auc <- function(
       n_controls = numeric(0),
       stringsAsFactors = FALSE
     )
+    auc_table <- .add_auc_interpretation(auc_table)
   } else {
     auc_table <- data.frame(
       predictor  = pred_cols,
@@ -1018,7 +1048,16 @@ run_auc <- function(
       n_controls = n_controls,
       stringsAsFactors = FALSE
     )
-    
+    auc_table <- .add_auc_interpretation(auc_table)
+
+    # Effect size (95% CI) + magnitude from run_diff, if supplied
+    es <- .get_diff_es(diff_obj)
+    if (!is.null(es)) {
+      idx <- match(auc_table$predictor, es$feature)
+      auc_table[["ES (95% CI)"]]  <- es[["ES (95% CI)"]][idx]
+      auc_table[["ES_magnitude"]] <- es[["ES_magnitude"]][idx]
+    }
+
     # Add performance metrics if computed
     if (compute_performance_metrics) {
       auc_table$sensitivity <- sens_vec
@@ -1365,6 +1404,21 @@ run_auc <- function(
 }
 
 
+# Conventional AUC labels (a convention, not a rule); inserted after `ci_upper`
+.add_auc_interpretation <- function(tbl) {
+  a <- tbl$auc
+  lab <- ifelse(is.na(a), NA_character_,
+         ifelse(a < 0.5, "Worse than chance",
+         ifelse(a == 0.5, "No discrimination",
+         ifelse(a < 0.7, "Poor",
+         ifelse(a < 0.8, "Acceptable",
+         ifelse(a < 0.9, "Excellent", "Outstanding"))))))
+  tbl$auc_interpretation <- lab
+  rest <- setdiff(names(tbl), "auc_interpretation")
+  tbl[, append(rest, "auc_interpretation", after = match("ci_upper", rest)), drop = FALSE]
+}
+
+
 # =============================================================================
 #  S3 print method
 # =============================================================================
@@ -1409,7 +1463,11 @@ print.run_auc <- function(x, ...) {
     tbl$ci_upper <- round(tbl$ci_upper, 4)
     
     # Determine which columns to print
-    cols_to_print <- c("predictor", "auc", "ci_lower", "ci_upper", "direction")
+    cols_to_print <- intersect(
+      c("predictor", "auc", "ci_lower", "ci_upper", "auc_interpretation", "direction",
+        "ES (95% CI)", "ES_magnitude"),
+      colnames(tbl)
+    )
     
     # Check if performance metrics are present
     perf_cols <- c("sensitivity", "specificity", "ppv", "npv", "accuracy", "youden_index")
