@@ -3,6 +3,8 @@ knitr::opts_chunk$set(fig.path = paste0("figures/", nm, "-"))
 g   <- ds$group_col
 qc  <- ds$qc_types
 sid <- ds$sample_id_col
+groups <- setdiff(unique(as.character(di$metadata[[g]])), qc)
+multi  <- length(groups) > 2  # >2 groups: PLS-DA overall, pairwise ROC
 out <- file.path(out_dir, nm); dir.create(out, recursive = TRUE, showWarnings = FALSE)
 ```
 
@@ -53,14 +55,15 @@ plot_score(pca, color_by = g, points_from = sid)
 ## OPLS-DA (PLS-DA fallback)
 
 QC samples are dropped by `run_pls()` automatically for `run_DIpreprocess`
-input. If OPLS-DA yields no usable model, PLS-DA is fitted instead.
+input. With two groups OPLS-DA is tried first and PLS-DA is the fallback; with
+more than two groups only PLS-DA is used.
 
 ```{r}
 fit_pls <- function(method) tryCatch(
   suppressWarnings(run_pls(di, group = g, method = method, verbose = FALSE)),
   error = function(e) e)
-pls <- fit_pls("oplsda")
-if (!is_valid_pls(pls)) {
+pls <- if (multi) fit_pls("plsda") else fit_pls("oplsda")
+if (!multi && !is_valid_pls(pls)) {
   cat("OPLS-DA produced no usable model",
       if (inherits(pls, "error")) paste0("(", conditionMessage(pls), ")"),
       "- falling back to PLS-DA.
@@ -123,18 +126,56 @@ No features passed the fold change and p-value thresholds;",
 
 ## ROC analysis
 
-Uses, when available, the OPLS-DA VIP scores, fold change results and
+Uses, when available, the VIP scores (PLS-DA/OPLS-DA), fold change and
 t-test/ANOVA results to select candidate features (thresholds: VIP, `up`/`down`,
-`p_value` defaults of `run_auc()`).
+`p_value` defaults of `run_auc()`). With more than two groups, ROC is run for
+every pair of groups, each with its own pairwise PLS-DA, fold change and test.
 
 ```{r}
-roc_inputs <- Filter(Negate(is.null), list(di, pls, fc, dif))
-roc <- tryCatch(run_auc(roc_inputs, set_control = ds$control_group, plot = "all"), error = function(e) e)
-if (inherits(roc, "error")) {
-  cat("ROC analysis failed:", conditionMessage(roc))
-} else {
-  print(roc)
-  invisible(lapply(roc$plots, print))
+#| results: asis
+pairs <- if (multi) combn(groups, 2, simplify = FALSE) else list(groups)
+
+roc_pair <- function(pr) {
+  if (!multi) {
+    inputs <- Filter(Negate(is.null), list(di, pls, fc, dif))
+    return(run_auc(inputs, set_control = ds$control_group, plot = "all"))
+  }
+  drop <- c(qc, setdiff(groups, pr))
+  p_pls <- tryCatch(suppressWarnings(run_pls(di, group = g, method = "plsda",
+                                              exclude = drop, verbose = FALSE)),
+                    error = function(e) NULL)
+  p_fc  <- run_foldchange(di, from = "normalized", filter = drop,
+                          up = ds$fc_up, down = ds$fc_down)
+  p_dif <- tryCatch(run_diff(di, outcome = colnames(di$data_nonpls), filter = drop,
+                             summary_table = TRUE), error = function(e) NULL)
+  inputs <- Filter(Negate(is.null), list(di, if (is_valid_pls(p_pls)) p_pls, p_fc, p_dif))
+  run_auc(inputs, remove = drop, set_control = pr[1], plot = "all")
+}
+
+roc <- lapply(pairs, function(pr) tryCatch(roc_pair(pr), error = function(e) e))
+names(roc) <- vapply(pairs, paste, character(1), collapse = " vs ")
+
+for (nm_pair in names(roc)) {
+  r <- roc[[nm_pair]]
+  cat("
+
+### ", nm_pair, "
+
+", sep = "")
+  if (inherits(r, "error")) {
+    cat("ROC analysis failed: ", conditionMessage(r), "
+
+", sep = "")
+  } else if (is.null(r$auc_table) || nrow(r$auc_table) == 0) {
+    cat("No features passed the filtering criteria.
+
+")
+  } else {
+    cat(knitr::knit_print(as_gt(r$auc_table)), "
+
+")
+    invisible(lapply(r$plots, print))
+  }
 }
 ```
 
