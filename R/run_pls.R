@@ -141,6 +141,8 @@ run_pls <- function(
     if (missing(metadata) || is.null(metadata)) {
       metadata <- if (!is.null(x$metadata_merged)) x$metadata_merged else x$metadata
     }
+    # QC samples stay in the preprocessed data; drop them unless told otherwise
+    if (is.null(exclude)) exclude <- eval(x$parameters$qc_types)
     x <- if (!is.null(x$data_pls_merged)) x$data_pls_merged else x$data_pls
   }
 
