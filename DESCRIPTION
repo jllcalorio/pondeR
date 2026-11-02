@@ -45,6 +45,7 @@ Suggests:
     caret,
     contentValidity,
     data.table,
+    dimsprepr,
     forcats,
     foreach,
     ggdendro,
