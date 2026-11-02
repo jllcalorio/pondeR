@@ -37,7 +37,7 @@ pondeR::render_metabolomics("neg.xlsx", features_sheet = "metadata_mother",
   ```
 
   Valid names: `run_DIpreprocess`, `plot_beforeafter`, `plot_dist_beforeafter`, `run_pca`,
-  `run_pls`, `plot_score`, `run_foldchange`, `run_diff`, `get_volcanodata`, `plot_volcano`,
+  `run_pls`, `plot_score` (PCA and PLS plots; use `plot_score.pca` / `plot_score.pls` for one only), `run_foldchange`, `run_diff`, `get_volcanodata`, `plot_volcano`,
   `plot_meanmap`, `run_auc`. Typos in function or argument names are rejected with the allowed
   list. Overrides used are listed in the report.
 - **Update pondeR** (`devtools::install()`, then restart R) whenever the workflow changes;

@@ -19,7 +19,7 @@ render_metabolomics(
   qc_types = c("QC", "SQC", "EQC"),
   normalize_method = "median",
   norm_factor_col = NULL,
-  normalize_qc_method = "median",
+  normalize_qc_method = "none",
   control_group = NULL,
   ...,
   overwrite = FALSE,
@@ -55,7 +55,7 @@ values (e.g. specific gravity for urine). When given, it overrides
 
 \item{normalize_qc_method}{How QC samples are normalized when
 \code{norm_factor_col} is used (QC rows usually have no value): \code{"median"},
-\code{"mean"} or \code{"none"}. Default \code{"median"}; ignored otherwise.}
+\code{"mean"} or \code{"none"} (default). Ignored without \code{norm_factor_col}.}
 
 \item{control_group}{Reference group for ROC (two-group designs).}
 
@@ -113,7 +113,7 @@ render_metabolomics("serum.xlsx", features_sheet = "features",
 }
 Valid names: \code{run_DIpreprocess}, \code{plot_beforeafter},
 \code{plot_dist_beforeafter}, \code{run_pca}, \code{run_pls},
-\code{plot_score} (PCA and PLS plots), \code{run_foldchange}, \code{run_diff},
+\code{plot_score} (PCA and PLS plots), \code{plot_score.pca} and \code{plot_score.pls} (only that plot; override \code{plot_score}), \code{run_foldchange}, \code{run_diff},
 \code{get_volcanodata}, \code{plot_volcano}, \code{plot_meanmap},
 \code{run_auc}. Argument names are checked against the function, and a
 supplied value replaces the workflow's default (including \code{NULL}).

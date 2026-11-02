@@ -37,7 +37,7 @@
 #' }
 #' Valid names: \code{run_DIpreprocess}, \code{plot_beforeafter},
 #' \code{plot_dist_beforeafter}, \code{run_pca}, \code{run_pls},
-#' \code{plot_score} (PCA and PLS plots), \code{run_foldchange}, \code{run_diff},
+#' \code{plot_score} (PCA and PLS plots), \code{plot_score.pca} and \code{plot_score.pls} (only that plot; override \code{plot_score}), \code{run_foldchange}, \code{run_diff},
 #' \code{get_volcanodata}, \code{plot_volcano}, \code{plot_meanmap},
 #' \code{run_auc}. Argument names are checked against the function, and a
 #' supplied value replaces the workflow's default (including \code{NULL}).
@@ -60,7 +60,7 @@
 #'   \code{normalize_method}.
 #' @param normalize_qc_method How QC samples are normalized when
 #'   \code{norm_factor_col} is used (QC rows usually have no value): \code{"median"},
-#'   \code{"mean"} or \code{"none"}. Default \code{"median"}; ignored otherwise.
+#'   \code{"mean"} or \code{"none"} (default). Ignored without \code{norm_factor_col}.
 #' @param control_group Reference group for ROC (two-group designs).
 #' @param ... Per-function argument lists, see above.
 #' @param overwrite If \code{FALSE} (default) an existing report is never replaced:
@@ -78,7 +78,7 @@ render_metabolomics <- function(features, metadata = NULL,
                                 batch_col = "Batch", injection_col = "InjectionSequence",
                                 qc_types = c("QC", "SQC", "EQC"),
                                 normalize_method = "median", norm_factor_col = NULL,
-                                normalize_qc_method = "median", control_group = NULL,
+                                normalize_qc_method = "none", control_group = NULL,
                                 ..., overwrite = FALSE, timestamp = FALSE, quiet = TRUE) {
   for (p in c("quarto", "dimsprepr", "gt"))
     if (!requireNamespace(p, quietly = TRUE))
@@ -158,6 +158,8 @@ render_metabolomics <- function(features, metadata = NULL,
     run_pca               = formals(run_pca),
     run_pls               = formals(run_pls),
     plot_score            = c(s3("plot_score", "run_pca"), s3("plot_score", "run_pls")),
+    plot_score.pca        = s3("plot_score", "run_pca"),
+    plot_score.pls        = s3("plot_score", "run_pls"),
     run_foldchange        = formals(run_foldchange),
     run_diff              = formals(run_diff),
     get_volcanodata       = formals(get_volcanodata),
@@ -200,10 +202,14 @@ render_metabolomics <- function(features, metadata = NULL,
 }
 
 # Called from the report: run `fn` with workflow defaults, overridden by the user's
+# plot_score.pca / plot_score.pls call plot_score; their overrides win over plot_score's
 .wf_call <- function(fn, defaults, over) {
-  f <- if (fn %in% c("run_DIpreprocess", "plot_beforeafter", "plot_dist_beforeafter"))
-    getExportedValue("dimsprepr", fn) else getExportedValue("pondeR", fn)
-  do.call(f, .wf_merge(defaults, over[[fn]]))
+  base <- if (startsWith(fn, "plot_score.")) "plot_score" else fn
+  f <- if (base %in% c("run_DIpreprocess", "plot_beforeafter", "plot_dist_beforeafter"))
+    getExportedValue("dimsprepr", base) else getExportedValue("pondeR", base)
+  ov <- over[[base]]
+  if (fn != base) ov <- .wf_merge(if (is.null(ov)) list() else ov, over[[fn]])
+  do.call(f, .wf_merge(defaults, ov))
 }
 
 .wf_read <- function(x, sheet, what) {

@@ -63,7 +63,10 @@ test_that("render_metabolomics writes one standalone report into results/", {
   skip_on_cran(); skip_if_not_installed("quarto"); skip_if(is.null(quarto::quarto_path()))
   # Quarto renders in a fresh R process, which needs the *installed* current pondeR
   inst <- find.package("pondeR", lib.loc = .libPaths(), quiet = TRUE)
-  skip_if_not(length(inst) == 1 && file.exists(file.path(inst, "workflows", "metabolomics_report.qmd")),
+  same <- length(inst) == 1 && file.exists(file.path(inst, "workflows", "metabolomics_report.qmd")) &&
+    identical(readLines(file.path(inst, "workflows", "metabolomics_report.qmd")),
+              readLines(system.file("workflows", "metabolomics_report.qmd", package = "pondeR")))
+  skip_if_not(same,
               "install the current pondeR (devtools::install()) to run this test")
   d <- withr::local_tempdir(); make_files(d)
   out <- suppressMessages(render_metabolomics(
@@ -82,4 +85,18 @@ test_that("output names are stamped instead of overwriting unless asked", {
   file.create(file.path(d, "x_report.html"))
   expect_match(f(d, "x", FALSE, FALSE), "^x_[0-9]{8}-[0-9]{6}$")
   expect_equal(f(d, "x", TRUE, FALSE), "x")
+})
+
+test_that("plot_score.pca / plot_score.pls overrides are accepted and layered over plot_score", {
+  ok <- pondeR:::.wf_check_overrides(list(plot_score = list(title = "a"),
+                                          plot_score.pca = list(color_by = "Batch")))
+  expect_named(ok, c("plot_score", "plot_score.pca"))
+  expect_error(pondeR:::.wf_check_overrides(list(plot_score.pca = list(res = 1))), "not allowed")
+  # same underlying function; the specific override wins over the shared one
+  testthat::local_mocked_bindings(getExportedValue = function(ns, name) function(...) list(...),
+                                  .package = "base")
+  got <- pondeR:::.wf_call("plot_score.pca", list(a = 1, title = "default"),
+                           list(plot_score = list(title = "shared", b = 2),
+                                plot_score.pca = list(title = "pca")))
+  expect_equal(got$title, "pca"); expect_equal(got$b, 2); expect_equal(got$a, 1)
 })

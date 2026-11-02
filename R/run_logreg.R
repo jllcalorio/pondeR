@@ -260,7 +260,10 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
   if (inherits(x, "run_DIpreprocess")) {
     target_meta <- if (!is.null(x$metadata_merged)) x$metadata_merged else x$metadata
     target_data <- if (!is.null(x$data_nonpls_merged)) x$data_nonpls_merged else x$data_nonpls
-    x <- cbind(target_meta, target_data)
+    # QC samples are not study samples: drop them
+    grp_col <- if ("Group" %in% names(target_meta)) "Group" else x$parameters$group_col
+    keep <- !(as.character(target_meta[[grp_col]]) %in% eval(x$parameters$qc_types))
+    x <- cbind(target_meta, target_data)[keep, , drop = FALSE]
   }
 
   # ---------------------------------------------------------------------------

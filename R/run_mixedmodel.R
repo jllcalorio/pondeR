@@ -160,7 +160,13 @@ run_mixedmodel <- function(
     if (missing(metadata) || is.null(metadata)) {
       metadata <- if (!is.null(x$metadata_merged)) x$metadata_merged else x$metadata
     }
+    # QC samples are not study samples: drop them from both x and metadata
+    md0 <- if (!is.null(x$metadata_merged)) x$metadata_merged else x$metadata
+    grp_col <- if ("Group" %in% names(md0)) "Group" else x$parameters$group_col
+    keep <- !(as.character(md0[[grp_col]]) %in% eval(x$parameters$qc_types))
     x <- if (!is.null(x$data_nonpls_merged)) x$data_nonpls_merged else x$data_nonpls
+    if (is.data.frame(metadata) && nrow(metadata) == length(keep)) metadata <- metadata[keep, , drop = FALSE]
+    x <- x[keep, , drop = FALSE]
   }
 
   # ---- soft dependencies ---------------------------------------------------

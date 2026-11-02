@@ -111,7 +111,7 @@ wf("plot_dist_beforeafter", raw_kept, di$data_nonpls, group_by = "feature",
 
 ```{r}
 pca <- suppressWarnings(wf("run_pca", di, group = g, exclude = qc, verbose = FALSE))
-wf("plot_score", pca, color_by = g, points_from = sid)
+wf("plot_score.pca", pca, color_by = g, points_from = sid)
 ```
 
 # OPLS-DA (PLS-DA fallback)
@@ -132,7 +132,7 @@ if (!multi && !is_valid_pls(pls)) {
   pls <- fit_pls("plsda")
 }
 if (is_valid_pls(pls)) {
-  wf("plot_score", pls, color_by = g, points_from = sid)
+  wf("plot_score.pls", pls, color_by = g, points_from = sid)
 } else {
   cat("PLS-DA also produced no usable model - skipped.")
   pls <- NULL
