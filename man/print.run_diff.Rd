@@ -7,7 +7,7 @@
 \method{print}{run_diff}(x, ...)
 }
 \arguments{
-\item{x}{An object from \code{run_diff}.}
+\item{x}{An object from \code{\link{run_diff}}.}
 
 \item{...}{Further arguments passed to or from other methods.}
 }

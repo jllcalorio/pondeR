@@ -34,7 +34,7 @@
 #' returned by \code{contentValidity::cvr_critical(n, alpha)}, which implements
 #' the recalculated critical values of Wilson, Pan, and Schumsky (2012).
 #'
-#' @return A data frame of class \code{run_contentvaliditycvr} with one row
+#' @return A data frame of class \code{\link{run_contentvaliditycvr}} with one row
 #' per item and the following columns:
 #' \describe{
 #'   \item{\code{CVR}}{Lawshe's Content Validity Ratio.}
@@ -55,20 +55,18 @@
 #' \doi{10.1177/0748175612440286}
 #'
 #' @examples
-#' \dontrun{
-#' # Lawshe's (1975) original 3-point scale:
-#' # 1 = essential, 2 = useful but not essential, 3 = not necessary
-#' ratings <- data.frame(
-#'   item1 = c(1, 1, 1, 2, 1),
-#'   item2 = c(3, 3, 1, 3, 3),
-#'   item3 = c(1, 1, 1, 1, 1)
-#' )
-#' result <- run_contentvaliditycvr(ratings, essential = 1)
-#' result
+#' if (requireNamespace("contentValidity", quietly = TRUE)) {
+#'   # Lawshe's (1975) original 3-point scale:
+#'   # 1 = essential, 2 = useful but not essential, 3 = not necessary
+#'   ratings <- data.frame(
+#'     item1 = c(1, 1, 1, 2, 1),
+#'     item2 = c(3, 3, 1, 3, 3),
+#'     item3 = c(1, 1, 1, 1, 1)
+#'   )
+#'   run_contentvaliditycvr(ratings, essential = 1)
 #'
-#' # Treat both "essential" and "useful but not essential" as endorsing the item
-#' result2 <- run_contentvaliditycvr(ratings, essential = c(1, 2))
-#' result2
+#'   # Treat "essential" and "useful but not essential" as endorsing the item
+#'   run_contentvaliditycvr(ratings, essential = c(1, 2))
 #' }
 #'
 #' @seealso

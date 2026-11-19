@@ -36,10 +36,10 @@
 #'   run_DIpreprocess = list(missing_threshold = 0.3))
 #' }
 #' Valid names: \code{run_DIpreprocess}, \code{plot_beforeafter},
-#' \code{plot_dist_beforeafter}, \code{run_pca}, \code{run_pls},
-#' \code{plot_score} (PCA and PLS plots), \code{plot_score.pca} and \code{plot_score.pls} (only that plot; override \code{plot_score}), \code{run_foldchange}, \code{run_diff},
-#' \code{get_volcanodata}, \code{plot_volcano}, \code{plot_meanmap},
-#' \code{run_auc}. Argument names are checked against the function, and a
+#' \code{plot_dist_beforeafter}, \code{\link{run_pca}}, \code{\link{run_pls}},
+#' \code{\link{plot_score}} (PCA and PLS plots), \code{plot_score.pca} and \code{plot_score.pls} (only that plot; override \code{\link{plot_score}}), \code{\link{run_foldchange}}, \code{\link{run_diff}},
+#' \code{\link{get_volcanodata}}, \code{\link{plot_volcano}}, \code{\link{plot_meanmap}},
+#' \code{\link{run_auc}}. Argument names are checked against the function, and a
 #' supplied value replaces the workflow's default (including \code{NULL}).
 #' Data inputs (\code{x}) cannot be overridden.
 #'
@@ -150,7 +150,7 @@ render_metabolomics <- function(features, metadata = NULL,
 # ---- internals -------------------------------------------------------------
 
 .wf_functions <- function() {
-  s3 <- function(g, cls) formals(getS3method(g, cls, envir = asNamespace("pondeR")))
+  s3 <- function(g, cls) formals(utils::getS3method(g, cls, envir = asNamespace("pondeR")))
   list(
     run_DIpreprocess      = formals(dimsprepr::run_DIpreprocess),
     plot_beforeafter      = formals(dimsprepr::plot_beforeafter),

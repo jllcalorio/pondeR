@@ -44,7 +44,7 @@ plot_fcmetric(
 )
 }
 \arguments{
-\item{x}{A \code{run_foldchange()} result, or a named list holding it plus
+\item{x}{A \code{\link{run_foldchange}()} result, or a named list holding it plus
 the object needed by \code{metric}, e.g.
 \code{list(fc = fc, diff = diff, pls = pls)}; \strong{or} a
 \code{data.frame}/\code{tibble}/named \code{matrix} with one row per
@@ -56,11 +56,11 @@ supply columns computed from whichever stage you want.}
 
 \item{y}{A single character string naming the column of \strong{raw} fold
 changes (positive numeric). Default \code{NULL} (\code{"fold_change"} for
-\code{run_foldchange()} input).}
+\code{\link{run_foldchange}()} input).}
 
 \item{z}{A single character string naming the column holding the x-axis
 metric. Default \code{NULL} (derived from \code{x} and \code{metric} for
-\code{run_foldchange()} input; required for a \code{data.frame}, where
+\code{\link{run_foldchange}()} input; required for a \code{data.frame}, where
 \code{metric} then only sets the axis label and default scale).}
 
 \item{group}{An optional column name in \code{x}; one plot is made per level.
@@ -88,7 +88,7 @@ metric scale, not log10) drawn as vertical dashed lines, e.g.
 
 \item{up, down}{Raw fold-change thresholds (\code{up > 1}, \code{0 < down < 1}).
 Features beyond them are coloured Up/Down. Inherited from a
-\code{run_foldchange()} object when missing; otherwise \code{1.5}/\code{0.5}.}
+\code{\link{run_foldchange}()} object when missing; otherwise \code{1.5}/\code{0.5}.}
 
 \item{annotate}{Optional (named) character vector of feature identifiers
 to label; see \code{\link{plot_volcano}}. Default \code{NULL}.}
@@ -99,7 +99,7 @@ vertical \code{x_cut} lines. \code{plot_title = NULL} gives a title naming
 the metric (plus the comparison when there are several).}
 }
 \value{
-A list of class \code{plot_fcmetric} with \code{plots} (named list
+A list of class \code{\link{plot_fcmetric}} with \code{plots} (named list
 of \code{ggplot} objects), \code{classified} (data with the metric in
 \code{metric_value} and \code{.regulation}) and \code{params}.
 }
@@ -108,7 +108,7 @@ Plots the fold change of each feature (y-axis) against a per-feature
 metric (x-axis): mean abundance (the classic MA plot), effect size,
 variance, standard deviation, or VIP score. Unlike
 \code{\link{plot_volcano}()} it needs no p-values, so it remains useful
-when \code{run_diff()} found nothing significant. With
+when \code{\link{run_diff}()} found nothing significant. With
 \code{metric = "abundance"} it shows whether large fold changes come from
 low-intensity "noise" features whose baseline is near zero. Styling
 arguments match \code{\link{plot_volcano}()}.
@@ -117,40 +117,48 @@ arguments match \code{\link{plot_volcano}()}.
 
 \describe{
 \item{\code{"abundance"}}{Mean of the two group means of each comparison.
-Needs only \code{run_foldchange()}.}
+Needs only \code{\link{run_foldchange}()}.}
 \item{\code{"variance"}, \code{"sd"}}{Pooled within-group variance / SD of
 the two groups in each comparison,
 \eqn{s_p^2 = ((n_1-1)s_1^2 + (n_2-1)s_2^2)/(n_1+n_2-2)}, on the same
-data scale as the fold change. Needs only \code{run_foldchange()}.
+data scale as the fold change. Needs only \code{\link{run_foldchange}()}.
 Raw-intensity variance typically grows with abundance; consider
 transformed data for a variance-stabilised view.}
 \item{\code{"effect_size"}}{Per-feature estimate from
-\code{run_diff()} (multi-outcome; e.g. Cohen's d, rank-biserial,
+\code{\link{run_diff}()} (multi-outcome; e.g. Cohen's d, rank-biserial,
 eta-squared depending on the test chosen). Supply
 \code{list(fc = ..., diff = ...)}. The estimate is one value per
 feature, so with more than two groups it is omnibus and repeats across
 comparisons. Estimates from different effect-size metrics are not
 directly comparable; a warning is given when they are mixed.}
-\item{\code{"vip"}}{VIP score from \code{run_pls()} (PLS-DA/OPLS-DA;
+\item{\code{"vip"}}{VIP score from \code{\link{run_pls}()} (PLS-DA/OPLS-DA;
 sPLS-DA yields none). Supply \code{list(fc = ..., pls = ...)}. One
 value per feature, repeated across comparisons.}
 }
 }
 
 \examples{
-\dontrun{
-fc   <- run_foldchange(x, metadata = meta, group = "Group")
-diff <- run_diff(x, metadata = meta, outcome = colnames(x), group = "Group",
-                 summary_table = TRUE)
-pls  <- run_pls(x, metadata = meta, group = "Group", method = "plsda")
+x    <- iris[iris$Species != "setosa", 1:4]
+meta <- droplevels(iris[iris$Species != "setosa", "Species", drop = FALSE])
+fc   <- run_foldchange(x, metadata = meta, group = "Species")
 
-plot_fcmetric(fc)                                      # MA plot
-plot_fcmetric(fc, metric = "sd")
-plot_fcmetric(list(fc = fc, diff = diff), metric = "effect_size",
+plot_fcmetric(fc)                                  # MA-style plot
+plot_fcmetric(fc, metric = "sd", global_font_size = 12)
+
+\donttest{
+dif <- run_diff(x, meta, outcome = names(x), group = "Species",
+                summary_table = TRUE, verbose = FALSE)
+plot_fcmetric(list(fc = fc, diff = dif), metric = "effect_size",
               x_cut = c(0.2, 0.5, 0.8))
-plot_fcmetric(list(fc = fc, pls = pls), metric = "vip", x_cut = 1)
 }
 
+}
+\references{
+Cohen J (1988). \emph{Statistical Power Analysis for the Behavioral
+Sciences} (2nd ed.). Lawrence Erlbaum Associates.
+
+Wickham H (2016). \emph{ggplot2: Elegant Graphics for Data Analysis}.
+Springer-Verlag New York. \doi{10.1007/978-3-319-24277-4}
 }
 \seealso{
 \code{\link{plot_volcano}}, \code{\link{run_foldchange}},

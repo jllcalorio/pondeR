@@ -16,19 +16,19 @@ get_removed_samples(
 \arguments{
 \item{x}{A \code{data.frame}, \code{tibble}, \code{matrix}, \strong{or a
 named list} of such objects — matching what was passed (or would be
-passed) to \code{run_regreg()}. When a list is supplied, each element is
+passed) to \code{\link{run_regreg}()}. When a list is supplied, each element is
 processed independently.}
 
 \item{metadata}{A \code{data.frame} or \code{tibble} of sample metadata,
-identical to the one passed to \code{run_regreg()}.}
+identical to the one passed to \code{\link{run_regreg}()}.}
 
 \item{not_penalized}{A character vector of column names (from \code{metadata}
 and/or \code{x}) that were passed to the \code{not_penalized} argument of
-\code{run_regreg()}.}
+\code{\link{run_regreg}()}.}
 
 \item{pred}{A single character string naming the dependent variable column
 in \code{metadata} (same as the \code{pred} argument of
-\code{run_regreg()}). Used only to exclude the response column from the
+\code{\link{run_regreg}()}). Used only to exclude the response column from the
 covariate NA check.}
 
 \item{include_metadata_cols}{Logical. If \code{TRUE} (default), all columns
@@ -63,13 +63,13 @@ samples together with the columns responsible, so the user can inspect,
 impute, or exclude them deliberately before re-running the model.
 
 The function operates entirely on the original inputs — no fitted model
-object is needed. This means it can be called before \code{run_regreg()} to
+object is needed. This means it can be called before \code{\link{run_regreg}()} to
 pre-screen data, or after to audit a run.
 }
 \details{
 Identify Samples Removed Due to Missing Values in Unpenalized Covariates
 
-The function applies the same filtering sequence as \code{run_regreg()}:
+The function applies the same filtering sequence as \code{\link{run_regreg}()}:
 \enumerate{
 \item The dependent variable column (\code{pred}) is excluded from
 \code{not_penalized} (it is never a covariate).
@@ -84,26 +84,12 @@ taxonomic levels), the function iterates over each list element and returns
 a combined data frame with a leading \code{taxon} column.
 }
 \examples{
-\dontrun{
-## ---- Single run ----------------------------------------------------------
-removed <- get_removed_samples(
-  x             = df_class_rel_abund_clr,
-  metadata      = df_metadata_demog,
-  not_penalized = names(df_metadata_demog),
-  pred          = "Disease Severity"
-)
-print(removed)
+set.seed(1)
+feat <- data.frame(f1 = rnorm(20), f2 = rnorm(20))
+meta <- data.frame(Group = rep(c("A", "B"), 10), Age = c(NA, 30:47, NA))
 
-## ---- lapply run (list of taxa) -------------------------------------------
-removed_list <- get_removed_samples(
-  x             = df_list_clr,
-  metadata      = df_metadata_laboratory,
-  not_penalized = vars_include_laboratory,
-  pred          = "Disease Severity"
-)
-# See which taxa have the most removed samples
-table(removed_list$taxon)
-}
+# Samples 1 and 20 are dropped because Age is missing
+get_removed_samples(feat, meta, not_penalized = "Age", pred = "Group")
 
 }
 \seealso{

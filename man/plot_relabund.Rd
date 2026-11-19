@@ -252,77 +252,34 @@ fill levels are reversed so the first (top-of-stack) feature also appears
 first (top) in the legend, maintaining visual correspondence.
 }
 \examples{
-\dontrun{
-library(pondeR)
 set.seed(42)
-n    <- 20
-taxa <- c("Firmicutes", "Bacteroidetes", "Proteobacteria (class A)",
-          "Actino/bacteroides", "Verrucomicrobia", "Fusobacteria sp.",
-          "Tenericutes", "Spirochaetes", "Unknown", "Cyanobacteria",
-          "Chloroflexi", "Acidobacteria")
+counts <- as.data.frame(matrix(sample(0:500, 10 * 6, TRUE), 10,
+                               dimnames = list(NULL, paste0("Taxon", 1:6))))
+meta <- data.frame(SampleID = paste0("S", 1:10),
+                   Group    = rep(c("Control", "Treatment"), each = 5))
 
-counts <- as.data.frame(
-  matrix(sample(0L:5000L, n * length(taxa), replace = TRUE),
-         nrow = n, dimnames = list(NULL, taxa))
-)
-meta <- data.frame(
-  SampleID = paste0("S", seq_len(n)),
-  Group    = rep(c("Control", "Treatment"), each = n / 2L)
-)
+# Group-aggregated relative abundance (raw counts are normalized)
+plot_relabund(counts, metadata = meta, show_x_as = "Group",
+              group_aggregate = TRUE, limit = 4L)
 
-# --- Pipeline: col_rel_abundance -> CLR -> plot as-is ---
-norm_out <- run_normalize(counts, meta, method = "col_rel_abundance",
-                          verbose = FALSE)
-clr_out  <- run_transform(norm_out$data, method = "clr")
+# Individual samples with group brackets
+plot_relabund(counts, metadata = meta, show_x_as = "SampleID",
+              group_aggregate = FALSE,
+              group_brackets = Group ~ c("Control", "Treatment"), limit = 4L)
 
-plot_relabund(
-  x                    = clr_out$data,
-  metadata             = meta,
-  limit                = 10L,
-  ignore_normalization = TRUE,
-  plot_title           = "Gut Microbiome (CLR-transformed)"
-)
-
-# --- Group-aggregated from raw counts (group_aggregate = TRUE) ---
-plot_relabund(
-  x               = counts,
-  metadata        = meta,
-  show_x_as       = "Group",
-  group_aggregate = TRUE,
-  order           = c("Treatment", "Control"),
-  limit           = 8L,
-  sort            = "high",
-  plot_title      = "**Relative Abundance** by Group",
-  legend_title    = "Phylum"
-)
-
-# --- Individual samples with group brackets (group_aggregate = FALSE) ---
-plot_relabund(
-  x                = counts,
-  metadata         = meta,
-  show_x_as        = "SampleID",
-  group_aggregate  = FALSE,
-  group_brackets   = Group ~ c("Control", "Treatment"),
-  limit            = 8L,
-  sort             = "high",
-  plot_title       = "Relative Abundance by Sample",
-  legend_title     = "Phylum"
-)
-
-# --- Horizontal bars, individual samples, group brackets ---
-plot_relabund(
-  x                     = counts,
-  metadata              = meta,
-  show_x_as             = "SampleID",
-  group_aggregate       = FALSE,
-  group_brackets        = Group ~ c("Control", "Treatment"),
-  limit                 = 6L,
-  exclude_others        = FALSE,
-  unknown_before_others = TRUE,
-  abundance_in_y        = FALSE
-)
 }
+\references{
+Aitchison J (1982). The statistical analysis of compositional data.
+\emph{Journal of the Royal Statistical Society: Series B}, 44(2),
+139-177. \doi{10.1111/j.2517-6161.1982.tb01195.x}
 
+Gloor GB, Macklaim JM, Pawlowsky-Glahn V, Egozcue JJ (2017). Microbiome
+datasets are compositional: and this is not optional. \emph{Frontiers in
+Microbiology}, 8, 2224. \doi{10.3389/fmicb.2017.02224}
+
+Okabe M, Ito K (2008). \emph{Color Universal Design (CUD): How to make
+figures and presentations that are friendly to colorblind people}.
+\url{https://jfly.uni-koeln.de/color/}
 }
 \author{
 John Lennon L. Calorio

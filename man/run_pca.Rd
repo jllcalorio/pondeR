@@ -116,47 +116,23 @@ on comparable scales.
 }
 }
 \examples{
-\dontrun{
-# Simulate data
-set.seed(123)
-x <- matrix(rnorm(100 * 50, mean = 100, sd = 20),
-            nrow = 100, ncol = 50)
-colnames(x) <- paste0("Feature", 1:50)
-rownames(x) <- paste0("Sample", 1:100)
+meta <- data.frame(Sample = rownames(iris), Species = iris$Species)
 
-metadata <- data.frame(
-  Sample = paste0("Sample", 1:100),
-  Group = rep(c("Control", "Treatment", "QC"), c(40, 40, 20)),
-  Batch = rep(1:4, each = 25),
-  Time = rep(c(0, 6, 12, 24), 25)
-)
+# PCA on pre-scaled data (base scale() output is detected as pre-scaled)
+pca <- run_pca(scale(iris[, 1:4]), meta, group = "Species", verbose = FALSE)
+print(pca)
+summary(pca)
 
-# PCA on pre-scaled data (recommended)
-scaled_result <- run_scale(x, method = "auto")
-pca_result <- run_pca(scaled_result$data, metadata)
+# Exclude a group before fitting
+pca2 <- run_pca(scale(iris[, 1:4]), meta, group = "Species",
+                exclude = "setosa", verbose = FALSE)
 
-# PCA excluding QC samples
-pca_result2 <- run_pca(scaled_result$data, metadata, 
-                       group = "Group",
-                       exclude = "QC")
-
-# PCA with automatic scaling, excluding multiple groups
-pca_result3 <- run_pca(x, metadata, 
-                       scale_method = "auto",
-                       group = "Group",
-                       exclude = c("QC", "Blank"))
-
-# PCA with transformation and scaling
-pca_result4 <- run_pca(x, metadata, 
-                       transform_method = "log2",
-                       scale_method = "pareto",
-                       group = "Group",
-                       exclude = "QC")
-
-# View results
-print(pca_result)
-summary(pca_result)
+# In-function scaling/transformation needs the dimsprepr package
+if (requireNamespace("dimsprepr", quietly = TRUE)) {
+  pca3 <- run_pca(iris[, 1:4], meta, group = "Species",
+                  scale_method = "pareto", verbose = FALSE)
 }
+
 }
 \references{
 Becker, R.A., Chambers, J.M., & Wilks, A.R. (1988). The New S Language.

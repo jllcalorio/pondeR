@@ -46,7 +46,7 @@ external packages.
 \code{NULL} and objects with no class attribute are handled gracefully:
 they always return \code{FALSE}.
 
-Note that \code{is_tabular()} does \strong{not} check whether the object is
+Note that \code{\link{is_tabular}()} does \strong{not} check whether the object is
 non-empty. A zero-row or zero-column tabular object will still return
 \code{TRUE}, as it retains the correct class and dimensions. Callers that
 require non-empty data should perform that check separately.

@@ -29,7 +29,7 @@ plot_scree(
 )
 }
 \arguments{
-\item{pca_result}{List. Output from \code{run_pca()}.}
+\item{pca_result}{List. Output from \code{\link[=run_pca]{run_pca()}}.}
 
 \item{title}{Character. Main plot title. Default: \code{"Scree Plot"}.}
 
@@ -127,32 +127,13 @@ suitable for journal figures. Other options map directly to their ggplot2 equiva
 also with gridlines suppressed.
 }
 \examples{
-\dontrun{
-# Run PCA first
-pca_result <- run_pca(scaled_data, metadata, scale_method = "auto")
+pca <- run_pca(scale(iris[, 1:4]), iris["Species"], group = "Species",
+               verbose = FALSE)
 
-# Basic scree plot (nature theme, Okabe-Ito colors, defaults)
-plot_scree(pca_result)
+plot_scree(pca, verbose = FALSE)
+plot_scree(pca, what = "eigen", type = "both", title = "PCA Eigenvalues",
+           verbose = FALSE)
 
-# Eigenvalue plot, bar + line geometry
-plot_scree(pca_result,
-           what     = "eigen",
-           type     = "both",
-           title    = "PCA Eigenvalues",
-           position = "left")
-
-# Variance plot without cumulative line, classic theme
-plot_scree(pca_result,
-           show_cumulative = FALSE,
-           max_pc          = 10,
-           theme           = "classic")
-
-# Larger font, serif family, custom zoom
-plot_scree(pca_result,
-           base_size   = 13,
-           font_family = "serif",
-           zoom        = 1.2)
-}
 }
 \references{
 Cattell, R.B. (1966). The scree test for the number of factors.

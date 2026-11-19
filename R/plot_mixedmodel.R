@@ -2,14 +2,14 @@
 #'
 #' @description
 #' Produces a volcano plot from the \code{combined_fixed_effects} component of
-#' a \code{run_mixedmodel} object, with log2 fold-change (or raw estimates) on
+#' a \code{\link{run_mixedmodel}} object, with log2 fold-change (or raw estimates) on
 #' the x-axis and \eqn{-\log_{10}(p_{\text{adj}})} on the y-axis. When the
 #' model formula contained more than one fixed effect term, panels are
 #' automatically faceted by \code{term} so each predictor is shown separately.
 #' Points are colored by significance and direction, and labels can be added to
 #' the top-\eqn{n} features per panel or to a user-specified set of features.
 #'
-#' @param x A \code{run_mixedmodel} object returned by \code{\link{run_mixedmodel}}.
+#' @param x A \code{\link{run_mixedmodel}} object returned by \code{\link{run_mixedmodel}}.
 #' @param type Character string. Currently \code{"volcano"} is supported. Reserved
 #'   for future types (\code{"effect"}, \code{"heatmap"}). Default: \code{"volcano"}.
 #' @param term A character vector of fixed-effect term name(s) to include. When
@@ -17,7 +17,7 @@
 #'   focusing on a single predictor when the formula has many.
 #' @param use_padj Logical. If \code{TRUE} (default), the y-axis reflects
 #'   \code{p_adj} (Benjamini-Hochberg or whichever method was passed to
-#'   \code{run_mixedmodel}). If \code{FALSE}, raw \code{p_value} is used.
+#'   \code{\link{run_mixedmodel}}). If \code{FALSE}, raw \code{p_value} is used.
 #' @param p_threshold Numeric. Horizontal dashed significance line drawn at
 #'   \eqn{-\log_{10}(\text{p\_threshold})}. Default: \code{0.05}.
 #' @param estimate_threshold Numeric. Vertical dashed lines drawn at
@@ -115,38 +115,36 @@
 #'
 #' @return A \code{ggplot} object (single-term) or a patchwork-composed plot
 #'   (multi-term with \code{facet_wrap}). The object can be passed to
-#'   \code{save_plots()} or modified with standard \code{ggplot2} additions.
+#'   \code{\link{save_plots}()} or modified with standard \code{ggplot2} additions.
+#'
+#' @references
+#' Bates D, Machler M, Bolker B, Walker S (2015). Fitting linear mixed-effects
+#'   models using lme4. \emph{Journal of Statistical Software}, 67(1), 1-48.
+#'   \doi{10.18637/jss.v067.i01}
+#'
+#' Benjamini Y, Hochberg Y (1995). Controlling the false discovery rate: a
+#'   practical and powerful approach to multiple testing. \emph{Journal of the
+#'   Royal Statistical Society: Series B}, 57(1), 289-300.
+#'   \doi{10.1111/j.2517-6161.1995.tb02031.x}
+#'
+#' Okabe M, Ito K (2008). \emph{Color Universal Design (CUD): How to make
+#'   figures and presentations that are friendly to colorblind people}.
+#'   \url{https://jfly.uni-koeln.de/color/}
 #'
 #' @examples
-#' \dontrun{
-#' result <- run_mixedmodel(
-#'   x        = x,
-#'   metadata = metadata,
-#'   formula  = ".feature ~ time + age + (1 | subject_id)"
+#' set.seed(42)
+#' meta <- data.frame(subject_id = factor(rep(1:15, each = 2)),
+#'                    time       = rep(c("pre", "post"), 15))
+#' x <- data.frame(
+#'   glucose = rnorm(30, ifelse(meta$time == "post", 5.6, 5), 0.4),
+#'   insulin = rnorm(30, 80, 10),
+#'   lactate = rnorm(30, 1.2, 0.3)
 #' )
+#' fit <- run_mixedmodel(x, meta, formula = ".feature ~ time + (1 | subject_id)",
+#'                       verbose = FALSE)
 #'
-#' # Default: all terms, auto-label top 10 significant features
-#' plot_mixedmodel(result)
-#'
-#' # Focus on one term, label specific features
-#' plot_mixedmodel(
-#'   result,
-#'   term           = "timepost",
-#'   label_features = c("glucose", "insulin"),
-#'   color_up       = "#CC79A7",
-#'   alpha          = 0.3,
-#'   alpha_sig      = 0.9,
-#'   title          = "Time effect (pre → post)"
-#' )
-#'
-#' # No auto-labels, only highlight manually specified features
-#' plot_mixedmodel(
-#'   result,
-#'   label_features = c("glucose", "insulin", "PA O-28:1"),
-#'   label_box      = TRUE,
-#'   label_color    = "black"
-#' )
-#' }
+#' plot_mixedmodel(fit)
+#' plot_mixedmodel(fit, label_features = "glucose", label_box = TRUE)
 #'
 #' @author John Lennon L. Calorio
 #'
@@ -363,7 +361,7 @@ plot_mixedmodel <- function(
     adj_method <- x$parameters$p_adjust_method %||% "BH"
     p_src      <- if (p_col == "p_adj") paste0("p.adj (", adj_method, ")") else "p (unadjusted)"
     caption    <- sprintf(
-      "Significance threshold: %s < %.3g | Dashed line at -log\u2081\u2080(%.3g) = %.2f",
+      "Significance threshold: %s < %.3g | Dashed line at -log10(%.3g) = %.2f",
       p_src, p_threshold, p_threshold, -log10(p_threshold)
     )
   }

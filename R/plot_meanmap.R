@@ -138,6 +138,15 @@
 #'       \code{NULL}).}
 #'   }
 #'
+#' @references
+#' Ward JH (1963). Hierarchical grouping to optimize an objective function.
+#'   \emph{Journal of the American Statistical Association}, 58(301), 236-244.
+#'   \doi{10.1080/01621459.1963.10500845}
+#'
+#' Okabe M, Ito K (2008). \emph{Color Universal Design (CUD): How to make
+#'   figures and presentations that are friendly to colorblind people}.
+#'   \url{https://jfly.uni-koeln.de/color/}
+#'
 #' @examples
 #' \donttest{
 #' ## ── Basic example: iris mean intensity by species ────────────────────────
@@ -364,7 +373,6 @@ plot_meanmap <- function(
     stop("`show_values` must be a single non-NA logical.", call. = FALSE)
 
   # ── 2. Derived font sizes ────────────────────────────────────────────────────
-  `%||%` <- function(a, b) if (is.null(a)) b else a
   fs_row   <- row_font_size      %||% (global_font_size * 0.85)
   fs_col   <- col_font_size      %||% (global_font_size * 0.85)
   fs_leg   <- legend_font_size   %||% (global_font_size * 0.80)

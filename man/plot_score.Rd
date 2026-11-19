@@ -85,8 +85,8 @@ plot_score(res, ...)
 \method{plot_score}{default}(res, ...)
 }
 \arguments{
-\item{res}{List. Output from \code{run_pca()}, \code{run_pls()}, or
-\code{run_pcoa()}. The appropriate plot method is selected automatically
+\item{res}{List. Output from \code{\link{run_pca}()}, \code{\link{run_pls}()}, or
+\code{\link{run_pcoa}()}. The appropriate plot method is selected automatically
 via S3 dispatch based on the class of \code{res}.}
 
 \item{...}{Additional arguments passed to methods.}
@@ -183,10 +183,10 @@ Values > 1 enlarge, values < 1 shrink. Default: \code{1}.}
 \item{verbose}{Logical. Print progress messages. Default: \code{TRUE}.}
 
 \item{metadata}{A \code{data.frame} with one row per observation (sample).
-Required for \code{plot_score.run_pcoa} because \code{run_pcoa()} does not
-bundle metadata inside its result (unlike \code{run_pca()}). Row order must
+Required for \code{plot_score.run_pcoa} because \code{\link{run_pcoa}()} does not
+bundle metadata inside its result (unlike \code{\link{run_pca}()}). Row order must
 match the row order of the data matrix originally passed to
-\code{run_pcoa()}.}
+\code{\link{run_pcoa}()}.}
 }
 \value{
 A \code{ggplot2} object.
@@ -194,8 +194,8 @@ A \code{ggplot2} object.
 \description{
 Produces a publication-ready scores plot from the output of multivariate
 ordination and dimensionality-reduction methods, including Principal
-Component Analysis (\code{run_pca}), Partial Least Squares and PLS-DA
-(\code{run_pls}), and Principal Coordinate Analysis (\code{run_pcoa}).
+Component Analysis (\code{\link{run_pca}}), Partial Least Squares and PLS-DA
+(\code{\link{run_pls}}), and Principal Coordinate Analysis (\code{\link{run_pcoa}}).
 Supports discrete group coloring with confidence ellipses, continuous
 gradient coloring, outlier detection and labeling, and a range of
 publication themes.
@@ -271,71 +271,14 @@ background, minimal gridlines, and no top/right panel border - suitable for
 journal figures. Other options map directly to their ggplot2 equivalents.
 }
 \examples{
-\dontrun{
-# Simulate data
-set.seed(123)
-x <- matrix(rnorm(100 * 50, mean = 100, sd = 20),
-            nrow = 100, ncol = 50)
-colnames(x) <- paste0("Feature", 1:50)
-rownames(x) <- paste0("Sample", 1:100)
+meta <- data.frame(Sample = rownames(iris), Species = iris$Species)
+pca  <- run_pca(scale(iris[, 1:4]), meta, group = "Species", verbose = FALSE)
 
-metadata <- data.frame(
-  Sample = paste0("Sample", 1:100),
-  Group  = rep(c("Control", "Treatment", "QC"), c(40, 40, 20)),
-  Batch  = rep(1:4, each = 25),
-  Time   = rep(c(0, 6, 12, 24), 25)
-)
+plot_score(pca, color_by = "Species", points_from = "Sample")
 
-# Run PCA (excluding QC samples)
-scaled_result <- run_scale(x, method = "auto")
-res    <- run_pca(scaled_result$data, metadata,
-                         group   = "Group",
-                         exclude = "QC")
-
-# Basic scores plot - nature theme, Okabe-Ito colors (defaults)
-plot_score(res,
-           color_by    = "Group",
-           points_from = "Sample")
-
-# PC2 vs PC3 with left-aligned title
-plot_score(res,
-           pc          = c(2, 3),
-           color_by    = "Group",
-           points_from = "Sample",
-           title       = "PCA: PC2 vs PC3",
-           position    = "left")
-
-# Color by batch with custom palette
-plot_score(res,
-           color_by    = "Batch",
-           points_from = "Sample",
-           colors      = c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3"))
-
-# Continuous coloring by time
-plot_score(res,
-           color_by    = "Time",
-           points_from = "Sample",
-           legend      = "Collection Time (h)")
-
-# Show outliers in specific groups, classic theme, larger zoom
-plot_score(res,
-           color_by       = "Group",
-           points_from    = "Sample",
-           show_outliers  = TRUE,
-           label_outliers = c("Control", "Treatment"),
-           ellipse_level  = 0.95,
-           theme          = "classic",
-           zoom           = 1.2)
-
-# Stricter outlier detection with serif font
-plot_score(res,
-           color_by      = "Group",
-           points_from   = "Sample",
-           show_outliers = TRUE,
-           ellipse_level = 0.99,
-           font_family   = "serif",
-           base_size     = 13)
-}
+# PC2 vs PC3, classic theme, outliers flagged
+plot_score(pca, pc = c(2, 3), color_by = "Species", points_from = "Sample",
+           show_outliers = TRUE, theme = "classic")
 
 }
 \references{

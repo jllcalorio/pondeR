@@ -13,7 +13,7 @@
 #'   multi-outcome \code{"run_diff"} object (i.e. the result of
 #'   \code{run_diff(..., summary_table = TRUE)} with more than one
 #'   \code{outcome}). When \code{x} is a \code{"run_diff"} object,
-#'   \code{plot_diff} reuses its statistics instead of recomputing them, and
+#'   \code{\link{plot_diff}} reuses its statistics instead of recomputing them, and
 #'   prefers the \code{p_value_adj} column of \code{x$summary_table} (falling
 #'   back to \code{p_value} when adjustment was not performed, i.e. a single
 #'   outcome) for determining significance. \code{subgroup} and
@@ -26,7 +26,7 @@
 #'   \code{plot_vars} to select outcomes instead).
 #' @param group Character string specifying the column name for the grouping
 #'   variable. Ignored when \code{x} is a \code{"run_diff"} object (the
-#'   grouping variable used by \code{run_diff} is reused automatically).
+#'   grouping variable used by \code{\link{run_diff}} is reused automatically).
 #' @param metadata A data frame containing metadata (e.g., grouping variables).
 #'   If \code{NULL}, \code{x} is used as metadata. Default is \code{NULL}.
 #'   Not used when \code{x} is a \code{"run_diff"} object.
@@ -129,8 +129,26 @@
 #' 
 #' @seealso \code{\link[dimsprepr]{run_DIpreprocess}}, \code{\link{run_diff}}
 #'
+#' @references
+#' Wickham H (2016). \emph{ggplot2: Elegant Graphics for Data Analysis}.
+#'   Springer-Verlag New York. \doi{10.1007/978-3-319-24277-4}
+#'
+#' Mann HB, Whitney DR (1947). On a test of whether one of two random
+#'   variables is stochastically larger than the other. \emph{The Annals of
+#'   Mathematical Statistics}, 18(1), 50-60. \doi{10.1214/aoms/1177730491}
+#'
+#' Kruskal WH, Wallis WA (1952). Use of ranks in one-criterion variance
+#'   analysis. \emph{Journal of the American Statistical Association},
+#'   47(260), 583-621. \doi{10.1080/01621459.1952.10483441}
+#'
+#' Welch BL (1947). The generalization of 'Student's' problem when several
+#'   different population variances are involved. \emph{Biometrika}, 34(1-2),
+#'   28-35. \doi{10.1093/biomet/34.1-2.28}
+#'
+#' Dunn OJ (1964). Multiple comparisons using rank sums. \emph{Technometrics},
+#'   6(3), 241-252. \doi{10.1080/00401706.1964.10490181}
+#'
 #' @examples
-#' \dontrun{
 #' # Example 1: Box plot with mean dot and mean value annotation
 #' results <- plot_diff(
 #'   x            = PlantGrowth,
@@ -163,7 +181,6 @@
 #'   format_p_numeric = 4
 #' )
 #' print(results3$plots$extra)
-#' }
 #'
 #' @author John Lennon L. Calorio
 #'

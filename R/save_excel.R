@@ -119,19 +119,11 @@
   path
 }
 
-# Null-coalescing operator (defined once; skip if already in namespace)
-if (!exists("%||%", mode = "function")) {
-  `%||%` <- function(a, b) if (!is.null(a)) a else b
-}
 
 # ── Tabular type checks ───────────────────────────────────────────────────────
 
 #' @keywords internal
-.is_tabular <- function(obj) {
-  is.data.frame(obj) ||
-    inherits(obj, c("tbl_df", "tbl", "data.table")) ||
-    is.matrix(obj)
-}
+.is_tabular <- function(obj) is_tabular(obj, warn = FALSE)
 
 #' @keywords internal
 .is_ponder_result <- function(obj) {
@@ -166,7 +158,7 @@ if (!exists("%||%", mode = "function")) {
 #' deep, that nested list is transparently unwrapped.
 #'
 #' @param x A data frame, tibble, matrix, a pondeR result object (e.g. output
-#'   of \code{run_auc()}, \code{run_diff()}), or a named list whose elements
+#'   of \code{\link{run_auc}()}, \code{\link{run_diff}()}), or a named list whose elements
 #'   are any combination of those types.  One level of nesting is automatically
 #'   unpacked when no direct tabular elements are found at the top level.
 #' @param filename A single character string for the output file name.  Used
@@ -211,29 +203,30 @@ if (!exists("%||%", mode = "function")) {
 #' \code{x} as the filename for convenience.
 #'
 #' \strong{pondeR result objects.}  Objects whose class starts with
-#' \code{run_} (e.g. \code{run_auc}, \code{run_diff}) are unpacked
+#' \code{run_} (e.g. \code{\link{run_auc}}, \code{\link{run_diff}}) are unpacked
 #' automatically and their tabular slots are written as separate sheets.
 #'
 #' @return
 #' Called for its side effect.  Returns the full normalised file path
 #' invisibly as a character string.
 #'
-#' @examples
-#' \dontrun{
-#' # Single data frame — filename is respected
-#' save_excel(mtcars, filename = "mtcars_export")
+#' @references
+#' Schauberger P, Walker A (2024). \emph{openxlsx: Read, Write and Edit xlsx
+#'   Files}. R package. \url{https://CRAN.R-project.org/package=openxlsx}
 #'
-#' # Named list — filename is ignored; sheet names come from list names
-#' sheets <- list(Cars = mtcars, Iris = iris)
-#' save_excel(sheets, filename = "ignored")
+#' @examples
+#' out <- tempdir()
+#'
+#' # Single data frame: filename is respected
+#' save_excel(mtcars, filename = "mtcars_export", folder = out)
+#'
+#' # Named list: one sheet per element
+#' save_excel(list(Cars = mtcars, Iris = iris), filename = "two_sheets",
+#'            folder = out)
 #'
 #' # pondeR result object
-#' res <- run_auc(data = mydata, response = "group", predictors = c("A","B"))
-#' save_excel(res, filename = "auc_results")
-#'
-#' # With date + time stamp on the file name
-#' save_excel(iris, filename = "iris", fn_date_stamp = TRUE, fn_time_stamp = TRUE)
-#' }
+#' res <- run_correl(mtcars[, 1:4])
+#' save_excel(res, filename = "correlations", folder = out)
 #'
 #' @author John Lennon L. Calorio
 #' @export
@@ -319,7 +312,13 @@ save_excel <- function(
     if (is.matrix(el)) as.data.frame(el) else el
   })
 
-  if (.is_tabular(x)) {
+  if (is.list(x) && !is.data.frame(x) && !length(x)) {
+    warning("'x' is an empty list. An empty Excel file will be exported.",
+            call. = FALSE)
+    x <- data.frame()
+  }
+
+  if (is_tabular(x, warn = FALSE)) {
     # --- Single tabular object: honour filename ---
     sheets <- stats::setNames(list(as.data.frame(x)), base_name)
     use_filename <- if (base_name == "output") x_name_safe else base_name
@@ -334,22 +333,6 @@ save_excel <- function(
     use_filename <- if (base_name == "output") x_name_safe else base_name
 
   } else if (is.list(x)) {
-    if (!length(x)) {
-      warning(
-        "'x' is an empty list. An empty Excel file will be exported.",
-        call. = FALSE
-      )
-      sheets       <- stats::setNames(list(data.frame()), base_name)
-      use_filename <- base_name
-      n_sheets     <- 1L
-      # Skip the rest of list processing and jump straight to export
-      return(invisible(.export_xl_workbook(
-        sheets, use_filename, supplied_ext, folder,
-        fd_date_stamp, fd_time_stamp, fn_date_stamp, fn_time_stamp,
-        overwrite, freeze_first_row, freeze_first_col, auto_col_width
-      )))
-    }
-
     # Check if any direct element is tabular / pondeR
     # tabular check first; don't treat data frames as pondeR results
     direct_tab  <- vapply(x, .is_tabular,       logical(1L))

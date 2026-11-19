@@ -370,7 +370,6 @@ when \code{return} includes \code{"bmifa"}.\tabular{ll}{
 }
 }
 \examples{
-\dontrun{
 library(pondeR)
 
 if (requireNamespace("anthro", quietly = TRUE)) {
@@ -440,7 +439,6 @@ if (requireNamespace("anthro", quietly = TRUE)) {
     )
     bmi_res[, c("age_yr", "cbmi", "z_score", "Nutritional Status")]
   }
-}
 }
 
 }

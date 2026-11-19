@@ -7,7 +7,7 @@
 \method{print}{run_correl}(x, format_p = TRUE, ...)
 }
 \arguments{
-\item{x}{A \code{run_correl} object.}
+\item{x}{A \code{\link{run_correl}} object.}
 
 \item{format_p}{Logical. If \code{TRUE} (default), the \code{p_value} and
 \code{p_value_adj} columns (when present) are displayed via

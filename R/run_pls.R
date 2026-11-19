@@ -4,7 +4,7 @@
 #' Performs Partial Least Squares Discriminant Analysis (PLS-DA), Orthogonal 
 #' PLS-DA (OPLS-DA), or sparse PLS-DA (sPLS-DA) on preprocessed metabolomics data.
 #' Optionally applies scaling and transformation before analysis if the input data
-#' has not been pre-scaled. Designed to match the structure of `run_pca()`.
+#' has not been pre-scaled. Designed to match the structure of [run_pca()].
 #'
 #' @param x Matrix or data frame. Numeric data with samples in rows and features in columns. 
 #'   Can be output from `run_scale()`, raw data (which will be scaled if `scale_method`, or from `run_DIpreprocess`.
@@ -53,7 +53,7 @@
 #' @details
 #' **Compatibility:**
 #' 
-#' The output of this function is specifically designed to be compatible with `plot_score()`. 
+#' The output of this function is specifically designed to be compatible with [plot_score()]. 
 #' Component names in the `scores` matrix are aliased as `PC1`, `PC2`, etc., to allow seamless 
 #' plotting. For OPLS-DA, "PC1" represents the Predictive Component, and "PC2" represents the 
 #' first Orthogonal Component.
@@ -89,35 +89,20 @@
 #' @export
 #'
 #' @examples
-#' \dontrun{
-#' # Simulate data
-#' set.seed(123)
-#' x <- matrix(rnorm(100 * 50, mean = 100, sd = 20), nrow = 100, ncol = 50)
-#' colnames(x) <- paste0("Feature", 1:50)
-#' rownames(x) <- paste0("Sample", 1:100)
-#' 
-#' metadata <- data.frame(
-#'   Sample = paste0("Sample", 1:100),
-#'   Group = rep(c("Control", "Treatment", "QC"), c(40, 40, 20))
-#' )
-#' 
-#' # Run PLS-DA excluding QC samples, with automatic pareto scaling
-#' pls_result <- run_pls(x, metadata, 
-#'                       method = "plsda",
-#'                       scale_method = "pareto",
-#'                       group = "Group",
-#'                       exclude = "QC")
-#' 
-#' # Visualize with plot_score
-#' plot_score(pls_result, color_by = "Group", points_from = "Sample")
-#' 
-#' # Run OPLS-DA
-#' opls_result <- run_pls(x, metadata, 
-#'                        method = "oplsda",
-#'                        scale_method = "pareto",
-#'                        group = "Group",
-#'                        exclude = "QC")
+#' \donttest{
+#' if (requireNamespace("ropls", quietly = TRUE)) {
+#'   meta <- data.frame(Sample = rownames(iris), Species = iris$Species)
+#'   pls  <- run_pls(scale(iris[, 1:4]), meta, method = "plsda",
+#'                   group = "Species", verbose = FALSE)
+#'   print(pls)
+#'   plot_score(pls, color_by = "Species", points_from = "Sample")
+#'
+#'   # OPLS-DA needs exactly two groups
+#'   opls <- run_pls(scale(iris[51:150, 1:4]), droplevels(meta[51:150, ]),
+#'                   method = "oplsda", group = "Species", verbose = FALSE)
 #' }
+#' }
+#'
 run_pls <- function(
     x,
     metadata,
@@ -146,9 +131,11 @@ run_pls <- function(
     x <- if (!is.null(x$data_pls_merged)) x$data_pls_merged else x$data_pls
   }
 
-  if (!requireNamespace("dimsprepr",  quietly = TRUE))
-  stop("Package 'dimsprepr' is required. Install with: pak::pak('dimsprepr')",
-        call. = FALSE)
+  # dimsprepr is only needed for the optional in-function preprocessing
+  if ((!is.null(scale_method) || !is.null(transform_method)) &&
+      !requireNamespace("dimsprepr", quietly = TRUE))
+    stop("Package 'dimsprepr' is required for 'scale_method'/'transform_method'. ",
+         "Install with: pak::pak('jllcalorio/dimsprepr')", call. = FALSE)
   
   # ============================================================================
   # INPUT VALIDATION
@@ -249,9 +236,6 @@ run_pls <- function(
     # Transformation
     if (!is.null(transform_method)) {
       msg(sprintf("Applying '%s' transformation...", transform_method))
-      if (!exists("run_transform", mode = "function")) {
-         stop("Function 'run_transform' not found. Please install 'dimsprepr'.")
-      }
       transform_result <- dimsprepr::run_transform(x = x_matrix, method = transform_method, 
                                         metadata = metadata, verbose = verbose)
       x_matrix <- as.matrix(transform_result$data)
@@ -262,9 +246,6 @@ run_pls <- function(
     # Scaling
     if (!is.null(scale_method)) {
       msg(sprintf("Applying '%s' scaling...", scale_method))
-      if (!exists("run_scale", mode = "function")) {
-        stop("Function 'run_scale' not found. Please install 'dimsprepr'.")
-      }
       scale_result <- dimsprepr::run_scale(x = x_matrix, method = scale_method, verbose = verbose)
       x_matrix <- as.matrix(scale_result$data)
       preprocessing_log$scaling_applied <- TRUE

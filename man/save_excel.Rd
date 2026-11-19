@@ -20,7 +20,7 @@ save_excel(
 }
 \arguments{
 \item{x}{A data frame, tibble, matrix, a pondeR result object (e.g. output
-of \code{run_auc()}, \code{run_diff()}), or a named list whose elements
+of \code{\link{run_auc}()}, \code{\link{run_diff}()}), or a named list whose elements
 are any combination of those types.  One level of nesting is automatically
 unpacked when no direct tabular elements are found at the top level.}
 
@@ -88,26 +88,27 @@ multiple tables), the function automatically uses the variable name of
 \code{x} as the filename for convenience.
 
 \strong{pondeR result objects.}  Objects whose class starts with
-\code{run_} (e.g. \code{run_auc}, \code{run_diff}) are unpacked
+\code{run_} (e.g. \code{\link{run_auc}}, \code{\link{run_diff}}) are unpacked
 automatically and their tabular slots are written as separate sheets.
 }
 \examples{
-\dontrun{
-# Single data frame — filename is respected
-save_excel(mtcars, filename = "mtcars_export")
+out <- tempdir()
 
-# Named list — filename is ignored; sheet names come from list names
-sheets <- list(Cars = mtcars, Iris = iris)
-save_excel(sheets, filename = "ignored")
+# Single data frame: filename is respected
+save_excel(mtcars, filename = "mtcars_export", folder = out)
+
+# Named list: one sheet per element
+save_excel(list(Cars = mtcars, Iris = iris), filename = "two_sheets",
+           folder = out)
 
 # pondeR result object
-res <- run_auc(data = mydata, response = "group", predictors = c("A","B"))
-save_excel(res, filename = "auc_results")
+res <- run_correl(mtcars[, 1:4])
+save_excel(res, filename = "correlations", folder = out)
 
-# With date + time stamp on the file name
-save_excel(iris, filename = "iris", fn_date_stamp = TRUE, fn_time_stamp = TRUE)
 }
-
+\references{
+Schauberger P, Walker A (2024). \emph{openxlsx: Read, Write and Edit xlsx
+Files}. R package. \url{https://CRAN.R-project.org/package=openxlsx}
 }
 \author{
 John Lennon L. Calorio

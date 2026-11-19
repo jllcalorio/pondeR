@@ -14,7 +14,7 @@ get_volcanodata(
 )
 }
 \arguments{
-\item{...}{Objects of class \code{run_foldchange} and/or \code{run_diff}.}
+\item{...}{Objects of class \code{\link{run_foldchange}} and/or \code{\link{run_diff}}.}
 
 \item{up, down, pval}{Optional numeric overrides for thresholds. If \code{NULL}
 (default), thresholds are retrieved from the objects' parameters.}
@@ -26,7 +26,7 @@ to include only "Up" or "Down" regulated features.}
 largest effects first, \code{"asc"} the smallest first, and \code{"none"}
 keeps the original order. Features are ordered by effect size magnitude
 (very large, large, medium, small, very small) and then by the absolute
-effect size estimate. Ignored when no \code{run_diff} effect sizes are
+effect size estimate. Ignored when no \code{\link{run_diff}} effect sizes are
 available. Note that estimates from different effect size metrics (e.g.
 Cohen's d vs. rank-biserial correlation) are not strictly comparable.}
 }
@@ -34,13 +34,13 @@ Cohen's d vs. rank-biserial correlation) are not strictly comparable.}
 A \code{data.frame} containing merged data from both objects:
 fold change columns, effect size (95\\% CI) and magnitude, and a single
 p-value column (\code{p_value_adj} when present, otherwise \code{p_value}).
-When the \code{run_diff} summary table is simplified, the p-value column
+When the \code{\link{run_diff}} summary table is simplified, the p-value column
 keeps its superscript test markers (legend stored in the
 \code{"pvalue_legend"} attribute and shown by \code{\link{as_gt}}).
 Up/Down/NS classification is used only for \code{filter} and is not returned.
 }
 \description{
-Extracts and combines results from \code{run_foldchange()} and \code{run_diff()}
+Extracts and combines results from \code{\link{run_foldchange}()} and \code{\link{run_diff}()}
 into a single data frame. This function automatically aligns features/outcomes,
 retrieves fold-change and significance thresholds from the provided objects,
 and (optionally) keeps only "Up" or "Down" regulated features.
@@ -48,19 +48,32 @@ and (optionally) keeps only "Up" or "Down" regulated features.
 \details{
 The function automatically detects the thresholds:
 \itemize{
-\item \code{up} and \code{down} are retrieved from the \code{run_foldchange} parameters.
-\item Significance threshold (\code{pval}) is retrieved from \code{run_diff} parameters
+\item \code{up} and \code{down} are retrieved from the \code{\link{run_foldchange}} parameters.
+\item Significance threshold (\code{pval}) is retrieved from \code{\link{run_diff}} parameters
 (defaulting to 0.05 if not found).
-\item When \code{run_diff} result has multiple outcomes (nrow > 1), a \code{p_value_adj}
+\item When \code{\link{run_diff}} result has multiple outcomes (nrow > 1), a \code{p_value_adj}
 column is present; this function prefers it over \code{p_value} for the volcano plot.
 }
 }
 \examples{
-\dontrun{
-# Assuming fc_res and diff_res are outputs from pondeR functions
-volcano_data <- get_volcanodata(fc_res, diff_res, filter = TRUE)
-}
+x    <- iris[iris$Species != "setosa", 1:4]
+meta <- droplevels(iris[iris$Species != "setosa", "Species", drop = FALSE])
 
+fc  <- run_foldchange(x, metadata = meta, group = "Species")
+dif <- run_diff(x, meta, outcome = names(x), group = "Species",
+                summary_table = TRUE, verbose = FALSE)
+
+get_volcanodata(fc, dif, filter = FALSE)
+
+}
+\references{
+Cohen J (1988). \emph{Statistical Power Analysis for the Behavioral
+Sciences} (2nd ed.). Lawrence Erlbaum Associates.
+
+Benjamini Y, Hochberg Y (1995). Controlling the false discovery rate: a
+practical and powerful approach to multiple testing. \emph{Journal of the
+Royal Statistical Society: Series B}, 57(1), 289-300.
+\doi{10.1111/j.2517-6161.1995.tb02031.x}
 }
 \seealso{
 \code{\link{run_foldchange}}, \code{\link{run_diff}}, \code{\link{plot_volcano}}, \code{\link[dimsprepr]{run_DIpreprocess}}

@@ -181,6 +181,14 @@ plot_heatmap(mtcars, show_coef = TRUE, mark_x = TRUE)
 plot_heatmap(mtcars, show_dend = TRUE)
 
 }
+\references{
+Ward JH (1963). Hierarchical grouping to optimize an objective function.
+\emph{Journal of the American Statistical Association}, 58(301), 236-244.
+\doi{10.1080/01621459.1963.10500845}
+
+Wickham H (2016). \emph{ggplot2: Elegant Graphics for Data Analysis}.
+Springer-Verlag New York. \doi{10.1007/978-3-319-24277-4}
+}
 \seealso{
 \code{\link{run_correl}}, \code{\link{plot_dend}}
 }

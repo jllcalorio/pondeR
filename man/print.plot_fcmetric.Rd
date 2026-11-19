@@ -7,7 +7,7 @@
 \method{print}{plot_fcmetric}(x, ...)
 }
 \arguments{
-\item{x}{An object as output of \code{plot_fcmetric}.}
+\item{x}{An object as output of \code{\link{plot_fcmetric}}.}
 
 \item{...}{Ignored.}
 }
@@ -15,7 +15,7 @@
 Invisibly returns \code{x}.
 }
 \description{
-Compact console summary of a \code{plot_fcmetric} result.
+Compact console summary of a \code{\link{plot_fcmetric}} result.
 }
 \author{
 John Lennon L. Calorio

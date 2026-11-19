@@ -23,7 +23,7 @@ tibble, or \code{data.table}, which are technically lists under the hood).
 Returns a single logical value (\code{TRUE} or \code{FALSE}).
 }
 \details{
-\code{is_list()} returns \code{TRUE} only when \code{x} is a plain
+\code{\link{is_list}()} returns \code{TRUE} only when \code{x} is a plain
 \code{list} - i.e., \code{is.list(x)} is \code{TRUE} \emph{and} \code{x}
 does not inherit from any tabular class (\code{data.frame}, \code{tbl_df},
 \code{tbl}, \code{data.table}, or \code{matrix}). This distinction matters

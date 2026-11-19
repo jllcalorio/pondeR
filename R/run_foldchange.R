@@ -5,7 +5,7 @@
 #' feature (column) in \code{x} across ordered group levels. Group means are
 #' used as the basis of comparison. When \code{log2 = TRUE} the data are
 #' shifted so that all values are strictly positive before log-transformation.
-#' The function is designed to integrate seamlessly with \code{run_diff()} and
+#' The function is designed to integrate seamlessly with \code{\link{run_diff}()} and
 #' \code{\link{plot_volcano}}.
 #'
 #' @param x A \code{data.frame}, \code{tibble}, or named \code{matrix} whose
@@ -72,7 +72,7 @@
 #'
 #' \strong{Integration with \code{\link{run_diff}} and \code{\link{plot_volcano}}}\cr
 #' The returned list exposes \code{fc_table}, \code{log2fc_table}, and
-#' \code{shifted_data} in a consistent format that \code{plot_volcano()} can
+#' \code{shifted_data} in a consistent format that \code{\link{plot_volcano}()} can
 #' consume directly.
 #'
 #' @return A named list containing:
@@ -97,6 +97,12 @@
 #'   \item{\code{params}}{A list of all resolved parameter values for
 #'     reproducibility.}
 #' }
+#'
+#' @references
+#' Benjamini Y, Hochberg Y (1995). Controlling the false discovery rate: a
+#'   practical and powerful approach to multiple testing. \emph{Journal of the
+#'   Royal Statistical Society: Series B}, 57(1), 289-300.
+#'   \doi{10.1111/j.2517-6161.1995.tb02031.x}
 #'
 #' @examples
 #' ## -----------------------------------------------------------------------
@@ -542,7 +548,7 @@ run_foldchange <- function(
 # =============================================================================
 
 #' @title Print Method for \code{run_foldchange} Objects
-#' @description Compact console summary of a \code{run_foldchange} result.
+#' @description Compact console summary of a \code{\link{run_foldchange}} result.
 #' @param x An object from \code{"run_foldchange"}.
 #' @param ... Ignored.
 #' @return Invisibly returns \code{x}.

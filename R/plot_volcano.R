@@ -8,7 +8,7 @@
 #' Generates publication-quality volcano plots that visualise differential
 #' features as a scatter of log2 fold change (x-axis) versus statistical
 #' significance (y-axis). Designed to integrate directly with the output of
-#' \code{run_foldchange()} and \code{run_diff()}, but accepts any
+#' \code{\link{run_foldchange}()} and \code{\link{run_diff}()}, but accepts any
 #' \code{data.frame} with the required columns. When \code{group} is supplied,
 #' all comparisons are overlaid on a single plot with distinct colours per
 #' group, saving publication space.
@@ -24,10 +24,10 @@
 #'   \describe{
 #'     \item{\code{list(fc = <run_foldchange>, diff = <run_diff>)}}{
 #'       Both objects are supplied. Fold changes are sourced from
-#'       \code{run_foldchange()}'s \code{$summary_table}
+#'       \code{\link{run_foldchange}()}'s \code{$summary_table}
 #'       and p-values are sourced from
-#'       \code{run_diff()}'s \code{$summary_table}, matched on feature name.
-#'       When \code{run_foldchange()} produced more than one pairwise
+#'       \code{\link{run_diff}()}'s \code{$summary_table}, matched on feature name.
+#'       When \code{\link{run_foldchange}()} produced more than one pairwise
 #'       comparison, the \code{comparison} column is automatically used as
 #'       \code{group}, overlaying all comparisons on a single plot with
 #'       distinct colours. This is the recommended usage.}
@@ -149,8 +149,16 @@
 #'   \item{\code{params}}{A list of all resolved parameter values.}
 #' }
 #'
+#' @references
+#' Benjamini Y, Hochberg Y (1995). Controlling the false discovery rate: a
+#'   practical and powerful approach to multiple testing. \emph{Journal of the
+#'   Royal Statistical Society: Series B}, 57(1), 289-300.
+#'   \doi{10.1111/j.2517-6161.1995.tb02031.x}
+#'
+#' Wickham H (2016). \emph{ggplot2: Elegant Graphics for Data Analysis}.
+#'   Springer-Verlag New York. \doi{10.1007/978-3-319-24277-4}
+#'
 #' @examples
-#' \dontrun{
 #' ## -----------------------------------------------------------------------
 #' ## Example 1 - minimal synthetic data, no group
 #' ## -----------------------------------------------------------------------
@@ -220,7 +228,6 @@
 #'   down      = 0.5
 #' )
 #' print(res4$plots[[1]])
-#' }
 #'
 #' @author John Lennon L. Calorio
 #' @importFrom ggplot2 ggplot aes geom_point geom_hline geom_vline geom_text
@@ -789,8 +796,8 @@ plot_volcano <- function(
       ns_val    <- c(NS = ns_color)
 
       all_vals   <- c(up_vals, down_vals, ns_val)
-      up_labels  <- paste0(grp_levels, " \u2191")   # \u2191 for up
-      dn_labels  <- paste0(grp_levels, " \u2193")   # \u2193 for down
+      up_labels  <- paste0(grp_levels, " (up)")   # ponytail: ASCII, arrows break pdf()/postscript
+      dn_labels  <- paste0(grp_levels, " (down)")
       all_labels <- c(up_labels, dn_labels, "NS")
 
       ggplot2::scale_colour_manual(
@@ -925,7 +932,7 @@ plot_volcano <- function(
 # =============================================================================
 
 #' @title Print Method for \code{plot_volcano} Objects
-#' @description Compact console summary of a \code{plot_volcano} result.
+#' @description Compact console summary of a \code{\link{plot_volcano}} result.
 #' @param x An object as ouput of \code{"plot_volcano"}.
 #' @param ... Ignored.
 #' @return Invisibly returns \code{x}.

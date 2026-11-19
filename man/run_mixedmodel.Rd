@@ -129,7 +129,6 @@ separately within each unique fixed effect term across all features, using
 the method specified in \code{p_adjust_method}.
 }
 \examples{
-\dontrun{
 set.seed(42)
 n_subj  <- 20
 n_times <- 2
@@ -159,8 +158,21 @@ result <- run_mixedmodel(
 print(result)
 summary(result)
 head(result$combined_fixed_effects)
-}
 
+}
+\references{
+Bates D, Machler M, Bolker B, Walker S (2015). Fitting linear mixed-effects
+models using lme4. \emph{Journal of Statistical Software}, 67(1), 1-48.
+\doi{10.18637/jss.v067.i01}
+
+Kuznetsova A, Brockhoff PB, Christensen RHB (2017). lmerTest package: tests
+in linear mixed effects models. \emph{Journal of Statistical Software},
+82(13), 1-26. \doi{10.18637/jss.v082.i13}
+
+Benjamini Y, Hochberg Y (1995). Controlling the false discovery rate: a
+practical and powerful approach to multiple testing. \emph{Journal of the
+Royal Statistical Society: Series B}, 57(1), 289-300.
+\doi{10.1111/j.2517-6161.1995.tb02031.x}
 }
 \author{
 John Lennon L. Calorio

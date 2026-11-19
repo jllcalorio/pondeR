@@ -33,7 +33,7 @@
 )
 }
 \description{
-A lighter version of \code{run_diff} that returns a rich list suitable for
-downstream use by \code{plot_diff}. Not intended for direct use.
+A lighter version of \code{\link{run_diff}} that returns a rich list suitable for
+downstream use by \code{\link{plot_diff}}. Not intended for direct use.
 }
 \keyword{internal}

@@ -117,47 +117,23 @@
 #' @export
 #'
 #' @examples
-#' \dontrun{
-#' # Simulate data
-#' set.seed(123)
-#' x <- matrix(rnorm(100 * 50, mean = 100, sd = 20),
-#'             nrow = 100, ncol = 50)
-#' colnames(x) <- paste0("Feature", 1:50)
-#' rownames(x) <- paste0("Sample", 1:100)
-#' 
-#' metadata <- data.frame(
-#'   Sample = paste0("Sample", 1:100),
-#'   Group = rep(c("Control", "Treatment", "QC"), c(40, 40, 20)),
-#'   Batch = rep(1:4, each = 25),
-#'   Time = rep(c(0, 6, 12, 24), 25)
-#' )
-#' 
-#' # PCA on pre-scaled data (recommended)
-#' scaled_result <- run_scale(x, method = "auto")
-#' pca_result <- run_pca(scaled_result$data, metadata)
-#' 
-#' # PCA excluding QC samples
-#' pca_result2 <- run_pca(scaled_result$data, metadata, 
-#'                        group = "Group",
-#'                        exclude = "QC")
-#' 
-#' # PCA with automatic scaling, excluding multiple groups
-#' pca_result3 <- run_pca(x, metadata, 
-#'                        scale_method = "auto",
-#'                        group = "Group",
-#'                        exclude = c("QC", "Blank"))
-#' 
-#' # PCA with transformation and scaling
-#' pca_result4 <- run_pca(x, metadata, 
-#'                        transform_method = "log2",
-#'                        scale_method = "pareto",
-#'                        group = "Group",
-#'                        exclude = "QC")
-#' 
-#' # View results
-#' print(pca_result)
-#' summary(pca_result)
+#' meta <- data.frame(Sample = rownames(iris), Species = iris$Species)
+#'
+#' # PCA on pre-scaled data (base scale() output is detected as pre-scaled)
+#' pca <- run_pca(scale(iris[, 1:4]), meta, group = "Species", verbose = FALSE)
+#' print(pca)
+#' summary(pca)
+#'
+#' # Exclude a group before fitting
+#' pca2 <- run_pca(scale(iris[, 1:4]), meta, group = "Species",
+#'                 exclude = "setosa", verbose = FALSE)
+#'
+#' # In-function scaling/transformation needs the dimsprepr package
+#' if (requireNamespace("dimsprepr", quietly = TRUE)) {
+#'   pca3 <- run_pca(iris[, 1:4], meta, group = "Species",
+#'                   scale_method = "pareto", verbose = FALSE)
 #' }
+#'
 run_pca <- function(
     x,
     metadata,
@@ -178,9 +154,11 @@ run_pca <- function(
     x <- if (!is.null(x$data_nonpls_merged)) x$data_nonpls_merged else x$data_nonpls
   }
 
-  if (!requireNamespace("dimsprepr",  quietly = TRUE))
-    stop("Package 'dimsprepr' is required. Install with: pak::pak('dimsprepr')",
-         call. = FALSE)
+  # dimsprepr is only needed for the optional in-function preprocessing
+  if ((!is.null(scale_method) || !is.null(transform_method)) &&
+      !requireNamespace("dimsprepr", quietly = TRUE))
+    stop("Package 'dimsprepr' is required for 'scale_method'/'transform_method'. ",
+         "Install with: pak::pak('jllcalorio/dimsprepr')", call. = FALSE)
   
   # Input validation
   if (!is.matrix(x) && !is.data.frame(x)) {

@@ -4,7 +4,7 @@
 #' Creates a scree plot showing variance explained or eigenvalues per principal component.
 #' Helps determine the number of meaningful PCs to retain.
 #'
-#' @param pca_result List. Output from `run_pca()`.
+#' @param pca_result List. Output from [run_pca()].
 #' @param title Character. Main plot title. Default: `"Scree Plot"`.
 #' @param subtitle Character. Plot subtitle. Default: `NULL` (no subtitle).
 #' @param caption Character. Plot caption (bottom-right). Default: `NULL` (no caption).
@@ -95,32 +95,13 @@
 #' @export
 #'
 #' @examples
-#' \dontrun{
-#' # Run PCA first
-#' pca_result <- run_pca(scaled_data, metadata, scale_method = "auto")
+#' pca <- run_pca(scale(iris[, 1:4]), iris["Species"], group = "Species",
+#'                verbose = FALSE)
 #'
-#' # Basic scree plot (nature theme, Okabe-Ito colors, defaults)
-#' plot_scree(pca_result)
+#' plot_scree(pca, verbose = FALSE)
+#' plot_scree(pca, what = "eigen", type = "both", title = "PCA Eigenvalues",
+#'            verbose = FALSE)
 #'
-#' # Eigenvalue plot, bar + line geometry
-#' plot_scree(pca_result,
-#'            what     = "eigen",
-#'            type     = "both",
-#'            title    = "PCA Eigenvalues",
-#'            position = "left")
-#'
-#' # Variance plot without cumulative line, classic theme
-#' plot_scree(pca_result,
-#'            show_cumulative = FALSE,
-#'            max_pc          = 10,
-#'            theme           = "classic")
-#'
-#' # Larger font, serif family, custom zoom
-#' plot_scree(pca_result,
-#'            base_size   = 13,
-#'            font_family = "serif",
-#'            zoom        = 1.2)
-#' }
 plot_scree <- function(
     pca_result,
     title             = "Scree Plot",
@@ -260,7 +241,7 @@ plot_scree <- function(
   n_pcs    <- pca_result$n_pcs
   max_show <- min(as.integer(max_pc), n_pcs)
 
-  if (max_pc > n_pcs) {
+  if (!missing(max_pc) && max_pc > n_pcs) {  # default 15 caps silently
     warning(
       sprintf("max_pc = %d requested but only %d PCs available. Showing %d PCs.\n",
               max_pc, n_pcs, n_pcs),
@@ -399,7 +380,7 @@ plot_scree <- function(
         box.padding        = 0.3,
         point.padding      = 0.2,
         segment.color      = "grey50",
-        segment.linewidth  = 0.3,
+        segment.size       = 0.3,
         min.segment.length = 0,
         max.overlaps       = Inf,
         direction          = "y",
@@ -453,7 +434,7 @@ plot_scree <- function(
         box.padding        = 0.3,
         point.padding      = 0.2,
         segment.color      = "grey50",
-        segment.linewidth  = 0.2,
+        segment.size       = 0.2,
         min.segment.length = 0,
         max.overlaps       = Inf,
         direction          = "y",

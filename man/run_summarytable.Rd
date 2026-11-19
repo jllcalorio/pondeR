@@ -246,7 +246,7 @@ zero count (e.g., \code{0 (0.00\%)}) are replaced with empty strings.}
 title.}
 
 \item{.in_subgroup_recursion}{Internal use only. Logical flag set to
-\code{TRUE} when \code{run_summarytable()} calls itself recursively to
+\code{TRUE} when \code{\link{run_summarytable}()} calls itself recursively to
 build subgroup tables; not intended to be set by users.}
 }
 \value{
@@ -270,7 +270,9 @@ as table footnotes. Variables for which a p-value could not be computed
 are shown as \code{---†} with a corresponding footnote.
 }
 \examples{
-\dontrun{
+# Quick example
+run_summarytable(iris, split_by = "Species")
+\donttest{
 if (requireNamespace("forcats", quietly = TRUE) &&
     requireNamespace("purrr", quietly = TRUE)) {
 library(gtsummary)
@@ -363,6 +365,52 @@ sample_df |>
 }
 }
 
+}
+\references{
+Sjoberg DD, Whiting K, Curry M, Lavery JA, Larmarange J (2021).
+Reproducible summary tables with the gtsummary package. \emph{The R
+Journal}, 13(1), 570-580. \doi{10.32614/RJ-2021-053}
+
+Welch BL (1947). The generalization of 'Student's' problem when several
+different population variances are involved. \emph{Biometrika}, 34(1-2),
+28-35. \doi{10.1093/biomet/34.1-2.28}
+
+Mann HB, Whitney DR (1947). On a test of whether one of two random
+variables is stochastically larger than the other. \emph{The Annals of
+Mathematical Statistics}, 18(1), 50-60. \doi{10.1214/aoms/1177730491}
+
+Kruskal WH, Wallis WA (1952). Use of ranks in one-criterion variance
+analysis. \emph{Journal of the American Statistical Association},
+47(260), 583-621. \doi{10.1080/01621459.1952.10483441}
+
+Tukey JW (1949). Comparing individual means in the analysis of variance.
+\emph{Biometrics}, 5(2), 99-114. \doi{10.2307/3001913}
+
+Games PA, Howell JF (1976). Pairwise multiple comparison procedures with
+unequal n's and/or variances: a Monte Carlo study. \emph{Journal of
+Educational Statistics}, 1(2), 113-125. \doi{10.3102/10769986001002113}
+
+Dunn OJ (1964). Multiple comparisons using rank sums. \emph{Technometrics},
+6(3), 241-252. \doi{10.1080/00401706.1964.10490181}
+
+Pearson K (1900). On the criterion that a given system of deviations from
+the probable in the case of a correlated system of variables is such that
+it can be reasonably supposed to have arisen from random sampling.
+\emph{Philosophical Magazine}, 50(302), 157-175.
+\doi{10.1080/14786440009463897}
+
+Fisher RA (1922). On the interpretation of chi-squared from contingency
+tables, and the calculation of P. \emph{Journal of the Royal Statistical
+Society}, 85(1), 87-94. \doi{10.2307/2340521}
+
+McNemar Q (1947). Note on the sampling error of the difference between
+correlated proportions or percentages. \emph{Psychometrika}, 12(2),
+153-157. \doi{10.1007/BF02295996}
+
+Benjamini Y, Hochberg Y (1995). Controlling the false discovery rate: a
+practical and powerful approach to multiple testing. \emph{Journal of the
+Royal Statistical Society: Series B}, 57(1), 289-300.
+\doi{10.1111/j.2517-6161.1995.tb02031.x}
 }
 \seealso{
 \code{\link{run_diff}} for the continuous-variable test engine.

@@ -15,7 +15,7 @@
 Invisibly returns \code{x}.
 }
 \description{
-Compact console summary of a \code{run_foldchange} result.
+Compact console summary of a \code{\link{run_foldchange}} result.
 }
 \author{
 John Lennon L. Calorio

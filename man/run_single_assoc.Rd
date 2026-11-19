@@ -55,6 +55,13 @@ run_single_assoc(iris, y = "Species")
 # Testing 'am' distribution stratified by 'vs' (Engine shape)
 run_single_assoc(mtcars, y = "am", subgroup = "vs", force_categorical = c("am", "vs"))
 }
+\references{
+Pearson K (1900). On the criterion that a given system of deviations from
+the probable in the case of a correlated system of variables is such that
+it can be reasonably supposed to have arisen from random sampling.
+\emph{Philosophical Magazine}, 50(302), 157-175.
+\doi{10.1080/14786440009463897}
+}
 \author{
 John Lennon L. Calorio
 }

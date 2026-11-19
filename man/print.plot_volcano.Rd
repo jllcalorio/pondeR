@@ -15,7 +15,7 @@
 Invisibly returns \code{x}.
 }
 \description{
-Compact console summary of a \code{plot_volcano} result.
+Compact console summary of a \code{\link{plot_volcano}} result.
 }
 \author{
 John Lennon L. Calorio

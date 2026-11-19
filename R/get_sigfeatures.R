@@ -7,7 +7,7 @@
 #' Extracts the names of predictor features that received non-zero coefficients
 #' from a fitted regularized regression model produced by \code{\link{run_regreg}}.
 #' By default the best-performing model (as determined internally by
-#' \code{run_regreg}) is used. A specific alpha value may be requested instead.
+#' \code{\link{run_regreg}}) is used. A specific alpha value may be requested instead.
 #'
 #' Intercept terms are excluded from the returned vector unless
 #' \code{include_intercept = TRUE}. For multinomial models, where the same
@@ -19,8 +19,8 @@
 #'   \code{\link{run_regreg}}.
 #' @param alpha A single numeric value in \code{[0, 1]} specifying which
 #'   fitted model to query. Must match one of the alpha values that was passed
-#'   to \code{run_regreg}. When \code{NULL} (default), the best-performing
-#'   model selected by \code{run_regreg} is used.
+#'   to \code{\link{run_regreg}}. When \code{NULL} (default), the best-performing
+#'   model selected by \code{\link{run_regreg}} is used.
 #' @param include_intercept Logical. If \code{TRUE}, intercept term(s)
 #'   (\code{"(Intercept)"}) are retained in the output. Default: \code{FALSE}.
 #' @param by_comparison Logical. Only relevant for multinomial classification
@@ -53,8 +53,15 @@
 #'     its comparison label (e.g., \code{"B vs A"}).}
 #' }
 #'
+#' @references
+#' Friedman J, Hastie T, Tibshirani R (2010). Regularization paths for
+#'   generalized linear models via coordinate descent. \emph{Journal of
+#'   Statistical Software}, 33(1), 1-22. \doi{10.18637/jss.v033.i01}
+#'
 #' @examples
-#' \dontrun{
+#' if (requireNamespace("glmnet", quietly = TRUE) &&
+#'     requireNamespace("caret", quietly = TRUE)) {
+#' \donttest{
 #' ## ---- Setup ---------------------------------------------------------------
 #' set.seed(42)
 #' n  <- 80
@@ -111,9 +118,10 @@
 #' )
 #' get_sigfeatures(res_num)
 #' }
+#' }
 #'
 #' @param x_names An optional character vector of column names from the
-#'   original \code{x} that was passed to \code{run_regreg()}. When supplied,
+#'   original \code{x} that was passed to \code{\link{run_regreg}()}. When supplied,
 #'   only features whose names appear in \code{x_names} are returned, silently
 #'   dropping any unpenalized metadata columns that were appended via
 #'   \code{not_penalized}. If \code{NULL} (default), the function first checks

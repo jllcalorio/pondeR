@@ -15,7 +15,7 @@
 Invisibly returns \code{x}.
 }
 \description{
-Compact summary of a \code{run_auc} result.
+Compact summary of a \code{\link{run_auc}} result.
 }
 \author{
 John Lennon L. Calorio

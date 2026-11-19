@@ -7,7 +7,7 @@
 \method{summary}{run_assoc_multi}(object, ...)
 }
 \arguments{
-\item{object}{An object of class \code{run_assoc_multi} from \code{run_assoc}.}
+\item{object}{An object of class \code{run_assoc_multi} from \code{\link{run_assoc}}.}
 
 \item{...}{Further arguments passed to or from other methods.}
 }

@@ -146,6 +146,15 @@ plot_dend(mtcars, theme = "minimal", line_color = "#2166AC",
           title = "Sample Clustering")
 
 }
+\references{
+Ward JH (1963). Hierarchical grouping to optimize an objective function.
+\emph{Journal of the American Statistical Association}, 58(301), 236-244.
+\doi{10.1080/01621459.1963.10500845}
+
+Murtagh F, Contreras P (2012). Algorithms for hierarchical clustering: an
+overview. \emph{WIREs Data Mining and Knowledge Discovery}, 2(1), 86-97.
+\doi{10.1002/widm.53}
+}
 \author{
 John Lennon L. Calorio
 }

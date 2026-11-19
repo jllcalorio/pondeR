@@ -34,6 +34,13 @@
 #' @author John Lennon L. Calorio
 #' 
 #' @export
+#' @references
+#' Pearson K (1900). On the criterion that a given system of deviations from
+#'   the probable in the case of a correlated system of variables is such that
+#'   it can be reasonably supposed to have arisen from random sampling.
+#'   \emph{Philosophical Magazine}, 50(302), 157-175.
+#'   \doi{10.1080/14786440009463897}
+#'
 #' @examples
 #' # Example 1: Binomial test (exactly 2 levels)
 #' # Testing if the distribution of 'am' (Transmission) in mtcars is 50/50

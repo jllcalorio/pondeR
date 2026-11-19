@@ -94,7 +94,7 @@
 #' Computed as \eqn{\lambda_i / \sum \lambda^+}{lambda_i / sum(positive lambdas)},
 #' using only positive eigenvalues, consistent with \pkg{ape} convention.
 #'
-#' ## Compatibility with \code{plot_score}
+#' ## Compatibility with \code{\link{plot_score}}
 #' The returned object carries class \code{"run_pcoa"} and a \code{scores}
 #' element with columns \code{PC1}, \code{PC2}, \ldots so that
 #' \code{pondeR::plot_score} can dispatch correctly. When PERMANOVA results are
@@ -758,11 +758,6 @@ print.run_pcoa <- function(x, n_axes = 5L, ...) {
 #' @export
 summary.run_pcoa <- function(object, n_axes = 5L, ...) {
 
-  .fmt_p <- function(p) {
-    if (is.na(p))     return("NA")
-    if (p < 0.001)    return("<0.001")
-    formatC(round(p, 3L), format = "f", digits = 3L)
-  }
   .fmt_r2 <- function(r) {
     if (is.na(r)) return("NA")
     formatC(round(r, 4L), format = "f", digits = 4L)
@@ -810,7 +805,7 @@ summary.run_pcoa <- function(object, n_axes = 5L, ...) {
     perm_display        <- as.data.frame(perm_tbl)
     perm_display[["p (formatted)"]] <- vapply(
       perm_display[["Pr(>F)"]],
-      function(p) if (is.na(p)) "-" else .fmt_p(p),
+      function(p) if (is.na(p)) "-" else .fmt_pval(p),
       character(1L)
     )
     print(perm_display)
@@ -842,8 +837,8 @@ summary.run_pcoa <- function(object, n_axes = 5L, ...) {
     )
     if (!is.na(r2_col))   pa_display[["R2"]]    <- round(pa[[r2_col]], 4L)
     if (!is.na(f_col))    pa_display[["F"]]     <- round(pa[[f_col]], 3L)
-    if (!is.na(praw_col)) pa_display[["p.raw"]] <- vapply(pa[[praw_col]], .fmt_p, character(1L))
-    if (!is.na(padj_col)) pa_display[["p.adj"]] <- vapply(pa[[padj_col]], .fmt_p, character(1L))
+    if (!is.na(praw_col)) pa_display[["p.raw"]] <- vapply(pa[[praw_col]], .fmt_pval, character(1L))
+    if (!is.na(padj_col)) pa_display[["p.adj"]] <- vapply(pa[[padj_col]], .fmt_pval, character(1L))
 
     # Flag significance
     if (!is.na(padj_col)) {
@@ -937,8 +932,6 @@ summary.run_pcoa <- function(object, n_axes = 5L, ...) {
   vals$Eigenvalues
 }
 
-# Null-coalescing operator (defined locally to avoid rlang dependency)
-`%||%` <- function(a, b) if (!is.null(a)) a else b
 
 # Format R2: expand decimal places until a non-1 representation is found,
 # cap at 5 dp then switch to scientific notation with 2 dp.

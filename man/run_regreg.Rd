@@ -196,7 +196,7 @@ regularized variable selection. Report cross-validated performance metrics and
 coefficient magnitudes instead.
 }
 \examples{
-\dontrun{
+\donttest{
 if (requireNamespace("glmnet", quietly = TRUE) &&
     requireNamespace("caret", quietly = TRUE) &&
     requireNamespace("foreach", quietly = TRUE)) {

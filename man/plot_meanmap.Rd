@@ -236,6 +236,15 @@ print(p3)
 }
 
 }
+\references{
+Ward JH (1963). Hierarchical grouping to optimize an objective function.
+\emph{Journal of the American Statistical Association}, 58(301), 236-244.
+\doi{10.1080/01621459.1963.10500845}
+
+Okabe M, Ito K (2008). \emph{Color Universal Design (CUD): How to make
+figures and presentations that are friendly to colorblind people}.
+\url{https://jfly.uni-koeln.de/color/}
+}
 \author{
 John Lennon L. Calorio
 }

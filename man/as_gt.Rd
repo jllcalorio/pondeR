@@ -2,12 +2,15 @@
 % Please edit documentation in R/run_correl.R
 \name{as_gt}
 \alias{as_gt}
+\alias{as_gt.gtsummary}
 \alias{as_gt.data.frame}
 \alias{as_gt.default}
 \alias{as_gt.run_correl}
-\title{Convert a run_correl to a gt table}
+\title{Convert a pondeR Result to a gt Table}
 \usage{
 as_gt(x, ...)
+
+\method{as_gt}{gtsummary}(x, ...)
 
 \method{as_gt}{data.frame}(x, ...)
 
@@ -16,26 +19,48 @@ as_gt(x, ...)
 \method{as_gt}{run_correl}(x, format_p = TRUE, ...)
 }
 \arguments{
-\item{x}{An object to convert: a \code{run_correl} result, a
-\code{data.frame}/tibble (or anything coercible with \code{as.data.frame()}),
-or a \code{gt_tbl} (returned unchanged).}
+\item{x}{An object to convert: a \code{\link{run_correl}} result, a
+\code{run_diff_summary} table from \code{\link{run_diff}}, a
+\code{gtsummary} table, a data frame/tibble (or anything coercible with
+\code{as.data.frame()}), or a \code{gt_tbl} (returned unchanged).}
 
-\item{...}{Additional arguments.}
+\item{...}{Additional arguments forwarded to \code{\link[gt]{gt}} (or to
+\code{\link[gtsummary]{as_gt}} for gtsummary objects).}
 
 \item{format_p}{Logical. If \code{TRUE} (default), the \code{p_value} and
 \code{p_value_adj} columns (when present) are displayed via
 \code{\link{format.pval}} so that values indistinguishable from zero at
 double precision render as \code{"< 2.2e-16"}, matching
-\code{stats::cor.test}'s convention. Cosmetic only; does not affect the
-source \code{x}.}
+\code{\link[stats]{cor.test}}'s convention. Cosmetic only; does not
+affect the source \code{x}.}
 }
 \value{
 A \code{gt_tbl} object.
-Convert an object to a gt table
-
-A gt table object.
 }
 \description{
-Passes the data frame to \code{gt::gt()} and appends the method footnote
-(if present) as a source note via \code{gt::tab_source_note()}.
+Renders pondeR tables as \code{\link[gt:gt]{gt}} tables. Any footnote or
+p-value legend stored as an attribute (\code{"footnote"},
+\code{"df_footnote"}, \code{"pvalue_legend"}) is appended as a source note
+via \code{\link[gt]{tab_source_note}}.
+}
+\details{
+pondeR's generic masks \code{\link[gtsummary]{as_gt}} when both packages
+are attached, so \code{gtsummary} objects are forwarded unchanged to
+\code{gtsummary::as_gt()}. A \code{gt_tbl} is returned as is; any other
+object is coerced with \code{\link{as.data.frame}}.
+}
+\examples{
+if (requireNamespace("gt", quietly = TRUE)) {
+  as_gt(head(mtcars))
+  as_gt(run_correl(mtcars[, 1:4], y = "mpg"))
+}
+}
+\references{
+Iannone R, Cheng J, Schloerke B, et al. (2024). \emph{gt: Easily Create
+Presentation-Ready Display Tables}. R package.
+\url{https://CRAN.R-project.org/package=gt}
+}
+\seealso{
+\code{\link{run_correl}}, \code{\link{run_diff}},
+\code{\link{run_summarytable}}
 }

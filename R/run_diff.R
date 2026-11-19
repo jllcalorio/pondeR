@@ -76,7 +76,7 @@
 #' Run normality checks in parallel (or sequentially)
 #'
 #' Encapsulates the Windows / POSIX branching so it is not duplicated between
-#' \code{run_diff} and \code{.run_diff_single}.
+#' \code{\link{run_diff}} and \code{.run_diff_single}.
 #'
 #' @param groups Character vector of group labels.
 #' @param y Numeric outcome vector.
@@ -456,7 +456,7 @@
 # -----------------------------------------------------------------------------
 #' Execute RM or mixed ANOVA and return a full run_diff-compatible result list
 #'
-#' Called exclusively from the single-outcome path of \code{run_diff} when
+#' Called exclusively from the single-outcome path of \code{\link{run_diff}} when
 #' \code{within} is non-NULL.
 #'
 #' @return A list of class \code{"run_diff"}.
@@ -1046,7 +1046,7 @@
 #' @param n_digits_pvalues Numeric or \code{NULL}; decimal places for
 #'   \code{p_value} / \code{p_value_adj} in \code{$summary_table} when
 #'   \code{simplify = TRUE}. \code{NULL} auto-formats (3 d.p. when
-#'   \eqn{p < 0.10}, otherwise 1 d.p.), matching \code{run_summarytable}'s
+#'   \eqn{p < 0.10}, otherwise 1 d.p.), matching \code{\link{run_summarytable}}'s
 #'   \code{n_digits_pvalues}. Default \code{3}.
 #' @param n_digits Integer; decimal places for numeric \code{$summary_table}
 #'   columns (\code{statistic}, \code{mean_*}, effect-size estimate/CI) when
@@ -1054,7 +1054,7 @@
 #' @param zero_as_exp Logical; when \code{TRUE} (default) and
 #'   \code{simplify = TRUE}, numeric \code{$summary_table} values that round
 #'   to \code{0} at \code{n_digits} but are genuinely non-zero are shown in
-#'   scientific notation, matching \code{run_summarytable}'s \code{zero_as_exp}.
+#'   scientific notation, matching \code{\link{run_summarytable}}'s \code{zero_as_exp}.
 #' @param verbose Logical. Default \code{TRUE}.
 #' @param num_cores Integer or \code{"max"}. Default \code{1}.
 #'
@@ -1080,7 +1080,6 @@
 #' @importFrom tibble tibble
 #' @importFrom stats aov as.formula bartlett.test complete.cases kruskal.test lm
 #' @importFrom stats median oneway.test quantile sd shapiro.test t.test wilcox.test
-#' @importFrom utils install.packages
 #'
 #' @author John Lennon L. Calorio
 #'
@@ -1104,6 +1103,48 @@
 #' within each group (a warning is emitted). Use \code{within} +
 #' \code{subject_id} instead of \code{paired} for repeated-measures ANOVA
 #' (> 2 time points / conditions).
+#'
+#' @references
+#' Shapiro SS, Wilk MB (1965). An analysis of variance test for normality
+#'   (complete samples). \emph{Biometrika}, 52(3-4), 591-611.
+#'   \doi{10.1093/biomet/52.3-4.591}
+#'
+#' Levene H (1960). Robust tests for equality of variances. In I. Olkin (Ed.),
+#'   \emph{Contributions to Probability and Statistics} (pp. 278-292).
+#'   Stanford University Press.
+#'
+#' Welch BL (1947). The generalization of 'Student's' problem when several
+#'   different population variances are involved. \emph{Biometrika}, 34(1-2),
+#'   28-35. \doi{10.1093/biomet/34.1-2.28}
+#'
+#' Welch BL (1951). On the comparison of several mean values: an alternative
+#'   approach. \emph{Biometrika}, 38(3-4), 330-336.
+#'   \doi{10.1093/biomet/38.3-4.330}
+#'
+#' Mann HB, Whitney DR (1947). On a test of whether one of two random
+#'   variables is stochastically larger than the other. \emph{The Annals of
+#'   Mathematical Statistics}, 18(1), 50-60. \doi{10.1214/aoms/1177730491}
+#'
+#' Kruskal WH, Wallis WA (1952). Use of ranks in one-criterion variance
+#'   analysis. \emph{Journal of the American Statistical Association},
+#'   47(260), 583-621. \doi{10.1080/01621459.1952.10483441}
+#'
+#' Tukey JW (1949). Comparing individual means in the analysis of variance.
+#'   \emph{Biometrics}, 5(2), 99-114. \doi{10.2307/3001913}
+#'
+#' Games PA, Howell JF (1976). Pairwise multiple comparison procedures with
+#'   unequal n's and/or variances: a Monte Carlo study. \emph{Journal of
+#'   Educational Statistics}, 1(2), 113-125. \doi{10.3102/10769986001002113}
+#'
+#' Dunn OJ (1964). Multiple comparisons using rank sums. \emph{Technometrics},
+#'   6(3), 241-252. \doi{10.1080/00401706.1964.10490181}
+#'
+#' Cohen J (1988). \emph{Statistical Power Analysis for the Behavioral
+#'   Sciences} (2nd ed.). Lawrence Erlbaum Associates.
+#'
+#' Ben-Shachar MS, Ludecke D, Makowski D (2020). effectsize: Estimation of
+#'   effect size indices and standardized parameters. \emph{Journal of Open
+#'   Source Software}, 5(56), 2815. \doi{10.21105/joss.02815}
 #'
 #' @examples
 #' \dontrun{
@@ -1363,7 +1404,7 @@ run_diff <- function(
 # =============================================================================
 
 #' Print method for run_diff objects
-#' @param x An object from \code{run_diff}.
+#' @param x An object from \code{\link{run_diff}}.
 #' @param ... Further arguments passed to or from other methods.
 #' @export
 print.run_diff <- function(x, ...) {
@@ -1421,7 +1462,7 @@ print.run_diff <- function(x, ...) {
 
 
 #' Summary method for run_diff objects
-#' @param object An object from \code{run_diff}.
+#' @param object An object from \code{\link{run_diff}}.
 #' @param ... Further arguments passed to or from other methods.
 #' @export
 summary.run_diff <- function(object, ...) {
@@ -1517,8 +1558,8 @@ summary.run_diff <- function(object, ...) {
 
 #' Internal single-outcome run_diff for plot_diff
 #'
-#' A lighter version of \code{run_diff} that returns a rich list suitable for
-#' downstream use by \code{plot_diff}. Not intended for direct use.
+#' A lighter version of \code{\link{run_diff}} that returns a rich list suitable for
+#' downstream use by \code{\link{plot_diff}}. Not intended for direct use.
 #'
 #' @keywords internal
 .run_diff_single <- function(
@@ -1862,7 +1903,7 @@ summary.run_diff <- function(object, ...) {
 
 #' Build a summary_table data frame from a list of run_diff objects
 #'
-#' Used by the multi-outcome dispatch in \code{run_diff} to construct the
+#' Used by the multi-outcome dispatch in \code{\link{run_diff}} to construct the
 #' \code{$summary_table} element and subgroup-level summary tables.
 #'
 #' @param results_list Named list of \code{"run_diff"} objects (one per outcome).

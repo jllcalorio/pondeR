@@ -132,7 +132,7 @@
 #' \strong{Aliased coefficients:} When standard \code{glm()} cannot estimate a coefficient due to
 #' perfect or quasi-complete separation, it sets that coefficient to \code{NA}. \code{summary()}
 #' silently omits these aliased rows while \code{confint.default()} retains them, causing a
-#' row-count mismatch. \code{run_logreg()} detects this automatically, aligns both objects to
+#' row-count mismatch. \code{\link{run_logreg}()} detects this automatically, aligns both objects to
 #' their shared row names, and emits a warning naming every dropped aliased term. This situation
 #' is largely avoided when \code{apply_firth = TRUE} since such models will be routed to
 #' \code{logistf()} instead.
@@ -182,48 +182,18 @@
 #' }
 #'
 #' @examples
-#' \dontrun{
-#' # --- Example 1: Single model with Firth's correction applied dynamically ---
-#' result <- run_logreg(
-#'   x           = my_data,
-#'   y           = "Outcome",
-#'   confounders = c("Age", "Sex"),
-#'   indep       = c("Biomarker_A", "Biomarker_B"),
-#'   ref         = "Control",
-#'   ref_levels  = list("Sex" ~ "Female"),
-#'   apply_firth = TRUE
-#' )
-#' result
-#' attr(result, "model_metrics")
+#' d <- mtcars
+#' d$am <- factor(d$am, labels = c("auto", "manual"))
+#' d$vs <- factor(d$vs, labels = c("V", "S"))
 #'
-#' # --- Example 2: Iterative models with forced Firth and VIF filtering -------
-#' results <- run_logreg(
-#'   x                 = my_data,
-#'   y                 = "Outcome",
-#'   confounders       = c("Age", "Sex", "Site"),
-#'   indep             = c("Biomarker_A", "Biomarker_B", "Biomarker_C"),
-#'   ref               = "Control",
-#'   ref_levels        = list("Sex" ~ "Female", "Site" ~ "Main"),
-#'   exclude           = "Indeterminate",
-#'   iterate           = TRUE,
-#'   apply_firth       = TRUE,
-#'   force_apply_firth = TRUE
-#' )
-#' results$Metrics
-#' results$vif_filtered_Tables
+#' # Adjusted model (Firth correction is applied automatically when needed)
+#' fit <- run_logreg(d, y = "am", confounders = "wt", indep = "hp", ref = "auto")
+#' fit
+#' attr(fit, "model_metrics")
 #'
-#' # --- Example 3: Crude (unadjusted) odds ratios for each biomarker ----------
-#' crude_results <- run_logreg(
-#'   x           = my_data,
-#'   y           = "Outcome",
-#'   indep       = c("Biomarker_A", "Biomarker_B", "Biomarker_C"),
-#'   ref         = "Control",
-#'   ref_levels  = list("Sex" ~ "Female"),
-#'   crude       = TRUE,
-#'   apply_firth = TRUE
-#' )
-#' crude_results
-#' }
+#' # Crude (unadjusted) odds ratios, one model per variable
+#' run_logreg(d, y = "am", indep = c("wt", "hp", "vs"), ref = "auto",
+#'            ref_levels = list("vs" ~ "V"), crude = TRUE)
 #'
 #' @author John Lennon L. Calorio
 #'

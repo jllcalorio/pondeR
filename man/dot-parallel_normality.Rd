@@ -33,6 +33,6 @@ must harvest these.
 }
 \description{
 Encapsulates the Windows / POSIX branching so it is not duplicated between
-\code{run_diff} and \code{.run_diff_single}.
+\code{\link{run_diff}} and \code{.run_diff_single}.
 }
 \keyword{internal}

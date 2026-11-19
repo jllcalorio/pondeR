@@ -173,77 +173,34 @@
 #'
 #' @return A \code{ggplot} object, also drawn to the active graphics device.
 #'
+#' @references
+#' Aitchison J (1982). The statistical analysis of compositional data.
+#'   \emph{Journal of the Royal Statistical Society: Series B}, 44(2),
+#'   139-177. \doi{10.1111/j.2517-6161.1982.tb01195.x}
+#'
+#' Gloor GB, Macklaim JM, Pawlowsky-Glahn V, Egozcue JJ (2017). Microbiome
+#'   datasets are compositional: and this is not optional. \emph{Frontiers in
+#'   Microbiology}, 8, 2224. \doi{10.3389/fmicb.2017.02224}
+#'
+#' Okabe M, Ito K (2008). \emph{Color Universal Design (CUD): How to make
+#'   figures and presentations that are friendly to colorblind people}.
+#'   \url{https://jfly.uni-koeln.de/color/}
+#'
 #' @examples
-#' \dontrun{
-#' library(pondeR)
 #' set.seed(42)
-#' n    <- 20
-#' taxa <- c("Firmicutes", "Bacteroidetes", "Proteobacteria (class A)",
-#'           "Actino/bacteroides", "Verrucomicrobia", "Fusobacteria sp.",
-#'           "Tenericutes", "Spirochaetes", "Unknown", "Cyanobacteria",
-#'           "Chloroflexi", "Acidobacteria")
+#' counts <- as.data.frame(matrix(sample(0:500, 10 * 6, TRUE), 10,
+#'                                dimnames = list(NULL, paste0("Taxon", 1:6))))
+#' meta <- data.frame(SampleID = paste0("S", 1:10),
+#'                    Group    = rep(c("Control", "Treatment"), each = 5))
 #'
-#' counts <- as.data.frame(
-#'   matrix(sample(0L:5000L, n * length(taxa), replace = TRUE),
-#'          nrow = n, dimnames = list(NULL, taxa))
-#' )
-#' meta <- data.frame(
-#'   SampleID = paste0("S", seq_len(n)),
-#'   Group    = rep(c("Control", "Treatment"), each = n / 2L)
-#' )
+#' # Group-aggregated relative abundance (raw counts are normalized)
+#' plot_relabund(counts, metadata = meta, show_x_as = "Group",
+#'               group_aggregate = TRUE, limit = 4L)
 #'
-#' # --- Pipeline: col_rel_abundance -> CLR -> plot as-is ---
-#' norm_out <- run_normalize(counts, meta, method = "col_rel_abundance",
-#'                           verbose = FALSE)
-#' clr_out  <- run_transform(norm_out$data, method = "clr")
-#'
-#' plot_relabund(
-#'   x                    = clr_out$data,
-#'   metadata             = meta,
-#'   limit                = 10L,
-#'   ignore_normalization = TRUE,
-#'   plot_title           = "Gut Microbiome (CLR-transformed)"
-#' )
-#'
-#' # --- Group-aggregated from raw counts (group_aggregate = TRUE) ---
-#' plot_relabund(
-#'   x               = counts,
-#'   metadata        = meta,
-#'   show_x_as       = "Group",
-#'   group_aggregate = TRUE,
-#'   order           = c("Treatment", "Control"),
-#'   limit           = 8L,
-#'   sort            = "high",
-#'   plot_title      = "**Relative Abundance** by Group",
-#'   legend_title    = "Phylum"
-#' )
-#'
-#' # --- Individual samples with group brackets (group_aggregate = FALSE) ---
-#' plot_relabund(
-#'   x                = counts,
-#'   metadata         = meta,
-#'   show_x_as        = "SampleID",
-#'   group_aggregate  = FALSE,
-#'   group_brackets   = Group ~ c("Control", "Treatment"),
-#'   limit            = 8L,
-#'   sort             = "high",
-#'   plot_title       = "Relative Abundance by Sample",
-#'   legend_title     = "Phylum"
-#' )
-#'
-#' # --- Horizontal bars, individual samples, group brackets ---
-#' plot_relabund(
-#'   x                     = counts,
-#'   metadata              = meta,
-#'   show_x_as             = "SampleID",
-#'   group_aggregate       = FALSE,
-#'   group_brackets        = Group ~ c("Control", "Treatment"),
-#'   limit                 = 6L,
-#'   exclude_others        = FALSE,
-#'   unknown_before_others = TRUE,
-#'   abundance_in_y        = FALSE
-#' )
-#' }
+#' # Individual samples with group brackets
+#' plot_relabund(counts, metadata = meta, show_x_as = "SampleID",
+#'               group_aggregate = FALSE,
+#'               group_brackets = Group ~ c("Control", "Treatment"), limit = 4L)
 #'
 #' @author John Lennon L. Calorio
 #'
@@ -305,7 +262,6 @@ plot_relabund <- function(
   # ---------------------------------------------------------------------------
   # 1. Helpers
   # ---------------------------------------------------------------------------
-  .is_tabular <- function(z) is.data.frame(z) || is.matrix(z)
   .check_pos_num <- function(val, name, allow_null = FALSE) {
     if (allow_null && is.null(val)) return(invisible(NULL))
     if (!is.numeric(val) || length(val) != 1L || is.na(val) || val <= 0)
@@ -321,7 +277,7 @@ plot_relabund <- function(
   # ---------------------------------------------------------------------------
   # 2. Validate x
   # ---------------------------------------------------------------------------
-  if (!.is_tabular(x)) stop("'x' must be a data.frame, tibble, or matrix.")
+  if (!is_tabular(x, warn = FALSE)) stop("'x' must be a data.frame, tibble, or matrix.")
   if (nrow(x) == 0L || ncol(x) == 0L)
     stop("'x' must have at least one row and one column.")
 

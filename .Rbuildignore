@@ -6,3 +6,16 @@
 ^dev$
 ^using new\.csv$
 ^using old\.csv$
+^\.github$
+^\.posit$
+^_pkgdown\.yml$
+^pkgdown$
+^docs$
+^AGENTS\.md$
+^CODE_OF_CONDUCT\.md$
+^Analysis results
+\.xlsx$
+^nul$
+^cran-comments\.md$
+^tests/testthat/_problems$
+^tests/testthat/testthat-problems\.rds$

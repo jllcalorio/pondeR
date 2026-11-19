@@ -59,7 +59,7 @@
 #'   Defaults to \code{"Helvetica"}.
 #'
 #' @return A \code{ggplot2} object that can be further customized, saved with
-#'   \code{\link[ggplot2]{ggsave}}, or passed to \code{save_plots()}.
+#'   \code{\link[ggplot2]{ggsave}}, or passed to \code{\link{save_plots}()}.
 #'
 #' @details
 #' **Color logic**
@@ -89,6 +89,10 @@
 #'
 #' @seealso \code{\link{run_logreg}}, \code{\link{plot_volcano}},
 #'   \code{\link{plot_diff}}
+#'
+#' @references
+#' Wickham H (2016). \emph{ggplot2: Elegant Graphics for Data Analysis}.
+#'   Springer-Verlag New York. \doi{10.1007/978-3-319-24277-4}
 #'
 #' @examples
 #' # ── Basic usage: OR only ─────────────────────────────────────────────────────

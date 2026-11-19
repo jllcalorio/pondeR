@@ -30,7 +30,7 @@
 A list of class \code{"run_diff"}.
 }
 \description{
-Called exclusively from the single-outcome path of \code{run_diff} when
+Called exclusively from the single-outcome path of \code{\link{run_diff}} when
 \code{within} is non-NULL.
 }
 \keyword{internal}

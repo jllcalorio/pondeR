@@ -43,7 +43,7 @@ column), numeric columns are formatted per \code{n_digits} /
 A data frame with one row per outcome.
 }
 \description{
-Used by the multi-outcome dispatch in \code{run_diff} to construct the
+Used by the multi-outcome dispatch in \code{\link{run_diff}} to construct the
 \code{$summary_table} element and subgroup-level summary tables.
 }
 \keyword{internal}

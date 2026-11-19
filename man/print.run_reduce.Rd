@@ -7,7 +7,7 @@
 \method{print}{run_reduce}(x, ...)
 }
 \arguments{
-\item{x}{An object from \code{run_reduce}.}
+\item{x}{An object from \code{\link{run_reduce}}.}
 
 \item{...}{Further arguments passed to or from other methods (currently
 unused).}
@@ -17,7 +17,7 @@ Invisibly returns \code{x}.
 }
 \description{
 Provides a concise, informative summary when a
-\code{run_reduce} object is printed to the console.
+\code{\link{run_reduce}} object is printed to the console.
 }
 \author{
 John Lennon L. Calorio

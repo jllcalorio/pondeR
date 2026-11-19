@@ -8,8 +8,8 @@
 #'
 #' @param x A \code{data.frame}, \code{tibble}, named \code{matrix}, \code{run_DIpreprocess} object, 
 #'   or a \code{list} of objects from the \code{run_*} ecosystem. If a list is provided, it MUST contain 
-#'   a \code{run_DIpreprocess} object. Optional inclusion of \code{run_pls}, \code{run_foldchange}, 
-#'   and/or \code{run_diff} objects will trigger automatic feature filtering based on \code{min_vip}, 
+#'   a \code{run_DIpreprocess} object. Optional inclusion of \code{\link{run_pls}}, \code{\link{run_foldchange}}, 
+#'   and/or \code{\link{run_diff}} objects will trigger automatic feature filtering based on \code{min_vip}, 
 #'   \code{up}, \code{down}, and \code{p_value} thresholds.
 #' @param y A single character string naming the column in \code{x} that
 #'   contains the binary grouping variable (cases vs. controls). The column
@@ -107,17 +107,17 @@
 #'   labels in combined plots). Default \code{NULL} (derived from
 #'   \code{global_font_size}).
 #' @param min_vip A single numeric value specifying the minimum VIP score for features to be considered. 
-#'   Only applied if a \code{run_pls} object is provided in the \code{x} list. Default \code{1.0}.
+#'   Only applied if a \code{\link{run_pls}} object is provided in the \code{x} list. Default \code{1.0}.
 #' @param up A single numeric value specifying the minimum fold change for up-regulated features. 
-#'   Only applied if a \code{run_foldchange} object is provided in the \code{x} list.
+#'   Only applied if a \code{\link{run_foldchange}} object is provided in the \code{x} list.
 #'   Default is in its `params$up`. When `x` is \code{data.frame}, \code{tibble}, named \code{matrix},
 #'   the default is \code{1.5}.
 #' @param down A single numeric value specifying the maximum fold change for down-regulated features.
-#'   Only applied if a \code{run_foldchange} object is provided in the \code{x} list.
+#'   Only applied if a \code{\link{run_foldchange}} object is provided in the \code{x} list.
 #'   Default is in its `params$down`. When `x` is \code{data.frame}, \code{tibble}, named \code{matrix},
 #'   the default is \code{0.6}.
 #' @param p_value A single numeric value specifying the maximum acceptable p-value for features. 
-#'   Only applied if a \code{run_diff} object is provided in the \code{x} list. Default \code{0.05}.
+#'   Only applied if a \code{\link{run_diff}} object is provided in the \code{x} list. Default \code{0.05}.
 #' @param ... Additional arguments forwarded to \code{pROC::roc()},
 #'   \code{pROC::auc()}, or \code{pROC::ci()}.
 #'
@@ -180,7 +180,7 @@
 #'     \code{predictor}, \code{auc}, \code{ci_lower}, \code{ci_upper},
 #'     \code{ci_level}, \code{direction}, \code{n_cases}, and
 #'     \code{n_controls}, plus \code{auc_interpretation} (conventional
-#'     label; see Details) right after \code{ci_upper}. When a \code{run_diff}
+#'     label; see Details) right after \code{ci_upper}. When a \code{\link{run_diff}}
 #'     object with effect sizes is supplied in the \code{x} list,
 #'     \code{ES (95\% CI)} and \code{ES_magnitude} columns are added after
 #'     \code{n_controls}. When \code{compute_performance_metrics = TRUE},
@@ -196,6 +196,23 @@
 #'   \item{\code{params}}{A list echoing the validated call parameters for
 #'     reproducibility.}
 #' }
+#'
+#' @references
+#' Robin X, Turck N, Hainard A, et al. (2011). pROC: an open-source package
+#'   for R and S+ to analyze and compare ROC curves. \emph{BMC
+#'   Bioinformatics}, 12, 77. \doi{10.1186/1471-2105-12-77}
+#'
+#' DeLong ER, DeLong DM, Clarke-Pearson DL (1988). Comparing the areas under
+#'   two or more correlated receiver operating characteristic curves: a
+#'   nonparametric approach. \emph{Biometrics}, 44(3), 837-845.
+#'   \doi{10.2307/2531595}
+#'
+#' Youden WJ (1950). Index for rating diagnostic tests. \emph{Cancer}, 3(1),
+#'   32-35.
+#'
+#' Okabe M, Ito K (2008). \emph{Color Universal Design (CUD): How to make
+#'   figures and presentations that are friendly to colorblind people}.
+#'   \url{https://jfly.uni-koeln.de/color/}
 #'
 #' @examples
 #' ## -----------------------------------------------------------------------
@@ -1088,7 +1105,7 @@ run_auc <- function(
     paste0(": ",
       .fmt_auc_val(auc_v),
       " (", pct, "% CI: ",
-      .fmt_auc_val(lo_v), "\u2013", .fmt_auc_val(hi_v), ")"
+      .fmt_auc_val(lo_v), "-", .fmt_auc_val(hi_v), ")"
     )
   }
 
@@ -1425,7 +1442,7 @@ run_auc <- function(
 
 #' @title Print Method for \code{run_auc} Objects
 #'
-#' @description Compact summary of a \code{run_auc} result.
+#' @description Compact summary of a \code{\link{run_auc}} result.
 #'
 #' @param x An object from \code{"run_auc"}.
 #' @param ... Ignored.

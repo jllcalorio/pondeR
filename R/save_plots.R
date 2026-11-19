@@ -73,9 +73,6 @@
   path
 }
 
-if (!exists("%||%", mode = "function")) {
-  `%||%` <- function(a, b) if (!is.null(a)) a else b
-}
 
 # ── Plot-type detection ───────────────────────────────────────────────────────
 
@@ -262,8 +259,8 @@ if (!exists("%||%", mode = "function")) {
 #' Supported plot types include \pkg{ggplot2} objects, \pkg{plotly} widgets,
 #' \pkg{grid} grobs/gtables, \code{recordedplot} objects, zero-argument
 #' base-R drawing functions, and pondeR result objects produced by functions
-#' such as \code{plot_diff()}, \code{run_auc()}, \code{plot_score()},
-#' \code{plot_scree()}, and \code{plot_volcano()}.
+#' such as \code{\link{plot_diff}()}, \code{\link{run_auc}()}, \code{\link{plot_score}()},
+#' \code{\link{plot_scree}()}, and \code{\link{plot_volcano}()}.
 #'
 #' When \code{x} is a single plot, \code{filename} is used as the output file
 #' name.  When \code{x} is a list of plots, \code{filename} is ignored and
@@ -332,29 +329,24 @@ if (!exists("%||%", mode = "function")) {
 #' Called for its side effect.  Returns the full normalised file path(s) of
 #' the saved plot(s) invisibly as a character vector.
 #'
+#' @references
+#' Wickham H (2016). \emph{ggplot2: Elegant Graphics for Data Analysis}.
+#'   Springer-Verlag New York. \doi{10.1007/978-3-319-24277-4}
+#'
+#' Sievert C (2020). \emph{Interactive Web-Based Data Visualization with R,
+#'   plotly, and shiny}. Chapman and Hall/CRC. \url{https://plotly-r.com}
+#'
 #' @examples
-#' \dontrun{
-#' library(ggplot2)
+#' out <- tempdir()
+#' p <- ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg)) + ggplot2::geom_point()
 #'
-#' # Single ggplot — filename is respected
-#' p <- ggplot(mtcars, aes(wt, mpg)) + geom_point()
-#' save_plots(p, filename = "AUROC All (Neg)")
+#' # Single ggplot
+#' save_plots(p, filename = "scatter", folder = out, width = 4, height = 3,
+#'            dpi = 72)
 #'
-#' # List of ggplots — filename is ignored; list names are used
-#' p2 <- ggplot(iris, aes(Sepal.Length, Sepal.Width, colour = Species)) +
-#'         geom_point()
-#' save_plots(list(scatter = p, iris_plot = p2))
-#'
-#' # Accessing a list slot with multiple plots (auto-unpacked)
-#' res <- run_auc(data = mydata, response = "group", predictors = c("A","B"))
-#' save_plots(res$plots, folder = "figures")
-#'
-#' # Override format for all plots
-#' save_plots(list(scatter = p, iris_plot = p2), format = "pdf")
-#'
-#' # Base-R plot via a zero-argument function
-#' save_plots(list(hist_mpg = function() hist(mtcars$mpg, main = "MPG")))
-#' }
+#' # Named list: list names become file names; base-R plots as functions
+#' save_plots(list(scatter = p, hist_mpg = function() hist(mtcars$mpg)),
+#'            folder = out, format = "png", width = 4, height = 3, dpi = 72)
 #'
 #' @author John Lennon L. Calorio
 #' @export

@@ -82,12 +82,12 @@ A list containing:
 Performs Partial Least Squares Discriminant Analysis (PLS-DA), Orthogonal
 PLS-DA (OPLS-DA), or sparse PLS-DA (sPLS-DA) on preprocessed metabolomics data.
 Optionally applies scaling and transformation before analysis if the input data
-has not been pre-scaled. Designed to match the structure of \code{run_pca()}.
+has not been pre-scaled. Designed to match the structure of \code{\link[=run_pca]{run_pca()}}.
 }
 \details{
 \strong{Compatibility:}
 
-The output of this function is specifically designed to be compatible with \code{plot_score()}.
+The output of this function is specifically designed to be compatible with \code{\link[=plot_score]{plot_score()}}.
 Component names in the \code{scores} matrix are aliased as \code{PC1}, \code{PC2}, etc., to allow seamless
 plotting. For OPLS-DA, "PC1" represents the Predictive Component, and "PC2" represents the
 first Orthogonal Component.
@@ -108,35 +108,20 @@ QC samples should typically be excluded from discriminant analysis model buildin
 Use the \code{exclude} parameter (e.g., \code{exclude = "QC"}) to drop them prior to scaling and fitting.
 }
 \examples{
-\dontrun{
-# Simulate data
-set.seed(123)
-x <- matrix(rnorm(100 * 50, mean = 100, sd = 20), nrow = 100, ncol = 50)
-colnames(x) <- paste0("Feature", 1:50)
-rownames(x) <- paste0("Sample", 1:100)
+\donttest{
+if (requireNamespace("ropls", quietly = TRUE)) {
+  meta <- data.frame(Sample = rownames(iris), Species = iris$Species)
+  pls  <- run_pls(scale(iris[, 1:4]), meta, method = "plsda",
+                  group = "Species", verbose = FALSE)
+  print(pls)
+  plot_score(pls, color_by = "Species", points_from = "Sample")
 
-metadata <- data.frame(
-  Sample = paste0("Sample", 1:100),
-  Group = rep(c("Control", "Treatment", "QC"), c(40, 40, 20))
-)
-
-# Run PLS-DA excluding QC samples, with automatic pareto scaling
-pls_result <- run_pls(x, metadata, 
-                      method = "plsda",
-                      scale_method = "pareto",
-                      group = "Group",
-                      exclude = "QC")
-
-# Visualize with plot_score
-plot_score(pls_result, color_by = "Group", points_from = "Sample")
-
-# Run OPLS-DA
-opls_result <- run_pls(x, metadata, 
-                       method = "oplsda",
-                       scale_method = "pareto",
-                       group = "Group",
-                       exclude = "QC")
+  # OPLS-DA needs exactly two groups
+  opls <- run_pls(scale(iris[51:150, 1:4]), droplevels(meta[51:150, ]),
+                  method = "oplsda", group = "Species", verbose = FALSE)
 }
+}
+
 }
 \references{
 Thevenot, E. A., Roux, A., Xu, Y., Ezan, E., & Junot, C. (2015). Analysis of the Human Adult Urinary

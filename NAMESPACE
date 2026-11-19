@@ -3,6 +3,7 @@
 S3method("[",run_diff_summary)
 S3method(as_gt,data.frame)
 S3method(as_gt,default)
+S3method(as_gt,gtsummary)
 S3method(as_gt,run_correl)
 S3method(as_gt,run_diff_summary)
 S3method(plot_score,default)
@@ -197,7 +198,10 @@ importFrom(performance,
   r2_nagelkerke,
   r2_tjur
 )
-importFrom(rlang,sym)
+importFrom(rlang,
+  "%||%",
+  sym
+)
 importFrom(rstatix,
   dunn_test,
   games_howell_test,
@@ -256,7 +260,6 @@ importFrom(utils,
   combn,
   globalVariables,
   head,
-  install.packages,
   tail
 )
 importFrom(viridis,scale_color_viridis)

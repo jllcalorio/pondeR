@@ -107,7 +107,7 @@ Computes pairwise fold changes (and optionally log2 fold changes) for each
 feature (column) in \code{x} across ordered group levels. Group means are
 used as the basis of comparison. When \code{log2 = TRUE} the data are
 shifted so that all values are strictly positive before log-transformation.
-The function is designed to integrate seamlessly with \code{run_diff()} and
+The function is designed to integrate seamlessly with \code{\link{run_diff}()} and
 \code{\link{plot_volcano}}.
 }
 \details{
@@ -127,7 +127,7 @@ group means.
 
 \strong{Integration with \code{\link{run_diff}} and \code{\link{plot_volcano}}}\cr
 The returned list exposes \code{fc_table}, \code{log2fc_table}, and
-\code{shifted_data} in a consistent format that \code{plot_volcano()} can
+\code{shifted_data} in a consistent format that \code{\link{plot_volcano}()} can
 consume directly.
 }
 \examples{
@@ -175,6 +175,12 @@ meta_sc <- data.frame(group = rep(c("Healthy", "Disease"), each = 30))
 res3 <- run_foldchange(x = xsc, metadata = meta_sc, group = "group")
 print(res3$fc_table)
 
+}
+\references{
+Benjamini Y, Hochberg Y (1995). Controlling the false discovery rate: a
+practical and powerful approach to multiple testing. \emph{Journal of the
+Royal Statistical Society: Series B}, 57(1), 289-300.
+\doi{10.1111/j.2517-6161.1995.tb02031.x}
 }
 \seealso{
 \code{\link{run_diff}}, \code{\link{plot_volcano}}, \code{\link{get_volcanodata}}, \code{\link[dimsprepr]{run_DIpreprocess}}

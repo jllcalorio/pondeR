@@ -3,7 +3,7 @@
 \name{get_groupsizes}
 \alias{get_groupsizes}
 \title{Inspect Group Sample Sizes That May Trigger CV Fold Reduction in
-\code{run_regreg()}}
+\code{\link{run_regreg}()}}
 \usage{
 get_groupsizes(
   metadata,
@@ -19,14 +19,14 @@ get_groupsizes(
 \arguments{
 \item{metadata}{A \code{data.frame}, \code{tibble}, \strong{or a named
 list} of such objects — identical to what was (or will be) passed to
-\code{run_regreg()}. When a list, names must be set.}
+\code{\link{run_regreg}()}. When a list, names must be set.}
 
 \item{pred}{A single character string naming the dependent variable column
 in \code{metadata}.}
 
 \item{not_penalized}{Optional character vector. When supplied, rows with
 \code{NA} in any metadata-sourced \code{not_penalized} column are removed
-before counting, mirroring the exact sample set \code{run_regreg} would
+before counting, mirroring the exact sample set \code{\link{run_regreg}} would
 use. Default: \code{NULL} (no additional row removal).}
 
 \item{is_numeric}{Optional character vector of column names listed in
@@ -40,15 +40,15 @@ being coerced to integer codes — which could introduce spurious NAs or
 hide real ones. Default: \code{NULL}.}
 
 \item{train_percent}{A numeric scalar in \code{(0, 1)} matching the
-\code{train_percent} argument passed to \code{run_regreg()}. Used to
+\code{train_percent} argument passed to \code{\link{run_regreg}()}. Used to
 compute the projected minimum training-group size. Default: \code{0.8}.}
 
 \item{cv_folds}{Integer. The \code{cv_folds} value passed to
-\code{run_regreg()}. Used to flag groups whose projected training-set size
+\code{\link{run_regreg}()}. Used to flag groups whose projected training-set size
 is smaller than the requested folds. Default: \code{10L}.}
 
 \item{show_summary_table}{Logical. If \code{TRUE} and \code{pred} is
-categorical, a \code{run_summarytable()} summary of \code{metadata}
+categorical, a \code{\link{run_summarytable}()} summary of \code{metadata}
 stratified by \code{pred} is printed as a side-effect. The numeric count
 data frame is still returned invisibly. Default: \code{FALSE}.}
 
@@ -67,7 +67,7 @@ A \code{data.frame} with the following columns:
 \item{\code{folds_requested}}{The value of \code{cv_folds}.}
 \item{\code{fold_reduction_expected}}{Logical; \code{TRUE} when
 \code{n_train_projected < cv_folds}.}
-\item{\code{suggested_cv_folds}}{The fold count \code{run_regreg} would
+\item{\code{suggested_cv_folds}}{The fold count \code{\link{run_regreg}} would
 actually use: \code{max(3, n_train_projected)}.}
 }
 }
@@ -77,7 +77,7 @@ Tabulates the number of samples per level of the dependent variable
 \code{\link{run_regreg}} performs: removing rows with \code{NA} in
 \code{pred}, and optionally subsetting rows to match those that would
 survive the \code{not_penalized} NA removal. This lets the user see exactly
-why \code{run_regreg} may warn that \code{cv_folds} was reduced — because
+why \code{\link{run_regreg}} may warn that \code{cv_folds} was reduced — because
 the smallest group has fewer samples than the requested number of folds —
 and which group is the bottleneck.
 }
@@ -100,47 +100,22 @@ each element is processed and results are stacked with a leading
 \code{taxon} column.
 }
 \examples{
-\dontrun{
-## ---- Single metadata data frame ------------------------------------------
-gs <- get_groupsizes(
-  metadata      = df_metadata_laboratory |>
-                    dplyr::filter(`Disease Severity` != "Healthy"),
-  pred          = "Disease Severity",
-  not_penalized = vars_include_laboratory,
-  is_numeric    = "Serum albumin (g/L)",
-  train_percent = 0.6,
-  cv_folds      = 10L
+set.seed(1)
+meta <- data.frame(
+  Group = sample(c("Case", "Control"), 60, TRUE),
+  Age   = round(runif(60, 20, 60)),
+  Sex   = sample(c("F", "M"), 60, TRUE)
 )
-print(gs)
+meta$Age[c(3, 9)] <- NA   # rows with missing covariates are dropped
 
-## ---- With a publication-ready summary table ------------------------------
-get_groupsizes(
-  metadata           = df_metadata_laboratory,
-  pred               = "Disease Severity",
-  not_penalized      = vars_include_laboratory,
-  is_numeric         = "Serum albumin (g/L)",
-  train_percent      = 0.6,
-  cv_folds           = 10L,
-  show_summary_table = TRUE
-)
+get_groupsizes(meta, pred = "Group", not_penalized = c("Age", "Sex"),
+               train_percent = 0.7, cv_folds = 5L)
 
-## ---- List of metadata (one per taxon) ------------------------------------
-# If each taxon uses the same metadata, just pass it once (not a list).
-# If each taxon has its own row-subsetted metadata, wrap them in a list:
-gs_list <- get_groupsizes(
-  metadata      = setNames(
-    lapply(names(df_list_clr), function(nm) df_metadata_laboratory),
-    names(df_list_clr)
-  ),
-  pred          = "Disease Severity",
-  not_penalized = vars_include_laboratory,
-  train_percent = 0.6,
-  cv_folds      = 10L
-)
-# Taxa where fold reduction is expected
-gs_list[gs_list$fold_reduction_expected, ]
 }
-
+\references{
+Kuhn M (2008). Building predictive models in R using the caret package.
+\emph{Journal of Statistical Software}, 28(5), 1-26.
+\doi{10.18637/jss.v028.i05}
 }
 \seealso{
 \code{\link{run_regreg}}, \code{\link{get_removed_samples}},

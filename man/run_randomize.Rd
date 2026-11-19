@@ -8,7 +8,7 @@ run_randomize(
   x,
   n = NULL,
   p = NULL,
-  per = c("all", "row", "col"),
+  per = c("none", "all", "row", "col"),
   per_group = NULL,
   joint = TRUE,
   joint_behaviour = "cascading",
@@ -37,9 +37,14 @@ inside the list, this top-level value is used as the fallback.}
 \item{per}{A character string specifying the randomization strategy for
 data frames, matrices, or tibbles.
 \itemize{
-\item \strong{"all"} (default): Will randomize all of the items in the data frame. Any value can be placed anywhere in the randomized data frame.
+\item \strong{"none"} (default): Cell values are not moved; whole rows
+are sampled intact.
+\item \strong{"all"}: Will randomize all of the items in the data frame. Any value can be placed anywhere in the randomized data frame.
+Mixed-type data are returned as character.
 \item \strong{"row"}: Will randomize the items row-wise. The randomization is done for each row independently.
+Mixed-type data are returned as character.
 \item \strong{"col"}: Will randomize the items column-wise. The randomization is done for each column independently.
+Column types are preserved.
 }}
 
 \item{per_group}{An optional list of per-group sampling specs controlling
@@ -128,7 +133,7 @@ and clinical research workflows.
 \details{
 \subsection{Sampling modes}{
 
-\code{run_randomize()} operates in three mutually exclusive top-level modes,
+\code{\link{run_randomize}()} operates in three mutually exclusive top-level modes,
 resolved in the following order of priority:
 
 \enumerate{

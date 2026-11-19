@@ -17,7 +17,6 @@
   zoom
 }
 
-`%||%` <- function(a, b) if (!is.null(a)) a else b
 
 #' @keywords internal
 .validate_col <- function(df, col, arg_name) {
@@ -345,7 +344,7 @@
 #' @details
 #' \strong{Dual-axis implementation.}
 #' ggplot2 implements secondary axes as linear rescalings of the primary axis
-#' (\code{\link[ggplot2]{sec_axis}}). \code{plot_multi_y} computes the linear
+#' (\code{\link[ggplot2]{sec_axis}}). \code{\link{plot_multi_y}} computes the linear
 #' transform mapping the secondary variables' observed range into the primary
 #' range with a 5\% margin on each side, then back-transforms the tick labels.
 #'
@@ -369,8 +368,15 @@
 #'
 #' @return A \code{\link[ggplot2]{ggplot}} object.
 #'
+#' @references
+#' Wickham H (2016). \emph{ggplot2: Elegant Graphics for Data Analysis}.
+#'   Springer-Verlag New York. \doi{10.1007/978-3-319-24277-4}
+#'
+#' Okabe M, Ito K (2008). \emph{Color Universal Design (CUD): How to make
+#'   figures and presentations that are friendly to colorblind people}.
+#'   \url{https://jfly.uni-koeln.de/color/}
+#'
 #' @examples
-#' \dontrun{
 #' # --- Basic: area on primary, two lines on primary, faceted by Year ---
 #' set.seed(42)
 #' df <- data.frame(
@@ -403,7 +409,6 @@
 #'   y_lab_secondary    = "GC/L",
 #'   facet              = "Year"
 #' )
-#' }
 #'
 #' @author John Lennon L. Calorio
 #' @export

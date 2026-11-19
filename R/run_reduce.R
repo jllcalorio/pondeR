@@ -370,9 +370,9 @@ run_reduce <- function(..., check_cols = TRUE, return_common = TRUE) {
 #' @title Print Method for \code{run_reduce} Objects
 #'
 #' @description Provides a concise, informative summary when a
-#'   \code{run_reduce} object is printed to the console.
+#'   \code{\link{run_reduce}} object is printed to the console.
 #'
-#' @param x An object from \code{run_reduce}.
+#' @param x An object from \code{\link{run_reduce}}.
 #' @param ... Further arguments passed to or from other methods (currently
 #'   unused).
 #'

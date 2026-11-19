@@ -25,9 +25,14 @@
 #' @param per A character string specifying the randomization strategy for 
 #'   data frames, matrices, or tibbles. 
 #'   \itemize{
-#'     \item \strong{"all"} (default): Will randomize all of the items in the data frame. Any value can be placed anywhere in the randomized data frame.
+#'     \item \strong{"none"} (default): Cell values are not moved; whole rows
+#'       are sampled intact.
+#'     \item \strong{"all"}: Will randomize all of the items in the data frame. Any value can be placed anywhere in the randomized data frame.
+#'       Mixed-type data are returned as character.
 #'     \item \strong{"row"}: Will randomize the items row-wise. The randomization is done for each row independently.
+#'       Mixed-type data are returned as character.
 #'     \item \strong{"col"}: Will randomize the items column-wise. The randomization is done for each column independently.
+#'       Column types are preserved.
 #'   }
 #' @param per_group An optional list of per-group sampling specs controlling
 #'   stratified sampling. Each element must follow one of two forms:
@@ -91,7 +96,7 @@
 #' @details
 #' ## Sampling modes
 #'
-#' \code{run_randomize()} operates in three mutually exclusive top-level modes,
+#' \code{\link{run_randomize}()} operates in three mutually exclusive top-level modes,
 #' resolved in the following order of priority:
 #'
 #' \enumerate{
@@ -294,7 +299,7 @@ run_randomize <- function(
     x,
     n               = NULL,
     p               = NULL,
-    per             = c("all", "row", "col"),
+    per             = c("none", "all", "row", "col"),
     per_group       = NULL,
     joint           = TRUE,
     joint_behaviour = "cascading",
@@ -503,19 +508,17 @@ run_randomize <- function(
   }
 
   # ── 7.5 Dimension-wise randomization ─────────────────────────────────────────
-  if (!is_vec) {
+  if (!is_vec && per == "col") {
+    # Shuffle each column independently; column types are preserved
+    x[] <- lapply(x, function(col) col[sample.int(length(col))])
+  } else if (!is_vec && per %in% c("row", "all")) {
+    # Cells move across columns, so mixed-type data become character
     m <- as.matrix(x)
     if (per == "row") {
-      # Randomize the items row-wise
       for (i in seq_len(nrow(m))) m[i, ] <- m[i, sample.int(ncol(m))]
-    } else if (per == "col") {
-      # Randomize the items column-wise
-      for (j in seq_len(ncol(m))) m[, j] <- m[sample.int(nrow(m)), j]
-    } else if (per == "all") {
-      # Randomize all of the items in the data frame
+    } else {
       m[] <- sample(m)
     }
-    # Assign back to preserve structure/class
     x[] <- as.data.frame(m, stringsAsFactors = FALSE)
   }
 

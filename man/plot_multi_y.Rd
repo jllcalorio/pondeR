@@ -197,7 +197,7 @@ typography controls.
 \details{
 \strong{Dual-axis implementation.}
 ggplot2 implements secondary axes as linear rescalings of the primary axis
-(\code{\link[ggplot2]{sec_axis}}). \code{plot_multi_y} computes the linear
+(\code{\link[ggplot2]{sec_axis}}). \code{\link{plot_multi_y}} computes the linear
 transform mapping the secondary variables' observed range into the primary
 range with a 5\\% margin on each side, then back-transforms the tick labels.
 
@@ -220,7 +220,6 @@ The default \code{c("hist", "area", "line", "dot")} places histograms at
 the back, then areas, then lines, with dots in the foreground.
 }
 \examples{
-\dontrun{
 # --- Basic: area on primary, two lines on primary, faceted by Year ---
 set.seed(42)
 df <- data.frame(
@@ -253,8 +252,15 @@ plot_multi_y(
   y_lab_secondary    = "GC/L",
   facet              = "Year"
 )
-}
 
+}
+\references{
+Wickham H (2016). \emph{ggplot2: Elegant Graphics for Data Analysis}.
+Springer-Verlag New York. \doi{10.1007/978-3-319-24277-4}
+
+Okabe M, Ito K (2008). \emph{Color Universal Design (CUD): How to make
+figures and presentations that are friendly to colorblind people}.
+\url{https://jfly.uni-koeln.de/color/}
 }
 \author{
 John Lennon L. Calorio

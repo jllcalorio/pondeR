@@ -19,7 +19,7 @@
 #' @param lda_threshold Numeric value specifying the threshold on the absolute
 #'   logarithmic LDA score for discriminative features (default: 2.0).
 #' @param verbose Logical indicating whether to print progress messages (default: TRUE).
-#' @return A list of class \code{run_lefse} containing:
+#' @return A list of class \code{\link{run_lefse}} containing:
 #'   \item{lda}{A data frame with LDA results (features, means per class, LDA scores).}
 #'   \item{summary_table}{A data frame summarizing significant features with
 #'     effect sizes, p-values, and classifications.}
@@ -34,24 +34,42 @@
 #'   \item Linear Discriminant Analysis to estimate the effect size of each
 #'     significantly abundant feature.
 #' }
-#' The input data should ideally be relative abundances (e.g., from
-#' \code{run_relabund} or similar). The function assumes that higher values
-#' indicate higher abundance.
+#' The LDA score of each feature is
+#' \eqn{\log_{10}\{1 + (|\Delta\bar{x}| + |w \cdot \Delta LD|)/2\}}, where
+#' \eqn{\Delta\bar{x}} is the largest difference in class means, \eqn{w} the
+#' unit-length first linear-discriminant coefficient
+#' (\code{\link[MASS]{lda}}) and \eqn{\Delta LD} the class separation along
+#' that discriminant (Segata et al., 2011). Unlike the original LEfSe, the
+#' LDA is fitted once (no bootstrap).
+#'
+#' Scores depend on the scale of \code{x}. Original LEfSe scales each
+#' sample's relative abundances to sum to \eqn{10^6}; do the same (e.g.
+#' \code{x / rowSums(x) * 1e6}) for the default \code{lda_threshold = 2} to
+#' be meaningful. Higher values are assumed to indicate higher abundance.
+#' @references
+#' Segata N, Izard J, Waldron L, et al. (2011). Metagenomic biomarker
+#'   discovery and explanation. \emph{Genome Biology}, 12(6), R60.
+#'   \doi{10.1186/gb-2011-12-6-r60}
+#'
+#' Kruskal WH, Wallis WA (1952). Use of ranks in one-criterion variance
+#'   analysis. \emph{Journal of the American Statistical Association},
+#'   47(260), 583-621. \doi{10.1080/01621459.1952.10483441}
+#'
+#' Mann HB, Whitney DR (1947). On a test of whether one of two random
+#'   variables is stochastically larger than the other. \emph{The Annals of
+#'   Mathematical Statistics}, 18(1), 50-60. \doi{10.1214/aoms/1177730491}
+#'
 #' @examples
-#' # Load example data (if available) or use your own
-#' # data(metagenomicexample, package = "pondeR")
-#' \dontrun{
-#'   # Assuming `otu_table` is a feature table and `meta` is metadata
-#'   lefse_res <- run_lefse(
-#'     x = otu_table,
-#'     metadata = meta,
-#'     class = "Condition",
-#'     subclass = "AgeGroup",
-#'     alpha = 0.05,
-#'     wilcox_alpha = 0.05,
-#'     lda_threshold = 2.0
-#'   )
-#' }
+#' set.seed(1)
+#' x <- as.data.frame(matrix(rpois(40 * 6, 20), 40,
+#'                           dimnames = list(NULL, paste0("taxon", 1:6))))
+#' meta <- data.frame(Group = rep(c("Control", "Case"), each = 20))
+#' x$taxon1[meta$Group == "Case"] <- x$taxon1[meta$Group == "Case"] + 30
+#'
+#' rel <- x / rowSums(x) * 1e6   # LEfSe scale
+#' res <- run_lefse(rel, meta, class = "Group", verbose = FALSE)
+#' res$summary_table
+#'
 #' @encoding UTF-8
 #' @export
 run_lefse <- function(x,
@@ -288,31 +306,30 @@ run_lefse <- function(x,
       stop("Package 'MASS' is required for LDA. Install with: install.packages('MASS')", call = FALSE)
     }
     
-    # MASS::lda expects a formula or matrix and grouping
-    lda_obj <- MASS::lda(lda_class ~ ., data = as.data.frame(lda_features))
-    
-    # Extract results
-    lda_df <- data.frame(
-      feature = colnames(lda_features),
-      stringsAsFactors = FALSE
-    )
-    
-    # Add class means
-    for (cl in unique_classes) {
-      cl_mean <- sapply(lda_features[lda_class == cl, , drop = FALSE], mean, na.rm = TRUE)
-      lda_df[[paste0("mean_", cl)]] <- cl_mean
-    }
-    
-    # Add LDA scores (scaling)
-    lda_scores <- predict(lda_obj)$x  # This gives the discriminant scores
-    # For multi-class, we take the absolute value of the first discriminant
-    # or compute something similar to LEfSe's approach
-    if (ncol(lda_scores) >= 1) {
-      lda_df$lda_score <- abs(lda_scores[, 1])  # First discriminant component
-    } else {
-      lda_df$lda_score <- 0
-    }
-    
+    xm <- as.matrix(lda_features)
+    lda_obj <- MASS::lda(x = xm, grouping = factor(lda_class))
+
+    # Class means: classes x features (matrix even when there is one feature)
+    means <- do.call(rbind, lapply(unique_classes, function(cl)
+      colMeans(xm[lda_class == cl, , drop = FALSE], na.rm = TRUE)))
+
+    # LEfSe effect size (Segata et al. 2011; as in Bioconductor 'lefser'):
+    # unit LD1 coefficients scaled by the class separation along LD1, averaged
+    # with the class-mean difference, then log10(1 + |.|).
+    # ponytail: single LDA fit, no bootstrap; multi-class uses the max pairwise
+    # range. Upgrade path: LEfSe's 30-round bootstrap of the LDA coefficients.
+    w      <- lda_obj$scaling[, 1]
+    w_unit <- w / sqrt(sum(w^2))
+    ld     <- as.vector(xm %*% w_unit)
+    ld_sep <- diff(range(tapply(ld, lda_class, mean)))
+    coeff  <- abs(w_unit * ld_sep); coeff[is.na(coeff)] <- 0
+    gm     <- apply(means, 2, function(m) diff(range(m)))
+
+    lda_df <- data.frame(feature = colnames(xm), stringsAsFactors = FALSE)
+    for (i in seq_along(unique_classes))
+      lda_df[[paste0("mean_", unique_classes[i])]] <- means[i, ]
+    lda_df$lda_score <- log10(1 + (gm + coeff) / 2)
+
     lda_df
   }, error = function(e) {
     warning("LDA failed: ", e$message, ". Using effect size based on fold changes.", call = FALSE)
@@ -323,9 +340,9 @@ run_lefse <- function(x,
     )
     
     # Calculate mean for each class
-    class_means <- sapply(unique_classes, function(cl) {
+    class_means <- do.call(cbind, lapply(unique_classes, function(cl) {
       colMeans(lda_features[lda_class == cl, , drop = FALSE], na.rm = TRUE)
-    })
+    }))
     colnames(class_means) <- unique_classes
     
     # Add to dataframe

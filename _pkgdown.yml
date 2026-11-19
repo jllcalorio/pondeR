@@ -115,6 +115,7 @@ reference:
   - title: "Other Plotting Functions"
     desc: "Other functions to plot metabolomics and metagenomics data."
     contents:
+      - starts_with("plot_bar")
       - starts_with("plot_meanmap")
       - starts_with("plot_multi_y")
       - starts_with("plot_relabund")
@@ -132,6 +133,7 @@ reference:
     contents:
       - starts_with("save_excel")
       - starts_with("save_plots")
+      - starts_with("render_metabolomics")
 
   - title: "Utilities & Helpers"
     desc: >
@@ -157,6 +159,7 @@ reference:
     contents:
       - starts_with("print.")
       - starts_with("summary.")
+      - "`[.run_diff_summary`"
 
   - title: "Internal functions"
     desc: >

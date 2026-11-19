@@ -63,7 +63,7 @@
 #' scale level because item-level coefficients based on a handful of raters
 #' are degenerate.
 #' 
-#' @return A list of class \code{run_contentvalidity} with two elements:
+#' @return A list of class \code{\link{run_contentvalidity}} with two elements:
 #' \describe{
 #'   \item{\code{$items}}{A data frame of item-level indices: I-CVI,
 #'     modified kappa, Aiken's V, and Modified-Kappa Interpretation.}
@@ -123,15 +123,16 @@
 #' \code{\link[contentValidity]{aiken_v}}
 #'
 #' @examples
-#' \dontrun{
-#' ratings <- data.frame(
-#'   item1 = c(4, 3, 4, 4, 3),
-#'   item2 = c(2, 3, 2, 1, 2),
-#'   item3 = c(4, 4, 3, 4, 4)
-#' )
-#' result <- run_contentvalidity(ratings)
-#' result$items
-#' result$scale
+#' if (requireNamespace("contentValidity", quietly = TRUE) &&
+#'     requireNamespace("irrCAC", quietly = TRUE)) {
+#'   ratings <- data.frame(
+#'     item1 = c(4, 3, 4, 4, 3),
+#'     item2 = c(2, 3, 2, 1, 2),
+#'     item3 = c(4, 4, 3, 4, 4)
+#'   )
+#'   result <- run_contentvalidity(ratings)
+#'   result$items
+#'   result$scale
 #' }
 #'
 #' @export

@@ -1,18 +1,34 @@
 Package: pondeR
-Title: pondeR: Making Statistical Analysis A Little Bit Easier
+Title: Making Statistical Analysis a Little Bit Easier
 Version: 1.0
-Authors@R: 
+Authors@R:
     person("John Lennon", "Calorio", , "jllcalorio@gmail.com", role = c("aut", "cre"))
 Description: Generate publication-ready statistical tables and figures
-    using minimal coding.
+    with minimal code. Provides descriptive summary tables, automatic
+    selection of group-difference and association tests with effect sizes
+    and post hoc comparisons, correlation analysis, receiver operating
+    characteristic curves, logistic regression with optional Firth
+    correction (Firth, 1993) <doi:10.1093/biomet/80.1.27>, penalized
+    regression (Friedman, Hastie and Tibshirani, 2010)
+    <doi:10.18637/jss.v033.i01>, linear mixed-effects models (Bates et al.,
+    2015) <doi:10.18637/jss.v067.i01>, principal component and principal
+    coordinate analysis with permutational multivariate analysis of variance
+    (Anderson, 2001) <doi:10.1111/j.1442-9993.2001.01070.pp.x>, partial least
+    squares, linear discriminant analysis effect size (Segata et al., 2011)
+    <doi:10.1186/gb-2011-12-6-r60>, content validity indices (Lawshe, 1975)
+    <doi:10.1111/j.1744-6570.1975.tb01393.x>, World Health Organization
+    child growth z-scores, and plotting helpers for volcano, score, scree,
+    heatmap, dendrogram, odds-ratio and relative-abundance plots.
 License: MIT + file LICENSE
-URL: https://jllcalorio.github.io/pondeR
+URL: https://jllcalorio.github.io/pondeR, https://github.com/jllcalorio/pondeR
+BugReports: https://github.com/jllcalorio/pondeR/issues
 Depends:
     R (>= 4.1.0)
 Imports:
     car,
     dplyr,
     effectsize,
+    forcats,
     ggplot2,
     ggpubr,
     ggrepel,
@@ -32,10 +48,13 @@ Imports:
     patchwork,
     performance,
     pROC,
+    purrr,
     rlang,
     rstatix,
+    scales,
     stats,
     tibble,
+    tools,
     utils,
     viridis
 Suggests:
@@ -46,7 +65,6 @@ Suggests:
     contentValidity,
     data.table,
     dimsprepr,
-    forcats,
     foreach,
     ggdendro,
     ggtext,
@@ -59,17 +77,18 @@ Suggests:
     OmicFlow,
     plotly,
     polycor,
-    purrr,
     quarto,
     reshape2,
     rmarkdown,
     ropls,
-    testthat,
-    vegan
+    testthat (>= 3.0.0),
+    vegan,
+    withr
 Remotes:
     jllcalorio/dimsprepr
-VignetteBuilder: 
+VignetteBuilder:
     knitr
+Config/testthat/edition: 3
 Config/roxygen2/version: 8.1.1
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

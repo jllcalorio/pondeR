@@ -145,7 +145,6 @@ R x 2), pairwise Fisher's tests are performed via
 }
 }
 \examples{
-\dontrun{
 # --- Example 1: 2x2 Independent Test (Auto -> Chi-square) ---
 data(mtcars)
 res <- run_assoc(x = mtcars, var1 = "am", var2 = "vs",
@@ -177,8 +176,32 @@ res_chisq <- run_assoc(x = mtcars, var1 = "am", var2 = "vs",
                         test_type = "chisq", continuity_correction = TRUE,
                         force_categorical = TRUE)
 print(res_chisq)
-}
 
+}
+\references{
+Pearson K (1900). On the criterion that a given system of deviations from
+the probable in the case of a correlated system of variables is such that
+it can be reasonably supposed to have arisen from random sampling.
+\emph{Philosophical Magazine}, 50(302), 157-175.
+\doi{10.1080/14786440009463897}
+
+Fisher RA (1922). On the interpretation of chi-squared from contingency
+tables, and the calculation of P. \emph{Journal of the Royal Statistical
+Society}, 85(1), 87-94. \doi{10.2307/2340521}
+
+McNemar Q (1947). Note on the sampling error of the difference between
+correlated proportions or percentages. \emph{Psychometrika}, 12(2),
+153-157. \doi{10.1007/BF02295996}
+
+Cochran WG (1954). Some methods for strengthening the common chi-squared
+tests. \emph{Biometrics}, 10(4), 417-451. \doi{10.2307/3001616}
+
+Cramer H (1946). \emph{Mathematical Methods of Statistics}. Princeton
+University Press.
+
+Ben-Shachar MS, Ludecke D, Makowski D (2020). effectsize: Estimation of
+effect size indices and standardized parameters. \emph{Journal of Open
+Source Software}, 5(56), 2815. \doi{10.21105/joss.02815}
 }
 \seealso{
 \code{\link{run_summarytable}}

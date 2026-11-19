@@ -167,7 +167,7 @@ Computed as \eqn{\lambda_i / \sum \lambda^+}{lambda_i / sum(positive lambdas)},
 using only positive eigenvalues, consistent with \pkg{ape} convention.
 }
 
-\subsection{Compatibility with \code{plot_score}}{
+\subsection{Compatibility with \code{\link{plot_score}}}{
 
 The returned object carries class \code{"run_pcoa"} and a \code{scores}
 element with columns \code{PC1}, \code{PC2}, \ldots so that

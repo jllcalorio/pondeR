@@ -183,7 +183,7 @@
 #' \doi{10.18637/jss.v039.i05}.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' if (requireNamespace("glmnet", quietly = TRUE) &&
 #'     requireNamespace("caret", quietly = TRUE) &&
 #'     requireNamespace("foreach", quietly = TRUE)) {

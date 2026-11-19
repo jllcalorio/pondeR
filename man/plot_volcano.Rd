@@ -54,10 +54,10 @@ Column names may contain special characters.
 \describe{
 \item{\code{list(fc = <run_foldchange>, diff = <run_diff>)}}{
 Both objects are supplied. Fold changes are sourced from
-\code{run_foldchange()}'s \code{$summary_table}
+\code{\link{run_foldchange}()}'s \code{$summary_table}
 and p-values are sourced from
-\code{run_diff()}'s \code{$summary_table}, matched on feature name.
-When \code{run_foldchange()} produced more than one pairwise
+\code{\link{run_diff}()}'s \code{$summary_table}, matched on feature name.
+When \code{\link{run_foldchange}()} produced more than one pairwise
 comparison, the \code{comparison} column is automatically used as
 \code{group}, overlaying all comparisons on a single plot with
 distinct colours. This is the recommended usage.}
@@ -218,13 +218,12 @@ or \code{"NS"}).}
 Generates publication-quality volcano plots that visualise differential
 features as a scatter of log2 fold change (x-axis) versus statistical
 significance (y-axis). Designed to integrate directly with the output of
-\code{run_foldchange()} and \code{run_diff()}, but accepts any
+\code{\link{run_foldchange}()} and \code{\link{run_diff}()}, but accepts any
 \code{data.frame} with the required columns. When \code{group} is supplied,
 all comparisons are overlaid on a single plot with distinct colours per
 group, saving publication space.
 }
 \examples{
-\dontrun{
 ## -----------------------------------------------------------------------
 ## Example 1 - minimal synthetic data, no group
 ## -----------------------------------------------------------------------
@@ -294,8 +293,16 @@ res4 <- plot_volcano(
   down      = 0.5
 )
 print(res4$plots[[1]])
-}
 
+}
+\references{
+Benjamini Y, Hochberg Y (1995). Controlling the false discovery rate: a
+practical and powerful approach to multiple testing. \emph{Journal of the
+Royal Statistical Society: Series B}, 57(1), 289-300.
+\doi{10.1111/j.2517-6161.1995.tb02031.x}
+
+Wickham H (2016). \emph{ggplot2: Elegant Graphics for Data Analysis}.
+Springer-Verlag New York. \doi{10.1007/978-3-319-24277-4}
 }
 \seealso{
 \code{\link{run_foldchange}}, \code{\link{run_diff}}, \code{\link{get_volcanodata}}, \code{\link[dimsprepr]{run_DIpreprocess}}

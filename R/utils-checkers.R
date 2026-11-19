@@ -43,7 +43,7 @@
 #' \code{NULL} and objects with no class attribute are handled gracefully:
 #' they always return \code{FALSE}.
 #'
-#' Note that \code{is_tabular()} does **not** check whether the object is
+#' Note that \code{\link{is_tabular}()} does **not** check whether the object is
 #' non-empty. A zero-row or zero-column tabular object will still return
 #' \code{TRUE}, as it retains the correct class and dimensions. Callers that
 #' require non-empty data should perform that check separately.
@@ -174,7 +174,7 @@ is_tabular <- function(x, warn = TRUE) {
 #'   all warnings and obtain a silent \code{FALSE}.
 #'
 #' @details
-#' \code{is_list()} returns \code{TRUE} only when \code{x} is a plain
+#' \code{\link{is_list}()} returns \code{TRUE} only when \code{x} is a plain
 #' \code{list} - i.e., \code{is.list(x)} is \code{TRUE} \emph{and} \code{x}
 #' does not inherit from any tabular class (\code{data.frame}, \code{tbl_df},
 #' \code{tbl}, \code{data.table}, or \code{matrix}). This distinction matters
