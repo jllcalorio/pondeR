@@ -107,8 +107,15 @@ automatically uses the variable name of `x` as the filename for
 convenience.
 
 **pondeR result objects.** Objects whose class starts with `run_` (e.g.
-`run_auc`, `run_diff`) are unpacked automatically and their tabular
-slots are written as separate sheets.
+[`run_auc`](https://jllcalorio.github.io/pondeR/reference/run_auc.md),
+[`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md))
+are unpacked automatically and their tabular slots are written as
+separate sheets.
+
+## References
+
+Schauberger P, Walker A (2024). *openxlsx: Read, Write and Edit xlsx
+Files*. R package. <https://CRAN.R-project.org/package=openxlsx>
 
 ## Author
 
@@ -117,19 +124,25 @@ John Lennon L. Calorio
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-# Single data frame — filename is respected
-save_excel(mtcars, filename = "mtcars_export")
+out <- tempdir()
 
-# Named list — filename is ignored; sheet names come from list names
-sheets <- list(Cars = mtcars, Iris = iris)
-save_excel(sheets, filename = "ignored")
+# Single data frame: filename is respected
+save_excel(mtcars, filename = "mtcars_export", folder = out)
+#> File saved: /tmp/Rtmpg44MIm/mtcars_export.xlsx
+
+# Named list: one sheet per element
+save_excel(list(Cars = mtcars, Iris = iris), filename = "two_sheets",
+           folder = out)
+#> File saved: /tmp/Rtmpg44MIm/two_sheets.xlsx
 
 # pondeR result object
-res <- run_auc(data = mydata, response = "group", predictors = c("A","B"))
-save_excel(res, filename = "auc_results")
-
-# With date + time stamp on the file name
-save_excel(iris, filename = "iris", fn_date_stamp = TRUE, fn_time_stamp = TRUE)
-} # }
+res <- run_correl(mtcars[, 1:4])
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+save_excel(res, filename = "correlations", folder = out)
+#> File saved: /tmp/Rtmpg44MIm/correlations.xlsx
 ```

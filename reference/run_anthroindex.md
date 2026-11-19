@@ -41,7 +41,7 @@ run_anthroindex(
   weight_unit = c("kg", "g", "oz", "lb"),
   height_col = NULL,
   height_unit = c("cm", "m", "ft", "in"),
-  height_measured = "L",
+  height_measured = NULL,
   headcircumference_col = NULL,
   headcircumference_unit = c("cm", "m", "ft", "in"),
   armcircumference_col = NULL,
@@ -51,12 +51,12 @@ run_anthroindex(
   subscapularskinfold_col = NULL,
   subscapularskinfold_unit = c("mm", "cm", "m", "ft", "in"),
   oedema_col = NULL,
-  merge_obese = FALSE,
-  merge_wasted = merge_obese,
-  merge_malnourished = merge_obese,
-  merge_underweight = merge_obese,
-  merge_stunted = merge_obese,
-  merge_thinness = merge_obese,
+  merge_categories = FALSE,
+  merge_wasted = merge_categories,
+  merge_malnourished = merge_categories,
+  merge_underweight = merge_categories,
+  merge_stunted = merge_categories,
+  merge_thinness = merge_categories,
   status_col_name = "Nutritional Status",
   simplify = TRUE,
   return = c("wfa", "hfa", "wfh", "bmifa", "hcfa", "acfa", "tsfa", "ssfa")
@@ -123,6 +123,14 @@ run_anthroindex(
   `"length"` for recumbent; `"H"`, `"h"`, `"Height"`, `"height"` for
   standing), *or* a character vector of length `nrow(x)` giving the mode
   for each row, *or* the name of a column in `x` containing those codes.
+  Defaults to `NULL`, in which case the mode is determined automatically
+  per row using the same rule as
+  [`anthro_zscores`](https://rdrr.io/pkg/anthro/man/anthro_zscores.html)'s
+  `measure` argument when it is left unspecified: if age is available,
+  recumbent length is assumed below 24 months (731 days) and standing
+  height at or above 24 months; if age is missing, recumbent length is
+  assumed when the measurement is below 87 cm and standing height at or
+  above 87 cm.
 
 - headcircumference_col:
 
@@ -171,41 +179,47 @@ run_anthroindex(
   `"N"`, or `"2"` (no oedema) and `"y"`, `"Y"`, or `"1"` (oedema
   present).
 
-- merge_obese:
+- merge_categories:
 
-  Logical. When `TRUE`, combines all stages of Obesity ("Stage 1
-  Obesity", "Stage 2 Obesity", "Stage 3 Obesity", and "Obesity") into
-  just `"Obese"`. Defaults to `FALSE`.
+  Logical. Master switch for collapsing granular WHO severity labels
+  into a single category, across *all* indices (not just BMI-for-age).
+  When `TRUE`, combines all stages of Obesity ("Stage 1 Obesity", "Stage
+  2 Obesity", "Stage 3 Obesity", and "Obesity") into just `"Obese"`, and
+  — via the `merge_wasted`, `merge_malnourished`, `merge_underweight`,
+  `merge_stunted`, and `merge_thinness` arguments below, each of which
+  defaults to this value — also collapses the wasted, malnourished,
+  underweight, stunted, and thinness categories for wfa, hfa, wfh, and
+  acfa. Defaults to `FALSE`.
 
 - merge_wasted:
 
   Logical. When `TRUE`, combines all categories of wasted
   (`"Severely wasted"`, `"Moderately wasted"`) into just `"Wasted"`.
-  Defaults to the value of `merge_obese`.
+  Defaults to the value of `merge_categories`.
 
 - merge_malnourished:
 
   Logical. When `TRUE`, combines `"Severe acute malnutrition"` and
   `"Moderate acute malnutrition"` into just `"Malnourished"`. Defaults
-  to the value of `merge_obese`.
+  to the value of `merge_categories`.
 
 - merge_underweight:
 
   Logical. When `TRUE`, combines `"Severely underweight"` and
   `"Moderately underweight"` into just `"Underweight"`. Defaults to the
-  value of `merge_obese`.
+  value of `merge_categories`.
 
 - merge_stunted:
 
   Logical. When `TRUE`, combines `"Severely stunted"` and
   `"Moderately stunted"` into just `"Stunted"`. Defaults to the value of
-  `merge_obese`.
+  `merge_categories`.
 
 - merge_thinness:
 
   Logical. When `TRUE`, combines all categories of thinness
   (`"Severe thinness"`, `"Thinness"`, `"Moderate and severe thinness"`)
-  into just `"Thinness"`. Defaults to the value of `merge_obese`.
+  into just `"Thinness"`. Defaults to the value of `merge_categories`.
 
 - status_col_name:
 
@@ -223,7 +237,14 @@ run_anthroindex(
 
   A character string or vector specifying which anthropometric indices
   to compute. One or more of: `"wfa"`, `"hfa"`, `"wfh"`, `"bmifa"`,
-  `"hcfa"`, `"acfa"`, `"tsfa"`, `"ssfa"`. Defaults to all eight.
+  `"hcfa"`, `"acfa"`, `"tsfa"`, `"ssfa"`, or `"bmi"`. Defaults to the
+  original eight WHO indices (`"bmi"` is not included by default).
+  Unlike the other indices, `"bmi"` does not use
+  [`anthro_zscores`](https://rdrr.io/pkg/anthro/man/anthro_zscores.html)
+  or
+  [`anthroplus_zscores`](https://rdrr.io/pkg/anthroplus/man/anthroplus_zscores.html);
+  it is classified using the WHO adult BMI cut-offs applied to every row
+  regardless of age — see **Details**.
 
 ## Value
 
@@ -250,6 +271,11 @@ The columns are ordered as follows:
     `status_col_name`) containing the WHO classification label based on
     z-score (ages \< 20 years) or raw BMI (ages \\\geq\\ 20 years, BMIFA
     only).
+
+For `"bmi"`, the result instead contains the original columns from `x`
+plus a single numeric `bmi` column, with `status_col_name` classified
+using the WHO adult BMI cut-offs applied to every row regardless of age
+(see **Details**).
 
 If a single index is requested via `return`, the object is returned
 directly. If multiple indices are requested, a named `list` of such
@@ -291,13 +317,13 @@ skinfolds \\\to\\ mm.
 The two WHO packages cover different age windows. The table below shows
 which package supplies the z-score for each index and age group:
 
-|                             |                 |                     |                   |
-|-----------------------------|-----------------|---------------------|-------------------|
-| Index                       | 0 to \< 5 years | 5 to \< 20 years    | \\\geq\\ 20 years |
-| BMIFA                       | anthro (`zbmi`) | anthroplus (`zbfa`) | raw BMI           |
-| WFA                         | anthro (`zwei`) | anthroplus (`zwfa`) | —                 |
-| HFA                         | anthro (`zlen`) | anthroplus (`zhfa`) | —                 |
-| WFH, HCFA, ACFA, TSFA, SSFA | anthro          | not available       | —                 |
+|  |  |  |  |
+|----|----|----|----|
+| Index | 0 to \< 5 years | 5 to \< 20 years | \\\geq\\ 20 years |
+| BMIFA | anthro (`zbmi`) | anthroplus (`zbfa`) | raw BMI |
+| WFA | anthro (`zwei`) | anthroplus (`zwfa`) | — |
+| HFA | anthro (`zlen`) | anthroplus (`zhfa`) | — |
+| WFH, HCFA, ACFA, TSFA, SSFA | anthro | not available | — |
 
 All z-scores are stored in a unified `z_score` column in the output.
 
@@ -323,27 +349,47 @@ is silently skipped. Required columns per index:
 
 - `ssfa` — `subscapularskinfold_col`
 
+- `bmi` — `weight_col` + `height_col`
+
+### Raw BMI (age-independent)
+
+Requesting `"bmi"` in `return` skips the WHO z-score machinery entirely
+(no call to `anthro_zscores()`/`anthroplus_zscores()` for this index,
+and no age restriction). BMI is computed directly from the already
+unit-converted weight and height: \$\$BMI =
+\frac{weight\_{kg}}{height\_{m}^2}\$\$ `weight_kg` is the input weight
+converted to kilograms according to `weight_unit`; `height_m` is the
+input height converted to centimetres according to `height_unit` and
+then divided by 100 to obtain metres (an exact conversion, since 1 m =
+100 cm exactly). The resulting data frame has a numeric `bmi` column,
+and `status_col_name` is populated using the WHO **adult** BMI cut-offs
+(see the 20 years and above table below) applied to every row regardless
+of age — no z-score is involved. This differs from `bmifa`, whose `cbmi`
+column is also raw BMI but is only classified with these adult cut-offs
+for participants aged \\\geq\\ 20 years; younger ages use z-score-based
+classification instead.
+
 ### WHO nutritional status classifications
 
 #### Birth to 5 years
 
-|                               |               |                                           |
-|-------------------------------|---------------|-------------------------------------------|
-| Nutritional status            | Index         | Threshold                                 |
-| Obese                         | WFH or BMIFA  | \> +3 SD                                  |
-| Overweight                    | WFH or BMIFA  | \> +2 SD and \\\leq\\ +3 SD               |
-| Normal                        | WFH or BMIFA  | \\\geq\\ \\-\\2 SD and \\\leq\\ +2 SD     |
-| Moderately wasted             | WFH           | \\\leq\\ \\-\\2 SD and \\\geq\\ \\-\\3 SD |
-| Severely wasted               | WFH           | \< \\-\\3 SD                              |
+|  |  |  |
+|----|----|----|
+| Nutritional status | Index | Threshold |
+| Obese | WFH or BMIFA | \> +3 SD |
+| Overweight | WFH or BMIFA | \> +2 SD and \\\leq\\ +3 SD |
+| Normal | WFH or BMIFA | \\\geq\\ \\-\\2 SD and \\\leq\\ +2 SD |
+| Moderately wasted | WFH | \\\leq\\ \\-\\2 SD and \\\geq\\ \\-\\3 SD |
+| Severely wasted | WFH | \< \\-\\3 SD |
 | Moderately acute malnourished | BMIFA or ACFA | \\\leq\\ \\-\\2 SD and \\\geq\\ \\-\\3 SD |
-| Severely acute malnourished   | BMIFA or ACFA | \< \\-\\3 SD                              |
-| Moderately underweight        | WFA           | \< \\-\\2 SD and \\\geq\\ \\-\\3 SD       |
-| Severely underweight          | WFA           | \< \\-\\3 SD                              |
-| Normal                        | WFA           | \\\geq\\ \\-\\2 SD                        |
-| Moderately stunted            | HFA           | \\\leq\\ \\-\\2 SD and \\\geq\\ \\-\\3 SD |
-| Severely stunted              | HFA           | \< \\-\\3 SD                              |
-| Normal                        | HFA           | \> \\-\\2 SD                              |
-| Normal                        | ACFA          | \> \\-\\2 SD                              |
+| Severely acute malnourished | BMIFA or ACFA | \< \\-\\3 SD |
+| Moderately underweight | WFA | \< \\-\\2 SD and \\\geq\\ \\-\\3 SD |
+| Severely underweight | WFA | \< \\-\\3 SD |
+| Normal | WFA | \\\geq\\ \\-\\2 SD |
+| Moderately stunted | HFA | \\\leq\\ \\-\\2 SD and \\\geq\\ \\-\\3 SD |
+| Severely stunted | HFA | \< \\-\\3 SD |
+| Normal | HFA | \> \\-\\2 SD |
+| Normal | ACFA | \> \\-\\2 SD |
 
 #### 5 to 19 years — BMI-for-age only
 
@@ -435,7 +481,6 @@ John Lennon L. Calorio
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
 library(pondeR)
 
 if (requireNamespace("anthro", quietly = TRUE)) {
@@ -506,5 +551,8 @@ if (requireNamespace("anthro", quietly = TRUE)) {
     bmi_res[, c("age_yr", "cbmi", "z_score", "Nutritional Status")]
   }
 }
-} # }
+#>   age_yr     cbmi z_score Nutritional Status
+#> 1      3 15.51247   -0.07             Normal
+#> 2     14 16.98753   -1.13             Normal
+#> 3     25 26.12245      NA         Overweight
 ```

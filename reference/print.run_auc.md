@@ -1,6 +1,8 @@
 # Print Method for `run_auc` Objects
 
-Compact summary of a `run_auc` result.
+Compact summary of a
+[`run_auc`](https://jllcalorio.github.io/pondeR/reference/run_auc.md)
+result.
 
 ## Usage
 

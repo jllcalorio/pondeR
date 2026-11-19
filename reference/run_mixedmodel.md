@@ -185,6 +185,23 @@ Adjusted p-values in `Combined_Fixed_Effects_Summary` are computed
 separately within each unique fixed effect term across all features,
 using the method specified in `p_adjust_method`.
 
+## References
+
+Bates D, Machler M, Bolker B, Walker S (2015). Fitting linear
+mixed-effects models using lme4. *Journal of Statistical Software*,
+67(1), 1-48.
+[doi:10.18637/jss.v067.i01](https://doi.org/10.18637/jss.v067.i01)
+
+Kuznetsova A, Brockhoff PB, Christensen RHB (2017). lmerTest package:
+tests in linear mixed effects models. *Journal of Statistical Software*,
+82(13), 1-26.
+[doi:10.18637/jss.v082.i13](https://doi.org/10.18637/jss.v082.i13)
+
+Benjamini Y, Hochberg Y (1995). Controlling the false discovery rate: a
+practical and powerful approach to multiple testing. *Journal of the
+Royal Statistical Society: Series B*, 57(1), 289-300.
+[doi:10.1111/j.2517-6161.1995.tb02031.x](https://doi.org/10.1111/j.2517-6161.1995.tb02031.x)
+
 ## Author
 
 John Lennon L. Calorio
@@ -192,7 +209,6 @@ John Lennon L. Calorio
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
 set.seed(42)
 n_subj  <- 20
 n_times <- 2
@@ -218,9 +234,51 @@ result <- run_mixedmodel(
   formula  = ".feature ~ time + age + (1 | subject_id)",
   group    = "time"
 )
+#> 'subject_col' not specified; using detected column: 'subject_id'.
+#> 
+#> run_mixedmodel complete: 3/3 features fitted successfully (100.0%).
 
 print(result)
+#> === run_mixedmodel ===
+#>   Features analysed : 3
+#>   Successful models : 3
+#>   Failed / skipped  : 0
+#>   Success rate      : 100.0%
 summary(result)
+#> ---------------------------------------
+#> run_mixedmodel - Analysis Summary
+#> ---------------------------------------
+#>   Formula       : .feature ~ time + age + (1 | subject_id)
+#>   Subject col   : subject_id
+#>   P-adj method  : BH
+#>   Features in   : 3
+#>   Converged     : 3
+#>   Failed        : 0
+#> 
+#> -- Top Features by Adjusted P-value --
+#>    feature        term      estimate      p_value        p_adj stars
+#>    glucose (Intercept)  5.417529e+00 4.463334e-13 1.339000e-12   ***
+#>    insulin (Intercept)  8.477767e+01 1.029527e-09 1.544290e-09   ***
+#>  PA O-28:1 (Intercept)  1.314088e+00 1.724036e-04 1.724036e-04   ***
+#>    insulin     timepre -1.249302e+01 1.701740e-04 5.105219e-04   ***
+#>    glucose     timepre -5.272202e-01 9.172948e-03 1.375942e-02     *
+#>  PA O-28:1     timepre -1.146388e-01 1.904673e-01 1.904673e-01      
+#>    insulin         age  1.708731e-01 2.997114e-01 8.991343e-01      
+#>    glucose         age  1.155782e-04 9.911166e-01 9.911166e-01      
+#>  PA O-28:1         age -2.594189e-03 6.639419e-01 9.911166e-01      
 head(result$combined_fixed_effects)
-} # }
+#>   feature        term      estimate  std_error       df     t_value
+#> 1 glucose (Intercept)  5.417529e+00 0.49825353 37.00000 10.87303635
+#> 2 glucose         age  1.155782e-04 0.01031082 37.00000  0.01120942
+#> 3 glucose     timepre -5.272202e-01 0.19173681 37.00000 -2.74970806
+#> 4 insulin (Intercept)  8.477767e+01 7.70562141 19.12266 11.00205465
+#> 5 insulin         age  1.708731e-01 0.16001951 18.00000  1.06782656
+#> 6 insulin     timepre -1.249302e+01 2.68017781 19.00000 -4.66126710
+#>        p_value     ci_lower   ci_upper        p_adj stars
+#> 1 4.463334e-13   4.44096979  6.3940878 1.339000e-12   ***
+#> 2 9.911166e-01  -0.02009325  0.0203244 9.911166e-01      
+#> 3 9.172948e-03  -0.90301748 -0.1514230 1.375942e-02     *
+#> 4 1.029527e-09  69.67492741 99.8804083 1.544290e-09   ***
+#> 5 2.997114e-01  -0.14275940  0.4845056 8.991343e-01      
+#> 6 1.701740e-04 -17.74607665 -7.2399727 5.105219e-04   ***
 ```

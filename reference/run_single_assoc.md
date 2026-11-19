@@ -57,6 +57,14 @@ A list with the following components:
 - `raw_results`: A named list containing the full test objects returned
   by the underlying R functions.
 
+## References
+
+Pearson K (1900). On the criterion that a given system of deviations
+from the probable in the case of a correlated system of variables is
+such that it can be reasonably supposed to have arisen from random
+sampling. *Philosophical Magazine*, 50(302), 157-175.
+[doi:10.1080/14786440009463897](https://doi.org/10.1080/14786440009463897)
+
 ## Author
 
 John Lennon L. Calorio

@@ -219,6 +219,35 @@ P-values are adjusted using `p_adjust_method`.
 
 - **Odds Ratio (paired)** for 2x2 paired (McNemar's) tables.
 
+## References
+
+Pearson K (1900). On the criterion that a given system of deviations
+from the probable in the case of a correlated system of variables is
+such that it can be reasonably supposed to have arisen from random
+sampling. *Philosophical Magazine*, 50(302), 157-175.
+[doi:10.1080/14786440009463897](https://doi.org/10.1080/14786440009463897)
+
+Fisher RA (1922). On the interpretation of chi-squared from contingency
+tables, and the calculation of P. *Journal of the Royal Statistical
+Society*, 85(1), 87-94.
+[doi:10.2307/2340521](https://doi.org/10.2307/2340521)
+
+McNemar Q (1947). Note on the sampling error of the difference between
+correlated proportions or percentages. *Psychometrika*, 12(2), 153-157.
+[doi:10.1007/BF02295996](https://doi.org/10.1007/BF02295996)
+
+Cochran WG (1954). Some methods for strengthening the common chi-squared
+tests. *Biometrics*, 10(4), 417-451.
+[doi:10.2307/3001616](https://doi.org/10.2307/3001616)
+
+Cramer H (1946). *Mathematical Methods of Statistics*. Princeton
+University Press.
+
+Ben-Shachar MS, Ludecke D, Makowski D (2020). effectsize: Estimation of
+effect size indices and standardized parameters. *Journal of Open Source
+Software*, 5(56), 2815.
+[doi:10.21105/joss.02815](https://doi.org/10.21105/joss.02815)
+
 ## See also
 
 [`run_summarytable`](https://jllcalorio.github.io/pondeR/reference/run_summarytable.md)
@@ -230,20 +259,145 @@ John Lennon L. Calorio
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
 # --- Example 1: 2x2 Independent Test (Auto -> Chi-square) ---
 data(mtcars)
 res <- run_assoc(x = mtcars, var1 = "am", var2 = "vs",
                  force_categorical = TRUE)
+#> Warning: Column 'am' (numeric) coerced to factor via `force_categorical = TRUE`.
+#> Warning: Column 'vs' (numeric) coerced to factor via `force_categorical = TRUE`.
+#> Post-hoc tests skipped: applicable only for tables where one dimension is binary (2 x C or R x 2).
+#> 
+#> --- Test Results ---
+#> Test Selected: Pearson's Chi-square test
+#> X-squared: 0.3475
+#> P-value: 0.5555
+#> Interpretation: No significant association detected (p >= 0.05)
 print(res)
+#> 
+#> === Automatic Categorical Comparison ===
+#> 
+#> Test Used: Pearson's Chi-square test
+#> Variables: am vs. vs
+#> Paired: FALSE
+#> 
+#> Test Results:
+#>   X-squared: 0.3475
+#>   P-value: 0.5555
+#>   Interpretation: No significant association detected.
+#>   NA
+#> 
+#> Observed Frequencies:
+#>    0 1
+#> 0 12 7
+#> 1  6 7
+#> 
+#> Warnings:
+#>   - Column 'am' (numeric) coerced to factor via `force_categorical = TRUE`.
+#>   - Column 'vs' (numeric) coerced to factor via `force_categorical = TRUE`.
 summary(res)
+#> 
+#> === Detailed Categorical Comparison Summary ===
+#> 
+#> Row Variable:    am
+#> Col Variable:    vs
+#> Paired:          FALSE
+#> Test Strategy:   auto (alpha = 0.05)
+#> Test Selected:   Pearson's Chi-square test
+#> 
+#> --- Observed Frequencies ---
+#>    0 1
+#> 0 12 7
+#> 1  6 7
+#> 
+#> --- Expected Frequencies ---
+#>       0    1
+#> 0 10.69 8.31
+#> 1  7.31 5.69
+#> 
+#> --- Pearson Residuals ---
+#>       0     1
+#> 0  0.40 -0.46
+#> 1 -0.49  0.55
+#> 
+#> --- Standardized Residuals ---
+#>       0     1
+#> 0  0.95 -0.95
+#> 1 -0.95  0.95
+#>   (Values beyond |1.96| or |2.58| indicate cells driving the association)
+#> 
+#> --- Assumption Checks ---
+#>                 check       result decision
+#>  Expected freq. > 5.0 4/4 cells OK       OK
+#> 
+#> --- Statistical Test Results ---
+#>   Method: Pearson's Chi-squared test with Yates' continuity correction
+#>   X-squared: 0.3475
+#>   df: 1
+#>   p-value: 0.5555
+#> 
+#> --- Measures of Association ---
+#> Metric:    Phi / Odds Ratio
+#> Estimate:  0.000 [95% CI: 0.000, 1.000]
+#> Magnitude: tiny
+#> 
+#> --- Interpretation ---
+#> Result: NO significant association detected (p >= 0.05).
+#> 
+#> --- Warnings ---
+#>   - Column 'am' (numeric) coerced to factor via `force_categorical = TRUE`.
+#>   - Column 'vs' (numeric) coerced to factor via `force_categorical = TRUE`.
 
 # --- Example 2: RxC Independent Test ---
 data(HairEyeColor)
 he <- as.data.frame.table(HairEyeColor)
 he_male <- he[he$Sex == "Male", ]
 res_hair <- run_assoc(x = he_male, var1 = "Hair", var2 = "Eye", weight = "Freq")
+#> Note: Expected counts < 5.0 detected. Using Fisher's Exact Test.
+#> Exact Fisher's test failed (possibly out of memory). Switching to simulation.
+#> Post-hoc tests skipped: applicable only for tables where one dimension is binary (2 x C or R x 2).
+#> 
+#> --- Test Results ---
+#> Test Selected: Fisher's Exact Test
+#> P-value: < 0.001
+#> Interpretation: Significant association detected (p < 0.05) ***
+#> 
 summary(res_hair)
+#> 
+#> === Detailed Categorical Comparison Summary ===
+#> 
+#> Row Variable:    Hair
+#> Col Variable:    Eye
+#> Paired:          FALSE
+#> Test Strategy:   auto (alpha = 0.05)
+#> Test Selected:   Fisher's Exact Test
+#> 
+#> --- Observed Frequencies ---
+#>       Brown Blue Hazel Green
+#> Black    32   11    10     3
+#> Brown    53   50    25    15
+#> Red      10   10     7     7
+#> Blond     3   30     5     8
+#> 
+#> --- Assumption Checks ---
+#>           check                   result decision
+#>  Test Selection Fisher's Exact Test used       OK
+#> 
+#> --- Statistical Test Results ---
+#>   Method: Fisher's Exact Test for Count Data with simulated p-value
+#>   (based on 2000 replicates)
+#>   p-value: < 0.001
+#> 
+#> --- Measures of Association ---
+#> Metric:    Cramer's V
+#> Estimate:  NA [95% CI: 0.092, 1.000]
+#> Magnitude: unknown
+#> 
+#> --- Interpretation ---
+#> Result: SIGNIFICANT association detected (p < 0.05).
+#> Strength: unknown (Cramer's V = NA).
+#> 
+#> --- Warnings ---
+#>   - Exact Fisher's test failed (possibly out of memory). Switching to simulation.
 
 # --- Example 3: Paired 2x2 (McNemar's) ---
 set.seed(42)
@@ -255,12 +409,81 @@ after[before == "Yes"][1:3]  <- "No"
 paired_df <- data.frame(before = before, after = after)
 res_paired <- run_assoc(x = paired_df, var1 = "before", var2 = "after",
                          paired = TRUE)
+#> Post-hoc tests skipped: applicable only for tables where one dimension is binary (2 x C or R x 2).
+#> 
+#> --- Test Results ---
+#> Test Selected: McNemar's test
+#> McNemar's chi-squared: 5.8824
+#> P-value: 0.0153
+#> Interpretation: Significant association detected (p < 0.05) ***
+#> Odds Ratio: 4.667 (positive change) (95% CI: 1.341, 16.239)
 summary(res_paired)
+#> 
+#> === Detailed Categorical Comparison Summary ===
+#> 
+#> Row Variable:    before
+#> Col Variable:    after
+#> Paired:          TRUE
+#> Test Strategy:   mcnemar (alpha = 0.05)
+#> Test Selected:   McNemar's test
+#> 
+#> --- Observed Frequencies ---
+#>     No Yes
+#> No  52  14
+#> Yes  3  31
+#> 
+#> --- Assumption Checks ---
+#>           check           result decision
+#>  Data Structure 2x2 paired table       OK
+#> 
+#> --- Statistical Test Results ---
+#>   Method: McNemar's Chi-squared test with continuity correction
+#>   McNemar's chi-squared: 5.8824
+#>   df: 1
+#>   p-value: 0.0153
+#> 
+#> --- Measures of Association ---
+#> Metric:    Odds Ratio (paired)
+#> Estimate:  4.667 [95% CI: 1.341, 16.239]
+#> Magnitude: positive change
+#> 
+#> --- Interpretation ---
+#> Result: SIGNIFICANT association detected (p < 0.05).
+#> Strength: positive change (Odds Ratio (paired) = 4.667).
 
 # --- Example 4: Force Chi-square ---
 res_chisq <- run_assoc(x = mtcars, var1 = "am", var2 = "vs",
                         test_type = "chisq", continuity_correction = TRUE,
                         force_categorical = TRUE)
+#> Warning: Column 'am' (numeric) coerced to factor via `force_categorical = TRUE`.
+#> Warning: Column 'vs' (numeric) coerced to factor via `force_categorical = TRUE`.
+#> Post-hoc tests skipped: applicable only for tables where one dimension is binary (2 x C or R x 2).
+#> 
+#> --- Test Results ---
+#> Test Selected: Pearson's Chi-square test (forced)
+#> X-squared: 0.3475
+#> P-value: 0.5555
+#> Interpretation: No significant association detected (p >= 0.05)
 print(res_chisq)
-} # }
+#> 
+#> === Automatic Categorical Comparison ===
+#> 
+#> Test Used: Pearson's Chi-square test (forced)
+#> Variables: am vs. vs
+#> Paired: FALSE
+#> 
+#> Test Results:
+#>   X-squared: 0.3475
+#>   P-value: 0.5555
+#>   Interpretation: No significant association detected.
+#>   NA
+#> 
+#> Observed Frequencies:
+#>    0 1
+#> 0 12 7
+#> 1  6 7
+#> 
+#> Warnings:
+#>   - Column 'am' (numeric) coerced to factor via `force_categorical = TRUE`.
+#>   - Column 'vs' (numeric) coerced to factor via `force_categorical = TRUE`.
 ```

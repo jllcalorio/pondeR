@@ -161,6 +161,12 @@ immediately clear whether each OR falls in the "decreased odds" or
 Individual rows where `low` and/or `high` are `NA` will have their error
 bars silently omitted; the OR dot is still plotted.
 
+## References
+
+Wickham H (2016). *ggplot2: Elegant Graphics for Data Analysis*.
+Springer-Verlag New York.
+[doi:10.1007/978-3-319-24277-4](https://doi.org/10.1007/978-3-319-24277-4)
+
 ## See also
 
 [`run_logreg`](https://jllcalorio.github.io/pondeR/reference/run_logreg.md),

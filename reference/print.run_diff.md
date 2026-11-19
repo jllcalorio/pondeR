@@ -13,7 +13,8 @@ print(x, ...)
 
 - x:
 
-  An object from `run_diff`.
+  An object from
+  [`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md).
 
 - ...:
 

@@ -133,6 +133,15 @@ present.
 plotly objects requires plotly with a working reticulate/kaleido
 installation: `reticulate::py_install("kaleido")`.
 
+## References
+
+Wickham H (2016). *ggplot2: Elegant Graphics for Data Analysis*.
+Springer-Verlag New York.
+[doi:10.1007/978-3-319-24277-4](https://doi.org/10.1007/978-3-319-24277-4)
+
+Sievert C (2020). *Interactive Web-Based Data Visualization with R,
+plotly, and shiny*. Chapman and Hall/CRC. <https://plotly-r.com>
+
 ## Author
 
 John Lennon L. Calorio
@@ -140,26 +149,17 @@ John Lennon L. Calorio
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-library(ggplot2)
+out <- tempdir()
+p <- ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg)) + ggplot2::geom_point()
 
-# Single ggplot — filename is respected
-p <- ggplot(mtcars, aes(wt, mpg)) + geom_point()
-save_plots(p, filename = "AUROC All (Neg)")
+# Single ggplot
+save_plots(p, filename = "scatter", folder = out, width = 4, height = 3,
+           dpi = 72)
+#> Plot saved [1/1]: /tmp/Rtmpg44MIm/scatter.png
 
-# List of ggplots — filename is ignored; list names are used
-p2 <- ggplot(iris, aes(Sepal.Length, Sepal.Width, colour = Species)) +
-        geom_point()
-save_plots(list(scatter = p, iris_plot = p2))
-
-# Accessing a list slot with multiple plots (auto-unpacked)
-res <- run_auc(data = mydata, response = "group", predictors = c("A","B"))
-save_plots(res$plots, folder = "figures")
-
-# Override format for all plots
-save_plots(list(scatter = p, iris_plot = p2), format = "pdf")
-
-# Base-R plot via a zero-argument function
-save_plots(list(hist_mpg = function() hist(mtcars$mpg, main = "MPG")))
-} # }
+# Named list: list names become file names; base-R plots as functions
+save_plots(list(scatter = p, hist_mpg = function() hist(mtcars$mpg)),
+           folder = out, format = "png", width = 4, height = 3, dpi = 72)
+#> Plot saved [1/2]: /tmp/Rtmpg44MIm/scatter (1).png
+#> Plot saved [2/2]: /tmp/Rtmpg44MIm/hist_mpg.png
 ```

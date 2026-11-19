@@ -43,6 +43,10 @@ run_diff(
   group_order = NULL,
   subgroup = NULL,
   summary_table = FALSE,
+  simplify = TRUE,
+  n_digits_pvalues = 3,
+  n_digits = 2,
+  zero_as_exp = TRUE,
   verbose = TRUE,
   num_cores = 1
 )
@@ -52,14 +56,18 @@ run_diff(
 
 - x:
 
-  A data frame, or an object of class `"run_DIpreprocess"`. If a data
-  frame, it should contain only the numeric features/metabolites to be
-  analysed.
+  A data frame (or an object of class `"run_DIpreprocess"`) containing
+  at least the numeric outcome column(s). Non-numeric columns are
+  permitted and ignored; only the column(s) named in `outcome` must be
+  numeric. When `metadata` is `NULL`, `x` is also used as the metadata
+  source (single data-frame workflow).
 
 - metadata:
 
   A data frame containing sample-level metadata (e.g., grouping,
-  subgroups, subject IDs). Required if `x` is a data frame.
+  subgroups, subject IDs). When `NULL` (default), `x` is used for both
+  feature values and metadata — useful when a single data frame holds
+  all columns (see Examples).
 
 - outcome:
 
@@ -86,11 +94,31 @@ run_diff(
 - subject_id:
 
   Character string naming the subject identifier column found in
-  `metadata`. Required when `within` is non-`NULL`.
+  `metadata`. Used in two contexts:
+
+  1.  **Repeated-measures / mixed ANOVA** (`within` is non-`NULL`):
+      required.
+
+  2.  **Paired two-sample test** (`paired = TRUE`, two groups): optional
+      but strongly recommended. When supplied, rows are sorted by
+      subject within each group so that `group1[i]` and `group2[i]`
+      refer to the same subject, and subject presence is verified across
+      both groups. Without `subject_id`, row order is assumed to define
+      the pairing (a warning is issued).
 
 - paired:
 
-  Logical; whether observations are paired. Default `FALSE`.
+  Logical; whether to treat observations as paired (two-sample designs
+  only). Default `FALSE`.
+
+  - Normality is assessed on the **within-subject differences** rather
+    than per group.
+
+  - Homogeneity of variance is not tested (irrelevant for paired
+    designs).
+
+  - Provide `subject_id` to guarantee correct pair alignment when rows
+    are not already sorted by subject within each group.
 
 - test_type:
 
@@ -151,7 +179,10 @@ run_diff(
 
 - p_adjust_method:
 
-  P-value adjustment method for post-hoc comparisons. Default `"BH"`.
+  P-value adjustment method for multiple testing correction. Applied to
+  post-hoc comparison p-values (when available) and to main test
+  p-values in summary tables when multiple outcomes are analyzed.
+  Default `"BH"`.
 
 - group_order:
 
@@ -167,6 +198,38 @@ run_diff(
   Logical; when `outcome` has length \> 1 and `TRUE`, appends
   `$summary_table` (and subgroup summary tables) to the returned list.
   Default `FALSE`.
+
+- simplify:
+
+  Logical; when `summary_table = TRUE`, controls whether
+  `$summary_table` (and subgroup tables) are post-processed into a
+  compact, presentation-ready form (class `"run_diff_summary"`, with an
+  [`as_gt`](https://jllcalorio.github.io/pondeR/reference/as_gt.md)
+  method). See
+  [`.simplify_summary_table`](https://jllcalorio.github.io/pondeR/reference/dot-simplify_summary_table.md)
+  for the full set of transformations. Default `TRUE`.
+
+- n_digits_pvalues:
+
+  Numeric or `NULL`; decimal places for `p_value` / `p_value_adj` in
+  `$summary_table` when `simplify = TRUE`. `NULL` auto-formats (3 d.p.
+  when \\p \< 0.10\\, otherwise 1 d.p.), matching
+  [`run_summarytable`](https://jllcalorio.github.io/pondeR/reference/run_summarytable.md)'s
+  `n_digits_pvalues`. Default `3`.
+
+- n_digits:
+
+  Integer; decimal places for numeric `$summary_table` columns
+  (`statistic`, `mean_*`, effect-size estimate/CI) when
+  `simplify = TRUE`. Default `2`.
+
+- zero_as_exp:
+
+  Logical; when `TRUE` (default) and `simplify = TRUE`, numeric
+  `$summary_table` values that round to `0` at `n_digits` but are
+  genuinely non-zero are shown in scientific notation, matching
+  [`run_summarytable`](https://jllcalorio.github.io/pondeR/reference/run_summarytable.md)'s
+  `zero_as_exp`.
 
 - verbose:
 
@@ -230,9 +293,79 @@ epsilon-squared (Kruskal-Wallis), generalized or partial eta-squared (RM
 non-parametric tests the `interpretation` column reads "X tends to have
 larger/smaller values than Y".
 
+## Note
+
+**Paired-test workflow:** `paired = TRUE` applies only to two-group
+comparisons. When the data are in long format (one row per observation,
+a group column, and a subject ID column), pass the data frame as `x`
+(with `metadata = NULL` or the same frame) and supply `subject_id`. The
+function will sort both groups by subject, verify that every subject
+appears in each group, and test normality on the within-subject
+differences. Example:
+
+      # sleep: 'extra' is outcome, 'group' is the two-level factor,
+      # 'ID' identifies the subject.
+      run_diff(sleep, outcome = "extra", group = "group",
+               paired = TRUE, subject_id = "ID")
+
+Without `subject_id`, pairs are assumed to be defined by row order
+within each group (a warning is emitted). Use `within` + `subject_id`
+instead of `paired` for repeated-measures ANOVA (\> 2 time points /
+conditions).
+
+## References
+
+Shapiro SS, Wilk MB (1965). An analysis of variance test for normality
+(complete samples). *Biometrika*, 52(3-4), 591-611.
+[doi:10.1093/biomet/52.3-4.591](https://doi.org/10.1093/biomet/52.3-4.591)
+
+Levene H (1960). Robust tests for equality of variances. In I. Olkin
+(Ed.), *Contributions to Probability and Statistics* (pp. 278-292).
+Stanford University Press.
+
+Welch BL (1947). The generalization of 'Student's' problem when several
+different population variances are involved. *Biometrika*, 34(1-2),
+28-35.
+[doi:10.1093/biomet/34.1-2.28](https://doi.org/10.1093/biomet/34.1-2.28)
+
+Welch BL (1951). On the comparison of several mean values: an
+alternative approach. *Biometrika*, 38(3-4), 330-336.
+[doi:10.1093/biomet/38.3-4.330](https://doi.org/10.1093/biomet/38.3-4.330)
+
+Mann HB, Whitney DR (1947). On a test of whether one of two random
+variables is stochastically larger than the other. *The Annals of
+Mathematical Statistics*, 18(1), 50-60.
+[doi:10.1214/aoms/1177730491](https://doi.org/10.1214/aoms/1177730491)
+
+Kruskal WH, Wallis WA (1952). Use of ranks in one-criterion variance
+analysis. *Journal of the American Statistical Association*, 47(260),
+583-621.
+[doi:10.1080/01621459.1952.10483441](https://doi.org/10.1080/01621459.1952.10483441)
+
+Tukey JW (1949). Comparing individual means in the analysis of variance.
+*Biometrics*, 5(2), 99-114.
+[doi:10.2307/3001913](https://doi.org/10.2307/3001913)
+
+Games PA, Howell JF (1976). Pairwise multiple comparison procedures with
+unequal n's and/or variances: a Monte Carlo study. *Journal of
+Educational Statistics*, 1(2), 113-125.
+[doi:10.3102/10769986001002113](https://doi.org/10.3102/10769986001002113)
+
+Dunn OJ (1964). Multiple comparisons using rank sums. *Technometrics*,
+6(3), 241-252.
+[doi:10.1080/00401706.1964.10490181](https://doi.org/10.1080/00401706.1964.10490181)
+
+Cohen J (1988). *Statistical Power Analysis for the Behavioral Sciences*
+(2nd ed.). Lawrence Erlbaum Associates.
+
+Ben-Shachar MS, Ludecke D, Makowski D (2020). effectsize: Estimation of
+effect size indices and standardized parameters. *Journal of Open Source
+Software*, 5(56), 2815.
+[doi:10.21105/joss.02815](https://doi.org/10.21105/joss.02815)
+
 ## See also
 
-`run_DIpreprocess`,
+[`run_DIpreprocess`](https://jllcalorio.github.io/dimsprepr/reference/run_DIpreprocess.html),
 [`run_summarytable`](https://jllcalorio.github.io/pondeR/reference/run_summarytable.md),
 [`get_volcanodata`](https://jllcalorio.github.io/pondeR/reference/get_volcanodata.md)
 
@@ -244,28 +377,36 @@ John Lennon L. Calorio
 
 ``` r
 if (FALSE) { # \dontrun{
-# --- 3+ Groups (auto) ---
-res_iris <- run_diff(iris, "Sepal.Length", "Species")
+# --- Single data frame: x serves as its own metadata ---
+
+# 3+ groups (auto test selection)
+res_iris <- run_diff(iris, outcome = "Sepal.Length", group = "Species")
 print(res_iris); summary(res_iris)
 
-# --- Two-sample independent ---
+# Two-sample independent
 mtcars$am <- factor(mtcars$am, labels = c("automatic", "manual"))
-run_diff(mtcars, "mpg", "am")
+run_diff(mtcars, outcome = "mpg", group = "am")
 
-# --- Paired ---
-run_diff(sleep, "extra", "group", paired = TRUE)
+# Paired (with subject alignment)
+run_diff(sleep, outcome = "extra", group = "group",
+         paired = TRUE, subject_id = "ID")
 
-# --- Multi-outcome with summary table ---
+# --- Separate x / metadata data frames ---
+
+# Multi-outcome with summary table
 outcomes <- c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width")
-res_multi <- run_diff(iris, outcomes, "Species",
+x_iris   <- iris[, outcomes]
+meta_iris <- iris["Species"]
+res_multi <- run_diff(x_iris, meta_iris, outcomes, "Species",
                       summary_table = TRUE, verbose = FALSE)
 res_multi$summary_table
 
 # --- One-way RM ANOVA ---
-run_diff(df_long, "HeartRate", within = "Time", subject_id = "ID")
+run_diff(df_long, outcome = "HeartRate",
+         within = "Time", subject_id = "ID")
 
 # --- Mixed ANOVA ---
-run_diff(df_long, "HeartRate", group = "Group",
+run_diff(df_long, outcome = "HeartRate", group = "Group",
          within = "Time", subject_id = "ID")
 } # }
 ```

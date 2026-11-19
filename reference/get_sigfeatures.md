@@ -4,7 +4,8 @@ Extracts the names of predictor features that received non-zero
 coefficients from a fitted regularized regression model produced by
 [`run_regreg`](https://jllcalorio.github.io/pondeR/reference/run_regreg.md).
 By default the best-performing model (as determined internally by
-`run_regreg`) is used. A specific alpha value may be requested instead.
+[`run_regreg`](https://jllcalorio.github.io/pondeR/reference/run_regreg.md))
+is used. A specific alpha value may be requested instead.
 
 Intercept terms are excluded from the returned vector unless
 `include_intercept = TRUE`. For multinomial models, where the same
@@ -36,8 +37,10 @@ get_sigfeatures(
 
   A single numeric value in `[0, 1]` specifying which fitted model to
   query. Must match one of the alpha values that was passed to
-  `run_regreg`. When `NULL` (default), the best-performing model
-  selected by `run_regreg` is used.
+  [`run_regreg`](https://jllcalorio.github.io/pondeR/reference/run_regreg.md).
+  When `NULL` (default), the best-performing model selected by
+  [`run_regreg`](https://jllcalorio.github.io/pondeR/reference/run_regreg.md)
+  is used.
 
 - include_intercept:
 
@@ -104,6 +107,13 @@ get_sigfeatures(
 
 Extract Significant Features from a pondeR Model Result
 
+## References
+
+Friedman J, Hastie T, Tibshirani R (2010). Regularization paths for
+generalized linear models via coordinate descent. *Journal of
+Statistical Software*, 33(1), 1-22.
+[doi:10.18637/jss.v033.i01](https://doi.org/10.18637/jss.v033.i01)
+
 ## See also
 
 [`run_regreg`](https://jllcalorio.github.io/pondeR/reference/run_regreg.md)
@@ -111,7 +121,9 @@ Extract Significant Features from a pondeR Model Result
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
+if (requireNamespace("glmnet", quietly = TRUE) &&
+    requireNamespace("caret", quietly = TRUE)) {
+# \donttest{
 ## ---- Setup ---------------------------------------------------------------
 set.seed(42)
 n  <- 80
@@ -167,5 +179,10 @@ res_num  <- run_regreg(
   pred = "Score", alpha = 0.5, seed = 7
 )
 get_sigfeatures(res_num)
-} # }
+# }
+}
+#> Warning: Passing 'maxit' to glmnet() is deprecated. Use control = list(maxit = ...) instead.
+#> No non-zero features from 'x' found for the selected model (alpha = 1). The model may have selected no predictors at the chosen lambda. Consider using lambda = "min" or a different alpha.
+#> 1 non-zero coefficient(s) belonging to 'not_penalized' metadata column(s) were excluded from the output. They are still part of the fitted model.
+#> [1] "feat_16" "feat_19" "feat_2" 
 ```

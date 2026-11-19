@@ -13,8 +13,8 @@ the unexported single-outcome engine that powers
 ``` r
 plot_diff(
   x,
-  outcome,
-  group,
+  outcome = NULL,
+  group = NULL,
   metadata = NULL,
   plot_vars = NULL,
   plot_type = "boxplot",
@@ -58,21 +58,37 @@ plot_diff(
 
 - x:
 
-  A data frame containing the variables to plot.
+  A data frame containing the variables to plot, OR a pre-computed
+  multi-outcome `"run_diff"` object (i.e. the result of
+  `run_diff(..., summary_table = TRUE)` with more than one `outcome`).
+  When `x` is a `"run_diff"` object, `plot_diff` reuses its statistics
+  instead of recomputing them, and prefers the `p_value_adj` column of
+  `x$summary_table` (falling back to `p_value` when adjustment was not
+  performed, i.e. a single outcome) for determining significance.
+  `subgroup` and `sample_id`/`label_points` are not supported in this
+  mode; run `run_diff(..., subgroup = ...)` beforehand, or pass the
+  underlying data frame instead.
 
 - outcome:
 
   Character string specifying the column name for the numeric outcome
   variable. Used as the default for `plot_vars` if it is not specified.
+  Ignored when `x` is a `"run_diff"` object (use `plot_vars` to select
+  outcomes instead).
 
 - group:
 
   Character string specifying the column name for the grouping variable.
+  Ignored when `x` is a `"run_diff"` object (the grouping variable used
+  by
+  [`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md)
+  is reused automatically).
 
 - metadata:
 
   A data frame containing metadata (e.g., grouping variables). If
-  `NULL`, `x` is used as metadata. Default is `NULL`.
+  `NULL`, `x` is used as metadata. Default is `NULL`. Not used when `x`
+  is a `"run_diff"` object.
 
 - plot_vars:
 
@@ -271,9 +287,34 @@ A list containing:
 
 Create Box or Violin Plots with Statistical Comparisons
 
+## References
+
+Wickham H (2016). *ggplot2: Elegant Graphics for Data Analysis*.
+Springer-Verlag New York.
+[doi:10.1007/978-3-319-24277-4](https://doi.org/10.1007/978-3-319-24277-4)
+
+Mann HB, Whitney DR (1947). On a test of whether one of two random
+variables is stochastically larger than the other. *The Annals of
+Mathematical Statistics*, 18(1), 50-60.
+[doi:10.1214/aoms/1177730491](https://doi.org/10.1214/aoms/1177730491)
+
+Kruskal WH, Wallis WA (1952). Use of ranks in one-criterion variance
+analysis. *Journal of the American Statistical Association*, 47(260),
+583-621.
+[doi:10.1080/01621459.1952.10483441](https://doi.org/10.1080/01621459.1952.10483441)
+
+Welch BL (1947). The generalization of 'Student's' problem when several
+different population variances are involved. *Biometrika*, 34(1-2),
+28-35.
+[doi:10.1093/biomet/34.1-2.28](https://doi.org/10.1093/biomet/34.1-2.28)
+
+Dunn OJ (1964). Multiple comparisons using rank sums. *Technometrics*,
+6(3), 241-252.
+[doi:10.1080/00401706.1964.10490181](https://doi.org/10.1080/00401706.1964.10490181)
+
 ## See also
 
-`run_DIpreprocess`,
+[`run_DIpreprocess`](https://jllcalorio.github.io/dimsprepr/reference/run_DIpreprocess.html),
 [`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md)
 
 ## Author
@@ -283,7 +324,6 @@ John Lennon L. Calorio
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
 # Example 1: Box plot with mean dot and mean value annotation
 results <- plot_diff(
   x            = PlantGrowth,
@@ -294,6 +334,7 @@ results <- plot_diff(
 )
 print(results$plots$weight)
 
+
 # Example 2: Global font size scaling and omnibus p-value annotation
 results2 <- plot_diff(
   x                = PlantGrowth,
@@ -303,6 +344,7 @@ results2 <- plot_diff(
   show_global_p    = TRUE
 )
 print(results2$plots$weight)
+
 
 # Example 3: Paired comparison with numeric p-values
 sleep_data    <- sleep
@@ -316,5 +358,5 @@ results3 <- plot_diff(
   format_p_numeric = 4
 )
 print(results3$plots$extra)
-} # }
+
 ```

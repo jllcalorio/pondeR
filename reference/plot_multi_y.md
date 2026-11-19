@@ -293,6 +293,16 @@ painter's order. The default `c("hist", "area", "line", "dot")` places
 histograms at the back, then areas, then lines, with dots in the
 foreground.
 
+## References
+
+Wickham H (2016). *ggplot2: Elegant Graphics for Data Analysis*.
+Springer-Verlag New York.
+[doi:10.1007/978-3-319-24277-4](https://doi.org/10.1007/978-3-319-24277-4)
+
+Okabe M, Ito K (2008). *Color Universal Design (CUD): How to make
+figures and presentations that are friendly to colorblind people*.
+<https://jfly.uni-koeln.de/color/>
+
 ## Author
 
 John Lennon L. Calorio
@@ -300,7 +310,6 @@ John Lennon L. Calorio
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
 # --- Basic: area on primary, two lines on primary, faceted by Year ---
 set.seed(42)
 df <- data.frame(
@@ -322,6 +331,11 @@ plot_multi_y(
   facet         = "Year",
   title         = NULL
 )
+#> Warning: The following column(s) contain NA values: RdRP GC/L, N GC/L. Rows where x_axis ("Week No.") is non-missing are retained; gaps will appear in the affected series at those x positions.
+#> Warning: Ignoring unknown aesthetics: fill
+#> Warning: Removed 20 rows containing missing values or values outside the scale range
+#> (`geom_line()`).
+
 
 # --- Dual axis: cases on primary, viral load on secondary ---
 plot_multi_y(
@@ -333,5 +347,9 @@ plot_multi_y(
   y_lab_secondary    = "GC/L",
   facet              = "Year"
 )
-} # }
+#> Warning: The following column(s) contain NA values: RdRP GC/L, N GC/L. Rows where x_axis ("Week No.") is non-missing are retained; gaps will appear in the affected series at those x positions.
+#> Warning: Ignoring unknown aesthetics: fill
+#> Warning: Removed 20 rows containing missing values or values outside the scale range
+#> (`geom_line()`).
+
 ```

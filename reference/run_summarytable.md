@@ -52,6 +52,8 @@ run_summarytable(
   n_digits_pvalues = 3,
   bold_significant_pvalues = TRUE,
   bold_significant_pvalues_at = 0.05,
+  mark_posthoc_significance = TRUE,
+  p_adjust_method = "bonferroni",
   header = "Variable",
   show_n_header = TRUE,
   bold_labels = TRUE,
@@ -266,6 +268,52 @@ run_summarytable(
 
   Numeric. Significance threshold for bolding. Default is `0.05`.
 
+- mark_posthoc_significance:
+
+  Logical. Only takes effect when `add_inferential_pvalues = TRUE`. When
+  `TRUE`, performs post-hoc testing for variables whose omnibus p-value
+  is below `bold_significant_pvalues_at` and marks the significant
+  summary cells with numeric superscripts (numbering starts at 2 for
+  each variable, as 1 is the summary-statistic footnote). For continuous
+  variables with \\\>2\\ groups (ANOVA / Welch's ANOVA /
+  Kruskal-Wallis), pairwise post-hoc comparisons (Tukey HSD /
+  Games-Howell / Dunn's test, as already computed by
+  [`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md))
+  mark the two group columns involved in each significant pair. Not
+  applicable to two-group comparisons (t-test / Mann-Whitney), which
+  have no post-hoc step. For categorical variables (Chi-square /
+  Fisher's exact / McNemar's), adjusted standardized residuals (Z-tests
+  for proportions) are computed per cell of the level-by-group table;
+  cells with an adjusted p-value below `bold_significant_pvalues_at` are
+  individually marked. This includes binary variables that `gtsummary`
+  collapses to a single dichotomous row (e.g. Yes/No): the displayed
+  level is identified from its printed count, and only the ambiguous
+  case of tied counts across levels is left unmarked. A footnote block
+  lists each numbered comparison/cell per variable. For two-group
+  categorical variables (2 x 2 tables) cell-level post-hoc is skipped,
+  since the cells mirror the omnibus test; a one-line direction note
+  (which level is more common in the second group, with column
+  percentages) is added to the footnote instead. For other tables with a
+  two-level `split_by`, the cell p-values are adjusted over one column
+  only (the two columns mirror each other, so there are only as many
+  independent tests as levels). When the omnibus test is significant but
+  no pair/cell is significant after adjustment, a footnote says so. Has
+  no effect when `add_inferential_pvalues = FALSE`. Default is `TRUE`.
+
+- p_adjust_method:
+
+  String. P-value adjustment method used for post-hoc comparisons when
+  `mark_posthoc_significance = TRUE`. Forwarded to
+  [`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md)
+  and
+  [`run_assoc`](https://jllcalorio.github.io/pondeR/reference/run_assoc.md)
+  (affects Dunn's test pairwise p-values for Kruskal-Wallis follow-up),
+  and used directly to adjust the per-cell
+  adjusted-standardized-residual p-values for categorical variables. One
+  of [`stats::p.adjust.methods`](https://rdrr.io/r/stats/p.adjust.html)
+  (`"holm"`, `"hochberg"`, `"hommel"`, `"bonferroni"` (default), `"BH"`,
+  `"BY"`, `"fdr"`, `"none"`).
+
 - header:
 
   String. Header for the variable-label column. Default is `"Variable"`.
@@ -293,12 +341,73 @@ run_summarytable(
   String or `NULL`. Table title. `"auto"` (default) generates a title
   automatically. `NULL` suppresses the title.
 
+- .in_subgroup_recursion:
+
+  Internal use only. Logical flag set to `TRUE` when
+  `run_summarytable()` calls itself recursively to build subgroup
+  tables; not intended to be set by users.
+
 ## Value
 
 A `gt_tbl` object (via
 [`gtsummary::as_gt()`](https://www.danieldsjoberg.com/gtsummary/reference/as_gt.html))
 representing the descriptive (and optionally inferential) statistics
 table.
+
+## References
+
+Sjoberg DD, Whiting K, Curry M, Lavery JA, Larmarange J (2021).
+Reproducible summary tables with the gtsummary package. *The R Journal*,
+13(1), 570-580.
+[doi:10.32614/RJ-2021-053](https://doi.org/10.32614/RJ-2021-053)
+
+Welch BL (1947). The generalization of 'Student's' problem when several
+different population variances are involved. *Biometrika*, 34(1-2),
+28-35.
+[doi:10.1093/biomet/34.1-2.28](https://doi.org/10.1093/biomet/34.1-2.28)
+
+Mann HB, Whitney DR (1947). On a test of whether one of two random
+variables is stochastically larger than the other. *The Annals of
+Mathematical Statistics*, 18(1), 50-60.
+[doi:10.1214/aoms/1177730491](https://doi.org/10.1214/aoms/1177730491)
+
+Kruskal WH, Wallis WA (1952). Use of ranks in one-criterion variance
+analysis. *Journal of the American Statistical Association*, 47(260),
+583-621.
+[doi:10.1080/01621459.1952.10483441](https://doi.org/10.1080/01621459.1952.10483441)
+
+Tukey JW (1949). Comparing individual means in the analysis of variance.
+*Biometrics*, 5(2), 99-114.
+[doi:10.2307/3001913](https://doi.org/10.2307/3001913)
+
+Games PA, Howell JF (1976). Pairwise multiple comparison procedures with
+unequal n's and/or variances: a Monte Carlo study. *Journal of
+Educational Statistics*, 1(2), 113-125.
+[doi:10.3102/10769986001002113](https://doi.org/10.3102/10769986001002113)
+
+Dunn OJ (1964). Multiple comparisons using rank sums. *Technometrics*,
+6(3), 241-252.
+[doi:10.1080/00401706.1964.10490181](https://doi.org/10.1080/00401706.1964.10490181)
+
+Pearson K (1900). On the criterion that a given system of deviations
+from the probable in the case of a correlated system of variables is
+such that it can be reasonably supposed to have arisen from random
+sampling. *Philosophical Magazine*, 50(302), 157-175.
+[doi:10.1080/14786440009463897](https://doi.org/10.1080/14786440009463897)
+
+Fisher RA (1922). On the interpretation of chi-squared from contingency
+tables, and the calculation of P. *Journal of the Royal Statistical
+Society*, 85(1), 87-94.
+[doi:10.2307/2340521](https://doi.org/10.2307/2340521)
+
+McNemar Q (1947). Note on the sampling error of the difference between
+correlated proportions or percentages. *Psychometrika*, 12(2), 153-157.
+[doi:10.1007/BF02295996](https://doi.org/10.1007/BF02295996)
+
+Benjamini Y, Hochberg Y (1995). Controlling the false discovery rate: a
+practical and powerful approach to multiple testing. *Journal of the
+Royal Statistical Society: Series B*, 57(1), 289-300.
+[doi:10.1111/j.2517-6161.1995.tb02031.x](https://doi.org/10.1111/j.2517-6161.1995.tb02031.x)
 
 ## See also
 
@@ -314,93 +423,12 @@ John Lennon L. Calorio
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-library(gtsummary)
-library(dplyr)
+# Quick example
+run_summarytable(iris, split_by = "Species")
 
-set.seed(123)
-sample_df <- data.frame(
-  Age       = sample(c(18:65, NA), 100, replace = TRUE,
-                     prob = c(rep(1, 48), 5)),
-  Gender    = sample(c("Male", "Female", NA), 100, replace = TRUE,
-                     prob = c(0.48, 0.48, 0.04)),
-  Education = sample(c("Elementary", "High School",
-                        "Bachelors", "Masters", NA), 100,
-                     replace = TRUE,
-                     prob = c(0.40, 0.30, 0.15, 0.10, 0.05)),
-  Income    = sample(c(seq(5000, 40000, by = 5000), NA), 100,
-                     replace = TRUE, prob = c(rep(1, 8), 2)),
-  Smoker    = sample(c(1, 0, NA), 100, replace = TRUE,
-                     prob = c(0.25, 0.65, 0.10)),
-  Region    = sample(c("North", "South", "East", "West", NA), 100,
-                     replace = TRUE,
-                     prob = c(0.24, 0.24, 0.24, 0.24, .04))
-)
 
-# Basic descriptive statistics (no grouping)
-sample_df |> run_summarytable()
+  
 
-# Descriptive statistics split by Gender
-sample_df |>
-  run_summarytable(
-    split_by        = "Gender",
-    split_by_header = "Participant Gender",
-    rename_variables = list(Age    ~ "Age (Years)",
-                            Income ~ "Annual Income",
-                            Smoker ~ "Smoking Status")
-  )
 
-# Median and IQR for continuous variables
-sample_df |>
-  run_summarytable(
-    continuous_statistics  = "medianIQR",
-    categorical_statistics = "n",
-    n_digits_continuous    = c(0, 0),
-    n_digits_categorical   = c(0, 0)
-  )
-
-# Inferential p-values using run_diff (continuous) and run_assoc
-# (categorical), auto test selection
-sample_df |>
-  run_summarytable(
-    split_by                = "Gender",
-    add_inferential_pvalues = TRUE
-  )
-
-# Force non-parametric tests for continuous variables
-sample_df |>
-  run_summarytable(
-    split_by                = "Gender",
-    add_inferential_pvalues = TRUE,
-    test_type_continuous    = "nonparametric",
-    test_type_categorical   = "fisher"
-  )
-
-# Paired inferential p-values (descriptive body remains unpaired)
-sample_df |>
-  run_summarytable(
-    split_by                = "Gender",
-    add_inferential_pvalues = TRUE,
-    paired                  = TRUE
-  )
-
-# Combining categorical levels
-sample_df |>
-  run_summarytable(
-    combine_categories = list(
-      Education = list(
-        "Higher Ed" = c("Bachelors", "Masters"),
-        "Schooling" = c("Elementary", "High School")
-      )
-    )
-  )
-
-# Subgroup analysis: separate tables for each Education level,
-# with Gender comparison within each
-sample_df |>
-  run_summarytable(
-    subgroup = "Education",
-    split_by = "Gender"
-  )
-} # }
+Descriptive Statistics Stratified by Species Column
 ```

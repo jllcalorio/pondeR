@@ -27,6 +27,8 @@ changes, testing statistical associations, and visualization.
   : Fold Change Analysis Across Groups
 - [`plot_volcano()`](https://jllcalorio.github.io/pondeR/reference/plot_volcano.md)
   : Volcano Plot for Fold Change and p-value Data
+- [`plot_fcmetric()`](https://jllcalorio.github.io/pondeR/reference/plot_fcmetric.md)
+  : Fold Change vs. Feature Metric Plot (MA-style)
 - [`get_volcanodata()`](https://jllcalorio.github.io/pondeR/reference/get_volcanodata.md)
   : Get Volcano Plot Data
 - [`run_correl()`](https://jllcalorio.github.io/pondeR/reference/run_correl.md)
@@ -82,6 +84,8 @@ exploration of complex datasets.
 
 Other functions to plot metabolomics and metagenomics data.
 
+- [`plot_bar()`](https://jllcalorio.github.io/pondeR/reference/plot_bar.md)
+  : Create Publication-Ready Bar Plots
 - [`plot_meanmap()`](https://jllcalorio.github.io/pondeR/reference/plot_meanmap.md)
   : Mean Intensity Heatmap with Hierarchical Clustering Dendrogram
 - [`plot_multi_y()`](https://jllcalorio.github.io/pondeR/reference/plot_multi_y.md)
@@ -108,6 +112,8 @@ Functions export data frames to Excel/CSV files and figure to PNGs, etc.
   : Save Data Frames, Tibbles, or Matrices to an Excel File
 - [`save_plots()`](https://jllcalorio.github.io/pondeR/reference/save_plots.md)
   : Save Plots to Image or Vector Files
+- [`render_metabolomics()`](https://jllcalorio.github.io/pondeR/reference/render_metabolomics.md)
+  : Render a standalone metabolomics analysis report
 
 ## Utilities & Helpers
 
@@ -146,7 +152,10 @@ Utility functions for data management, relabelling, and S3 methods.
   Regression Result
 
 - [`as_gt()`](https://jllcalorio.github.io/pondeR/reference/as_gt.md) :
-  Convert a run_correl to a gt table
+  Convert a pondeR Result to a gt Table
+
+- [`as_gt(`*`<run_diff_summary>`*`)`](https://jllcalorio.github.io/pondeR/reference/as_gt.run_diff_summary.md)
+  : Convert a simplified run_diff summary_table to a gt table
 
 - [`has_inf()`](https://jllcalorio.github.io/pondeR/reference/has_inf.md)
   : Check if an Object Contains Infinite Values
@@ -179,6 +188,11 @@ Utility functions for data management, relabelling, and S3 methods.
 
 S3 methods used by pondeR.
 
+- [`print(`*`<plot_fcmetric>`*`)`](https://jllcalorio.github.io/pondeR/reference/print.plot_fcmetric.md)
+  :
+
+  Print Method for `plot_fcmetric` Objects
+
 - [`print(`*`<plot_volcano>`*`)`](https://jllcalorio.github.io/pondeR/reference/print.plot_volcano.md)
   :
 
@@ -197,6 +211,9 @@ S3 methods used by pondeR.
   :
 
   Print Method for `run_auc` Objects
+
+- [`print(`*`<run_correl>`*`)`](https://jllcalorio.github.io/pondeR/reference/print.run_correl.md)
+  : Print a run_correl object
 
 - [`print(`*`<run_diff>`*`)`](https://jllcalorio.github.io/pondeR/reference/print.run_diff.md)
   : Print method for run_diff objects
@@ -220,6 +237,10 @@ S3 methods used by pondeR.
 - [`summary(`*`<run_diff>`*`)`](https://jllcalorio.github.io/pondeR/reference/summary.run_diff.md)
   : Summary method for run_diff objects
 
+- [`` `[`( ``*`<run_diff_summary>`*`)`](https://jllcalorio.github.io/pondeR/reference/sub-.run_diff_summary.md)
+  : Subset a run_diff_summary table while keeping its footnote
+  attributes
+
 ## Internal functions
 
 Internal functions used by pondeR.
@@ -227,28 +248,76 @@ Internal functions used by pondeR.
 - [`.assumption_row()`](https://jllcalorio.github.io/pondeR/reference/dot-assumption_row.md)
   : Build the standard assumptions data frame row from a normality
   result
+
 - [`.build_posthoc_df()`](https://jllcalorio.github.io/pondeR/reference/dot-build_posthoc_df.md)
   : Build a standardised post-hoc result data frame
+
 - [`.build_summary_table()`](https://jllcalorio.github.io/pondeR/reference/dot-build_summary_table.md)
   : Build a summary_table data frame from a list of run_diff objects
+
 - [`.check_normality()`](https://jllcalorio.github.io/pondeR/reference/dot-check_normality.md)
   : Check normality of a numeric vector
+
 - [`.check_variance()`](https://jllcalorio.github.io/pondeR/reference/dot-check_variance.md)
   : Run variance-homogeneity test (Levene or Bartlett fallback)
+
 - [`.compute_effect_size()`](https://jllcalorio.github.io/pondeR/reference/dot-compute_effect_size.md)
   : Compute the appropriate effect size for a classical run_diff result
+
+- [`.df_footnote_for_tests()`](https://jllcalorio.github.io/pondeR/reference/dot-df_footnote_for_tests.md)
+  : Footnote explaining what the (now unlabelled) df column holds, per
+  test family
+
+- [`.es_metric_symbol`](https://jllcalorio.github.io/pondeR/reference/dot-es_metric_symbol.md)
+  : Symbolic notation for effect-size metric names, to keep columns
+  narrow
+
 - [`.format_df()`](https://jllcalorio.github.io/pondeR/reference/dot-format_df.md)
   : Format a degrees-of-freedom string consistently across test types
+
+- [`.format_num_simplify()`](https://jllcalorio.github.io/pondeR/reference/dot-format_num_simplify.md)
+  :
+
+  Format a single numeric value, falling back to scientific notation
+  when it would otherwise round to zero (mirrors run_summarytable's
+  zero_as_exp). Whole numbers (e.g. df counts, exact-0/1 CI bounds) are
+  shown bare, with no decimal places, regardless of `dig`.
+
+- [`.format_pvalue_simplify()`](https://jllcalorio.github.io/pondeR/reference/dot-format_pvalue_simplify.md)
+  : Format a p-value string (mirrors run_summarytable's n_digits_pvalues
+  logic)
+
 - [`.parallel_normality()`](https://jllcalorio.github.io/pondeR/reference/dot-parallel_normality.md)
   : Run normality checks in parallel (or sequentially)
+
 - [`.run_diff_single()`](https://jllcalorio.github.io/pondeR/reference/dot-run_diff_single.md)
   : Internal single-outcome run_diff for plot_diff
+
 - [`.run_independent_anova()`](https://jllcalorio.github.io/pondeR/reference/dot-run_independent_anova.md)
   : Execute an independent ANOVA-family test
+
 - [`.run_independent_two_sample()`](https://jllcalorio.github.io/pondeR/reference/dot-run_independent_two_sample.md)
   : Execute an independent two-sample test
+
 - [`.run_paired_two_sample()`](https://jllcalorio.github.io/pondeR/reference/dot-run_paired_two_sample.md)
   : Execute a paired two-sample test
+
 - [`.run_rm_anova()`](https://jllcalorio.github.io/pondeR/reference/dot-run_rm_anova.md)
   : Execute RM or mixed ANOVA and return a full run_diff-compatible
   result list
+
+- [`.simplify_summary_table()`](https://jllcalorio.github.io/pondeR/reference/dot-simplify_summary_table.md)
+  : Simplify a run_diff \$summary_table into a compact,
+  presentation-ready table
+
+- [`.strip_df_labels()`](https://jllcalorio.github.io/pondeR/reference/dot-strip_df_labels.md)
+  : Strip "name = " labels from a .format_df() string and reformat the
+  numbers per n_digits / zero_as_exp, e.g. "df1 = 2, df2 = 27" -\> "2,
+  27", or "num df = 2, denom df = 24.316" -\> "2, 24.32" (n_digits = 2).
+  Needed because non-integer df (e.g. Welch's ANOVA denom df) otherwise
+  keeps .format_df()'s fixed 4-decimal rounding regardless of n_digits.
+
+- [`.superscript_letters`](https://jllcalorio.github.io/pondeR/reference/dot-superscript_letters.md)
+  : Unicode superscript letters a-z, for marking p-values with their
+  test identity in place of the dropped test_used column. Unicode has no
+  superscript "q"; it falls back to a parenthesised "(q)".

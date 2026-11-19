@@ -1,7 +1,8 @@
 # Print Method for `run_reduce` Objects
 
-Provides a concise, informative summary when a `run_reduce` object is
-printed to the console.
+Provides a concise, informative summary when a
+[`run_reduce`](https://jllcalorio.github.io/pondeR/reference/run_reduce.md)
+object is printed to the console.
 
 ## Usage
 
@@ -14,7 +15,8 @@ print(x, ...)
 
 - x:
 
-  An object from `run_reduce`.
+  An object from
+  [`run_reduce`](https://jllcalorio.github.io/pondeR/reference/run_reduce.md).
 
 - ...:
 

@@ -1,7 +1,8 @@
 # Execute RM or mixed ANOVA and return a full run_diff-compatible result list
 
-Called exclusively from the single-outcome path of `run_diff` when
-`within` is non-NULL.
+Called exclusively from the single-outcome path of
+[`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md)
+when `within` is non-NULL.
 
 ## Usage
 

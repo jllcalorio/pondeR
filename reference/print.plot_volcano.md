@@ -1,6 +1,8 @@
 # Print Method for `plot_volcano` Objects
 
-Compact console summary of a `plot_volcano` result.
+Compact console summary of a
+[`plot_volcano`](https://jllcalorio.github.io/pondeR/reference/plot_volcano.md)
+result.
 
 ## Usage
 

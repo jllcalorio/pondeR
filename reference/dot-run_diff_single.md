@@ -1,7 +1,10 @@
 # Internal single-outcome run_diff for plot_diff
 
-A lighter version of `run_diff` that returns a rich list suitable for
-downstream use by `plot_diff`. Not intended for direct use.
+A lighter version of
+[`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md)
+that returns a rich list suitable for downstream use by
+[`plot_diff`](https://jllcalorio.github.io/pondeR/reference/plot_diff.md).
+Not intended for direct use.
 
 ## Usage
 

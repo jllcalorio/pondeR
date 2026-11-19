@@ -170,6 +170,16 @@ before scaling.
 When `orientation = "both"`, the returned object is a named list with
 elements `rows` and `cols`.
 
+## References
+
+Ward JH (1963). Hierarchical grouping to optimize an objective function.
+*Journal of the American Statistical Association*, 58(301), 236-244.
+[doi:10.1080/01621459.1963.10500845](https://doi.org/10.1080/01621459.1963.10500845)
+
+Murtagh F, Contreras P (2012). Algorithms for hierarchical clustering:
+an overview. *WIREs Data Mining and Knowledge Discovery*, 2(1), 86-97.
+[doi:10.1002/widm.53](https://doi.org/10.1002/widm.53)
+
 ## Author
 
 John Lennon L. Calorio

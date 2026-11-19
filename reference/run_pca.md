@@ -219,7 +219,7 @@ Genomics, 7, 142.
 
 ## See also
 
-`run_DIpreprocess`
+[`run_DIpreprocess`](https://jllcalorio.github.io/dimsprepr/reference/run_DIpreprocess.html)
 
 ## Author
 
@@ -228,45 +228,72 @@ John Lennon L. Calorio
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-# Simulate data
-set.seed(123)
-x <- matrix(rnorm(100 * 50, mean = 100, sd = 20),
-            nrow = 100, ncol = 50)
-colnames(x) <- paste0("Feature", 1:50)
-rownames(x) <- paste0("Sample", 1:100)
+meta <- data.frame(Sample = rownames(iris), Species = iris$Species)
 
-metadata <- data.frame(
-  Sample = paste0("Sample", 1:100),
-  Group = rep(c("Control", "Treatment", "QC"), c(40, 40, 20)),
-  Batch = rep(1:4, each = 25),
-  Time = rep(c(0, 6, 12, 24), 25)
-)
+# PCA on pre-scaled data (base scale() output is detected as pre-scaled)
+pca <- run_pca(scale(iris[, 1:4]), meta, group = "Species", verbose = FALSE)
+print(pca)
+#> === Principal Component Analysis ===
+#> Samples:      150 
+#> Features:     4 
+#> PCs computed: 4 
+#> 
+#> Variance explained by first 5 PCs:
+#>   PC1: 73.0% (cumulative: 73.0%)
+#>   PC2: 22.9% (cumulative: 95.8%)
+#>   PC3: 3.7% (cumulative: 99.5%)
+#>   PC4: 0.5% (cumulative: 100.0%)
+#> 
+#> Use plot_scree() to visualize variance explained
+#> Use plot_score() to visualize sample positions
+summary(pca)
+#> $n_samples
+#> [1] 150
+#> 
+#> $n_samples_excluded
+#> [1] 0
+#> 
+#> $excluded_groups
+#> character(0)
+#> 
+#> $n_features
+#> [1] 4
+#> 
+#> $n_pcs
+#> [1] 4
+#> 
+#> $variance_table
+#>    PC Variance_Explained Cumulative Eigenvalue
+#> 1 PC1         72.9624454   72.96245 2.91849782
+#> 2 PC2         22.8507618   95.81321 0.91403047
+#> 3 PC3          3.6689219   99.48213 0.14675688
+#> 4 PC4          0.5178709  100.00000 0.02071484
+#> 
+#> $preprocessing
+#> $preprocessing$came_from_run_scale
+#> [1] TRUE
+#> 
+#> $preprocessing$transformation_applied
+#> [1] FALSE
+#> 
+#> $preprocessing$scaling_applied
+#> [1] FALSE
+#> 
+#> $preprocessing$transform_method
+#> [1] NA
+#> 
+#> $preprocessing$scale_method_used
+#> [1] NA
+#> 
+#> 
 
-# PCA on pre-scaled data (recommended)
-scaled_result <- run_scale(x, method = "auto")
-pca_result <- run_pca(scaled_result$data, metadata)
+# Exclude a group before fitting
+pca2 <- run_pca(scale(iris[, 1:4]), meta, group = "Species",
+                exclude = "setosa", verbose = FALSE)
 
-# PCA excluding QC samples
-pca_result2 <- run_pca(scaled_result$data, metadata, 
-                       group = "Group",
-                       exclude = "QC")
-
-# PCA with automatic scaling, excluding multiple groups
-pca_result3 <- run_pca(x, metadata, 
-                       scale_method = "auto",
-                       group = "Group",
-                       exclude = c("QC", "Blank"))
-
-# PCA with transformation and scaling
-pca_result4 <- run_pca(x, metadata, 
-                       transform_method = "log2",
-                       scale_method = "pareto",
-                       group = "Group",
-                       exclude = "QC")
-
-# View results
-print(pca_result)
-summary(pca_result)
-} # }
+# In-function scaling/transformation needs the dimsprepr package
+if (requireNamespace("dimsprepr", quietly = TRUE)) {
+  pca3 <- run_pca(iris[, 1:4], meta, group = "Species",
+                  scale_method = "pareto", verbose = FALSE)
+}
 ```

@@ -36,7 +36,12 @@ run_logreg(
   crude = FALSE,
   add_vif = TRUE,
   apply_firth = TRUE,
-  force_apply_firth = FALSE
+  force_apply_firth = FALSE,
+  firth_control = NULL,
+  firth_plcontrol = NULL,
+  stepwise = FALSE,
+  step_n = 1L,
+  verbose = FALSE
 )
 ```
 
@@ -143,6 +148,62 @@ run_logreg(
   models regardless of whether zero cells are present. Ignored if
   `apply_firth = FALSE`. Applicable in both standard and crude modes.
 
+- firth_control:
+
+  Optional
+  [`logistf.control`](https://rdrr.io/pkg/logistf/man/logistf.control.html)
+  object passed through to `logistf()`'s `control` argument, governing
+  the iterative fitting algorithm (e.g.
+  `logistf::logistf.control(maxit = 200)`). Use this when a
+  Firth-corrected model reports "Maximum number of iterations ...
+  exceeded" for the main fit. Ignored for
+  [`glm()`](https://rdrr.io/r/stats/glm.html) models and when no model
+  in the run requires Firth's correction. Default is `NULL` (logistf's
+  own default control).
+
+- firth_plcontrol:
+
+  Optional
+  [`logistf.control`](https://rdrr.io/pkg/logistf/man/logistf.control.html)
+  object (despite the name, built the same way as `firth_control`)
+  passed through to `logistf()`'s `plcontrol` argument, governing
+  convergence of the profile-likelihood confidence intervals. Use this
+  when a Firth-corrected model reports "Nonconverged PL confidence
+  limits". Default is `NULL` (logistf's own default control).
+
+- stepwise:
+
+  Logical; if `TRUE` (default `FALSE`), performs VIF-based backward
+  elimination on `indep` before the final model is fitted. At each step,
+  a VIF is computed per variable (via a parallel
+  [`glm()`](https://rdrr.io/r/stats/glm.html) fit, one value per
+  variable rather than per dummy level of a factor) for the current
+  `confounders + indep` set; if any `indep` variable has `VIF >= 5`, the
+  `step_n` variable(s) with the highest VIF are dropped and the process
+  repeats. It stops once no remaining `indep` variable has `VIF >= 5`,
+  or when only one `indep` variable remains (VIF is undefined for a
+  single predictor). `confounders` are never removed. Mutually exclusive
+  with `iterate` (an error is raised if both are `TRUE`) and ignored
+  (with a warning) when `crude = TRUE`. Forces `add_vif = TRUE` if it
+  was set to `FALSE`.
+
+- step_n:
+
+  A positive integer (default `1`), at most
+  `length(indep) + length(confounders)`, giving how many high-VIF
+  `indep` variables are removed per step when `stepwise = TRUE`. Ignored
+  otherwise.
+
+- verbose:
+
+  Logical; if `TRUE` (default `FALSE`), prints progress messages via
+  [`message()`](https://rdrr.io/r/base/message.html). When
+  `iterate = TRUE`, a running `X/Y` counter (completed combinations out
+  of the total) is printed as each combination finishes fitting. When
+  `iterate = FALSE` (and `crude = FALSE`), a single message reports the
+  number of observations used and whether Firth's correction was applied
+  to the base model.
+
 ## Value
 
 If `crude = TRUE`, returns a single tidy data frame with rows for all
@@ -156,7 +217,9 @@ If `crude = FALSE` and `iterate = FALSE`, returns a data frame
 containing Predictor, Log Odds, Std Error, p-value, Significance, OR,
 95\\ (Deviance, AIC, BIC, McFadden R2, CoxSnell R2, Nagelkerke R2, Tjur
 R2, Firth Corrected) in the first row. Model metrics are also attached
-as `attr(result, "model_metrics")`.
+as `attr(result, "model_metrics")`. When `stepwise = TRUE`, the
+variables removed at each step (and their triggering VIF) are
+additionally attached as `attr(result, "stepwise_removed")`.
 
 If `crude = FALSE` and `iterate = TRUE`, returns a named list
 containing:
@@ -294,46 +357,59 @@ John Lennon L. Calorio
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-# --- Example 1: Single model with Firth's correction applied dynamically ---
-result <- run_logreg(
-  x           = my_data,
-  y           = "Outcome",
-  confounders = c("Age", "Sex"),
-  indep       = c("Biomarker_A", "Biomarker_B"),
-  ref         = "Control",
-  ref_levels  = list("Sex" ~ "Female"),
-  apply_firth = TRUE
-)
-result
-attr(result, "model_metrics")
+d <- mtcars
+d$am <- factor(d$am, labels = c("auto", "manual"))
+d$vs <- factor(d$vs, labels = c("V", "S"))
 
-# --- Example 2: Iterative models with forced Firth and VIF filtering -------
-results <- run_logreg(
-  x                 = my_data,
-  y                 = "Outcome",
-  confounders       = c("Age", "Sex", "Site"),
-  indep             = c("Biomarker_A", "Biomarker_B", "Biomarker_C"),
-  ref               = "Control",
-  ref_levels        = list("Sex" ~ "Female", "Site" ~ "Main"),
-  exclude           = "Indeterminate",
-  iterate           = TRUE,
-  apply_firth       = TRUE,
-  force_apply_firth = TRUE
-)
-results$Metrics
-results$vif_filtered_Tables
+# Adjusted model (Firth correction is applied automatically when needed)
+fit <- run_logreg(d, y = "am", confounders = "wt", indep = "hp", ref = "auto")
+fit
+#>     Predictor   Log Odds  Std Error     p-value Significance           OR
+#> 1 (Intercept) 18.8662987 7.44355806 0.011258199            * 1.561455e+08
+#> 2          wt -8.0834752 3.06867511 0.008433813           ** 3.085967e-04
+#> 3          hp  0.0362556 0.01773415 0.040914646            * 1.036921e+00
+#>     95% CI Low  95% CI High      VIF Deviance      AIC      BIC McFadden R2
+#> 1 7.203795e+01 3.384524e+14       NA 10.05911 16.05911 20.45632   0.7673104
+#> 2 7.539288e-07 1.263142e-01 2.444297       NA       NA       NA          NA
+#> 3 1.001498e+00 1.073596e+00 2.444297       NA       NA       NA          NA
+#>   CoxSnell R2 Nagelkerke R2   Tjur R2 Firth Corrected
+#> 1   0.6453351      0.870897 0.8112073           FALSE
+#> 2          NA            NA        NA              NA
+#> 3          NA            NA        NA              NA
+attr(fit, "model_metrics")
+#>        Model  N Deviance      AIC      BIC McFadden R2 CoxSnell R2
+#> 1 Base Model 32 10.05911 16.05911 20.45632   0.7673104   0.6453351
+#>   Nagelkerke R2   Tjur R2 Firth Corrected
+#> 1      0.870897 0.8112073           FALSE
 
-# --- Example 3: Crude (unadjusted) odds ratios for each biomarker ----------
-crude_results <- run_logreg(
-  x           = my_data,
-  y           = "Outcome",
-  indep       = c("Biomarker_A", "Biomarker_B", "Biomarker_C"),
-  ref         = "Control",
-  ref_levels  = list("Sex" ~ "Female"),
-  crude       = TRUE,
-  apply_firth = TRUE
-)
-crude_results
-} # }
+# Crude (unadjusted) odds ratios, one model per variable
+run_logreg(d, y = "am", indep = c("wt", "hp", "vs"), ref = "auto",
+           ref_levels = list("vs" ~ "V"), crude = TRUE)
+#>     Predictor     Log Odds   Std Error     p-value Significance           OR
+#> 1 (Intercept) 12.040369659 4.509706105 0.007587858           ** 1.694596e+05
+#> 2          wt -4.023969940 1.436415784 0.005088198           ** 1.788183e-02
+#> 3                       NA          NA          NA         <NA>           NA
+#> 4 (Intercept)  0.776613552 0.915428632 0.396237197              2.174097e+00
+#> 5          hp -0.008117121 0.006074337 0.181452089              9.919157e-01
+#> 6                       NA          NA          NA         <NA>           NA
+#> 7 (Intercept) -0.693147181 0.499999908 0.165656960              5.000000e-01
+#> 8         vsS  0.693147181 0.731924992 0.343628884              2.000000e+00
+#>    95% CI Low  95% CI High VIF Deviance      AIC      BIC McFadden R2
+#> 1 24.56955593 1.168786e+09  NA 19.17608 23.17608 26.10756  0.55641445
+#> 2  0.00107086 2.986011e-01  NA       NA       NA       NA          NA
+#> 3          NA           NA  NA       NA       NA       NA          NA
+#> 4  0.36146372 1.307655e+01  NA 41.22757 45.22757 48.15904  0.04631460
+#> 5  0.98017652 1.003796e+00  NA       NA       NA       NA          NA
+#> 6          NA           NA  NA       NA       NA       NA          NA
+#> 7  0.18765896 1.332204e+00  NA 42.32263 46.32263 49.25410  0.02098329
+#> 8  0.47644669 8.395483e+00  NA       NA       NA       NA          NA
+#>   CoxSnell R2 Nagelkerke R2    Tjur R2 Firth Corrected
+#> 1  0.52842471    0.71312328 0.62400276           FALSE
+#> 2          NA            NA         NA              NA
+#> 3          NA            NA         NA              NA
+#> 4  0.06065057    0.08184957 0.07202501           FALSE
+#> 5          NA            NA         NA              NA
+#> 6          NA            NA         NA              NA
+#> 7  0.02794894    0.03771784 0.02834008           FALSE
+#> 8          NA            NA         NA              NA
 ```

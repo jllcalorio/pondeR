@@ -1,7 +1,9 @@
 # Run normality checks in parallel (or sequentially)
 
 Encapsulates the Windows / POSIX branching so it is not duplicated
-between `run_diff` and `.run_diff_single`.
+between
+[`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md)
+and `.run_diff_single`.
 
 ## Usage
 

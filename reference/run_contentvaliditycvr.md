@@ -103,19 +103,25 @@ for the critical value lookup.
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-# Lawshe's (1975) original 3-point scale:
-# 1 = essential, 2 = useful but not essential, 3 = not necessary
-ratings <- data.frame(
-  item1 = c(1, 1, 1, 2, 1),
-  item2 = c(3, 3, 1, 3, 3),
-  item3 = c(1, 1, 1, 1, 1)
-)
-result <- run_contentvaliditycvr(ratings, essential = 1)
-result
+if (requireNamespace("contentValidity", quietly = TRUE)) {
+  # Lawshe's (1975) original 3-point scale:
+  # 1 = essential, 2 = useful but not essential, 3 = not necessary
+  ratings <- data.frame(
+    item1 = c(1, 1, 1, 2, 1),
+    item2 = c(3, 3, 1, 3, 3),
+    item3 = c(1, 1, 1, 1, 1)
+  )
+  run_contentvaliditycvr(ratings, essential = 1)
 
-# Treat both "essential" and "useful but not essential" as endorsing the item
-result2 <- run_contentvaliditycvr(ratings, essential = c(1, 2))
-result2
-} # }
+  # Treat "essential" and "useful but not essential" as endorsing the item
+  run_contentvaliditycvr(ratings, essential = c(1, 2))
+}
+#> Content Validity Ratio (CVR) Analysis
+#> Panel size: 5  |  alpha = 0.050  |  Critical value: 1.000
+#> -------------------------------------------------- 
+#> 
+#>        CVR Critical Value  Interpretation
+#> item1  1.0              1     Significant
+#> item2 -0.6              1 Not significant
+#> item3  1.0              1     Significant
 ```

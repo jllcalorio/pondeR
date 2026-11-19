@@ -1,6 +1,8 @@
 # Print Method for `run_foldchange` Objects
 
-Compact console summary of a `run_foldchange` result.
+Compact console summary of a
+[`run_foldchange`](https://jllcalorio.github.io/pondeR/reference/run_foldchange.md)
+result.
 
 ## Usage
 

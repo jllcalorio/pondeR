@@ -13,7 +13,8 @@ print(x, ...)
 
 - x:
 
-  An object from `run_assoc`.
+  An object from
+  [`run_assoc`](https://jllcalorio.github.io/pondeR/reference/run_assoc.md).
 
 - ...:
 

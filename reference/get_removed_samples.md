@@ -123,24 +123,13 @@ John Lennon L. Calorio
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-## ---- Single run ----------------------------------------------------------
-removed <- get_removed_samples(
-  x             = df_class_rel_abund_clr,
-  metadata      = df_metadata_demog,
-  not_penalized = names(df_metadata_demog),
-  pred          = "Disease Severity"
-)
-print(removed)
+set.seed(1)
+feat <- data.frame(f1 = rnorm(20), f2 = rnorm(20))
+meta <- data.frame(Group = rep(c("A", "B"), 10), Age = c(NA, 30:47, NA))
 
-## ---- lapply run (list of taxa) -------------------------------------------
-removed_list <- get_removed_samples(
-  x             = df_list_clr,
-  metadata      = df_metadata_laboratory,
-  not_penalized = vars_include_laboratory,
-  pred          = "Disease Severity"
-)
-# See which taxa have the most removed samples
-table(removed_list$taxon)
-} # }
+# Samples 1 and 20 are dropped because Age is missing
+get_removed_samples(feat, meta, not_penalized = "Age", pred = "Group")
+#>   .row .missing_in Group Age
+#> 1    1         Age     A  NA
+#> 2   20         Age     B  NA
 ```

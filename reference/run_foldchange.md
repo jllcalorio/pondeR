@@ -97,16 +97,19 @@ run_foldchange(
 
 - up:
 
-  Numeric. Optional threshold for up-regulation. If supplied, a `"sig"`
-  column is added to `summary_table` where features with
-  `fold_change >= up` are labelled `"Significant"`. Default `NULL`.
+  Numeric. Optional threshold for up-regulation. If `up` or `down` is
+  supplied, `summary_table` gets two columns, `regulation_num` and
+  `regulation_den`, giving the regulation (`"Up"`, `"Down"`,
+  `"Not significant"`) in the numerator and denominator group
+  respectively. Features with `fold_change >= up` are `"Up"` in the
+  numerator group and `"Down"` in the denominator group. Default `NULL`.
 
 - down:
 
-  Numeric. Optional threshold for down-regulation. If supplied, features
-  with `fold_change <= down` are labelled `"Significant"` in the `"sig"`
-  column of `summary_table`. This value is compared against the raw fold
-  change, not log2. Default `NULL`.
+  Numeric. Optional threshold for down-regulation. Features with
+  `fold_change <= down` are `"Down"` in the numerator group and `"Up"`
+  in the denominator group. Compared against the raw fold change, not
+  log2. Default `NULL`.
 
 ## Value
 
@@ -176,12 +179,19 @@ in a consistent format that
 [`plot_volcano()`](https://jllcalorio.github.io/pondeR/reference/plot_volcano.md)
 can consume directly.
 
+## References
+
+Benjamini Y, Hochberg Y (1995). Controlling the false discovery rate: a
+practical and powerful approach to multiple testing. *Journal of the
+Royal Statistical Society: Series B*, 57(1), 289-300.
+[doi:10.1111/j.2517-6161.1995.tb02031.x](https://doi.org/10.1111/j.2517-6161.1995.tb02031.x)
+
 ## See also
 
 [`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md),
 [`plot_volcano`](https://jllcalorio.github.io/pondeR/reference/plot_volcano.md),
 [`get_volcanodata`](https://jllcalorio.github.io/pondeR/reference/get_volcanodata.md),
-`run_DIpreprocess`
+[`run_DIpreprocess`](https://jllcalorio.github.io/dimsprepr/reference/run_DIpreprocess.html)
 
 ## Author
 

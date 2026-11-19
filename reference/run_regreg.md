@@ -304,7 +304,10 @@ John Lennon L. Calorio
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
+# \donttest{
+if (requireNamespace("glmnet", quietly = TRUE) &&
+    requireNamespace("caret", quietly = TRUE) &&
+    requireNamespace("foreach", quietly = TRUE)) {
 ## ---- Simulate data -------------------------------------------------------
 set.seed(42)
 n  <- 80
@@ -382,5 +385,24 @@ res_multi <- run_regreg(
   seed          = 1
 )
 res_multi$BestModel$Coefficients
-} # }
+}
+#> === run_regreg: Regularized Regression ===
+#> Response type  : categorical 
+#> Best alpha     : 0.5 
+#> Selected lambda: 0.2821 
+#> Non-zero coefs : 1 
+#> Test Accuracy  : 0.6 
+#> Test Kappa     : 0 
+#> Warning: from glmnet C++ code (error code -85); Convergence for 85th lambda value not reached after maxit=100000 iterations; solutions for larger lambdas returned
+#> Warning: from glmnet C++ code (error code -88); Convergence for 88th lambda value not reached after maxit=100000 iterations; solutions for larger lambdas returned
+#>   Comparison     Feature  Coefficient OddsRatio
+#> 1     B vs A (Intercept)  0.048080475 1.0492551
+#> 2     B vs A      feat_2  0.117625148 1.1248224
+#> 3     B vs A     feat_13  0.053110255 1.0545459
+#> 4     B vs A     feat_18 -0.062575638 0.9393420
+#> 5     C vs A (Intercept) -0.175671100 0.8388938
+#> 6     C vs A      feat_2  0.117625148 1.1248224
+#> 7     C vs A     feat_13  0.053110255 1.0545459
+#> 8     C vs A     feat_25  0.003391519 1.0033973
+# }
 ```

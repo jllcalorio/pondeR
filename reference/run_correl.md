@@ -23,8 +23,10 @@ run_correl(
   sig_threshold = 0.05,
   normality_method = "auto",
   alpha_normality = 0.05,
+  exact = NULL,
   interpretation = NULL,
   summary_table_only = FALSE,
+  p_adjust_method = "BH",
   method_in_row = TRUE,
   verbose = FALSE,
   ...
@@ -125,6 +127,13 @@ run_correl(
   threshold used internally for normality and variance tests when
   `method = "auto"`. Default `0.05`.
 
+- exact:
+
+  Logical or `NULL`. When `method` is `"spearman"` or `"kendall"`,
+  controls whether an exact p-value should be computed. Passed to
+  [`cor.test`](https://rdrr.io/r/stats/cor.test.html). Default `NULL`
+  (let `cor.test` decide).
+
 - interpretation:
 
   Character string or `NULL`. If not `NULL` and
@@ -136,6 +145,15 @@ run_correl(
 
   Logical. If `TRUE`, returns only a single data frame with all result
   columns. Default is `FALSE`.
+
+- p_adjust_method:
+
+  P-value adjustment method for multiple testing correction. One of
+  `"holm"`, `"hochberg"`, `"hommel"`, `"bonferroni"`, `"BH"` (default),
+  `"BY"`, `"fdr"`, or `"none"`. Applied only when
+  `summary_table_only = TRUE` and the number of variable pairs is
+  greater than 1. A `p_value_adj` column is added to the returned data
+  frame when applicable. Default `"BH"`.
 
 - method_in_row:
 
@@ -155,7 +173,8 @@ run_correl(
 
 ## Value
 
-A named list of class `"run_correl"` with the following elements:
+When `summary_table_only = FALSE`, returns a named list of class
+`"run_correl"` with the following elements:
 
 - `correlations`:
 
@@ -188,21 +207,27 @@ A named list of class `"run_correl"` with the following elements:
 
   The matched call.
 
+When `summary_table_only = TRUE`, returns a data frame of class
+`"run_correl"` with columns `var1`, `var2`, `estimate`, `ci_lower`,
+`ci_upper`, `p_value`, and `method`. When the number of variable pairs
+is greater than 1, an additional `p_value_adj` column contains adjusted
+p-values. Optional columns `interpretation` may be present if requested.
+
 ## Details
 
 **Automatic method selection** (`method = "auto"`):
 
-|                |                                                                              |
-|----------------|------------------------------------------------------------------------------|
-| **Method**     | **Conditions**                                                               |
-| Pearson        | Both continuous, normal, homoscedastic                                       |
-| Spearman       | Ordinal or continuous, non-normal or heteroscedastic, \\n \ge 30\\, few ties |
-| Kendall        | Ordinal or continuous, non-normal, \\n \< 30\\ or many ties                  |
-| Point-biserial | One continuous, one binary variable                                          |
-| Phi            | Both binary                                                                  |
-| Cramer's V     | Both nominal (multi-category) factors                                        |
-| Polychoric     | Both ordered factors (requires polycor)                                      |
-| Polyserial     | One ordered factor, one continuous (requires polycor)                        |
+|  |  |
+|----|----|
+| **Method** | **Conditions** |
+| Pearson | Both continuous, normal, homoscedastic |
+| Spearman | Ordinal or continuous, non-normal or heteroscedastic, \\n \ge 30\\, few ties |
+| Kendall | Ordinal or continuous, non-normal, \\n \< 30\\ or many ties |
+| Point-biserial | One continuous, one binary variable |
+| Phi | Both binary |
+| Cramer's V | Both nominal (multi-category) factors |
+| Polychoric | Both ordered factors (requires polycor) |
+| Polyserial | One ordered factor, one continuous (requires polycor) |
 
 Normality is assessed via Shapiro-Wilk (\\n \< 50\\) or Lilliefors (\\n
 \ge 50\\; requires nortest). Homoscedasticity is assessed via Levene's
@@ -212,6 +237,19 @@ Confidence intervals for Cramer's V and polychoric/polyserial
 correlations are not available and are returned as `NA`. When
 `summary_table_only = TRUE`, the function returns a flat data frame
 instead of the structured list.
+
+**P-value adjustment:** When `summary_table_only = TRUE` and the number
+of variable pairs is greater than 1, p-values are adjusted using the
+method specified in `p_adjust_method`, with results stored in a
+`p_value_adj` column. This accounts for multiple comparisons across
+pairs.
+
+**Exact p-values:** For Kendall's tau and Spearman's rho, the `exact`
+parameter determines whether an exact p-value is computed. When `NULL`
+(default), `cor.test` automatically decides based on sample size and
+ties; when `TRUE` or `FALSE`, the choice is forced. See
+[`cor.test`](https://rdrr.io/r/stats/cor.test.html) details for the
+meaning of `NULL`.
 
 **Interpretation thresholds** (`interpretation`):
 
@@ -277,43 +315,376 @@ John Lennon L. Calorio
 ``` r
 ## Basic pairwise correlations (all numeric columns)
 run_correl(mtcars)
-#> [1] correlations         correlations_masked  p_values            
-#> [4] confidence_intervals sig_threshold        method              
-#> [7] call                
-#> <0 rows> (or 0-length row.names)
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#>    var1 var2    estimate   method_used  n
+#> 1   mpg  cyl -0.79531341       kendall 32
+#> 2   mpg disp -0.76813115       kendall 32
+#> 3   mpg   hp -0.74281251       kendall 32
+#> 4   mpg drat  0.65145546      spearman 32
+#> 5   mpg   wt -0.88642203      spearman 32
+#> 6   mpg qsec  0.46693575      spearman 32
+#> 7   mpg   vs  0.66403892 pointbiserial 32
+#> 8   mpg   am  0.59983243 pointbiserial 32
+#> 9   mpg gear  0.43315089       kendall 32
+#> 10  mpg carb -0.50439455       kendall 32
+#> 11  cyl disp  0.81442625       kendall 32
+#> 12  cyl   hp  0.78518650       kendall 32
+#> 13  cyl drat -0.55131785       kendall 32
+#> 14  cyl   wt  0.72826111       kendall 32
+#> 15  cyl qsec -0.44896982       kendall 32
+#> 16  cyl   vs -0.81081180 pointbiserial 32
+#> 17  cyl   am -0.52260705 pointbiserial 32
+#> 18  cyl gear -0.51254349       kendall 32
+#> 19  cyl carb  0.46542994       kendall 32
+#> 20 disp   hp  0.66599874       kendall 32
+#> 21 disp drat -0.49898277       kendall 32
+#> 22 disp   wt  0.74338240       kendall 32
+#> 23 disp qsec -0.30081549       kendall 32
+#> 24 disp   vs -0.71041589 pointbiserial 32
+#> 25 disp   am -0.59122704 pointbiserial 32
+#> 26 disp gear -0.47597955       kendall 32
+#> 27 disp carb  0.41373600       kendall 32
+#> 28   hp drat -0.38262689       kendall 32
+#> 29   hp   wt  0.61130810       kendall 32
+#> 30   hp qsec -0.47290613       kendall 32
+#> 31   hp   vs -0.72309674 pointbiserial 32
+#> 32   hp   am -0.24320426 pointbiserial 32
+#> 33   hp gear -0.27944584       kendall 32
+#> 34   hp carb  0.59598416       kendall 32
+#> 35 drat   wt -0.75039041      spearman 32
+#> 36 drat qsec  0.09186863      spearman 32
+#> 37 drat   vs  0.44027846 pointbiserial 32
+#> 38 drat   am  0.71271113 pointbiserial 32
+#> 39 drat gear  0.58392476       kendall 32
+#> 40 drat carb -0.09535193       kendall 32
+#> 41   wt qsec -0.22540120      spearman 32
+#> 42   wt   vs -0.55491568 pointbiserial 32
+#> 43   wt   am -0.69249526 pointbiserial 32
+#> 44   wt gear -0.54359562       kendall 32
+#> 45   wt carb  0.37137413       kendall 32
+#> 46 qsec   vs  0.74453544 pointbiserial 32
+#> 47 qsec   am -0.22986086 pointbiserial 32
+#> 48 qsec gear -0.09126069       kendall 32
+#> 49 qsec carb -0.50643945       kendall 32
+#> 50   vs   am  0.16834512           phi 32
+#> 51   vs gear  0.20602335 pointbiserial 32
+#> 52   vs carb -0.56960714 pointbiserial 32
+#> 53   am gear  0.79405876 pointbiserial 32
+#> 54   am carb  0.05753435 pointbiserial 32
+#> 55 gear carb  0.09801487       kendall 32
 
 ## Correlate one variable against all others
 run_correl(mtcars, y = "mpg")
-#> [1] correlations         correlations_masked  p_values            
-#> [4] confidence_intervals sig_threshold        method              
-#> [7] call                
-#> <0 rows> (or 0-length row.names)
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#>    var1 var2   estimate   method_used  n
+#> 1   mpg  cyl -0.7953134       kendall 32
+#> 2   mpg disp -0.7681311       kendall 32
+#> 3   mpg   hp -0.7428125       kendall 32
+#> 4   mpg drat  0.6514555      spearman 32
+#> 5   mpg   wt -0.8864220      spearman 32
+#> 6   mpg qsec  0.4669358      spearman 32
+#> 7   mpg   vs  0.6640389 pointbiserial 32
+#> 8   mpg   am  0.5998324 pointbiserial 32
+#> 9   mpg gear  0.4331509       kendall 32
+#> 10  mpg carb -0.5043945       kendall 32
 
 ## Single pair
 run_correl(mtcars, y = "mpg", z = "wt")
-#> [1] correlations         correlations_masked  p_values            
-#> [4] confidence_intervals sig_threshold        method              
-#> [7] call                
-#> <0 rows> (or 0-length row.names)
+#> Warning: cannot compute exact p-value with ties
+#>   var1 var2  estimate method_used  n
+#> 1  mpg   wt -0.886422    spearman 32
 
 ## Specify method explicitly
 run_correl(mtcars, method = "spearman")
-#> [1] correlations         correlations_masked  p_values            
-#> [4] confidence_intervals sig_threshold        method              
-#> [7] call                
-#> <0 rows> (or 0-length row.names)
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#>    var1 var2    estimate method_used  n
+#> 1   mpg  cyl -0.91080131    spearman 32
+#> 2   mpg disp -0.90888236    spearman 32
+#> 3   mpg   hp -0.89466465    spearman 32
+#> 4   mpg drat  0.65145546    spearman 32
+#> 5   mpg   wt -0.88642203    spearman 32
+#> 6   mpg qsec  0.46693575    spearman 32
+#> 7   mpg   vs  0.70659679    spearman 32
+#> 8   mpg   am  0.56200569    spearman 32
+#> 9   mpg gear  0.54278158    spearman 32
+#> 10  mpg carb -0.65749764    spearman 32
+#> 11  cyl disp  0.92765158    spearman 32
+#> 12  cyl   hp  0.90179094    spearman 32
+#> 13  cyl drat -0.67888119    spearman 32
+#> 14  cyl   wt  0.85772816    spearman 32
+#> 15  cyl qsec -0.57235095    spearman 32
+#> 16  cyl   vs -0.81378895    spearman 32
+#> 17  cyl   am -0.52207118    spearman 32
+#> 18  cyl gear -0.56431047    spearman 32
+#> 19  cyl carb  0.58006798    spearman 32
+#> 20 disp   hp  0.85104263    spearman 32
+#> 21 disp drat -0.68359210    spearman 32
+#> 22 disp   wt  0.89770644    spearman 32
+#> 23 disp qsec -0.45978176    spearman 32
+#> 24 disp   vs -0.72366435    spearman 32
+#> 25 disp   am -0.62406767    spearman 32
+#> 26 disp gear -0.59447030    spearman 32
+#> 27 disp carb  0.53977806    spearman 32
+#> 28   hp drat -0.52012499    spearman 32
+#> 29   hp   wt  0.77467673    spearman 32
+#> 30   hp qsec -0.66660602    spearman 32
+#> 31   hp   vs -0.75159339    spearman 32
+#> 32   hp   am -0.36232756    spearman 32
+#> 33   hp gear -0.33140155    spearman 32
+#> 34   hp carb  0.73337937    spearman 32
+#> 35 drat   wt -0.75039041    spearman 32
+#> 36 drat qsec  0.09186863    spearman 32
+#> 37 drat   vs  0.44745745    spearman 32
+#> 38 drat   am  0.68657079    spearman 32
+#> 39 drat gear  0.74481617    spearman 32
+#> 40 drat carb -0.12522294    spearman 32
+#> 41   wt qsec -0.22540120    spearman 32
+#> 42   wt   vs -0.58701619    spearman 32
+#> 43   wt   am -0.73771259    spearman 32
+#> 44   wt gear -0.67612839    spearman 32
+#> 45   wt carb  0.49981205    spearman 32
+#> 46 qsec   vs  0.79157148    spearman 32
+#> 47 qsec   am -0.20333211    spearman 32
+#> 48 qsec gear -0.14819967    spearman 32
+#> 49 qsec carb -0.65871814    spearman 32
+#> 50   vs   am  0.16834512    spearman 32
+#> 51   vs gear  0.28266170    spearman 32
+#> 52   vs carb -0.63369482    spearman 32
+#> 53   am gear  0.80768800    spearman 32
+#> 54   am carb -0.06436525    spearman 32
+#> 55 gear carb  0.11488698    spearman 32
 
 ## Exclude specific levels before analysis
 df <- mtcars
 df$cyl <- as.numeric(factor(df$cyl))
 run_correl(df, remove = list("cyl" ~ c("4", "6")))
-#> [1] correlations         correlations_masked  p_values            
-#> [4] confidence_intervals sig_threshold        method              
-#> [7] call                
-#> <0 rows> (or 0-length row.names)
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#>    var1 var2    estimate   method_used  n
+#> 1   mpg  cyl -0.79531341       kendall 32
+#> 2   mpg disp -0.76813115       kendall 32
+#> 3   mpg   hp -0.74281251       kendall 32
+#> 4   mpg drat  0.65145546      spearman 32
+#> 5   mpg   wt -0.88642203      spearman 32
+#> 6   mpg qsec  0.46693575      spearman 32
+#> 7   mpg   vs  0.66403892 pointbiserial 32
+#> 8   mpg   am  0.59983243 pointbiserial 32
+#> 9   mpg gear  0.43315089       kendall 32
+#> 10  mpg carb -0.50439455       kendall 32
+#> 11  cyl disp  0.81442625       kendall 32
+#> 12  cyl   hp  0.78518650       kendall 32
+#> 13  cyl drat -0.55131785       kendall 32
+#> 14  cyl   wt  0.72826111       kendall 32
+#> 15  cyl qsec -0.44896982       kendall 32
+#> 16  cyl   vs -0.81081180 pointbiserial 32
+#> 17  cyl   am -0.52260705 pointbiserial 32
+#> 18  cyl gear -0.51254349       kendall 32
+#> 19  cyl carb  0.46542994       kendall 32
+#> 20 disp   hp  0.66599874       kendall 32
+#> 21 disp drat -0.49898277       kendall 32
+#> 22 disp   wt  0.74338240       kendall 32
+#> 23 disp qsec -0.30081549       kendall 32
+#> 24 disp   vs -0.71041589 pointbiserial 32
+#> 25 disp   am -0.59122704 pointbiserial 32
+#> 26 disp gear -0.47597955       kendall 32
+#> 27 disp carb  0.41373600       kendall 32
+#> 28   hp drat -0.38262689       kendall 32
+#> 29   hp   wt  0.61130810       kendall 32
+#> 30   hp qsec -0.47290613       kendall 32
+#> 31   hp   vs -0.72309674 pointbiserial 32
+#> 32   hp   am -0.24320426 pointbiserial 32
+#> 33   hp gear -0.27944584       kendall 32
+#> 34   hp carb  0.59598416       kendall 32
+#> 35 drat   wt -0.75039041      spearman 32
+#> 36 drat qsec  0.09186863      spearman 32
+#> 37 drat   vs  0.44027846 pointbiserial 32
+#> 38 drat   am  0.71271113 pointbiserial 32
+#> 39 drat gear  0.58392476       kendall 32
+#> 40 drat carb -0.09535193       kendall 32
+#> 41   wt qsec -0.22540120      spearman 32
+#> 42   wt   vs -0.55491568 pointbiserial 32
+#> 43   wt   am -0.69249526 pointbiserial 32
+#> 44   wt gear -0.54359562       kendall 32
+#> 45   wt carb  0.37137413       kendall 32
+#> 46 qsec   vs  0.74453544 pointbiserial 32
+#> 47 qsec   am -0.22986086 pointbiserial 32
+#> 48 qsec gear -0.09126069       kendall 32
+#> 49 qsec carb -0.50643945       kendall 32
+#> 50   vs   am  0.16834512           phi 32
+#> 51   vs gear  0.20602335 pointbiserial 32
+#> 52   vs carb -0.56960714 pointbiserial 32
+#> 53   am gear  0.79405876 pointbiserial 32
+#> 54   am carb  0.05753435 pointbiserial 32
+#> 55 gear carb  0.09801487       kendall 32
 
 ## Access individual output tables
 res <- run_correl(mtcars)
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
 res$correlations
 #>    var1 var2    estimate   method_used  n
 #> 1   mpg  cyl -0.79531341       kendall 32

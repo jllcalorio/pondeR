@@ -13,7 +13,8 @@ summary(object, ...)
 
 - object:
 
-  An object of class `run_assoc_multi` from `run_assoc`.
+  An object of class `run_assoc_multi` from
+  [`run_assoc`](https://jllcalorio.github.io/pondeR/reference/run_assoc.md).
 
 - ...:
 

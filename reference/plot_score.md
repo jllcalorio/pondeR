@@ -2,11 +2,15 @@
 
 Produces a publication-ready scores plot from the output of multivariate
 ordination and dimensionality-reduction methods, including Principal
-Component Analysis (`run_pca`), Partial Least Squares and PLS-DA
-(`run_pls`), and Principal Coordinate Analysis (`run_pcoa`). Supports
-discrete group coloring with confidence ellipses, continuous gradient
-coloring, outlier detection and labeling, and a range of publication
-themes.
+Component Analysis
+([`run_pca`](https://jllcalorio.github.io/pondeR/reference/run_pca.md)),
+Partial Least Squares and PLS-DA
+([`run_pls`](https://jllcalorio.github.io/pondeR/reference/run_pls.md)),
+and Principal Coordinate Analysis
+([`run_pcoa`](https://jllcalorio.github.io/pondeR/reference/run_pcoa.md)).
+Supports discrete group coloring with confidence ellipses, continuous
+gradient coloring, outlier detection and labeling, and a range of
+publication themes.
 
 ## Usage
 
@@ -31,6 +35,9 @@ plot_score(
   legend_position = "bottom",
   show_outliers = FALSE,
   label_outliers = "all",
+  outlier_margin = 1,
+  outlier_label_size = NULL,
+  show_groups = NULL,
   colors = NULL,
   point_size = 10,
   point_alpha = 0.8,
@@ -186,6 +193,30 @@ plot_score(res, ...)
   Character. Which groups to check for outliers. Use `"all"` (default)
   or a character vector of specific group names from the `color_by`
   variable.
+
+- outlier_margin:
+
+  Numeric. Multiplier applied to the Mahalanobis squared-distance
+  threshold that exactly matches the drawn `stat_ellipse` boundary (same
+  covariance estimator and critical value formula). Default `1.0` labels
+  any sample that falls outside that boundary. Values \> 1 require the
+  sample to be proportionally farther beyond it: `1.0`–`1.5` labels most
+  ellipse-breaching samples; `1.5`–`3.0` labels clearly separated
+  samples; `> 3.0` labels only extreme outliers.
+
+- outlier_label_size:
+
+  Numeric or `NULL`. Font size (ggplot2 text units) for outlier labels.
+  Default: `NULL` (resolves to `base_size / 3.5`, consistent with
+  `base_size`).
+
+- show_groups:
+
+  Character vector or `NULL`. Subset of group values from `color_by` to
+  include in the plot. Samples not in `show_groups` are hidden. Default:
+  `NULL` (all groups plotted). Only applies when `color_by` is
+  categorical. When supplied, axis labels are removed because variance
+  explained is computed on the full dataset, not the shown subset.
 
 - colors:
 
@@ -365,7 +396,7 @@ figures and presentations that are friendly to colorblind people*.
 
 ## See also
 
-`run_DIpreprocess`,
+[`run_DIpreprocess`](https://jllcalorio.github.io/dimsprepr/reference/run_DIpreprocess.html),
 [`run_pca`](https://jllcalorio.github.io/pondeR/reference/run_pca.md),
 [`run_pls`](https://jllcalorio.github.io/pondeR/reference/run_pls.md)
 
@@ -376,69 +407,22 @@ John Lennon L. Calorio
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-# Simulate data
-set.seed(123)
-x <- matrix(rnorm(100 * 50, mean = 100, sd = 20),
-            nrow = 100, ncol = 50)
-colnames(x) <- paste0("Feature", 1:50)
-rownames(x) <- paste0("Sample", 1:100)
+meta <- data.frame(Sample = rownames(iris), Species = iris$Species)
+pca  <- run_pca(scale(iris[, 1:4]), meta, group = "Species", verbose = FALSE)
 
-metadata <- data.frame(
-  Sample = paste0("Sample", 1:100),
-  Group  = rep(c("Control", "Treatment", "QC"), c(40, 40, 20)),
-  Batch  = rep(1:4, each = 25),
-  Time   = rep(c(0, 6, 12, 24), 25)
-)
+plot_score(pca, color_by = "Species", points_from = "Sample")
+#> Using discrete coloring by 'Species'
+#> Using labels from column 'Sample'
+#> Scores plot created successfully.
 
-# Run PCA (excluding QC samples)
-scaled_result <- run_scale(x, method = "auto")
-res    <- run_pca(scaled_result$data, metadata,
-                         group   = "Group",
-                         exclude = "QC")
 
-# Basic scores plot - nature theme, Okabe-Ito colors (defaults)
-plot_score(res,
-           color_by    = "Group",
-           points_from = "Sample")
+# PC2 vs PC3, classic theme, outliers flagged
+plot_score(pca, pc = c(2, 3), color_by = "Species", points_from = "Sample",
+           show_outliers = TRUE, theme = "classic")
+#> Using discrete coloring by 'Species'
+#> Using labels from column 'Sample'
+#> Computing outliers (ellipse level: 95.0%)...
+#> Outliers detected: 12 (8.0%)
+#> Scores plot created successfully.
 
-# PC2 vs PC3 with left-aligned title
-plot_score(res,
-           pc          = c(2, 3),
-           color_by    = "Group",
-           points_from = "Sample",
-           title       = "PCA: PC2 vs PC3",
-           position    = "left")
-
-# Color by batch with custom palette
-plot_score(res,
-           color_by    = "Batch",
-           points_from = "Sample",
-           colors      = c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3"))
-
-# Continuous coloring by time
-plot_score(res,
-           color_by    = "Time",
-           points_from = "Sample",
-           legend      = "Collection Time (h)")
-
-# Show outliers in specific groups, classic theme, larger zoom
-plot_score(res,
-           color_by       = "Group",
-           points_from    = "Sample",
-           show_outliers  = TRUE,
-           label_outliers = c("Control", "Treatment"),
-           ellipse_level  = 0.95,
-           theme          = "classic",
-           zoom           = 1.2)
-
-# Stricter outlier detection with serif font
-plot_score(res,
-           color_by      = "Group",
-           points_from   = "Sample",
-           show_outliers = TRUE,
-           ellipse_level = 0.99,
-           font_family   = "serif",
-           base_size     = 13)
-} # }
 ```

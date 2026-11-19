@@ -21,6 +21,7 @@ run_auc(
   compute_auc = TRUE,
   compute_ci = TRUE,
   ci_level = 0.95,
+  compute_performance_metrics = TRUE,
   plot = "none",
   theme = "nature",
   ncol = NULL,
@@ -52,9 +53,13 @@ run_auc(
   A `data.frame`, `tibble`, named `matrix`, `run_DIpreprocess` object,
   or a `list` of objects from the `run_*` ecosystem. If a list is
   provided, it MUST contain a `run_DIpreprocess` object. Optional
-  inclusion of `run_pls`, `run_foldchange`, and/or `run_diff` objects
-  will trigger automatic feature filtering based on `min_vip`, `up`,
-  `down`, and `p_value` thresholds.
+  inclusion of
+  [`run_pls`](https://jllcalorio.github.io/pondeR/reference/run_pls.md),
+  [`run_foldchange`](https://jllcalorio.github.io/pondeR/reference/run_foldchange.md),
+  and/or
+  [`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md)
+  objects will trigger automatic feature filtering based on `min_vip`,
+  `up`, `down`, and `p_value` thresholds.
 
 - y:
 
@@ -123,6 +128,12 @@ run_auc(
 
   A numeric scalar in \\(0, 1)\\ specifying the confidence level.
   Default `0.95`.
+
+- compute_performance_metrics:
+
+  Logical. Whether to compute additional performance metrics
+  (sensitivity, specificity, NPV, PPV, accuracy, Youden index, J-stat)
+  at the optimal threshold determined by Youden's index. Default `TRUE`.
 
 - plot:
 
@@ -237,28 +248,34 @@ run_auc(
 - min_vip:
 
   A single numeric value specifying the minimum VIP score for features
-  to be considered. Only applied if a `run_pls` object is provided in
-  the `x` list. Default `1.0`.
+  to be considered. Only applied if a
+  [`run_pls`](https://jllcalorio.github.io/pondeR/reference/run_pls.md)
+  object is provided in the `x` list. Default `1.0`.
 
 - up:
 
   A single numeric value specifying the minimum fold change for
-  up-regulated features. Only applied if a `run_foldchange` object is
-  provided in the `x` list. Default is in its `params$up`. When `x` is
-  `data.frame`, `tibble`, named `matrix`, the default is `1.5`.
+  up-regulated features. Only applied if a
+  [`run_foldchange`](https://jllcalorio.github.io/pondeR/reference/run_foldchange.md)
+  object is provided in the `x` list. Default is in its `params$up`.
+  When `x` is `data.frame`, `tibble`, named `matrix`, the default is
+  `1.5`.
 
 - down:
 
   A single numeric value specifying the maximum fold change for
-  down-regulated features. Only applied if a `run_foldchange` object is
-  provided in the `x` list. Default is in its `params$down`. When `x` is
-  `data.frame`, `tibble`, named `matrix`, the default is `0.6`.
+  down-regulated features. Only applied if a
+  [`run_foldchange`](https://jllcalorio.github.io/pondeR/reference/run_foldchange.md)
+  object is provided in the `x` list. Default is in its `params$down`.
+  When `x` is `data.frame`, `tibble`, named `matrix`, the default is
+  `0.6`.
 
 - p_value:
 
   A single numeric value specifying the maximum acceptable p-value for
-  features. Only applied if a `run_diff` object is provided in the `x`
-  list. Default `0.05`.
+  features. Only applied if a
+  [`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md)
+  object is provided in the `x` list. Default `0.05`.
 
 - ...:
 
@@ -279,7 +296,17 @@ A named list with the following elements:
 - `auc_table`:
 
   A `data.frame` with columns `predictor`, `auc`, `ci_lower`,
-  `ci_upper`, `ci_level`, `direction`, and `n_cases` / `n_controls`.
+  `ci_upper`, `ci_level`, `direction`, `n_cases`, and `n_controls`, plus
+  `auc_interpretation` (conventional label; see Details) right after
+  `ci_upper`. When a
+  [`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md)
+  object with effect sizes is supplied in the `x` list, `ES (95% CI)`
+  and `ES_magnitude` columns are added after `n_controls`. When
+  `compute_performance_metrics = TRUE`, additional columns are included:
+  `sensitivity`, `specificity`, `ppv` (positive predictive value), `npv`
+  (negative predictive value), `accuracy`, `youden_index`, and
+  `optimal_threshold` (all computed at the threshold that maximizes
+  Youden's index: sensitivity + specificity - 1).
 
 - `plots`:
 
@@ -317,6 +344,25 @@ A named list with the following elements:
     decimal places (up to five), after which scientific notation with
     two significant figures is used.
 
+**AUC interpretation**  
+The `auc_interpretation` column of `auc_table` labels each AUC using the
+conventional thresholds below. These are only a convention (a rule of
+thumb), not a rule; acceptable discrimination depends on the clinical or
+scientific context, and the confidence interval should be considered
+alongside the point estimate.
+
+|               |                            |
+|---------------|----------------------------|
+| **AUC**       | **Conventional threshold** |
+| 0.5           | No discrimination          |
+| 0.5 to \< 0.7 | Poor                       |
+| 0.7 to \< 0.8 | Acceptable                 |
+| 0.8 to \< 0.9 | Excellent                  |
+| 0.9 or above  | Outstanding                |
+
+AUC values below 0.5 (possible when `direction` is forced) are labelled
+`"Worse than chance"`.
+
 **Reference line**  
 A grey dashed diagonal line representing an AUC of 0.5 (random
 classifier) is always drawn.
@@ -329,9 +375,28 @@ bottom-right inside the plot area by default.
 This function requires pROC (\\\ge\\ 1.18) and ggplot2 (\\\ge\\ 3.4).
 Both are listed as `Imports` in the package `DESCRIPTION` file.
 
+## References
+
+Robin X, Turck N, Hainard A, et al. (2011). pROC: an open-source package
+for R and S+ to analyze and compare ROC curves. *BMC Bioinformatics*,
+12, 77.
+[doi:10.1186/1471-2105-12-77](https://doi.org/10.1186/1471-2105-12-77)
+
+DeLong ER, DeLong DM, Clarke-Pearson DL (1988). Comparing the areas
+under two or more correlated receiver operating characteristic curves: a
+nonparametric approach. *Biometrics*, 44(3), 837-845.
+[doi:10.2307/2531595](https://doi.org/10.2307/2531595)
+
+Youden WJ (1950). Index for rating diagnostic tests. *Cancer*, 3(1),
+32-35.
+
+Okabe M, Ito K (2008). *Color Universal Design (CUD): How to make
+figures and presentations that are friendly to colorblind people*.
+<https://jfly.uni-koeln.de/color/>
+
 ## See also
 
-`run_DIpreprocess`,
+[`run_DIpreprocess`](https://jllcalorio.github.io/dimsprepr/reference/run_DIpreprocess.html),
 [`run_pls`](https://jllcalorio.github.io/pondeR/reference/run_pls.md),
 [`run_foldchange`](https://jllcalorio.github.io/pondeR/reference/run_foldchange.md),
 [`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md)
@@ -357,10 +422,18 @@ df <- data.frame(
 
 res <- run_auc(x = df, y = "group", plot = "none")
 print(res$auc_table)
-#>   predictor       auc  ci_lower  ci_upper ci_level direction n_cases n_controls
-#> 1  marker_A 0.5133765 0.4085016 0.6182514     0.95         >      67         53
-#> 2  marker_B 0.5243593 0.4185301 0.6301886     0.95         <      67         53
-#> 3  marker_C 0.5350605 0.4300641 0.6400569     0.95         >      67         53
+#>   predictor       auc  ci_lower  ci_upper auc_interpretation ci_level direction
+#> 1  marker_A 0.5133765 0.4085016 0.6182514               Poor     0.95         >
+#> 2  marker_B 0.5243593 0.4185301 0.6301886               Poor     0.95         <
+#> 3  marker_C 0.5350605 0.4300641 0.6400569               Poor     0.95         >
+#>   n_cases n_controls sensitivity specificity       ppv       npv  accuracy
+#> 1      67         53   0.3731343   0.7924528 0.6944444 0.5000000 0.5583333
+#> 2      67         53   0.7761194   0.3207547 0.5909091 0.5312500 0.5750000
+#> 3      67         53   0.4029851   0.6981132 0.6279070 0.4805195 0.5333333
+#>   youden_index optimal_threshold
+#> 1   0.16558716        -0.2014022
+#> 2   0.09687412        -0.7084071
+#> 3   0.10109828         0.3504492
 
 ## -----------------------------------------------------------------------
 ## Example 2 - categorical response, remove one group, combined plot
@@ -381,27 +454,57 @@ res2 <- run_auc(
 )
 #> Moving non-numeric columns to metadata (predictors must be numeric): status
 print(res2$auc_table)
-#>   predictor       auc ci_lower ci_upper ci_level direction n_cases n_controls
-#> 1   score_1 0.5257453       NA       NA     0.95         >      36         41
-#> 2   score_2 0.5372629       NA       NA     0.95         <      36         41
+#>   predictor       auc ci_lower ci_upper auc_interpretation ci_level direction
+#> 1   score_1 0.5257453       NA       NA               Poor     0.95         >
+#> 2   score_2 0.5372629       NA       NA               Poor     0.95         <
+#>   n_cases n_controls sensitivity specificity       ppv       npv  accuracy
+#> 1      36         41   0.6388889   0.4878049 0.5227273 0.6060606 0.5584416
+#> 2      36         41   0.2500000   0.8780488 0.6428571 0.5714286 0.5844156
+#>   youden_index optimal_threshold
+#> 1    0.1266938         0.3111415
+#> 2    0.1280488         1.0426505
 
 ## -----------------------------------------------------------------------
-## Example 3 - column names with spaces, select top-2 by AUC
+## Example 3 - access performance metrics at optimal Youden threshold
 ## -----------------------------------------------------------------------
-df3 <- data.frame(
+res3 <- run_auc(
+  x                     = df,
+  y                     = "group",
+  plot                  = "none",
+  compute_performance_metrics = TRUE
+)
+# The auc_table now includes sensitivity, specificity, PPV, NPV, accuracy,
+# Youden index, and optimal threshold values
+head(res3$auc_table[, c("predictor", "auc", "sensitivity", "specificity", 
+                          "ppv", "npv", "youden_index")])
+#>   predictor       auc sensitivity specificity       ppv       npv youden_index
+#> 1  marker_A 0.5133765   0.3731343   0.7924528 0.6944444 0.5000000   0.16558716
+#> 2  marker_B 0.5243593   0.7761194   0.3207547 0.5909091 0.5312500   0.09687412
+#> 3  marker_C 0.5350605   0.4029851   0.6981132 0.6279070 0.4805195   0.10109828
+
+## -----------------------------------------------------------------------
+## Example 4 - column names with spaces, select top-2 by AUC
+## -----------------------------------------------------------------------
+df4 <- data.frame(
   `my group`  = sample(0:1, n, replace = TRUE),
   `feature 1` = rnorm(n, mean = 0.5),
   `feature 2` = rnorm(n),
   check.names = FALSE
 )
 
-res3 <- run_auc(
-  x    = df3,
+res4 <- run_auc(
+  x    = df4,
   y    = "my group",
   plot = "none"
 )
-print(res3$auc_table)
-#>   predictor       auc  ci_lower  ci_upper ci_level direction n_cases n_controls
-#> 1 feature 1 0.5167558 0.4120382 0.6214735     0.95         >      67         53
-#> 2 feature 2 0.5516756 0.4461648 0.6571863     0.95         >      67         53
+print(res4$auc_table)
+#>   predictor       auc  ci_lower  ci_upper auc_interpretation ci_level direction
+#> 1 feature 1 0.5167558 0.4120382 0.6214735               Poor     0.95         >
+#> 2 feature 2 0.5516756 0.4461648 0.6571863               Poor     0.95         >
+#>   n_cases n_controls sensitivity specificity       ppv       npv  accuracy
+#> 1      67         53   0.1343284   0.9811321 0.9000000 0.4727273 0.5083333
+#> 2      67         53   0.7761194   0.3773585 0.6117647 0.5714286 0.6000000
+#>   youden_index optimal_threshold
+#> 1    0.1154604        -1.1017566
+#> 2    0.1534779         0.6624894
 ```

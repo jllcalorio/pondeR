@@ -1,13 +1,13 @@
 # Plot Results from a Linear Mixed-Effects Model Analysis
 
 Produces a volcano plot from the `combined_fixed_effects` component of a
-`run_mixedmodel` object, with log2 fold-change (or raw estimates) on the
-x-axis and \\-\log\_{10}(p\_{\text{adj}})\\ on the y-axis. When the
-model formula contained more than one fixed effect term, panels are
-automatically faceted by `term` so each predictor is shown separately.
-Points are colored by significance and direction, and labels can be
-added to the top-\\n\\ features per panel or to a user-specified set of
-features.
+[`run_mixedmodel`](https://jllcalorio.github.io/pondeR/reference/run_mixedmodel.md)
+object, with log2 fold-change (or raw estimates) on the x-axis and
+\\-\log\_{10}(p\_{\text{adj}})\\ on the y-axis. When the model formula
+contained more than one fixed effect term, panels are automatically
+faceted by `term` so each predictor is shown separately. Points are
+colored by significance and direction, and labels can be added to the
+top-\\n\\ features per panel or to a user-specified set of features.
 
 ## Usage
 
@@ -51,7 +51,9 @@ plot_mixedmodel(
 
 - x:
 
-  A `run_mixedmodel` object returned by
+  A
+  [`run_mixedmodel`](https://jllcalorio.github.io/pondeR/reference/run_mixedmodel.md)
+  object returned by
   [`run_mixedmodel`](https://jllcalorio.github.io/pondeR/reference/run_mixedmodel.md).
 
 - type:
@@ -69,7 +71,8 @@ plot_mixedmodel(
 
   Logical. If `TRUE` (default), the y-axis reflects `p_adj`
   (Benjamini-Hochberg or whichever method was passed to
-  `run_mixedmodel`). If `FALSE`, raw `p_value` is used.
+  [`run_mixedmodel`](https://jllcalorio.github.io/pondeR/reference/run_mixedmodel.md)).
+  If `FALSE`, raw `p_value` is used.
 
 - p_threshold:
 
@@ -239,6 +242,22 @@ plots), it is used automatically. Install with
 `install.packages("ggrepel")`. If absent, `geom_text` is used with a
 slight upward nudge.
 
+## References
+
+Bates D, Machler M, Bolker B, Walker S (2015). Fitting linear
+mixed-effects models using lme4. *Journal of Statistical Software*,
+67(1), 1-48.
+[doi:10.18637/jss.v067.i01](https://doi.org/10.18637/jss.v067.i01)
+
+Benjamini Y, Hochberg Y (1995). Controlling the false discovery rate: a
+practical and powerful approach to multiple testing. *Journal of the
+Royal Statistical Society: Series B*, 57(1), 289-300.
+[doi:10.1111/j.2517-6161.1995.tb02031.x](https://doi.org/10.1111/j.2517-6161.1995.tb02031.x)
+
+Okabe M, Ito K (2008). *Color Universal Design (CUD): How to make
+figures and presentations that are friendly to colorblind people*.
+<https://jfly.uni-koeln.de/color/>
+
 ## Author
 
 John Lennon L. Calorio
@@ -246,33 +265,24 @@ John Lennon L. Calorio
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-result <- run_mixedmodel(
-  x        = x,
-  metadata = metadata,
-  formula  = ".feature ~ time + age + (1 | subject_id)"
+set.seed(42)
+meta <- data.frame(subject_id = factor(rep(1:15, each = 2)),
+                   time       = rep(c("pre", "post"), 15))
+x <- data.frame(
+  glucose = rnorm(30, ifelse(meta$time == "post", 5.6, 5), 0.4),
+  insulin = rnorm(30, 80, 10),
+  lactate = rnorm(30, 1.2, 0.3)
 )
+fit <- run_mixedmodel(x, meta, formula = ".feature ~ time + (1 | subject_id)",
+                      verbose = FALSE)
+#> 'subject_col' not specified; using detected column: 'subject_id'.
+#> 
+#> run_mixedmodel complete: 3/3 features fitted successfully (100.0%).
 
-# Default: all terms, auto-label top 10 significant features
-plot_mixedmodel(result)
+plot_mixedmodel(fit)
 
-# Focus on one term, label specific features
-plot_mixedmodel(
-  result,
-  term           = "timepost",
-  label_features = c("glucose", "insulin"),
-  color_up       = "#CC79A7",
-  alpha          = 0.3,
-  alpha_sig      = 0.9,
-  title          = "Time effect (pre → post)"
-)
+plot_mixedmodel(fit, label_features = "glucose", label_box = TRUE)
+#> Scale for colour is already present.
+#> Adding another scale for colour, which will replace the existing scale.
 
-# No auto-labels, only highlight manually specified features
-plot_mixedmodel(
-  result,
-  label_features = c("glucose", "insulin", "PA O-28:1"),
-  label_box      = TRUE,
-  label_color    = "black"
-)
-} # }
 ```

@@ -209,7 +209,7 @@ Biol 13(11): e1005752.
 
 ## See also
 
-`run_DIpreprocess`
+[`run_DIpreprocess`](https://jllcalorio.github.io/dimsprepr/reference/run_DIpreprocess.html)
 
 ## Author
 
@@ -218,33 +218,32 @@ John Lennon L. Calorio
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-# Simulate data
-set.seed(123)
-x <- matrix(rnorm(100 * 50, mean = 100, sd = 20), nrow = 100, ncol = 50)
-colnames(x) <- paste0("Feature", 1:50)
-rownames(x) <- paste0("Sample", 1:100)
+# \donttest{
+if (requireNamespace("ropls", quietly = TRUE)) {
+  meta <- data.frame(Sample = rownames(iris), Species = iris$Species)
+  pls  <- run_pls(scale(iris[, 1:4]), meta, method = "plsda",
+                  group = "Species", verbose = FALSE)
+  print(pls)
+  plot_score(pls, color_by = "Species", points_from = "Sample")
 
-metadata <- data.frame(
-  Sample = paste0("Sample", 1:100),
-  Group = rep(c("Control", "Treatment", "QC"), c(40, 40, 20))
-)
+  # OPLS-DA needs exactly two groups
+  opls <- run_pls(scale(iris[51:150, 1:4]), droplevels(meta[51:150, ]),
+                  method = "oplsda", group = "Species", verbose = FALSE)
+}
 
-# Run PLS-DA excluding QC samples, with automatic pareto scaling
-pls_result <- run_pls(x, metadata, 
-                      method = "plsda",
-                      scale_method = "pareto",
-                      group = "Group",
-                      exclude = "QC")
+#> === Partial Least Squares Analysis (PLSDA) ===
+#> Samples:      150 
+#> Features:     4 
+#> Components:   2 
+#> 
+#> Variance explained by components:
+#>   Component 1: 72.9%
+#>   Component 2: 22.8%
+#> 
+#> Use plot_score() to visualize sample positions.
+#> Using discrete coloring by 'Species'
+#> Using labels from column 'Sample'
+#> Scores plot created successfully.
 
-# Visualize with plot_score
-plot_score(pls_result, color_by = "Group", points_from = "Sample")
-
-# Run OPLS-DA
-opls_result <- run_pls(x, metadata, 
-                       method = "oplsda",
-                       scale_method = "pareto",
-                       group = "Group",
-                       exclude = "QC")
-} # }
+# }
 ```

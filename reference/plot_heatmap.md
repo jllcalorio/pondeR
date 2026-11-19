@@ -224,6 +224,16 @@ dendrogram above the heatmap. Arguments accepted by
 (e.g. `agglomeration_method`, `line_color`) are forwarded automatically
 via `...`.
 
+## References
+
+Ward JH (1963). Hierarchical grouping to optimize an objective function.
+*Journal of the American Statistical Association*, 58(301), 236-244.
+[doi:10.1080/01621459.1963.10500845](https://doi.org/10.1080/01621459.1963.10500845)
+
+Wickham H (2016). *ggplot2: Elegant Graphics for Data Analysis*.
+Springer-Verlag New York.
+[doi:10.1007/978-3-319-24277-4](https://doi.org/10.1007/978-3-319-24277-4)
+
 ## See also
 
 [`run_correl`](https://jllcalorio.github.io/pondeR/reference/run_correl.md),
@@ -238,17 +248,161 @@ John Lennon L. Calorio
 ``` r
 ## Basic heatmap
 plot_heatmap(mtcars)
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
 
 
 ## Masked, lower triangle only
 plot_heatmap(mtcars, out = "masked", show_triangle = "lower")
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
 
 
 ## Show coefficients
 plot_heatmap(mtcars, show_coef = TRUE, mark_x = TRUE)
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
 
 
 ## With dendrograms
 plot_heatmap(mtcars, show_dend = TRUE)
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
+#> Warning: cannot compute exact p-value with ties
 
 ```

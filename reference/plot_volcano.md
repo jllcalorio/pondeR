@@ -304,12 +304,23 @@ A named list with elements:
 
   A list of all resolved parameter values.
 
+## References
+
+Benjamini Y, Hochberg Y (1995). Controlling the false discovery rate: a
+practical and powerful approach to multiple testing. *Journal of the
+Royal Statistical Society: Series B*, 57(1), 289-300.
+[doi:10.1111/j.2517-6161.1995.tb02031.x](https://doi.org/10.1111/j.2517-6161.1995.tb02031.x)
+
+Wickham H (2016). *ggplot2: Elegant Graphics for Data Analysis*.
+Springer-Verlag New York.
+[doi:10.1007/978-3-319-24277-4](https://doi.org/10.1007/978-3-319-24277-4)
+
 ## See also
 
 [`run_foldchange`](https://jllcalorio.github.io/pondeR/reference/run_foldchange.md),
 [`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md),
 [`get_volcanodata`](https://jllcalorio.github.io/pondeR/reference/get_volcanodata.md),
-`run_DIpreprocess`
+[`run_DIpreprocess`](https://jllcalorio.github.io/dimsprepr/reference/run_DIpreprocess.html)
 
 ## Author
 
@@ -318,7 +329,6 @@ John Lennon L. Calorio
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
 ## -----------------------------------------------------------------------
 ## Example 1 - minimal synthetic data, no group
 ## -----------------------------------------------------------------------
@@ -332,6 +342,7 @@ dat <- data.frame(
 
 res <- plot_volcano(x = dat, y = "fold_change", z = "pvalue")
 print(res$plots[[1]])
+
 
 ## -----------------------------------------------------------------------
 ## Example 2 - asymmetric thresholds as raw fold changes, with labels
@@ -349,6 +360,7 @@ res2 <- plot_volcano(
   annotate = ann
 )
 print(res2$plots[[1]])
+
 
 ## -----------------------------------------------------------------------
 ## Example 3 - multi-group overlay
@@ -374,6 +386,7 @@ res3 <- plot_volcano(
 )
 print(res3$plots[[1]])
 
+
 ## -----------------------------------------------------------------------
 ## Example 4 - threshold-based annotation (annotate2)
 ## -----------------------------------------------------------------------
@@ -388,5 +401,5 @@ res4 <- plot_volcano(
   down      = 0.5
 )
 print(res4$plots[[1]])
-} # }
+
 ```

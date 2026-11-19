@@ -256,6 +256,16 @@ For raw intensities on very different scales, use
 `scale_vars = "zscore"` to make the colour gradient interpretable across
 all rows.
 
+## References
+
+Ward JH (1963). Hierarchical grouping to optimize an objective function.
+*Journal of the American Statistical Association*, 58(301), 236-244.
+[doi:10.1080/01621459.1963.10500845](https://doi.org/10.1080/01621459.1963.10500845)
+
+Okabe M, Ito K (2008). *Color Universal Design (CUD): How to make
+figures and presentations that are friendly to colorblind people*.
+<https://jfly.uni-koeln.de/color/>
+
 ## Author
 
 John Lennon L. Calorio

@@ -8,7 +8,7 @@ Permutational Multivariate Analysis of Variance (PERMANOVA) via
 [`adonis2`](https://vegandevs.github.io/vegan/reference/adonis.html) on
 the same dissimilarity matrix. Can also perform pairwise post-hoc
 testing using
-[`OmicFlow::pairwise_adonis`](https://rdrr.io/pkg/OmicFlow/man/pairwise_adonis.html).
+[`OmicFlow::pairwise_adonis`](https://agusinac.github.io/OmicFlow/reference/pairwise_adonis.html).
 Both analyses share a single dissimilarity matrix so the method is
 applied exactly once.
 
@@ -79,7 +79,7 @@ run_pcoa(
 
   A single character string naming a column of `metadata` to use for
   pairwise post-hoc testing via
-  [`OmicFlow::pairwise_adonis`](https://rdrr.io/pkg/OmicFlow/man/pairwise_adonis.html).
+  [`OmicFlow::pairwise_adonis`](https://agusinac.github.io/OmicFlow/reference/pairwise_adonis.html).
   When `NULL` (default), post-hoc analysis is skipped.
 
 - p_adjust:
@@ -101,7 +101,7 @@ run_pcoa(
   [`pcoa`](https://rdrr.io/pkg/ape/man/pcoa.html) (e.g., `rn`), and to
   [`adonis2`](https://vegandevs.github.io/vegan/reference/adonis.html)
   (e.g., `by`, `parallel`, `strata`) when PERMANOVA is requested, and to
-  [`pairwise_adonis`](https://rdrr.io/pkg/OmicFlow/man/pairwise_adonis.html).
+  [`pairwise_adonis`](https://agusinac.github.io/OmicFlow/reference/pairwise_adonis.html).
   Arguments are routed to each function by matching against their
   respective [`formals()`](https://rdrr.io/r/base/formals.html);
   unrecognised names trigger a warning.
@@ -169,7 +169,7 @@ elements:
 - `pairwise_adonis`:
 
   When `groups` is specified: the full result table from
-  [`OmicFlow::pairwise_adonis`](https://rdrr.io/pkg/OmicFlow/man/pairwise_adonis.html).
+  [`OmicFlow::pairwise_adonis`](https://agusinac.github.io/OmicFlow/reference/pairwise_adonis.html).
 
 - `betadisper`:
 
@@ -241,7 +241,7 @@ fully Euclidean representation (Lingoes, 1971; Cailliez, 1983).
 Computed as \\\lambda_i / \sum \lambda^+\\, using only positive
 eigenvalues, consistent with ape convention.
 
-### Compatibility with `plot_score`
+### Compatibility with [`plot_score`](https://jllcalorio.github.io/pondeR/reference/plot_score.md)
 
 The returned object carries class `"run_pcoa"` and a `scores` element
 with columns `PC1`, `PC2`, ... so that
@@ -377,7 +377,7 @@ if (requireNamespace("vegan", quietly = TRUE) &&
 #>   Consider correction = "lingoes" or "cailliez" for a fully Euclidean representation.
 #> Warning: number of items to replace is not a multiple of replacement length
 #>            Df SumOfSqs        R2        F Pr(>F)
-#> Management  3 1.468592 0.3416107 2.767243  0.002
+#> Management  3 1.468592 0.3416107 2.767243  0.003
 #> Residual   16 2.830430 0.6583893       NA     NA
 #> Total      19 4.299022 1.0000000       NA     NA
 

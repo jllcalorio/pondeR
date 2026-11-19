@@ -1,13 +1,15 @@
-# Inspect Group Sample Sizes That May Trigger CV Fold Reduction in `run_regreg()`
+# Inspect Group Sample Sizes That May Trigger CV Fold Reduction in [`run_regreg()`](https://jllcalorio.github.io/pondeR/reference/run_regreg.md)
 
 Tabulates the number of samples per level of the dependent variable
 (`pred`) after applying the same pre-processing steps that
 [`run_regreg`](https://jllcalorio.github.io/pondeR/reference/run_regreg.md)
 performs: removing rows with `NA` in `pred`, and optionally subsetting
 rows to match those that would survive the `not_penalized` NA removal.
-This lets the user see exactly why `run_regreg` may warn that `cv_folds`
-was reduced — because the smallest group has fewer samples than the
-requested number of folds — and which group is the bottleneck.
+This lets the user see exactly why
+[`run_regreg`](https://jllcalorio.github.io/pondeR/reference/run_regreg.md)
+may warn that `cv_folds` was reduced — because the smallest group has
+fewer samples than the requested number of folds — and which group is
+the bottleneck.
 
 ## Usage
 
@@ -42,8 +44,9 @@ get_groupsizes(
 
   Optional character vector. When supplied, rows with `NA` in any
   metadata-sourced `not_penalized` column are removed before counting,
-  mirroring the exact sample set `run_regreg` would use. Default: `NULL`
-  (no additional row removal).
+  mirroring the exact sample set
+  [`run_regreg`](https://jllcalorio.github.io/pondeR/reference/run_regreg.md)
+  would use. Default: `NULL` (no additional row removal).
 
 - is_numeric:
 
@@ -118,8 +121,9 @@ A `data.frame` with the following columns:
 
 - `suggested_cv_folds`:
 
-  The fold count `run_regreg` would actually use:
-  `max(3, n_train_projected)`.
+  The fold count
+  [`run_regreg`](https://jllcalorio.github.io/pondeR/reference/run_regreg.md)
+  would actually use: `max(3, n_train_projected)`.
 
 ## Details
 
@@ -141,6 +145,12 @@ When `metadata` is a named list (parallel to a `lapply` call), each
 element is processed and results are stacked with a leading `taxon`
 column.
 
+## References
+
+Kuhn M (2008). Building predictive models in R using the caret package.
+*Journal of Statistical Software*, 28(5), 1-26.
+[doi:10.18637/jss.v028.i05](https://doi.org/10.18637/jss.v028.i05)
+
 ## See also
 
 [`run_regreg`](https://jllcalorio.github.io/pondeR/reference/run_regreg.md),
@@ -154,44 +164,20 @@ John Lennon L. Calorio
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-## ---- Single metadata data frame ------------------------------------------
-gs <- get_groupsizes(
-  metadata      = df_metadata_laboratory |>
-                    dplyr::filter(`Disease Severity` != "Healthy"),
-  pred          = "Disease Severity",
-  not_penalized = vars_include_laboratory,
-  is_numeric    = "Serum albumin (g/L)",
-  train_percent = 0.6,
-  cv_folds      = 10L
+set.seed(1)
+meta <- data.frame(
+  Group = sample(c("Case", "Control"), 60, TRUE),
+  Age   = round(runif(60, 20, 60)),
+  Sex   = sample(c("F", "M"), 60, TRUE)
 )
-print(gs)
+meta$Age[c(3, 9)] <- NA   # rows with missing covariates are dropped
 
-## ---- With a publication-ready summary table ------------------------------
-get_groupsizes(
-  metadata           = df_metadata_laboratory,
-  pred               = "Disease Severity",
-  not_penalized      = vars_include_laboratory,
-  is_numeric         = "Serum albumin (g/L)",
-  train_percent      = 0.6,
-  cv_folds           = 10L,
-  show_summary_table = TRUE
-)
-
-## ---- List of metadata (one per taxon) ------------------------------------
-# If each taxon uses the same metadata, just pass it once (not a list).
-# If each taxon has its own row-subsetted metadata, wrap them in a list:
-gs_list <- get_groupsizes(
-  metadata      = setNames(
-    lapply(names(df_list_clr), function(nm) df_metadata_laboratory),
-    names(df_list_clr)
-  ),
-  pred          = "Disease Severity",
-  not_penalized = vars_include_laboratory,
-  train_percent = 0.6,
-  cv_folds      = 10L
-)
-# Taxa where fold reduction is expected
-gs_list[gs_list$fold_reduction_expected, ]
-} # }
+get_groupsizes(meta, pred = "Group", not_penalized = c("Age", "Sex"),
+               train_percent = 0.7, cv_folds = 5L)
+#>     group n_total n_train_projected folds_requested fold_reduction_expected
+#> 1    Case      30                21               5                   FALSE
+#> 2 Control      28                19               5                   FALSE
+#>   suggested_cv_folds
+#> 1                 21
+#> 2                 19
 ```

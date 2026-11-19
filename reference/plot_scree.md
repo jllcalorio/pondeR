@@ -204,30 +204,14 @@ John Lennon L. Calorio
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-# Run PCA first
-pca_result <- run_pca(scaled_data, metadata, scale_method = "auto")
+pca <- run_pca(scale(iris[, 1:4]), iris["Species"], group = "Species",
+               verbose = FALSE)
 
-# Basic scree plot (nature theme, Okabe-Ito colors, defaults)
-plot_scree(pca_result)
+plot_scree(pca, verbose = FALSE)
 
-# Eigenvalue plot, bar + line geometry
-plot_scree(pca_result,
-           what     = "eigen",
-           type     = "both",
-           title    = "PCA Eigenvalues",
-           position = "left")
+plot_scree(pca, what = "eigen", type = "both", title = "PCA Eigenvalues",
+           verbose = FALSE)
+#> Warning: 'show_cumulative' is only available when what = 'variance'. Setting show_cumulative = FALSE.
+#> Solution: Use what = 'variance' if you want to show cumulative variance.
 
-# Variance plot without cumulative line, classic theme
-plot_scree(pca_result,
-           show_cumulative = FALSE,
-           max_pc          = 10,
-           theme           = "classic")
-
-# Larger font, serif family, custom zoom
-plot_scree(pca_result,
-           base_size   = 13,
-           font_family = "serif",
-           zoom        = 1.2)
-} # }
 ```
