@@ -35,8 +35,8 @@
 #'   Features beyond \eqn{Q1 - k \times IQR} or \eqn{Q3 + k \times IQR} are
 #'   labelled. Set to \code{Inf} to disable automatic annotation entirely.
 #'   Default: \code{1.5}.
-#' @param label_size Numeric. Font size for point labels (in ggplot2 pt units).
-#'   Default: \code{3}.
+#' @param label_size Numeric. Font size for point labels, in points. Default:
+#'   \code{NULL}, derived from \code{base_size}.
 #' @param label_max_overlap Integer. Passed to \code{ggrepel::geom_text_repel}'s
 #'   \code{max.overlaps}. Default: \code{20}.
 #' @param label_box Logical. If \code{TRUE}, draws a border box around labels
@@ -79,26 +79,23 @@
 #'   grid. \code{NULL} lets \code{ggplot2} decide. Default: \code{NULL}.
 #' @param theme Character string. One of \code{"nature"} (default, built on
 #'   \code{theme_bw}), \code{"minimal"}, \code{"classic"}, \code{"bw"}.
-#' @param base_size Numeric. Base font size passed to the theme. Default:
-#'   \code{12}.
+#' @param base_size Base font size in points; every text element scales from
+#'   it. Default: \code{11}, which suits a default 7 x 5 inch Quarto figure.
 #' @param font_family Character. Font family. Default: \code{""} (system
 #'   default).
-#' @param zoom Numeric scalar. Multiplies all point sizes, label sizes, line
-#'   widths, and base font size proportionally for export scaling. Default:
-#'   \code{1}.
 #'
 #' @details
 #' \strong{Significance classes}: Each feature is assigned one of three classes
 #' per term panel:
 #' \itemize{
-#'   \item \strong{Up} — estimate > \code{estimate_threshold} AND p
+#'   \item \strong{Up} - estimate > \code{estimate_threshold} AND p
 #'     (adjusted or raw) < \code{p_threshold}.
-#'   \item \strong{Down} — estimate < \eqn{-}\code{estimate_threshold} AND p <
+#'   \item \strong{Down} - estimate < \eqn{-}\code{estimate_threshold} AND p <
 #'     \code{p_threshold}.
-#'   \item \strong{NS} — does not meet either criterion.
+#'   \item \strong{NS} - does not meet either criterion.
 #' }
 #' When \code{estimate_threshold = 0} (default), the up/down split is purely on
-#' the sign of the estimate — useful for a single continuous predictor (e.g.,
+#' the sign of the estimate - useful for a single continuous predictor (e.g.,
 #' age, time as numeric) where there is no conventional fold-change cutoff.
 #'
 # \strong{Labeling strategy}: Auto-labels (\code{label_top}) are selected
@@ -131,7 +128,7 @@
 #'   figures and presentations that are friendly to colorblind people}.
 #'   \url{https://jfly.uni-koeln.de/color/}
 #'
-#' @examples
+#' @examplesIf requireNamespace("lmerTest", quietly = TRUE)
 #' set.seed(42)
 #' meta <- data.frame(subject_id = factor(rep(1:15, each = 2)),
 #'                    time       = rep(c("pre", "post"), 15))
@@ -148,11 +145,6 @@
 #'
 #' @author John Lennon L. Calorio
 #'
-#' @importFrom ggplot2 ggplot aes geom_point geom_hline geom_vline geom_text
-#' @importFrom ggplot2 scale_color_manual scale_alpha_manual scale_size_manual labs facet_wrap
-#' @importFrom ggplot2 theme_bw theme_minimal theme_classic theme element_text element_rect
-#' @importFrom ggplot2 element_line element_blank margin unit
-#' @importFrom stats setNames
 #'
 #' @export
 plot_mixedmodel <- function(
@@ -165,7 +157,7 @@ plot_mixedmodel <- function(
     label_features     = NULL,
     minmax             = NULL,
     iqr_k              = 1.5,
-    label_size         = 3,
+    label_size         = NULL,
     label_max_overlap  = 20L,
     label_box          = FALSE,
     label_color        = "match",
@@ -184,14 +176,9 @@ plot_mixedmodel <- function(
     facet_scales       = "fixed",
     facet_ncol         = NULL,
     theme              = "nature",
-    base_size          = 12,
-    font_family        = "",
-    zoom               = 1
+    base_size          = 11,
+    font_family        = ""
 ) {
-
-  # ---- soft dependency: ggplot2 --------------------------------------------
-  if (!requireNamespace("ggplot2", quietly = TRUE))
-    stop("Package 'ggplot2' is required. Install it with install.packages('ggplot2').")
 
   # ---- input class ---------------------------------------------------------
   if (!inherits(x, "run_mixedmodel"))
@@ -212,16 +199,14 @@ plot_mixedmodel <- function(
   if (!is.numeric(iqr_k) || length(iqr_k) != 1L || iqr_k < 0)
     stop("'iqr_k' must be a single non-negative numeric value.")
 
-  # ---- zoom ----------------------------------------------------------------
-  if (!is.numeric(zoom) || length(zoom) != 1L || zoom <= 0)
-    stop("'zoom' must be a single positive numeric.")
-  base_size      <- base_size      * zoom
-  label_size     <- label_size     * zoom
-  point_size     <- point_size     * zoom
-  point_size_sig <- point_size_sig * zoom
-
+  sizes <- .text_sizes(base_size, label = label_size)
   # ---- combined_fixed_effects ----------------------------------------------
   cfe <- x$combined_fixed_effects
+  # The table is labelled for reports; use short names here
+  short <- c(Feature = "feature", Term = "term", Estimate = "estimate",
+             `p-value` = "p_value", `Adjusted p-value` = "p_adj")
+  hit <- names(cfe) %in% names(short)
+  names(cfe)[hit] <- short[names(cfe)[hit]]
   if (is.null(cfe) || !is.data.frame(cfe) || nrow(cfe) == 0L)
     stop(
       "No combined_fixed_effects table found. ",
@@ -366,39 +351,12 @@ plot_mixedmodel <- function(
     )
   }
 
-  # ---- theme builder -------------------------------------------------------
-  .build_theme <- function(theme_nm, bs, ff) {
-    base <- switch(
-      theme_nm,
-      nature  = ggplot2::theme_bw(base_size = bs, base_family = ff),
-      minimal = ggplot2::theme_minimal(base_size = bs, base_family = ff),
-      classic = ggplot2::theme_classic(base_size = bs, base_family = ff),
-      bw      = ggplot2::theme_bw(base_size = bs, base_family = ff),
-      stop(sprintf(
-        "'theme' must be one of: 'nature', 'minimal', 'classic', 'bw'. Got: '%s'.", theme_nm
-      ))
+  # ---- theme -------------------------------------------------------------
+  thm <- .ponder_theme(theme, sizes, font_family) +
+    ggplot2::theme(
+      legend.position = "none",
+      plot.caption    = ggplot2::element_text(hjust = 0, margin = ggplot2::margin(t = 6))
     )
-    if (theme_nm == "nature") {
-      base <- base + ggplot2::theme(
-        panel.grid.major = ggplot2::element_blank(),
-        panel.grid.minor = ggplot2::element_blank(),
-        strip.background = ggplot2::element_rect(fill = "grey92", color = NA),
-        strip.text       = ggplot2::element_text(face = "bold", size = bs * 0.9),
-        axis.title       = ggplot2::element_text(size = bs),
-        axis.text        = ggplot2::element_text(size = bs * 0.85),
-        legend.position  = "none",
-        plot.caption     = ggplot2::element_text(
-          size = bs * 0.72, color = "grey50", hjust = 0,
-          margin = ggplot2::margin(t = 6)
-        ),
-        plot.title       = ggplot2::element_text(face = "bold", size = bs * 1.1),
-        plot.subtitle    = ggplot2::element_text(size = bs * 0.9, color = "grey40")
-      )
-    }
-    base
-  }
-
-  thm <- .build_theme(theme, base_size, font_family)
 
   # ---- color / alpha / size scales -----------------------------------------
   sig_colors <- c(Up = color_up, Down = color_down, NS = color_ns)
@@ -419,7 +377,7 @@ plot_mixedmodel <- function(
     ggplot2::geom_hline(
       yintercept = -log10(p_threshold),
       linetype   = "dashed",
-      linewidth  = 0.45 * zoom,
+      linewidth  = 0.45,
       color      = "grey40"
     ) +
     ggplot2::geom_point() +
@@ -441,7 +399,7 @@ plot_mixedmodel <- function(
       ggplot2::geom_vline(
         xintercept = c(-estimate_threshold, estimate_threshold),
         linetype   = "dashed",
-        linewidth  = 0.45 * zoom,
+        linewidth  = 0.45,
         color      = "grey40"
       )
   }
@@ -456,75 +414,26 @@ plot_mixedmodel <- function(
   }
 
   # ---- labels --------------------------------------------------------------
-  has_ggrepel <- requireNamespace("ggrepel", quietly = TRUE)
-  label_df    <- cfe[cfe$.label != "", , drop = FALSE]
+  label_df <- cfe[cfe$.label != "", , drop = FALSE]
 
   if (nrow(label_df) > 0L) {
-
-    if (has_ggrepel) {
-      repel_fn <- if (label_box) ggrepel::geom_label_repel else ggrepel::geom_text_repel
-
-      # Resolve label color mapping ----------------------------------------
-      if (identical(label_color, "match")) {
-        # Per-point color lives inside aes(); no bare color argument
-        p <- p + repel_fn(
-          data         = label_df,
-          mapping      = ggplot2::aes(
-            x     = estimate,
-            y     = .neg_log10_p,
-            label = .label,
-            color = .sig          # <-- mapped, not manual
-          ),
-          size          = label_size,
-          max.overlaps  = label_max_overlap,
-          segment.size  = 0.3 * zoom,
-          segment.color = "grey50",
-          show.legend   = FALSE,
-          inherit.aes   = FALSE
-        ) +
-          # Reuse the same color scale already on the plot
-          ggplot2::scale_color_manual(values = sig_colors, drop = FALSE)
-      } else {
-        # Single fixed color — safe to pass as bare argument
-        p <- p + repel_fn(
-          data         = label_df,
-          mapping      = ggplot2::aes(
-            x     = estimate,
-            y     = .neg_log10_p,
-            label = .label
-          ),
-          color         = label_color,
-          size          = label_size,
-          max.overlaps  = label_max_overlap,
-          segment.size  = 0.3 * zoom,
-          segment.color = "grey50",
-          show.legend   = FALSE,
-          inherit.aes   = FALSE
-        )
-      }
-
-    } else {
-      message(
-        "Install 'ggrepel' for better label placement: install.packages('ggrepel').\n",
-        "Falling back to geom_text."
-      )
-
-      lbl_color_vec <- if (identical(label_color, "match")) label_df$.lbl_color else label_color
-
-      p <- p + ggplot2::geom_text(
-        data        = label_df,
-        mapping     = ggplot2::aes(
-          x     = estimate,
-          y     = .neg_log10_p,
-          label = .label
-        ),
-        color       = lbl_color_vec,
-        size        = label_size,
-        nudge_y     = 0.15,
-        show.legend = FALSE,
-        inherit.aes = FALSE
-      )
-    }
+    repel_fn <- if (label_box) ggrepel::geom_label_repel else ggrepel::geom_text_repel
+    match_color <- identical(label_color, "match")
+    repel_args <- list(
+      data         = label_df,
+      mapping      = if (match_color)
+        ggplot2::aes(x = estimate, y = .neg_log10_p, label = .label, color = .sig)
+      else
+        ggplot2::aes(x = estimate, y = .neg_log10_p, label = .label),
+      size          = .pt_to_mm(sizes$label),
+      max.overlaps  = label_max_overlap,
+      segment.size  = 0.3,
+      segment.color = "grey50",
+      show.legend   = FALSE,
+      inherit.aes   = FALSE
+    )
+    if (!match_color) repel_args$color <- label_color
+    p <- p + do.call(repel_fn, repel_args)
   }
 
   p   # visible return: auto-prints when unassigned, silent when assigned

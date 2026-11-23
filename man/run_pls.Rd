@@ -17,7 +17,7 @@ run_pls(
   crossvalI = 10,
   permI = 20,
   keepX = NULL,
-  verbose = TRUE
+  verbose = FALSE
 )
 }
 \arguments{
@@ -59,12 +59,12 @@ If NA (default), the optimal number is determined automatically by cross-validat
 \item{keepX}{Integer vector. For sPLS-DA only: specifies the number of variables to keep
 on each component. Default: NULL (automatic selection or keeps all).}
 
-\item{verbose}{Logical. Print progress messages. Default: TRUE.}
+\item{verbose}{Logical. Print progress messages. Default: FALSE.}
 }
 \value{
 A list containing:
-\item{scores}{Matrix of scores (samples × components), aliased as PC1, PC2... for \code{plot_score} compatibility}
-\item{loadings}{Matrix of feature loadings (features × components)}
+\item{scores}{Matrix of scores (samples x components), aliased as PC1, PC2... for \code{plot_score} compatibility}
+\item{loadings}{Matrix of feature loadings (features x components)}
 \item{variance_explained}{Numeric vector of variance explained (\%) per component}
 \item{vip_scores}{Numeric vector of Variable Importance in Projection (VIP) scores (PLS-DA/OPLS-DA only)}
 \item{pls_object}{Original model object from \code{ropls} or \code{mixOmics}}
@@ -112,13 +112,13 @@ Use the \code{exclude} parameter (e.g., \code{exclude = "QC"}) to drop them prio
 if (requireNamespace("ropls", quietly = TRUE)) {
   meta <- data.frame(Sample = rownames(iris), Species = iris$Species)
   pls  <- run_pls(scale(iris[, 1:4]), meta, method = "plsda",
-                  group = "Species", verbose = FALSE)
+                  group = "Species", permI = 0, verbose = FALSE)
   print(pls)
   plot_score(pls, color_by = "Species", points_from = "Sample")
 
   # OPLS-DA needs exactly two groups
   opls <- run_pls(scale(iris[51:150, 1:4]), droplevels(meta[51:150, ]),
-                  method = "oplsda", group = "Species", verbose = FALSE)
+                  method = "oplsda", group = "Species", permI = 0, verbose = FALSE)
 }
 }
 

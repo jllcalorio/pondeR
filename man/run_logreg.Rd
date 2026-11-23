@@ -75,7 +75,7 @@ applied, as \code{car::vif()} does not support \code{logistf} objects. In crude 
 VIF is not meaningful for simple (one-predictor) models and will be \code{NA} throughout.}
 
 \item{apply_firth}{Logical; if \code{TRUE} (default), Firth's bias-reduced penalized-likelihood
-logistic regression (\code{logistf::logistf()}) is applied \emph{selectively} — only to models
+logistic regression (\code{logistf::logistf()}) is applied \emph{selectively} - only to models
 where at least one predictor variable has a zero cell count in its cross-tabulation with the
 outcome. Models with no zero cells are fitted using standard \code{glm()} regardless of this
 setting. A logical column \code{Firth Corrected} is added to the output indicating whether
@@ -123,12 +123,12 @@ observations used and whether Firth's correction was applied to the base model.}
 \value{
 If \code{crude = TRUE}, returns a single tidy data frame with rows for all \code{indep}
 variables stacked sequentially (separated by blank spacer rows). Columns: Predictor, Log Odds,
-Std Error, p-value, Significance, OR, 95\\% CI Low, 95\\% CI High, VIF (all \code{NA}),
+Std. error, p-value, Significance, OR, 95\\% CI Low, 95\\% CI High, VIF (all \code{NA}),
 Deviance, AIC, BIC, McFadden R2, CoxSnell R2, Nagelkerke R2, Tjur R2, Firth Corrected.
 Inline model metrics are placed in the first (intercept) row of each variable's block.
 
 If \code{crude = FALSE} and \code{iterate = FALSE}, returns a data frame containing Predictor,
-Log Odds, Std Error, p-value, Significance, OR, 95\\% CIs, VIF, and inline model metrics
+Log Odds, Std. error, p-value, Significance, OR, 95\\% CIs, VIF, and inline model metrics
 (Deviance, AIC, BIC, McFadden R2, CoxSnell R2, Nagelkerke R2, Tjur R2, Firth Corrected) in
 the first row. Model metrics are also attached as \code{attr(result, "model_metrics")}. When
 \code{stepwise = TRUE}, the variables removed at each step (and their triggering VIF) are
@@ -154,7 +154,7 @@ that performs binary logistic regression. It automatically handles column names 
 computes advanced model fit metrics, maps specific reference categories, removes specified
 categories from predictor variables, and optionally iterates through all possible combinations
 of independent variables. When \code{apply_firth = TRUE}, Firth's correction is applied
-selectively — only to models where at least one predictor-outcome cross-tabulation contains a
+selectively - only to models where at least one predictor-outcome cross-tabulation contains a
 zero cell, which is the primary condition warranting penalized likelihood. A column in the
 output indicates whether Firth's correction was applied to each model. Output is formatted as
 a clean data frame.
@@ -167,9 +167,9 @@ are ignored in this mode.
 \details{
 \strong{Crude odds ratios (\code{crude = TRUE}):} Each variable in \code{indep} is fitted in
 a separate simple logistic regression model with \code{y} as the only outcome and no
-covariates, yielding unadjusted (crude) odds ratios. All preprocessing steps — category
+covariates, yielding unadjusted (crude) odds ratios. All preprocessing steps - category
 exclusion (\code{exclude}), predictor category removal (\code{remove}), dependent variable
-releveling (\code{ref}), and predictor releveling (\code{ref_levels}) — are applied before
+releveling (\code{ref}), and predictor releveling (\code{ref_levels}) - are applied before
 each model is fitted. The results are stacked row-wise into a single tidy data frame. Each
 variable's rows are separated by a blank spacer row to visually group the predictors.
 Inline model-fit metrics (Deviance, AIC, BIC, and R2 measures) are placed in the first row
@@ -186,7 +186,7 @@ evaluated alongside \code{confounders} will be: \code{A}, \code{B}, \code{C}, \c
 \strong{Firth's correction (\code{apply_firth}):} Firth's penalized-likelihood method
 (\code{logistf::logistf()}) addresses the monotone likelihood problem caused by complete or
 quasi-complete separation, which arises when a predictor level perfectly predicts one outcome
-group — typically evidenced by a zero cell in the cross-tabulation. When \code{apply_firth = TRUE},
+group - typically evidenced by a zero cell in the cross-tabulation. When \code{apply_firth = TRUE},
 the function checks each model's predictors against the outcome for zero cells. If any are found,
 \code{logistf()} is used in place of \code{glm()} for that model. If \code{force_apply_firth = TRUE},
 this check is skipped and all models are fitted with \code{logistf()}. The \code{Firth Corrected}
@@ -243,10 +243,10 @@ run_logreg(d, y = "am", indep = c("wt", "hp", "vs"), ref = "auto",
 Fox J, Weisberg S (2019). \emph{An R Companion to Applied Regression}, 3rd ed. Sage.
 
 Firth D (1993). "Bias reduction of maximum likelihood estimates." \emph{Biometrika}, 80(1),
-27–38. \doi{10.1093/biomet/80.1.27}
+27-38. \doi{10.1093/biomet/80.1.27}
 
 Heinze G, Schemper M (2002). "A solution to the problem of separation in logistic regression."
-\emph{Statistics in Medicine}, 21(16), 2409–2419. \doi{10.1002/sim.1047}
+\emph{Statistics in Medicine}, 21(16), 2409-2419. \doi{10.1002/sim.1047}
 
 Heinze G, Ploner M, Jiricka L, Steuer A (2024). \emph{logistf: Firth's Bias-Reduced Logistic
 Regression}. R package. \url{https://CRAN.R-project.org/package=logistf}

@@ -20,7 +20,7 @@ run_regreg(
   parallel = FALSE,
   standardize = FALSE,
   maxit = 100000L,
-  seed = 123
+  seed = NULL
 )
 }
 \arguments{
@@ -119,7 +119,7 @@ for coordinate descent convergence. Default: \code{100000}.}
 
 \item{seed}{A single numeric value passed to \code{set.seed()} for
 reproducibility of the train/test split and cross-validation fold
-assignment. Set to \code{NULL} to disable. Default: \code{123}.}
+assignment. Default \code{NULL} leaves the random number generator alone.}
 }
 \value{
 A named list of class \code{"run_regreg"} with the following elements:
@@ -137,7 +137,7 @@ training and testing samples per group (classification) or overall
 regression).}
 \item{\code{Coefficients}}{A \code{data.frame} of non-zero coefficients
 (intercept included if non-zero). Columns: \code{Feature},
-\code{Coefficient}, and \code{OddsRatio} (classification) or just
+\code{Coefficient}, and \code{Odds ratio} (classification) or just
 \code{Feature} and \code{Coefficient} (regression). Multinomial
 models include a leading \code{Comparison} column.}
 \item{\code{N_Coefficients}}{Integer; total non-zero coefficients
@@ -158,8 +158,8 @@ alpha values by performance metric and number of non-zero coefficients.
 }
 }
 \description{
-Fits regularized regression models — Ridge (alpha = 0), LASSO (alpha = 1), or
-Elastic Net (0 < alpha < 1) — with k-fold cross-validation via
+Fits regularized regression models - Ridge (alpha = 0), LASSO (alpha = 1), or
+Elastic Net (0 < alpha < 1) - with k-fold cross-validation via
 \code{\link[glmnet]{cv.glmnet}}. Supports both categorical (binary and multinomial
 classification) and continuous (Gaussian regression) dependent variables.
 When multiple alpha values are supplied, all are evaluated on identical

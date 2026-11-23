@@ -13,7 +13,7 @@ run_randomize(
   joint = TRUE,
   joint_behaviour = "cascading",
   replace = FALSE,
-  seed = 123L
+  seed = NULL
 )
 }
 \arguments{
@@ -71,7 +71,7 @@ categorical (character, factor, or logical). See \code{joint} and
 \item{joint}{A single logical value. Defaults to \code{TRUE}.
 \itemize{
 \item \code{TRUE}: all columns listed in a \code{per_group} entry are
-treated \emph{simultaneously} — rows are grouped by every unique
+treated \emph{simultaneously} - rows are grouped by every unique
 combination of levels across those columns (via
 \code{\link[base]{interaction}}), and \code{n}/\code{p} is enforced
 for each combination. For example, with \code{cyl} and \code{gear},
@@ -106,9 +106,9 @@ column. Vectors must not exceed the number of columns in length.
 is performed without replacement. If \code{TRUE}, rows or elements may be
 repeated in the output.}
 
-\item{seed}{A single integer passed to \code{\link[base]{set.seed}} for
-reproducibility. Defaults to \code{123L}. Supply \code{NA} to skip
-seeding (non-reproducible runs).}
+\item{seed}{A single integer passed to \code{\link[base]{set.seed}} for a
+reproducible draw. Default \code{NULL} leaves the random number generator
+alone.}
 }
 \value{
 An object of the same class as \code{x}:
@@ -245,7 +245,7 @@ run_randomize(
 )
 
 ## ------------------------------------------------------------------
-## 8. Per-group: single column, n/p omitted — falls back to top-level n
+## 8. Per-group: single column, n/p omitted - falls back to top-level n
 ## ------------------------------------------------------------------
 run_randomize(
   iris,
@@ -276,8 +276,8 @@ run_randomize(
 
 ## ------------------------------------------------------------------
 ## 10. Per-group: two columns, joint = FALSE, cascading (default)
-##     Step 1 — group by cyl, take n = 2 per level => 6 rows
-##     Step 2 — group by gear, take n = 3 per level from those 6 rows
+##     Step 1 - group by cyl, take n = 2 per level => 6 rows
+##     Step 2 - group by gear, take n = 3 per level from those 6 rows
 ##     Final row count depends on how many gear levels survived step 1
 ## ------------------------------------------------------------------
 run_randomize(

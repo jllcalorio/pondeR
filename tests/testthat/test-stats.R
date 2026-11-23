@@ -22,7 +22,7 @@ test_that("run_diff multi-outcome summary_table and its gt rendering", {
   st <- r$summary_table
   expect_s3_class(st, "run_diff_summary")
   expect_equal(nrow(st), 4)
-  expect_true(all(st$p_value_adj >= st$p_value))
+  expect_true(all(.p_to_num(st[["Adjusted p-value"]]) >= .p_to_num(st[["p-value"]])))
   expect_s3_class(st[1:2, ], "run_diff_summary")        # `[` keeps the class
   skip_if_not_installed("gt")
   expect_s3_class(as_gt(st), "gt_tbl")
@@ -46,14 +46,14 @@ test_that("run_assoc matches chisq.test and run_single_assoc tests goodness of f
   expect_equal(a$test_result$p.value, ref$p.value, tolerance = 1e-8)
 
   s <- run_single_assoc(iris, y = "Species")
-  expect_equal(s$summary_table$p_value, 1)              # perfectly balanced
+  expect_equal(s$summary_table[["p-value"]], 1)              # perfectly balanced
 })
 
 test_that("run_correl matches cor() and as_gt renders it", {
   c1 <- run_correl(mtcars[, c("mpg", "wt", "hp")], method = "pearson")
   expect_s3_class(c1, "run_correl")
   r <- c1$correlations
-  expect_equal(r$estimate[r$var1 == "mpg" & r$var2 == "wt"],
+  expect_equal(r$Correlation[r[["Variable 1"]] == "mpg" & r[["Variable 2"]] == "wt"],
                cor(mtcars$mpg, mtcars$wt), tolerance = 1e-10)
   expect_equal(nrow(run_correl(mtcars[, 1:4], y = "mpg", method = "pearson")$correlations), 3)
   skip_if_not_installed("gt")
@@ -69,7 +69,7 @@ test_that("as_gt forwards gtsummary objects to gtsummary::as_gt", {
 
 test_that("run_foldchange computes ratios of group means", {
   fc <- run_foldchange(iv[, 1:4], metadata = iv["Species"], group = "Species")
-  st <- fc$summary_table
+  st <- fc$feature_stats
   row <- st[st$feature == "Petal.Length", ]
   m <- tapply(iv$Petal.Length, iv$Species, mean)
   expect_equal(row$fold_change, unname(m[row$num_group] / m[row$den_group]))
@@ -80,7 +80,7 @@ test_that("run_auc gives AUC 1 for a perfectly separating marker", {
   d <- data.frame(g = rep(0:1, each = 20), a = c(1:20, 31:50), b = rnorm(40))
   r <- run_auc(d, y = "g", plot = "none", compute_ci = FALSE)
   expect_s3_class(r, "run_auc")
-  expect_equal(r$auc_table$auc[r$auc_table$predictor == "a"], 1)
+  expect_equal(r$auc_table$AUC[r$auc_table$Predictor == "a"], 1)
   expect_equal(r$n_cases + r$n_controls, 40)
 })
 
@@ -121,11 +121,12 @@ test_that("run_anthroindex returns WHO z-scores", {
   r <- run_anthroindex(d, sex_col = "sex", age_col = "age", age_unit = "month",
                        weight_col = "wt", height_col = "ht",
                        height_measured = "L", return = "wfa")
-  expect_true(all(abs(r$z_score) < 0.5))                # WHO medians -> z near 0
+  expect_true(all(abs(r[["Z-score"]]) < 0.5))                # WHO medians -> z near 0
   expect_true("Nutritional Status" %in% names(r))
 })
 
 test_that("run_mixedmodel recovers a fixed effect", {
+  skip_if_not_installed("lmerTest")
   set.seed(42)
   meta <- data.frame(subject_id = factor(rep(1:15, each = 2)),
                      time = rep(c("pre", "post"), 15))
@@ -134,9 +135,9 @@ test_that("run_mixedmodel recovers a fixed effect", {
   m <- suppressMessages(run_mixedmodel(x, meta, verbose = FALSE,
                         formula = ".feature ~ time + (1 | subject_id)"))
   fe <- m$combined_fixed_effects
-  est <- fe$estimate[fe$feature == "g" & fe$term == "timepre"]
+  est <- fe$Estimate[fe$Feature == "g" & fe$Term == "timepre"]
   expect_equal(est, -1, tolerance = 0.25)
-  expect_lt(fe$p_value[fe$feature == "g" & fe$term == "timepre"], 0.001)
+  expect_lt(fe[["p-value"]][fe$Feature == "g" & fe$Term == "timepre"], 0.001)
 })
 
 test_that("run_lefse ranks the planted biomarker first, including a single feature", {
@@ -146,13 +147,13 @@ test_that("run_lefse ranks the planted biomarker first, including a single featu
   meta <- data.frame(Group = rep(c("A", "B"), each = 20))
   x$t1[21:40] <- x$t1[21:40] + 40
   r <- suppressWarnings(run_lefse(x / rowSums(x) * 1e6, meta, verbose = FALSE))
-  expect_equal(r$summary_table$feature[1], "t1")
-  expect_equal(nrow(r$lda), length(unique(r$lda$feature)))   # one row per feature
+  expect_equal(r$summary_table$Feature[1], "t1")
+  expect_equal(nrow(r$lda), length(unique(r$lda$Feature)))   # one row per feature
 
   one <- suppressWarnings(run_lefse(data.frame(a = c(1:10, 31:40)),
                                     data.frame(Group = rep(c("A", "B"), each = 10)),
                                     verbose = FALSE))
-  expect_equal(one$lda$feature, "a")
+  expect_equal(one$lda$Feature, "a")
 })
 
 test_that("get_volcanodata merges fold changes with p-values", {
@@ -167,12 +168,12 @@ test_that("get_volcanodata merges fold changes with p-values", {
 test_that("get_groupsizes and get_removed_samples account for missing covariates", {
   meta <- data.frame(G = rep(c("a", "b"), 30), A = c(NA, 2:60))
   gs <- get_groupsizes(meta, pred = "G", not_penalized = "A", cv_folds = 5L)
-  expect_equal(sum(gs$n_total), 59)
+  expect_equal(sum(gs[["Total n"]]), 59)
 
   rm <- get_removed_samples(data.frame(f = 1:4),
                             data.frame(G = c("a", "b", "a", "b"), A = c(NA, 1, 2, 3)),
                             not_penalized = "A", pred = "G")
-  expect_equal(rm$.row, 1)
+  expect_equal(rm$Row, 1)
 })
 
 test_that("run_regreg and get_sigfeatures find the informative feature", {

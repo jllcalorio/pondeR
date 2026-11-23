@@ -129,6 +129,7 @@ separately within each unique fixed effect term across all features, using
 the method specified in \code{p_adjust_method}.
 }
 \examples{
+\dontshow{if (requireNamespace("lmerTest", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 set.seed(42)
 n_subj  <- 20
 n_times <- 2
@@ -158,7 +159,7 @@ result <- run_mixedmodel(
 print(result)
 summary(result)
 head(result$combined_fixed_effects)
-
+\dontshow{\}) # examplesIf}
 }
 \references{
 Bates D, Machler M, Bolker B, Walker S (2015). Fitting linear mixed-effects

@@ -275,7 +275,7 @@ get_sigfeatures <- function(
 # Internal helpers
 # =============================================================================
 
-#' @keywords internal
+#' @noRd
 .gsf_resolve_x_names <- function(res, x_names) {
   # Explicit argument always wins
   if (!is.null(x_names)) return(x_names)
@@ -285,7 +285,7 @@ get_sigfeatures <- function(
   NULL
 }
 
-#' @keywords internal
+#' @noRd
 .gsf_check_res <- function(res) {
 
   if (!is.list(res))
@@ -320,7 +320,7 @@ get_sigfeatures <- function(
     )
 }
 
-#' @keywords internal
+#' @noRd
 .gsf_get_coef_df <- function(res, alpha) {
 
   if (is.null(alpha)) {
@@ -365,7 +365,7 @@ get_sigfeatures <- function(
   coef_df
 }
 
-#' @keywords internal
+#' @noRd
 .gsf_sort <- function(coef_df, sort_by, context = "") {
 
   # Deduplicate feature names (union across comparisons for multinomial)

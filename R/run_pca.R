@@ -20,11 +20,11 @@
 #' @param exclude Character vector or NULL. Group labels (from the `group` column) to exclude
 #'   from PCA analysis. For example, c("QC", "Blank") excludes all samples with these group
 #'   labels. Default: NULL (include all samples).
-#' @param verbose Logical. Print progress messages. Default: TRUE.
+#' @param verbose Logical. Print progress messages. Default: FALSE.
 #'
 #' @return A list containing:
-#'   \item{scores}{Matrix of PC scores (samples × PCs)}
-#'   \item{loadings}{Matrix of PC loadings (features × PCs)}
+#'   \item{scores}{Matrix of PC scores (samples x PCs)}
+#'   \item{loadings}{Matrix of PC loadings (features x PCs)}
 #'   \item{variance_explained}{Numeric vector of variance explained (%) per PC}
 #'   \item{eigenvalues}{Numeric vector of eigenvalues per PC}
 #'   \item{cumulative_variance}{Numeric vector of cumulative variance explained (%) per PC}
@@ -65,9 +65,9 @@
 #' 
 #' PCA is performed using singular value decomposition (SVD) via `stats::prcomp()`.
 #' The function assumes data is appropriately preprocessed (normalized, transformed,
-#' and scaled) before analysis. PCA is performed without additional centering or
-#' scaling (`center = FALSE, scale. = FALSE`) as these should have been applied
-#' during the scaling step.
+#' and scaled) before analysis. Columns are always mean-centered (a no-op for data
+#' that is already centered) and never rescaled here (`center = TRUE, scale. = FALSE`):
+#' scaling belongs to the preprocessing step.
 #' 
 #' **Interpretation:**
 #' 
@@ -110,7 +110,6 @@
 #' Centering, scaling, and transformations: improving the biological information content of
 #' metabolomics data. BMC Genomics, 7, 142. \doi{10.1186/1471-2164-7-142}
 #'
-#' @importFrom stats prcomp
 #' 
 #' @seealso \code{\link[dimsprepr]{run_DIpreprocess}}
 #'
@@ -141,24 +140,24 @@ run_pca <- function(
     transform_method = NULL,
     group = "Group",
     exclude = NULL,
-    verbose = TRUE
+    verbose = FALSE
 ) {
   
   msg <- function(...) if (verbose) message(...)
 
   # --- Integration with run_DIpreprocess ---
-  if (inherits(x, "run_DIpreprocess")) {
-    if (missing(metadata) || is.null(metadata)) {
-      metadata <- if (!is.null(x$metadata_merged)) x$metadata_merged else x$metadata
-    }
-    x <- if (!is.null(x$data_nonpls_merged)) x$data_nonpls_merged else x$data_nonpls
+  from_di <- .is_di(x)
+  if (from_di) {
+    di <- .di_unpack(x)
+    if (missing(metadata) || is.null(metadata)) metadata <- di$metadata
+    x <- di$data
   }
 
   # dimsprepr is only needed for the optional in-function preprocessing
   if ((!is.null(scale_method) || !is.null(transform_method)) &&
       !requireNamespace("dimsprepr", quietly = TRUE))
-    stop("Package 'dimsprepr' is required for 'scale_method'/'transform_method'. ",
-         "Install with: pak::pak('jllcalorio/dimsprepr')", call. = FALSE)
+    stop("Package 'dimsprepr' is required for 'scale_method'/'transform_method'.",
+         call. = FALSE)
   
   # Input validation
   if (!is.matrix(x) && !is.data.frame(x)) {
@@ -202,13 +201,13 @@ run_pca <- function(
   if (!is.null(exclude)) {
     exclude_indices <- metadata[[group]] %in% exclude
     n_excluded <- sum(exclude_indices)
-    
+
     if (n_excluded > 0) {
-      msg(sprintf("Excluding %d samples from groups: %s", 
+      msg(sprintf("Excluding %d samples from groups: %s",
                   n_excluded, paste(exclude, collapse = ", ")))
+      excluded_groups <- intersect(exclude, metadata[[group]][exclude_indices])
       x_matrix <- x_matrix[!exclude_indices, , drop = FALSE]
       metadata <- metadata[!exclude_indices, , drop = FALSE]
-      excluded_groups <- exclude[exclude %in% unique(metadata[[group]][exclude_indices])]
     } else {
       msg("No samples found matching exclusion criteria")
     }
@@ -222,7 +221,7 @@ run_pca <- function(
   }
   
   # Check if data is from run_scale
-  came_from_run_scale <- inherits(x, "run_scale") || 
+  came_from_run_scale <- from_di || inherits(x, "run_scale") ||
     (!is.null(attr(x, "scaled:center")) && !is.null(attr(x, "scaled:scale")))
   
   preprocessing_log <- list(
@@ -294,9 +293,9 @@ run_pca <- function(
   
   msg("Performing PCA...")
   
-  # Perform PCA (data should already be centered and scaled appropriately)
+  # Always centre: a no-op for centred data, and PCA of uncentred data is wrong
   pca_result <- tryCatch({
-    stats::prcomp(x_matrix, center = FALSE, scale. = FALSE)
+    stats::prcomp(x_matrix, center = TRUE, scale. = FALSE)
   }, error = function(e) {
     stop("PCA failed: ", e$message, 
          "\nThis may be due to:\n",
@@ -396,9 +395,10 @@ print.run_pca <- function(x, ...) {
 summary.run_pca <- function(object, ...) {
   var_table <- data.frame(
     PC = paste0("PC", 1:min(10, object$n_pcs)),
-    Variance_Explained = object$variance_explained[1:min(10, object$n_pcs)],
-    Cumulative = object$cumulative_variance[1:min(10, object$n_pcs)],
-    Eigenvalue = object$eigenvalues[1:min(10, object$n_pcs)]
+    "Variance explained (%)" = object$variance_explained[1:min(10, object$n_pcs)],
+    "Cumulative (%)" = object$cumulative_variance[1:min(10, object$n_pcs)],
+    Eigenvalue = object$eigenvalues[1:min(10, object$n_pcs)],
+    check.names = FALSE
   )
   
   ans <- list(

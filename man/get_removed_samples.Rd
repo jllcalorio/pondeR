@@ -15,7 +15,7 @@ get_removed_samples(
 }
 \arguments{
 \item{x}{A \code{data.frame}, \code{tibble}, \code{matrix}, \strong{or a
-named list} of such objects — matching what was passed (or would be
+named list} of such objects - matching what was passed (or would be
 passed) to \code{\link{run_regreg}()}. When a list is supplied, each element is
 processed independently.}
 
@@ -34,20 +34,20 @@ covariate NA check.}
 \item{include_metadata_cols}{Logical. If \code{TRUE} (default), all columns
 of \code{metadata} are appended to the returned data frame for context. If
 \code{FALSE}, only the columns specified in \code{not_penalized} (plus
-\code{taxon} when \code{x} is a list) are returned.}
+\code{Taxon} when \code{x} is a list) are returned.}
 
-\item{row_numbers}{Logical. If \code{TRUE}, a column \code{.row} containing
+\item{row_numbers}{Logical. If \code{TRUE}, a column \code{Row} containing
 the original row index of each flagged sample is prepended to the result.
 Default: \code{TRUE}.}
 }
 \value{
 A \code{data.frame} of flagged samples. Columns include:
 \describe{
-\item{\code{taxon}}{Only present when \code{x} is a named list. The name
+\item{\code{Taxon}}{Only present when \code{x} is a named list. The name
 of the list element from which the sample originated.}
-\item{\code{.row}}{Original row index in \code{metadata} (when
+\item{\code{Row}}{Original row index in \code{metadata} (when
 \code{row_numbers = TRUE}).}
-\item{\code{.missing_in}}{A semicolon-separated string naming the
+\item{\code{Missing in}}{A semicolon-separated string naming the
 \code{not_penalized} columns that are \code{NA} for that sample.}
 \item{Metadata columns}{All columns of \code{metadata} (when
 \code{include_metadata_cols = TRUE}).}
@@ -62,7 +62,7 @@ more columns supplied to \code{not_penalized}. Returns a data frame of those
 samples together with the columns responsible, so the user can inspect,
 impute, or exclude them deliberately before re-running the model.
 
-The function operates entirely on the original inputs — no fitted model
+The function operates entirely on the original inputs - no fitted model
 object is needed. This means it can be called before \code{\link{run_regreg}()} to
 pre-screen data, or after to audit a run.
 }
@@ -81,7 +81,7 @@ The function applies the same filtering sequence as \code{\link{run_regreg}()}:
 
 When \code{x} is a named list (e.g., from a \code{lapply} call over
 taxonomic levels), the function iterates over each list element and returns
-a combined data frame with a leading \code{taxon} column.
+a combined data frame with a leading \code{Taxon} column.
 }
 \examples{
 set.seed(1)

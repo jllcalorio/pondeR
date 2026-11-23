@@ -16,20 +16,17 @@
 #'   may be categorical (\code{character} / \code{factor}) with exactly two
 #'   levels after optional removal via \code{remove}, or numeric containing only
 #'   \code{0} (control) and \code{1} (case) after optional removal. If \code{x}
-#'   is a \code{run_DIpreprocess} object or a list containing one, \code{y} will
-#'   default to \code{x$parameters$group_col} if not explicitly provided.
+#'   is a \code{run_DIpreprocess} object or a list containing one, \code{y}
+#'   defaults to its standardized \code{Group} column.
 #' @param remove Optional. A vector of values to remove from \code{y} before
-#'   analysis, used to reduce a multi-level variable down to exactly two. If
-#'   \code{x} is a \code{run_DIpreprocess} object or a list containing one,
-#'   \code{remove} will default to \code{x$parameters$qc_types} if not
-#'   explicitly provided. May be a character vector (for categorical \code{y}),
-#'   groups. May be a character vector (for categorical \code{y}), a numeric
-#'   vector (for numeric \code{y}), or a mixed list. Ignored when \code{y}
-#'   already contains exactly two categories or only \code{0}/\code{1} values.
-#'   Default \code{NULL}.
-#' @param metadata An optional object of the same class and row count as
-#'   \code{x} carrying additional sample annotations. Currently reserved for
-#'   future use and is ignored by the analysis. Default \code{NULL}.
+#'   analysis, used to reduce a multi-level variable down to exactly two groups.
+#'   May be a character vector (for categorical \code{y}), a numeric vector (for
+#'   numeric \code{y}), or a mixed list. If \code{x} is a
+#'   \code{run_DIpreprocess} object or a list containing one, defaults to its
+#'   QC labels. Default \code{NULL}.
+#' @param metadata An optional data frame of sample annotations with one row
+#'   per row of \code{x}. \code{y} may be one of its columns, and its columns
+#'   are never treated as predictors. Default \code{NULL}.
 #' @param set_control A single string specifying which level of a categorical
 #'   \code{y} represents the control group. Ignored when \code{y} is numeric.
 #'   Default \code{NULL} (the first level alphabetically or by factor order).
@@ -44,7 +41,6 @@
 #'   passed to \code{pROC::roc()}. Choices: \code{"auto"} (default),
 #'   \code{">"} (controls > cases), or \code{"<"} (controls < cases). See
 #'   \code{?pROC::roc} for details.
-#' @param compute_auc Logical. Whether to compute the AUC. Default \code{TRUE}.
 #' @param compute_ci Logical. Whether to compute bootstrap or DeLong
 #'   confidence intervals for the AUC. Default \code{TRUE}.
 #' @param ci_level A numeric scalar in \eqn{(0, 1)} specifying the confidence
@@ -84,28 +80,19 @@
 #' @param plot_subtitle A single string used as the plot subtitle. Default
 #'   \code{NULL} (no subtitle).
 #' @param plot_legend A single string for the legend title. Default
-#'   \code{"AUC (95\% CI)"}.
+#'   \code{NULL} shows \code{"AUC"} with the confidence level in use, for
+#'   example \code{"AUC (95\% CI)"}.
 #' @param xlab A single string for the x-axis label. Default \code{NULL}
 #'   renders \code{"1 - Specificity (False Positive Rate)"}.
 #' @param ylab A single string for the y-axis label. Default \code{NULL}
 #'   renders \code{"Sensitivity (True Positive Rate)"}.
 #' @param linewidth A positive numeric value controlling the ROC curve line
-#'   width. Default \code{3}.
-#' @param global_font_size A positive numeric value setting the base font size
-#'   for all plot text elements. Default \code{25}. Derived sizes:
-#'   title \eqn{= 1.20 \times}, subtitle \eqn{= 0.90 \times},
-#'   axis labels / ticks \eqn{= 1.00 \times}.
-#' @param title_font_size Override for the title font size. Default \code{NULL}
-#'   (derived from \code{global_font_size}).
-#' @param subtitle_font_size Override for the subtitle font size. Default
-#'   \code{NULL} (derived from \code{global_font_size}).
-#' @param xlab_font_size Override for the x-axis label and tick font size.
-#'   Default \code{NULL} (derived from \code{global_font_size}).
-#' @param ylab_font_size Override for the y-axis label and tick font size.
-#'   Default \code{NULL} (derived from \code{global_font_size}).
-#' @param inplot_font_size Font size of the in-plot legend text (e.g., AUC
-#'   labels in combined plots). Default \code{NULL} (derived from
-#'   \code{global_font_size}).
+#'   width. Default \code{0.8}.
+#' @param base_size Base font size in points; every text element scales from
+#'   it. Default \code{11}, which suits a default 7 x 5 inch Quarto figure.
+#' @param title_size,subtitle_size,xlab_size,ylab_size,legend_size Font sizes in
+#'   points for the title, subtitle, x-axis label, y-axis label and legend.
+#'   Default \code{NULL} derives each from \code{base_size}.
 #' @param min_vip A single numeric value specifying the minimum VIP score for features to be considered. 
 #'   Only applied if a \code{\link{run_pls}} object is provided in the \code{x} list. Default \code{1.0}.
 #' @param up A single numeric value specifying the minimum fold change for up-regulated features. 
@@ -143,7 +130,7 @@
 #' }
 #'
 #' \strong{AUC interpretation}\cr
-#' The \code{auc_interpretation} column of \code{auc_table} labels each AUC
+#' The \code{Interpretation} column of \code{auc_table} labels each AUC
 #' using the conventional thresholds below. These are only a convention (a
 #' rule of thumb), not a rule; acceptable discrimination depends on the
 #' clinical or scientific context, and the confidence interval should be
@@ -167,28 +154,20 @@
 #' For combined plots (\code{plot = "all"}) the legend is positioned at the
 #' bottom-right inside the plot area by default.
 #'
-#' \strong{pROC dependency}\cr
-#' This function requires \pkg{pROC} (\eqn{\ge} 1.18) and \pkg{ggplot2}
-#' (\eqn{\ge} 3.4). Both are listed as \code{Imports} in the package
-#' \code{DESCRIPTION} file.
-#'
 #' @return A named list with the following elements:
 #' \describe{
 #'   \item{\code{roc_list}}{Named list of \code{pROC::roc} objects, one per
 #'     analysed predictor.}
-#'   \item{\code{auc_table}}{A \code{data.frame} with columns
-#'     \code{predictor}, \code{auc}, \code{ci_lower}, \code{ci_upper},
-#'     \code{ci_level}, \code{direction}, \code{n_cases}, and
-#'     \code{n_controls}, plus \code{auc_interpretation} (conventional
-#'     label; see Details) right after \code{ci_upper}. When a \code{\link{run_diff}}
-#'     object with effect sizes is supplied in the \code{x} list,
-#'     \code{ES (95\% CI)} and \code{ES_magnitude} columns are added after
-#'     \code{n_controls}. When \code{compute_performance_metrics = TRUE},
-#'     additional columns are included: \code{sensitivity},
-#'     \code{specificity}, \code{ppv} (positive predictive value),
-#'     \code{npv} (negative predictive value), \code{accuracy},
-#'     \code{youden_index}, and \code{optimal_threshold} (all computed at
-#'     the threshold that maximizes Youden's index: sensitivity + specificity - 1).}
+#'   \item{\code{auc_table}}{A report-ready \code{data.frame} with columns
+#'     \code{Predictor}, \code{AUC}, the confidence limits (e.g.
+#'     \code{95\% CI lower}, \code{95\% CI upper}), \code{Interpretation}
+#'     (conventional label; see Details) and \code{Direction}. When a
+#'     \code{\link{run_diff}} object with effect sizes is supplied in the
+#'     \code{x} list, \code{ES (95\% CI)} and \code{Magnitude} are added. When
+#'     \code{compute_performance_metrics = TRUE}, \code{Sensitivity},
+#'     \code{Specificity}, \code{PPV}, \code{NPV}, \code{Accuracy},
+#'     \code{Youden index} and \code{Optimal cutoff} are included (all at the
+#'     threshold that maximizes Youden's index: sensitivity + specificity - 1).}
 #'   \item{\code{plots}}{A named list of \code{ggplot} objects (or
 #'     \code{NULL} when \code{plot = "none"}). The element \code{"combined"}
 #'     is present for combined-mode plots; individual predictor names are used
@@ -260,8 +239,8 @@
 #' )
 #' # The auc_table now includes sensitivity, specificity, PPV, NPV, accuracy,
 #' # Youden index, and optimal threshold values
-#' head(res3$auc_table[, c("predictor", "auc", "sensitivity", "specificity", 
-#'                           "ppv", "npv", "youden_index")])
+#' head(res3$auc_table[, c("Predictor", "AUC", "Sensitivity", "Specificity",
+#'                         "PPV", "NPV", "Youden index")])
 #'
 #' ## -----------------------------------------------------------------------
 #' ## Example 4 - column names with spaces, select top-2 by AUC
@@ -282,13 +261,6 @@
 #'
 #' @author John Lennon L. Calorio
 #'
-#' @importFrom pROC roc auc ci
-#' @importFrom ggplot2 ggplot aes geom_line geom_abline annotate labs theme_minimal
-#' @importFrom ggplot2 theme_bw theme_classic theme_gray theme_light theme_dark theme element_text
-#' @importFrom ggplot2 element_rect element_blank scale_colour_manual guides guide_legend
-#' @importFrom ggplot2 scale_x_continuous scale_y_continuous coord_equal .pt
-#' @importFrom stats setNames
-#' @importFrom utils head
 #'
 #' @seealso \code{\link[dimsprepr]{run_DIpreprocess}}, \code{\link{run_pls}}, \code{\link{run_foldchange}}, \code{\link{run_diff}}
 #' 
@@ -302,7 +274,6 @@ run_auc <- function(
     include_cols       = NULL,
     include_rows       = NULL,
     direction          = "auto",
-    compute_auc        = TRUE,
     compute_ci         = TRUE,
     ci_level           = 0.95,
     compute_performance_metrics = TRUE,
@@ -312,16 +283,16 @@ run_auc <- function(
     nrow               = NULL,
     plot_title         = NULL,
     plot_subtitle      = NULL,
-    plot_legend        = "AUC (95% CI)",
+    plot_legend        = NULL,
     xlab               = NULL,
     ylab               = NULL,
-    linewidth          = 3,
-    global_font_size   = 25,
-    title_font_size    = NULL,
-    subtitle_font_size = NULL,
-    xlab_font_size     = NULL,
-    ylab_font_size     = NULL,
-    inplot_font_size   = NULL,
+    linewidth          = 0.8,
+    base_size          = 11,
+    title_size         = NULL,
+    subtitle_size      = NULL,
+    xlab_size          = NULL,
+    ylab_size          = NULL,
+    legend_size        = NULL,
     min_vip            = 1.0,
     up                 = 1.5,
     down               = 0.6,
@@ -337,22 +308,14 @@ run_auc <- function(
   # ---------------------------------------------------------------------------
   
   # Check if x is a list of ensemble objects (must contain at least a DIpreprocess object)
-  is_ensemble <- is.list(x) && !is.data.frame(x) && 
-    any(vapply(x, function(obj) inherits(obj, "run_DIpreprocess"), logical(1L)))
+  is_ensemble <- !.is_di(x) && is.list(x) && !is.data.frame(x) &&
+    any(vapply(x, .is_di, logical(1L)))
 
   if (is_ensemble) {
     # Extract components from the list
-    di_obj   <- Filter(function(obj) inherits(obj, "run_DIpreprocess"), x)[[1]]
-    
-    # Auto-detect y from DIpreprocess metadata if missing
-    if (is.null(y) && !is.null(di_obj$parameters$group_col)) {
-      y <- di_obj$parameters$group_col
-    }
-
-    # Auto-set 'remove' from qc_types if not explicitly provided
-    if (!("remove" %in% names(mc)) && !is.null(di_obj$parameters$qc_types)) {
-      remove <- eval(di_obj$parameters$qc_types)
-    }
+    di <- .di_unpack(Filter(.is_di, x)[[1]])
+    if (is.null(y)) y <- di$group
+    if (!("remove" %in% names(mc))) remove <- di$qc
 
     pls_obj  <- Filter(function(obj) inherits(obj, "run_pls"), x)
     pls_obj  <- if (length(pls_obj) > 0) pls_obj[[1]] else NULL
@@ -369,8 +332,8 @@ run_auc <- function(
     diff_obj <- if (length(diff_obj) > 0) diff_obj[[1]] else NULL
 
     # Extract base data
-    target_meta <- if (!is.null(di_obj$metadata_merged)) di_obj$metadata_merged else di_obj$metadata
-    target_data <- if (!is.null(di_obj$data_nonpls_merged)) di_obj$data_nonpls_merged else di_obj$data_nonpls
+    target_meta <- di$metadata
+    target_data <- di$data
     if (!is.null(metadata)) target_meta <- cbind(metadata, target_meta)
 
     # Auto-set 'up' and 'down' from run_foldchange if not explicitly provided
@@ -411,9 +374,9 @@ run_auc <- function(
 
     # 2. Fold Change Filtering (from run_foldchange)
     if (!is.null(fc_obj) && (!is.null(up) || !is.null(down))) {
-      if (!is.null(fc_obj$summary_table)) {
-        st <- fc_obj$summary_table
-        pass_fc <- st$feature[!is.na(st$fold_change) & 
+      if (!is.null(fc_obj$feature_stats)) {
+        st <- fc_obj$feature_stats
+        pass_fc <- st$feature[!is.na(st$fold_change) &
                               (st$fold_change >= up | st$fold_change <= down)]
         valid_features <- intersect(valid_features, unique(pass_fc))
       }
@@ -426,9 +389,9 @@ run_auc <- function(
       if (!is.null(diff_obj$summary_table)) {
         # Handles run_diff multi-outcome with summary_table = TRUE
         st <- diff_obj$summary_table
-        col_nm <- if ("outcome" %in% colnames(st)) "outcome" else "feature"
-        # ponytail: prefer p_value_adj when present (multi-outcome), else p_value
-        p_col <- if ("p_value_adj" %in% names(st)) "p_value_adj" else "p_value"
+        col_nm <- "Variable"
+        # ponytail: prefer the adjusted p-value when present (multi-outcome)
+        p_col <- if ("Adjusted p-value" %in% names(st)) "Adjusted p-value" else "p-value"
         # simplified tables hold formatted strings (e.g. ".047a", "<.001")
         pv <- .p_to_num(st[[p_col]])
         pass_diff <- st[[col_nm]][!is.na(pv) & pv < p_value]
@@ -475,21 +438,13 @@ run_auc <- function(
       include_cols <- intersect(include_cols, valid_features)
     }
     
-  } else if (inherits(x, "run_DIpreprocess")) {
-    # Fallback for standard single run_DIpreprocess object
-    target_meta <- if (!is.null(x$metadata_merged)) x$metadata_merged else x$metadata
-    target_data <- if (!is.null(x$data_nonpls_merged)) x$data_nonpls_merged else x$data_nonpls
+  } else if (.is_di(x)) {
+    di <- .di_unpack(x)
+    target_meta <- di$metadata
+    target_data <- di$data
     if (!is.null(metadata)) target_meta <- cbind(metadata, target_meta)
-
-    # Auto-detect y if missing
-    if (is.null(y) && !is.null(x$parameters$group_col)) {
-      y <- x$parameters$group_col
-    }
-
-    # Same QC default as the list (ensemble) branch
-    if (!("remove" %in% names(mc)) && !is.null(x$parameters$qc_types)) {
-      remove <- eval(x$parameters$qc_types)
-    }
+    if (is.null(y)) y <- di$group
+    if (!("remove" %in% names(mc))) remove <- di$qc
 
     metadata <- target_meta
     x <- cbind(metadata, target_data)
@@ -582,7 +537,6 @@ run_auc <- function(
       stop("`", name, "` must be a single non-NA logical value (TRUE or FALSE).", call. = FALSE)
     }
   }
-  .check_bool(compute_auc, "compute_auc")
   .check_bool(compute_ci,  "compute_ci")
   .check_bool(compute_performance_metrics, "compute_performance_metrics")
 
@@ -599,29 +553,8 @@ run_auc <- function(
     }
   }
   .check_pos_num(linewidth,          "linewidth",          allow_null = FALSE)
-  .check_pos_num(global_font_size,   "global_font_size",   allow_null = FALSE)
-  .check_pos_num(title_font_size,    "title_font_size")
-  .check_pos_num(subtitle_font_size, "subtitle_font_size")
-  .check_pos_num(xlab_font_size,     "xlab_font_size")
-  .check_pos_num(ylab_font_size,     "ylab_font_size")
-  .check_pos_num(inplot_font_size,   "inplot_font_size")
-
-  # ---------------------------------------------------------------------------
-  # 5.  Resolve font sizes
-  #    Proportions relative to global_font_size:
-  #      title      -> 1.20 x
-  #      subtitle   -> 0.90 x
-  #      xlab/ylab  -> 1.00 x
-  #      inplot     -> 0.85 x
-  #    Hard defaults (used when global_font_size is also NULL):
-  #      title=14, subtitle=11, xlab/ylab=12, inplot=11
-  # ---------------------------------------------------------------------------
-  gfs   <- global_font_size
-  fs_title    <- if (!is.null(title_font_size))    title_font_size    else gfs * 1.20
-  fs_subtitle <- if (!is.null(subtitle_font_size)) subtitle_font_size else gfs * 0.90
-  fs_xlab     <- if (!is.null(xlab_font_size))     xlab_font_size     else gfs * 1.00
-  fs_ylab     <- if (!is.null(ylab_font_size))     ylab_font_size     else gfs * 1.00
-  fs_inplot   <- if (!is.null(inplot_font_size))   inplot_font_size   else gfs * 0.85
+  sizes <- .text_sizes(base_size, title_size, subtitle_size, xlab_size, ylab_size,
+                       legend = legend_size)
 
   # ---------------------------------------------------------------------------
   # 6.  Subset rows
@@ -981,12 +914,9 @@ run_auc <- function(
     roc_list[[i]] <- roc_i
     dir_used[i]   <- as.character(roc_i$direction)
 
-    if (compute_auc) {
-      auc_i       <- as.numeric(.auc(roc_i))
-      auc_vec[i]  <- auc_i
-    }
+    auc_vec[i] <- as.numeric(.auc(roc_i))
 
-    if (compute_ci && compute_auc) {
+    if (compute_ci) {
       ci_args <- c(
         list(roc_i, conf.level = ci_level),
         extra_args[names(extra_args) %in% names(formals(pROC::ci.auc))]
@@ -1100,21 +1030,16 @@ run_auc <- function(
     formatC(val, digits = 2L, format = "e")
   }
 
-  .fmt_auc_label <- function(auc_v, lo_v, hi_v, ci_lv) {
-    pct <- round(ci_lv * 100)
-    paste0(": ",
-      .fmt_auc_val(auc_v),
-      " (", pct, "% CI: ",
-      .fmt_auc_val(lo_v), "-", .fmt_auc_val(hi_v), ")"
-    )
+  .fmt_auc_label <- function(auc_v, lo_v, hi_v) {
+    paste0(.fmt_auc_val(auc_v), " (", .fmt_auc_val(lo_v), "-", .fmt_auc_val(hi_v), ")")
   }
 
   # ---------------------------------------------------------------------------
   # 15.  Colour-blind-friendly palette (Okabe-Ito, 8 colours)
   # ---------------------------------------------------------------------------
   okabe_ito <- c(
-    "#E69F00", "#56B4E9", "#009E73", "#F0E442",
-    "#0072B2", "#D55E00", "#CC79A7", "#000000"
+    "#E69F00", "#56B4E9", "#009E73", "#0072B2",
+    "#D55E00", "#CC79A7", "#000000", "#F0E442"
   )
 
   .get_palette <- function(n) {
@@ -1130,31 +1055,11 @@ run_auc <- function(
   # ---------------------------------------------------------------------------
   # 16.  ggplot2 theme builder
   # ---------------------------------------------------------------------------
-  .build_theme <- function(theme_name) {
-    base <- switch(
-      theme_name,
-      nature  = , plos = ggplot2::theme_classic(base_size = gfs),
-      minimal = ggplot2::theme_minimal(base_size = gfs),
-      bw      = ggplot2::theme_bw(base_size = gfs),
-      classic = ggplot2::theme_classic(base_size = gfs),
-      gray    = ggplot2::theme_gray(base_size = gfs),
-      light   = ggplot2::theme_light(base_size = gfs),
-      dark    = ggplot2::theme_dark(base_size = gfs)
+  plot_theme <- .ponder_theme(theme, sizes) +
+    ggplot2::theme(
+      plot.title    = ggplot2::element_text(hjust = 0),
+      plot.subtitle = ggplot2::element_text(hjust = 0)
     )
-    base +
-      ggplot2::theme(
-        plot.title    = ggplot2::element_text(size = fs_title,    face = "bold",
-                                              hjust = 0),
-        plot.subtitle = ggplot2::element_text(size = fs_subtitle, hjust = 0,
-                                              colour = "grey40"),
-        axis.title.x  = ggplot2::element_text(size = fs_xlab),
-        axis.title.y  = ggplot2::element_text(size = fs_ylab),
-        axis.text.x   = ggplot2::element_text(size = fs_xlab),
-        axis.text.y   = ggplot2::element_text(size = fs_ylab),
-        legend.text   = ggplot2::element_text(size = fs_inplot),
-        legend.title  = ggplot2::element_text(size = fs_inplot, face = "bold")
-      )
-  }
 
   # ---------------------------------------------------------------------------
   # 17.  Determine which predictors to plot
@@ -1226,11 +1131,9 @@ run_auc <- function(
     .auc_lbl <- function(col_nm) {
       row <- auc_table[auc_table$predictor == col_nm, ]
       if (compute_ci && !is.na(row$ci_lower)) {
-        .fmt_auc_label(row$auc, row$ci_lower, row$ci_upper, ci_level)
-      } else if (compute_auc) {
-        .fmt_auc_val(row$auc)
+        .fmt_auc_label(row$auc, row$ci_lower, row$ci_upper)
       } else {
-        col_nm
+        .fmt_auc_val(row$auc)
       }
     }
 
@@ -1240,9 +1143,8 @@ run_auc <- function(
       ## Build name -> AUC label mapping (predictor name is always unique;
       ## two predictors can share the same rounded label string, which would
       ## cause duplicated factor levels if used directly as the colour key).
-      #lbl_map <- sapply(names(df_list), .auc_lbl)   # named: predictor -> label
       lbl_map <- sapply(names(df_list), function(nm) {
-        paste0(nm, .auc_lbl(nm))
+        paste0(nm, ": ", .auc_lbl(nm))
       })
 
       ## Stack curve data; sort each curve by FPR then TPR so geom_line
@@ -1286,12 +1188,13 @@ run_auc <- function(
           x        = x_lbl,
           y        = y_lbl
         ) +
-        .build_theme(theme)
+        plot_theme
 
       if (in_legend) {
         ## Bottom-right legend inside plot
         p <- p + ggplot2::theme(
-          legend.position        = c(0.98, 0.02),
+          legend.position        = "inside",
+          legend.position.inside = c(0.98, 0.02),
           legend.justification   = c(1, 0),
           legend.background      = ggplot2::element_rect(fill = "white",
                                                           colour = "grey80",
@@ -1317,7 +1220,8 @@ run_auc <- function(
     # 19.  Produce plots according to mode
     # -------------------------------------------------------------------------
     plots_out <- list()
-    legend_title_str <- if (!is.null(plot_legend)) plot_legend else "AUC (95% CI)"
+    legend_title_str <- plot_legend %||%
+      if (compute_ci) sprintf("AUC (%g%% CI)", ci_level * 100) else "AUC"
 
     if (plot_spec$mode == "all") {
       title_str <- if (!is.null(plot_title)) plot_title[1L] else "ROC Curve"
@@ -1351,8 +1255,8 @@ run_auc <- function(
         ## Build the in-plot AUC annotation label for this predictor
         row_i     <- auc_table[auc_table$predictor == col_nm, ]
         auc_label <- if (compute_ci && !is.na(row_i$ci_lower)) {
-          .fmt_auc_label(row_i$auc, row_i$ci_lower, row_i$ci_upper, ci_level)
-        } else if (compute_auc && !is.na(row_i$auc)) {
+          .fmt_auc_label(row_i$auc, row_i$ci_lower, row_i$ci_upper)
+        } else if (!is.na(row_i$auc)) {
           .fmt_auc_val(row_i$auc)
         } else {
           NULL
@@ -1372,10 +1276,9 @@ run_auc <- function(
               label    = ann_label,
               hjust    = 1,
               vjust    = 0,
-              size     = fs_inplot / ggplot2::.pt,   # convert pt -> mm for ggplot2
+              size     = .pt_to_mm(sizes$legend),
               fill     = "white",
-              colour   = "grey20",
-              label.size = 0.3                        # border thickness
+              colour   = "grey20"
             )
         }
 
@@ -1387,6 +1290,19 @@ run_auc <- function(
   # ---------------------------------------------------------------------------
   # 20.  Assemble return value
   # ---------------------------------------------------------------------------
+  # Report-ready headers (kept simple: group sizes stay in n_cases / n_controls)
+  ci_pct <- sprintf("%g%%", ci_level * 100)
+  auc_table$ci_level <- auc_table$n_cases <- auc_table$n_controls <- NULL
+  header <- c(predictor = "Predictor", auc = "AUC",
+              ci_lower = paste(ci_pct, "CI lower"), ci_upper = paste(ci_pct, "CI upper"),
+              auc_interpretation = "Interpretation", direction = "Direction",
+              ES_magnitude = "Magnitude", sensitivity = "Sensitivity",
+              specificity = "Specificity", ppv = "PPV", npv = "NPV",
+              accuracy = "Accuracy", youden_index = "Youden index",
+              optimal_threshold = "Optimal cutoff")
+  hit <- names(auc_table) %in% names(header)
+  names(auc_table)[hit] <- header[names(auc_table)[hit]]
+
   result <- list(
     roc_list  = roc_list,
     auc_table = auc_table,
@@ -1401,7 +1317,6 @@ run_auc <- function(
       include_cols       = include_cols,
       include_rows       = include_rows,
       direction          = direction,
-      compute_auc        = compute_auc,
       compute_ci         = compute_ci,
       ci_level           = ci_level,
       compute_performance_metrics = compute_performance_metrics,
@@ -1475,30 +1390,9 @@ print.run_auc <- function(x, ...) {
   tbl <- x$auc_table
   if (nrow(tbl) > 0) {
     cat("\n  AUC Table:\n")
-    tbl$auc      <- round(tbl$auc,      4)
-    tbl$ci_lower <- round(tbl$ci_lower, 4)
-    tbl$ci_upper <- round(tbl$ci_upper, 4)
-    
-    # Determine which columns to print
-    cols_to_print <- intersect(
-      c("predictor", "auc", "ci_lower", "ci_upper", "auc_interpretation", "direction",
-        "ES (95% CI)", "ES_magnitude"),
-      colnames(tbl)
-    )
-    
-    # Check if performance metrics are present
-    perf_cols <- c("sensitivity", "specificity", "ppv", "npv", "accuracy", "youden_index")
-    has_perf <- all(perf_cols %in% colnames(tbl))
-    
-    if (has_perf) {
-      # Round performance metrics
-      for (col in perf_cols) {
-        tbl[[col]] <- round(tbl[[col]], 4)
-      }
-      cols_to_print <- c(cols_to_print, perf_cols)
-    }
-    
-    print(tbl[, cols_to_print, drop = FALSE], row.names = FALSE)
+    num <- vapply(tbl, is.numeric, logical(1L))
+    tbl[num] <- lapply(tbl[num], round, 4)
+    print(tbl, row.names = FALSE)
   } else {
     cat("\n  Status: No features passed the filtering criteria.\n")
   }

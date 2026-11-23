@@ -19,7 +19,7 @@ run_assoc(
   calculate_association = TRUE,
   perform_posthoc = TRUE,
   p_adjust_method = "BH",
-  verbose = TRUE
+  verbose = FALSE
 )
 }
 \arguments{
@@ -78,7 +78,7 @@ tests for significant tables with one binary dimension. Requires
 See \code{\link[stats]{p.adjust}}. Default is \code{"BH"}.}
 
 \item{verbose}{A logical indicating whether to print detailed messages.
-Default is \code{TRUE}.}
+Default is \code{FALSE}.}
 }
 \value{
 A list with class \code{"run_assoc"} containing:

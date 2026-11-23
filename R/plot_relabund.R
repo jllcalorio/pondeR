@@ -36,8 +36,8 @@
 #'   selected (when \code{limit} is set) and the order features appear in the
 #'   legend/stack. \code{NULL} (default) preserves the original column order of
 #'   \code{x}. Options: \code{"alphanumeric"} (lexicographic),
-#'   \code{"high"} (highest total abundance first — selects top \code{limit}),
-#'   \code{"low"} (lowest total abundance first — selects bottom \code{limit}).
+#'   \code{"high"} (highest total abundance first - selects top \code{limit}),
+#'   \code{"low"} (lowest total abundance first - selects bottom \code{limit}).
 #'   \strong{Note:} \code{"high"} and \code{"low"} rank by column totals and
 #'   are meaningful only when \code{x} contains raw counts or intensities
 #'   (row sums not already 0 or 1). If normalised data is detected, a warning
@@ -60,9 +60,9 @@
 #'   simultaneously with \code{group_brackets}.
 #' @param normalize_to_relabund Logical. Relevant when \code{group_aggregate =
 #'   TRUE} or \code{sort} is \code{"high"}/\code{"low"}. If \code{TRUE}
-#'   (default), row-wise relative abundance normalisation is applied to \code{x}
-#'   via \code{run_normalize(method = "row_rel_abundance")} before aggregation
-#'   or ranking. Set to \code{FALSE} if \code{x} is already appropriately
+#'   (default), row-wise relative abundance normalisation (each sample divided
+#'   by its total) is applied to \code{x} before aggregation or ranking. Set
+#'   to \code{FALSE} if \code{x} is already appropriately
 #'   normalised. Ignored when \code{ignore_normalization = TRUE}.
 #' @param ignore_normalization Logical. If \code{TRUE}, all normalisation checks
 #'   and pre-normalisation steps are bypassed and \code{x} is plotted as
@@ -110,28 +110,27 @@
 #'   before \code{"Others"} in the legend/stack, or last when
 #'   \code{exclude_others = TRUE}. Partial matches are not considered; only
 #'   column names that are \emph{entirely} the word "unknown" are affected.
-#' @param theme Character. ggplot2 theme. One of \code{"nature"},
-#'   \code{"minimal"}, \code{"classic"}, \code{"bw"}, \code{"light"},
-#'   \code{"dark"}. Default \code{"nature"}.
-#' @param colors Character vector or \code{NULL}. Custom fill colours. Length
-#'   must equal the number of plotted fill levels. Named vectors matched by
-#'   name. \code{NULL} uses the Okabe-Ito palette (extended with HCL colours).
+#' @param colors Character vector of fill colours, one per plotted feature,
+#'   named by feature or given in plotting order. Default \code{NULL} uses a
+#'   colour-blind-safe palette.
+#' @param theme Character. ggplot2 theme. One of \code{"nature"} (default),
+#'   \code{"classic"}, \code{"plos"}, \code{"minimal"}, \code{"bw"},
+#'   \code{"light"}, \code{"dark"}, or \code{"gray"}.
 #' @param plot_title Character. Main title. Supports \code{ggtext} markdown:
-#'   \code{**bold**}, \code{*italic*}. Default \code{""}.
+#'   \code{**bold**}, \code{*italic*}. Default \code{NULL} (no title).
 #' @param plot_subtitle Character. Subtitle. Supports same markdown. Default
-#'   \code{""}.
-#' @param legend_title Character. Legend title. Default \code{""}.
+#'   \code{NULL} (no subtitle).
+#' @param legend_title Character or \code{NULL}. Legend title. Default \code{NULL}.
 #' @param xlab Character or \code{NULL}. X-axis label. Defaults to
 #'   \code{show_x_as}.
 #' @param ylab Character. Y-axis label. Default \code{"Relative abundance"}.
-#' @param global_font_size Numeric or \code{NULL}. Scales all text elements
-#'   proportionally relative to an internal 11 pt reference. Default \code{20}.
-#' @param font_family Character. Font family for all text. Default \code{"sans"}.
-#' @param title_size Numeric or \code{NULL}. Title font size (pt).
-#' @param subtitle_size Numeric or \code{NULL}. Subtitle font size (pt).
-#' @param legend_size Numeric or \code{NULL}. Legend title font size (pt).
-#' @param xlab_size Numeric or \code{NULL}. X-axis label font size (pt).
-#' @param ylab_size Numeric or \code{NULL}. Y-axis label font size (pt).
+#' @param base_size Base font size in points; every text element scales from
+#'   it. Default \code{11}, which suits a default 7 x 5 inch Quarto figure.
+#' @param font_family Character. Font family for all text. Default \code{""}
+#'   (the graphics device's default).
+#' @param title_size,subtitle_size,legend_size,xlab_size,ylab_size Font sizes in
+#'   points for the title, subtitle, legend, x-axis label and y-axis label.
+#'   Default \code{NULL} derives each from \code{base_size}.
 #' @param ... Additional arguments passed to \code{ggplot2::geom_bar()}.
 #'
 #' @details
@@ -148,9 +147,8 @@
 #' by total are retained instead.
 #'
 #' \strong{Normalisation flow.} When \code{ignore_normalization = FALSE} and
-#' \code{normalize_to_relabund = TRUE}, row-relative abundance is applied via
-#' \code{run_normalize(method = "row_rel_abundance")} before any aggregation or
-#' ranking. Row-wise proportions are then computed so each bar sums to 100\%.
+#' \code{normalize_to_relabund = TRUE}, each sample is divided by its total
+#' (row-relative abundance) before any aggregation or ranking. Row-wise proportions are then computed so each bar sums to 100\%.
 #' When \code{ignore_normalization = TRUE}, the data are plotted as supplied
 #' and the y-axis label should be interpreted accordingly.
 #'
@@ -204,11 +202,6 @@
 #'
 #' @author John Lennon L. Calorio
 #'
-#' @importFrom ggplot2 ggplot aes geom_bar scale_fill_manual scale_x_discrete
-#' @importFrom ggplot2 scale_y_continuous coord_flip labs theme_bw theme_minimal theme_classic
-#' @importFrom ggplot2 theme_light theme_dark theme element_text element_blank element_line
-#' @importFrom ggplot2 element_rect guide_legend expansion waiver unit margin
-#' @importFrom stats median setNames
 #'
 #' @export
 plot_relabund <- function(
@@ -234,13 +227,13 @@ plot_relabund <- function(
     unknown_before_others  = TRUE,
     theme                  = "nature",
     colors                 = NULL,
-    plot_title             = "",
-    plot_subtitle          = "",
-    legend_title           = "",
+    plot_title             = NULL,
+    plot_subtitle          = NULL,
+    legend_title           = NULL,
     xlab                   = NULL,
     ylab                   = "Relative abundance",
-    global_font_size       = 20,
-    font_family            = "sans",
+    base_size              = 11,
+    font_family            = "",
     title_size             = NULL,
     subtitle_size          = NULL,
     legend_size            = NULL,
@@ -322,7 +315,6 @@ plot_relabund <- function(
         "Please supply a column name via 'show_x_as'."
       )
     show_x_as <- names(metadata)[matched_idx]
-    message("Using '", show_x_as, "' from 'metadata' for the x-axis.")
   } else {
     if (!is.character(show_x_as) || length(show_x_as) != 1L)
       stop("'show_x_as' must be a single character string or NULL.")
@@ -369,13 +361,7 @@ plot_relabund <- function(
   if (!is.null(limit)) {
     .check_pos_int(limit, "limit")
     limit <- as.integer(limit)
-    if (limit > ncol(x)) {
-      warning(
-        "'limit' (", limit, ") exceeds the number of columns in 'x' (",
-        ncol(x), "). All features will be plotted without 'Others'."
-      )
-      limit <- ncol(x)
-    }
+    limit <- min(limit, ncol(x))
   }
 
   valid_sorts <- c("alphanumeric", "high", "low")
@@ -423,11 +409,7 @@ plot_relabund <- function(
   .check_pos_int(legend_nrow, "legend_nrow", allow_null = TRUE)
   .check_pos_int(legend_ncol, "legend_ncol", allow_null = TRUE)
 
-  valid_themes <- c("nature", "minimal", "classic", "bw", "light", "dark")
   theme_choice <- tolower(theme)
-  if (!theme_choice %in% valid_themes)
-    stop("'theme' must be one of: ", paste(valid_themes, collapse = ", "),
-         ". Got: '", theme, "'.")
 
   if (!is.character(font_family) || length(font_family) != 1L)
     stop("'font_family' must be a single character string.")
@@ -438,18 +420,14 @@ plot_relabund <- function(
     list(v = legend_title,  n = "legend_title"),
     list(v = ylab,          n = "ylab")
   )) {
-    if (!is.character(sarg$v) || length(sarg$v) != 1L)
-      stop("'", sarg$n, "' must be a single character string.")
+    if (!is.null(sarg$v) && (!is.character(sarg$v) || length(sarg$v) != 1L))
+      stop("'", sarg$n, "' must be a single character string or NULL.")
   }
   if (!is.null(xlab) && (!is.character(xlab) || length(xlab) != 1L))
     stop("'xlab' must be a single character string or NULL.")
 
-  .check_pos_num(global_font_size, "global_font_size", allow_null = TRUE)
-  .check_pos_num(title_size,       "title_size",       allow_null = TRUE)
-  .check_pos_num(subtitle_size,    "subtitle_size",    allow_null = TRUE)
-  .check_pos_num(legend_size,      "legend_size",      allow_null = TRUE)
-  .check_pos_num(xlab_size,        "xlab_size",        allow_null = TRUE)
-  .check_pos_num(ylab_size,        "ylab_size",        allow_null = TRUE)
+  sizes <- .text_sizes(base_size, title_size, subtitle_size, xlab_size, ylab_size,
+                       legend = legend_size)
 
   # ---------------------------------------------------------------------------
   # 6. Normalisation checks (skipped when ignore_normalization = TRUE)
@@ -459,18 +437,6 @@ plot_relabund <- function(
                            abs(row_sums_check - 1) < .Machine$double.eps^0.5)
 
   if (!ignore_normalization) {
-    if (!isTRUE(group_aggregate)) {
-      not_norm_rows <- which(!(row_sums_check == 0 |
-                                 abs(row_sums_check - 1) < .Machine$double.eps^0.5))
-      if (length(not_norm_rows) > 0L)
-        warning(
-          "The following row(s) in 'x' do not sum to 0 or 1, suggesting ",
-          "row-wise relative abundance normalisation has not been applied: ",
-          paste(not_norm_rows, collapse = ", "), ". ",
-          "Consider running run_normalize(x, metadata, ",
-          "method = 'row_rel_abundance') first."
-        )
-    }
 
     if (!is.null(sort) && sort %in% c("high", "low") && already_normed) {
       warning(
@@ -494,29 +460,9 @@ plot_relabund <- function(
        (!is.null(sort) && sort %in% c("high", "low")))
 
   if (needs_prenorm) {
-    dimsprepr_ns   <- tryCatch(asNamespace("dimsprepr"), error = function(e) NULL)
-    run_norm_fn <- if (!is.null(dimsprepr_ns))
-      get0("run_normalize", envir = dimsprepr_ns, mode = "function")
-    else NULL
-
-    if (is.null(run_norm_fn)) {
-      warning(
-        "'normalize_to_relabund = TRUE' requires 'run_normalize' from the ",
-        "'dimsprepr' package, which could not be found. Skipping pre-normalisation."
-      )
-    } else {
-      norm_result <- run_norm_fn(
-        x        = x,
-        metadata = metadata,
-        method   = "row_rel_abundance",
-        verbose  = FALSE
-      )
-      x <- as.data.frame(norm_result$data, check.names = FALSE)
-      message(
-        "Row-wise relative abundance normalisation applied via ",
-        "run_normalize() before aggregation/ranking."
-      )
-    }
+    # Each sample as proportions of its total (an all-zero sample gives NaN,
+    # which the na.rm sums below skip)
+    x <- as.data.frame(x / rowSums(x, na.rm = TRUE), check.names = FALSE)
   }
 
   # ---------------------------------------------------------------------------
@@ -542,6 +488,13 @@ plot_relabund <- function(
   # ---------------------------------------------------------------------------
   col_totals <- colSums(x, na.rm = TRUE)
   n_features <- length(col_totals)
+  # Row proportions, unless the data are to be plotted exactly as supplied
+  .to_rel <- function(d) {
+    if (ignore_normalization) return(d)
+    rs <- rowSums(d, na.rm = TRUE)
+    rs[rs == 0] <- NA
+    d / rs
+  }
   has_others <- FALSE
 
   if (!is.null(limit) && limit < n_features) {
@@ -549,25 +502,20 @@ plot_relabund <- function(
       selected_idx      <- base::order(col_totals, decreasing = FALSE)[seq_len(limit)]
       selected_features <- x_cols[selected_idx]
 
-      row_sums_full                      <- rowSums(x, na.rm = TRUE)
-      row_sums_full[row_sums_full == 0]  <- NA
-      rel_full <- x / row_sums_full
+      rel_full <- .to_rel(x)
 
       rel_x         <- rel_full[, selected_features, drop = FALSE]
       row_sums_sub  <- rowSums(rel_x, na.rm = TRUE)
       row_sums_sub[row_sums_sub == 0] <- NA
       rel_x         <- rel_x / row_sums_sub
 
-      message("With sort = 'low', selected low-abundance features have been re-normalised to 100% among themselves to maximize visibility.")
       has_others <- FALSE
     } else {
       selected_idx      <- base::order(col_totals, decreasing = TRUE)[seq_len(limit)]
       selected_features <- x_cols[selected_idx]
       other_cols        <- setdiff(x_cols, selected_features)
 
-      row_sums_full                     <- rowSums(x, na.rm = TRUE)
-      row_sums_full[row_sums_full == 0] <- NA
-      rel_full <- x / row_sums_full
+      rel_full <- .to_rel(x)
 
       rel_x      <- rel_full[, selected_features, drop = FALSE]
       others_vec <- rowSums(rel_full[, other_cols, drop = FALSE], na.rm = TRUE)
@@ -578,9 +526,7 @@ plot_relabund <- function(
       }
     }
   } else {
-    row_sums_full                     <- rowSums(x, na.rm = TRUE)
-    row_sums_full[row_sums_full == 0] <- NA
-    rel_x <- x / row_sums_full
+    rel_x <- .to_rel(x)
   }
 
   # --- Apply exclude_unknown ---
@@ -760,27 +706,6 @@ plot_relabund <- function(
   }
 
   # ---------------------------------------------------------------------------
-  # 14. Font size resolution
-  # ---------------------------------------------------------------------------
-  .resolve_size <- function(explicit, scale_factor, base_default) {
-    if (!is.null(explicit))     return(explicit)
-    if (!is.null(scale_factor)) return(base_default * scale_factor)
-    base_default
-  }
-
-  ref_base   <- 11
-  gfs_factor <- if (!is.null(global_font_size)) global_font_size / ref_base else NULL
-
-  r_title_size    <- .resolve_size(title_size,    gfs_factor, ref_base + 2)
-  r_subtitle_size <- .resolve_size(subtitle_size, gfs_factor, ref_base + 1)
-  r_legend_size   <- .resolve_size(legend_size,   gfs_factor, ref_base)
-  r_xlab_size     <- .resolve_size(xlab_size,     gfs_factor, ref_base)
-  r_ylab_size     <- .resolve_size(ylab_size,     gfs_factor, ref_base)
-  r_axis_text     <- .resolve_size(NULL,          gfs_factor, ref_base - 1)
-  r_legend_text   <- .resolve_size(NULL,          gfs_factor, ref_base - 1)
-  r_strip_text    <- .resolve_size(NULL,          gfs_factor, ref_base)
-
-  # ---------------------------------------------------------------------------
   # 15. Legend position and fill level order for legend
   # ---------------------------------------------------------------------------
   if (is.null(legend_position))
@@ -805,24 +730,7 @@ plot_relabund <- function(
   # ---------------------------------------------------------------------------
   # 17. Base ggplot2 theme
   # ---------------------------------------------------------------------------
-  base_thm <- switch(
-    theme_choice,
-    "nature"  = ggplot2::theme_bw(base_size = ref_base, base_family = font_family) +
-      ggplot2::theme(
-        panel.grid.major = ggplot2::element_line(color = "grey92", linewidth = 0.4),
-        panel.grid.minor = ggplot2::element_blank(),
-        panel.border     = ggplot2::element_rect(color = "grey70", fill = NA,
-                                                 linewidth = 0.6),
-        strip.background = ggplot2::element_rect(fill = "grey95", color = "grey70"),
-        strip.text       = ggplot2::element_text(face = "bold", family = font_family,
-                                                 size = r_strip_text)
-      ),
-    "minimal" = ggplot2::theme_minimal(base_size = ref_base, base_family = font_family),
-    "classic" = ggplot2::theme_classic(base_size = ref_base, base_family = font_family),
-    "bw"      = ggplot2::theme_bw(base_size      = ref_base, base_family = font_family),
-    "light"   = ggplot2::theme_light(base_size   = ref_base, base_family = font_family),
-    "dark"    = ggplot2::theme_dark(base_size    = ref_base, base_family = font_family)
-  )
+  base_thm <- .ponder_theme(theme_choice, sizes, font_family)
 
   # ---------------------------------------------------------------------------
   # 18. Legend text element
@@ -832,7 +740,7 @@ plot_relabund <- function(
       legend_labels_fmt <- stats::setNames(
         paste0("*", fill_levels_legend, "*"), fill_levels_legend
       )
-      legend_text_el <- ggtext::element_markdown(size = r_legend_text,
+      legend_text_el <- ggtext::element_markdown(size = sizes$legend,
                                                  family = font_family)
     } else {
       warning(
@@ -842,12 +750,12 @@ plot_relabund <- function(
       )
       legend_labels_fmt <- NULL
       legend_text_el    <- ggplot2::element_text(face = "italic",
-                                                 size = r_legend_text,
+                                                 size = sizes$legend,
                                                  family = font_family)
     }
   } else {
     legend_labels_fmt <- NULL
-    legend_text_el    <- ggplot2::element_text(size = r_legend_text,
+    legend_text_el    <- ggplot2::element_text(size = sizes$legend,
                                                family = font_family)
   }
 
@@ -856,17 +764,17 @@ plot_relabund <- function(
   # ---------------------------------------------------------------------------
   hjust_val    <- if (angle == 0) 0.5 else 1
   angle_rad    <- angle * pi / 180
-  extra_margin <- ceiling(r_axis_text * abs(sin(angle_rad)) * 0.8)
+  extra_margin <- ceiling(sizes$axis_text * abs(sin(angle_rad)) * 0.8)
 
   text_x_el <- ggplot2::element_text(
-    size   = r_axis_text,
+    size   = sizes$axis_text,
     family = font_family,
     angle  = if (abundance_in_y) angle else 0,
     hjust  = if (abundance_in_y) hjust_val else 0.5,
     vjust  = 0.5
   )
   text_y_el <- ggplot2::element_text(
-    size   = r_axis_text,
+    size   = sizes$axis_text,
     family = font_family,
     angle  = if (!abundance_in_y) angle else 0,
     hjust  = if (!abundance_in_y) hjust_val else 1,
@@ -874,7 +782,7 @@ plot_relabund <- function(
   )
 
   axis_title_x_el <- ggplot2::element_text(
-    size   = r_xlab_size,
+    size   = sizes$xlab,
     family = font_family,
     margin = if (abundance_in_y && angle != 0)
       ggplot2::margin(t = extra_margin, unit = "pt")
@@ -882,7 +790,7 @@ plot_relabund <- function(
       ggplot2::margin()
   )
   axis_title_y_el <- ggplot2::element_text(
-    size   = r_ylab_size,
+    size   = sizes$ylab,
     family = font_family,
     margin = if (!abundance_in_y && angle != 0)
       ggplot2::margin(r = extra_margin, unit = "pt")
@@ -893,19 +801,19 @@ plot_relabund <- function(
   # ---------------------------------------------------------------------------
   # 20. Markdown title / subtitle
   # ---------------------------------------------------------------------------
-  .uses_markdown <- function(txt) grepl("\\*|_|<[a-z]", txt, perl = TRUE)
+  .uses_markdown <- function(txt) !is.null(txt) && grepl("\\*|_|<[a-z]", txt, perl = TRUE)
   has_ggtext     <- requireNamespace("ggtext", quietly = TRUE)
 
   title_el <- if (.uses_markdown(plot_title) && has_ggtext)
-    ggtext::element_markdown(size = r_title_size, hjust = 0.5, family = font_family)
+    ggtext::element_markdown(size = sizes$title, hjust = 0.5, family = font_family)
   else
-    ggplot2::element_text(size = r_title_size, hjust = 0.5, family = font_family,
+    ggplot2::element_text(size = sizes$title, hjust = 0.5, family = font_family,
                           face = "bold")
 
   subtitle_el <- if (.uses_markdown(plot_subtitle) && has_ggtext)
-    ggtext::element_markdown(size = r_subtitle_size, hjust = 0.5, family = font_family)
+    ggtext::element_markdown(size = sizes$subtitle, hjust = 0.5, family = font_family)
   else
-    ggplot2::element_text(size = r_subtitle_size, hjust = 0.5, family = font_family)
+    ggplot2::element_text(size = sizes$subtitle, hjust = 0.5, family = font_family)
 
   # ---------------------------------------------------------------------------
   # 21. Assemble ggplot
@@ -943,6 +851,7 @@ plot_relabund <- function(
       limits = if (!is.null(group_brackets)) c(-0.15, 1.02) else NULL,
       expand = if (!is.null(group_brackets)) c(0, 0) else ggplot2::expansion(mult = c(0, 0.02)),
       labels = function(v) {
+        if (ignore_normalization) return(prettyNum(v))
         if (!is.null(group_brackets)) {
           ifelse(v >= 0, paste0(round(v * 100, 0), "%"), "")
         } else {
@@ -965,12 +874,12 @@ plot_relabund <- function(
       plot.subtitle    = subtitle_el,
       axis.title.x     = axis_title_x_el,
       axis.title.y     = axis_title_y_el,
-      axis.text        = ggplot2::element_text(size = r_axis_text,
+      axis.text        = ggplot2::element_text(size = sizes$axis_text,
                                                family = font_family),
       axis.text.x      = text_x_el,
       axis.text.y      = text_y_el,
       legend.position  = legend_position,
-      legend.title     = ggplot2::element_text(size = r_legend_size,
+      legend.title     = ggplot2::element_text(size = sizes$legend,
                                                family = font_family,
                                                face = "bold"),
       legend.text      = legend_text_el
@@ -1013,7 +922,7 @@ plot_relabund <- function(
           ggplot2::annotate("segment", x = b_start, xend = b_start, y = -0.06, yend = -0.03, color = "black", linewidth = 0.6) +
           ggplot2::annotate("segment", x = b_end,   xend = b_end,   y = -0.06, yend = -0.03, color = "black", linewidth = 0.6) +
           ggplot2::annotate("text",    x = b_mid,   y = -0.11,      label = b_label,
-                            fontface = "bold", size = r_axis_text * 0.353,
+                            fontface = "bold", size = .pt_to_mm(sizes$axis_text),
                             family = font_family, vjust = 0.5)
       } else {
         p <- p +
@@ -1021,7 +930,7 @@ plot_relabund <- function(
           ggplot2::annotate("segment", x = b_start, xend = b_start, y = -0.06, yend = -0.03, color = "black", linewidth = 0.6) +
           ggplot2::annotate("segment", x = b_end,   xend = b_end,   y = -0.06, yend = -0.03, color = "black", linewidth = 0.6) +
           ggplot2::annotate("text",    x = b_mid,   y = -0.11,      label = b_label,
-                            fontface = "bold", size = r_axis_text * 0.353,
+                            fontface = "bold", size = .pt_to_mm(sizes$axis_text),
                             family = font_family, angle = 90, vjust = 0.5)
       }
     }
@@ -1030,7 +939,5 @@ plot_relabund <- function(
   # ---------------------------------------------------------------------------
   # 22. Draw and return
   # ---------------------------------------------------------------------------
-  print(p)
-  message("Relative abundance plot created successfully.")
-  return(invisible(p))
+  p
 }

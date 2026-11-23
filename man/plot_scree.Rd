@@ -20,12 +20,14 @@ plot_scree(
   cumulative_color = "#D55E00",
   theme = "nature",
   base_size = 11,
-  font_family = "sans",
-  axis_title_size = NULL,
+  font_family = "",
+  title_size = NULL,
+  subtitle_size = NULL,
+  xlab_size = NULL,
+  ylab_size = NULL,
   axis_text_size = NULL,
-  plot_title_size = NULL,
-  zoom = 1,
-  verbose = TRUE
+  label_size = NULL,
+  verbose = FALSE
 )
 }
 \arguments{
@@ -62,24 +64,21 @@ or \code{"both"}). Default: \code{"#0072B2"} (Okabe-Ito blue).}
 \item{cumulative_color}{Character. Color for the cumulative variance line, points, and
 labels. Default: \code{"#D55E00"} (Okabe-Ito vermillion).}
 
-\item{theme}{Character. ggplot2 theme to apply. Options: \code{"nature"}, \code{"minimal"},
-\code{"classic"}, \code{"bw"}, \code{"light"}, \code{"dark"}. Default: \code{"nature"} (a clean,
-publication-ready style based on \code{theme_bw()} with no gridlines).}
+\item{theme}{Character. ggplot2 theme to apply. Options: \code{"nature"}, \code{"classic"},
+\code{"plos"}, \code{"minimal"}, \code{"bw"}, \code{"light"}, \code{"dark"}, \code{"gray"}. Default:
+\code{"nature"} (a clean, publication-ready style based on \code{theme_bw()} with no
+gridlines).}
 
-\item{base_size}{Numeric. Base font size for the theme (pts). Default: \code{11}.}
+\item{base_size}{Base font size in points; every text element scales from it.
+Default: \code{11}, which suits a default 7 x 5 inch Quarto figure.}
 
-\item{font_family}{Character. Font family for all text elements. Default: \code{"sans"}.}
+\item{font_family}{Character. Font family for all text elements. Default: \code{""}
+(the graphics device's default).}
 
-\item{axis_title_size}{Numeric. Font size for axis titles. Default: \code{base_size + 1}.}
+\item{title_size, subtitle_size, xlab_size, ylab_size, axis_text_size, label_size}{Font sizes in points for the title, subtitle, x-axis label, y-axis label,
+tick labels and value labels. Default \code{NULL} derives each from \code{base_size}.}
 
-\item{axis_text_size}{Numeric. Font size for axis tick labels. Default: \code{base_size - 1}.}
-
-\item{plot_title_size}{Numeric. Font size for the plot title. Default: \code{base_size + 3}.}
-
-\item{zoom}{Numeric. Uniform scaling factor applied to all text sizes and point/line
-sizes. Values > 1 enlarge, values < 1 shrink. Default: \code{1}.}
-
-\item{verbose}{Logical. Print progress messages. Default: \code{TRUE}.}
+\item{verbose}{Logical. Print progress messages. Default: \code{FALSE}.}
 }
 \value{
 A \code{ggplot2} object.
@@ -97,7 +96,7 @@ The scree plot helps determine how many principal components to retain:
 elbow capture meaningful variance; those after capture mostly noise.
 \item \strong{Kaiser Criterion}: Retain PCs with eigenvalues > 1 (when \code{what = "eigen"}).
 These PCs explain more variance than a single original variable.
-\item \strong{Cumulative Variance}: Retain enough PCs to explain 70–90\% of total variance
+\item \strong{Cumulative Variance}: Retain enough PCs to explain 70-90\% of total variance
 (shown when \code{show_cumulative = TRUE}).
 }
 
@@ -122,7 +121,7 @@ accordingly. Only available when \code{what = "variance"}.
 
 \strong{Themes:}
 
-The \code{"nature"} theme (default) applies \code{theme_bw()} with all gridlines removed —
+The \code{"nature"} theme (default) applies \code{theme_bw()} with all gridlines removed -
 suitable for journal figures. Other options map directly to their ggplot2 equivalents,
 also with gridlines suppressed.
 }
@@ -137,11 +136,11 @@ plot_scree(pca, what = "eigen", type = "both", title = "PCA Eigenvalues",
 }
 \references{
 Cattell, R.B. (1966). The scree test for the number of factors.
-\emph{Multivariate Behavioral Research}, 1(2), 245–276.
+\emph{Multivariate Behavioral Research}, 1(2), 245-276.
 \doi{10.1207/s15327906mbr0102_10}
 
 Kaiser, H.F. (1960). The application of electronic computers to factor analysis.
-\emph{Educational and Psychological Measurement}, 20(1), 141–151.
+\emph{Educational and Psychological Measurement}, 20(1), 141-151.
 \doi{10.1177/001316446002000116}
 }
 \seealso{

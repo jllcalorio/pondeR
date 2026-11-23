@@ -10,7 +10,7 @@ run_pcoa(
   correction = "none",
   metadata = NULL,
   rhs = NULL,
-  perms = 9999L,
+  perms = 999L,
   groups = NULL,
   p_adjust = "BH",
   dispersion = FALSE,
@@ -50,7 +50,7 @@ skipped entirely.}
 \item{perms}{A positive integer. Number of permutations for PERMANOVA.
 Passed as the \code{permutations} argument to \code{\link[vegan]{adonis2}}.
 The same value is used when \code{dispersion = TRUE}.
-Default: \code{9999}.}
+Default: \code{999}.}
 
 \item{groups}{A single character string naming a column of \code{metadata} to
 use for pairwise post-hoc testing via \code{OmicFlow::pairwise_adonis}.

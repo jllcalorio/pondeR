@@ -192,7 +192,8 @@ run_reduce <- function(..., check_cols = TRUE, return_common = TRUE) {
           return_common = return_common,
           n_inputs     = 1L,
           target_names = if (check_cols) colnames(dfs[[1L]]) else rownames(dfs[[1L]])
-        )
+        ),
+        class = "run_reduce"
       )
     )
   }
@@ -358,7 +359,8 @@ run_reduce <- function(..., check_cols = TRUE, return_common = TRUE) {
       return_common = return_common,
       n_inputs      = n,
       target_names  = target_names
-    )
+    ),
+    class = "run_reduce"
   )
 }
 

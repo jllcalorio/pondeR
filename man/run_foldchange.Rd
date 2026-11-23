@@ -37,13 +37,14 @@ optional and defaults to the internal metadata.}
 
 \item{group}{Character string naming the column in \code{metadata}
 that contains the grouping factor. If \code{x} is a \code{run_DIpreprocess}
-object, this is optional and defaults to the group column used in that step.}
+object, this is optional and defaults to its standardized \code{Group}
+column.}
 
 \item{arrange}{An optional character vector listing \emph{all} levels of
 \code{group} (after filtering) in the desired comparison order. Fold
 changes are computed for all pairwise combinations taken left-to-right:
 \code{arrange[i] / arrange[j]} for all \eqn{i < j}. For example,
-\code{c("A", "B", "C")} yields A_vs_B, A_vs_C, and B_vs_C.
+\code{c("A", "B", "C")} yields \code{A vs B}, \code{A vs C}, and \code{B vs C}.
 If \code{NULL} (default), levels are sorted alphanumerically.}
 
 \item{filter}{An optional character vector of group levels to \emph{exclude}
@@ -65,26 +66,30 @@ positive.}
 shifted so that the global minimum of \code{x} (after filtering and
 selection) becomes \code{eps}. Default \code{1e-8}.}
 
-\item{up}{Numeric. Optional threshold for up-regulation. If \code{up} or
-\code{down} is supplied, \code{summary_table} gets two columns,
-\code{regulation_num} and \code{regulation_den}, giving the regulation
-(\code{"Up"}, \code{"Down"}, \code{"Not significant"}) in the numerator and
-denominator group respectively. Features with \code{fold_change >= up} are
-\code{"Up"} in the numerator group and \code{"Down"} in the denominator
-group. Default \code{NULL}.}
+\item{up}{Numeric. Optional fold-change threshold. If \code{up} or
+\code{down} is supplied, \code{summary_table} gains a \code{Regulation}
+column describing group 1 relative to group 2: \code{"Up"} when the fold
+change is at least \code{up}, \code{"Down"} when it is at most \code{down},
+and \code{"Unchanged"} otherwise. Default \code{NULL}.}
 
-\item{down}{Numeric. Optional threshold for down-regulation. Features with
-\code{fold_change <= down} are \code{"Down"} in the numerator group and
-\code{"Up"} in the denominator group. Compared against the raw fold change,
-not log2. Default \code{NULL}.}
+\item{down}{Numeric. Optional fold-change threshold; see \code{up}. Compared
+against the raw fold change, not log2. Default \code{NULL}.}
 }
 \value{
 A named list containing:
 \describe{
-\item{\code{fc_table}}{A \code{data.frame} of pairwise fold changes.
-Rows are features; columns are labelled
-\code{"<level_i>_vs_<level_{i+1}>"}. When \code{sort = TRUE} each
-column is independently sorted (descending).}
+\item{\code{summary_table}}{The report-ready table, one row per feature
+and comparison: \code{Comparison}, \code{Feature}, \code{Mean (group 1)},
+\code{Mean (group 2)}, \code{Fold change}, \code{log2 FC} and, when
+\code{up} or \code{down} is given, \code{Regulation}. Group 1 is the group
+named first in \code{Comparison}.}
+\item{\code{feature_stats}}{The same rows with per-group means, standard
+deviations and sample sizes, for downstream functions such as
+\code{\link{plot_fcmetric}}.}
+\item{\code{fc_table}}{A \code{data.frame} of pairwise fold changes with a
+\code{Feature} column and one column per comparison (e.g.
+\code{"A vs B"}). With \code{sort = TRUE}, rows follow the first
+comparison from highest to lowest fold change.}
 \item{\code{log2fc_table}}{A \code{data.frame} of log2 fold changes in
 the same structure as \code{fc_table}. \code{NULL} when
 \code{log2 = FALSE}.}
@@ -97,7 +102,7 @@ used for log2 computation. \code{NULL} when \code{log2 = FALSE}.}
 \item{\code{group_means}}{A \code{data.frame} of per-group, per-feature
 means (unshifted) with one row per group level.}
 \item{\code{comparisons}}{A character vector of comparison labels, e.g.
-\code{c("A_vs_B", "B_vs_C")}.}
+\code{c("A vs B", "B vs C")}.}
 \item{\code{params}}{A list of all resolved parameter values for
 reproducibility.}
 }
@@ -116,7 +121,7 @@ Group means are computed per feature. For \eqn{k} ordered levels
 \eqn{g_1, g_2, \ldots, g_k}, fold changes are computed for \strong{all}
 pairwise combinations taken left-to-right from \code{arrange}:
 \eqn{\bar{x}_{g_i} / \bar{x}_{g_j}} for all \eqn{i < j}, yielding
-\eqn{k(k-1)/2} comparisons (e.g., A_vs_B, A_vs_C, B_vs_C for 3 groups).
+\eqn{k(k-1)/2} comparisons (e.g., A vs B, A vs C, B vs C for 3 groups).
 
 \strong{Log2 shifting}\cr
 When \code{log2 = TRUE}, let \eqn{m} be the global minimum of the

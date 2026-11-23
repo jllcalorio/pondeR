@@ -24,17 +24,18 @@
 #'   or `"both"`). Default: `"#0072B2"` (Okabe-Ito blue).
 #' @param cumulative_color Character. Color for the cumulative variance line, points, and
 #'   labels. Default: `"#D55E00"` (Okabe-Ito vermillion).
-#' @param theme Character. ggplot2 theme to apply. Options: `"nature"`, `"minimal"`,
-#'   `"classic"`, `"bw"`, `"light"`, `"dark"`. Default: `"nature"` (a clean,
-#'   publication-ready style based on `theme_bw()` with no gridlines).
-#' @param base_size Numeric. Base font size for the theme (pts). Default: `11`.
-#' @param font_family Character. Font family for all text elements. Default: `"sans"`.
-#' @param axis_title_size Numeric. Font size for axis titles. Default: `base_size + 1`.
-#' @param axis_text_size Numeric. Font size for axis tick labels. Default: `base_size - 1`.
-#' @param plot_title_size Numeric. Font size for the plot title. Default: `base_size + 3`.
-#' @param zoom Numeric. Uniform scaling factor applied to all text sizes and point/line
-#'   sizes. Values > 1 enlarge, values < 1 shrink. Default: `1`.
-#' @param verbose Logical. Print progress messages. Default: `TRUE`.
+#' @param theme Character. ggplot2 theme to apply. Options: `"nature"`, `"classic"`,
+#'   `"plos"`, `"minimal"`, `"bw"`, `"light"`, `"dark"`, `"gray"`. Default:
+#'   `"nature"` (a clean, publication-ready style based on `theme_bw()` with no
+#'   gridlines).
+#' @param base_size Base font size in points; every text element scales from it.
+#'   Default: `11`, which suits a default 7 x 5 inch Quarto figure.
+#' @param font_family Character. Font family for all text elements. Default: `""`
+#'   (the graphics device's default).
+#' @param title_size,subtitle_size,xlab_size,ylab_size,axis_text_size,label_size
+#'   Font sizes in points for the title, subtitle, x-axis label, y-axis label,
+#'   tick labels and value labels. Default `NULL` derives each from `base_size`.
+#' @param verbose Logical. Print progress messages. Default: `FALSE`.
 #'
 #' @return A `ggplot2` object.
 #'
@@ -49,7 +50,7 @@
 #'   elbow capture meaningful variance; those after capture mostly noise.
 #' - **Kaiser Criterion**: Retain PCs with eigenvalues > 1 (when `what = "eigen"`).
 #'   These PCs explain more variance than a single original variable.
-#' - **Cumulative Variance**: Retain enough PCs to explain 70–90% of total variance
+#' - **Cumulative Variance**: Retain enough PCs to explain 70-90% of total variance
 #'   (shown when `show_cumulative = TRUE`).
 #'
 #' **Plot Types:**
@@ -71,7 +72,7 @@
 #'
 #' **Themes:**
 #'
-#' The `"nature"` theme (default) applies `theme_bw()` with all gridlines removed —
+#' The `"nature"` theme (default) applies `theme_bw()` with all gridlines removed -
 #' suitable for journal figures. Other options map directly to their ggplot2 equivalents,
 #' also with gridlines suppressed.
 #'
@@ -79,18 +80,13 @@
 #'
 #' @references
 #' Cattell, R.B. (1966). The scree test for the number of factors.
-#' *Multivariate Behavioral Research*, 1(2), 245–276.
+#' *Multivariate Behavioral Research*, 1(2), 245-276.
 #' \doi{10.1207/s15327906mbr0102_10}
 #'
 #' Kaiser, H.F. (1960). The application of electronic computers to factor analysis.
-#' *Educational and Psychological Measurement*, 20(1), 141–151.
+#' *Educational and Psychological Measurement*, 20(1), 141-151.
 #' \doi{10.1177/001316446002000116}
 #'
-#' @importFrom ggplot2 ggplot aes geom_col geom_line geom_point geom_text
-#' @importFrom ggplot2 scale_x_continuous scale_y_continuous sec_axis labs theme_bw theme_minimal
-#' @importFrom ggplot2 theme_classic theme_light theme_dark theme element_text element_blank
-#' @importFrom ggplot2 element_line element_rect margin
-#' @importFrom ggrepel geom_text_repel
 #'
 #' @export
 #'
@@ -118,12 +114,14 @@ plot_scree <- function(
     cumulative_color  = "#D55E00",
     theme             = "nature",
     base_size         = 11,
-    font_family       = "sans",
-    axis_title_size   = NULL,
+    font_family       = "",
+    title_size        = NULL,
+    subtitle_size     = NULL,
+    xlab_size         = NULL,
+    ylab_size         = NULL,
     axis_text_size    = NULL,
-    plot_title_size   = NULL,
-    zoom              = 1,
-    verbose           = TRUE
+    label_size        = NULL,
+    verbose           = FALSE
 ) {
 
   msg <- function(...) if (verbose) message(...)
@@ -131,13 +129,6 @@ plot_scree <- function(
   # ============================================================================
   # INPUT VALIDATION
   # ============================================================================
-
-  #if (!inherits(pca_result, "run_pca")) {
-  #  stop(
-  #    "'pca_result' must be output from run_pca().\n",
-  #    "Solution: Run run_pca() first on your data before plotting."
-  #  )
-  #}
 
   what          <- tolower(what)
   type          <- tolower(type)
@@ -160,14 +151,6 @@ plot_scree <- function(
     stop(
       "'position' must be 'left', 'center', or 'right'.\n",
       "Solution: Use position = 'center' (default), 'left', or 'right'."
-    )
-  }
-
-  valid_themes <- c("nature", "minimal", "classic", "bw", "light", "dark")
-  if (!theme_choice %in% valid_themes) {
-    stop(
-      sprintf("'theme' must be one of: %s.\n", paste(valid_themes, collapse = ", ")),
-      "Solution: Use theme = 'nature' (default) or another listed option."
     )
   }
 
@@ -196,24 +179,11 @@ plot_scree <- function(
       "Solution: Either omit caption or provide: caption = 'My caption'."
     )
   }
-  if (!is.numeric(base_size) || length(base_size) != 1L || base_size <= 0) {
-    stop(
-      "'base_size' must be a positive numeric value.\n",
-      "Solution: Use base_size = 11 (default) or another positive number."
-    )
-  }
   if (!is.character(font_family) || length(font_family) != 1L) {
-    stop(
-      "'font_family' must be a single character string.\n",
-      "Solution: Use font_family = 'sans' (default), 'serif', or 'mono'."
-    )
+    stop("'font_family' must be a single character string.", call. = FALSE)
   }
-  if (!is.numeric(zoom) || length(zoom) != 1L || zoom <= 0) {
-    stop(
-      "'zoom' must be a single positive numeric value.\n",
-      "Solution: Use zoom = 1 (default), zoom = 1.5 to enlarge, or zoom = 0.8 to shrink."
-    )
-  }
+  sizes <- .text_sizes(base_size, title_size, subtitle_size, xlab_size, ylab_size,
+                       axis_text_size, label = label_size)
 
   if (show_cumulative && what != "variance") {
     warning(
@@ -266,78 +236,29 @@ plot_scree <- function(
 
   msg(sprintf("Creating scree plot (%s, type: %s, max PC: %d)", what, type, max_show))
 
-  # ============================================================================
-  # RESOLVE SIZE DEFAULTS & ZOOM
-  # ============================================================================
-
-  axis_title_size <- if (is.null(axis_title_size)) base_size + 1 else axis_title_size
-  axis_text_size  <- if (is.null(axis_text_size))  base_size - 1 else axis_text_size
-  plot_title_size <- if (is.null(plot_title_size)) base_size + 3 else plot_title_size
-
-  .z <- function(x) x * zoom
-
-  # ============================================================================
+  # ===========================================================================
   # THEME CONSTRUCTION
-  # ============================================================================
-
-  # All themes have gridlines removed via custom_theme below
-  base_theme <- switch(
-    theme_choice,
-    "nature"  = ggplot2::theme_bw(base_size = base_size, base_family = font_family) +
-      ggplot2::theme(
-        panel.border     = ggplot2::element_rect(color = "grey70", fill = NA, linewidth = 0.6),
-        strip.background = ggplot2::element_rect(fill = "grey95", color = "grey70"),
-        strip.text       = ggplot2::element_text(face = "bold", family = font_family)
-      ),
-    "minimal" = ggplot2::theme_minimal(base_size = base_size, base_family = font_family),
-    "classic" = ggplot2::theme_classic(base_size = base_size, base_family = font_family),
-    "bw"      = ggplot2::theme_bw(base_size = base_size,      base_family = font_family),
-    "light"   = ggplot2::theme_light(base_size = base_size,   base_family = font_family),
-    "dark"    = ggplot2::theme_dark(base_size = base_size,    base_family = font_family)
-  )
+  # ===========================================================================
 
   hjust_val <- switch(position, "left" = 0, "center" = 0.5, "right" = 1, 0.5)
+  has_cum <- show_cumulative && what == "variance"
+  hide_y  <- show_values && !show_cumulative
 
-  custom_theme <- ggplot2::theme(
-    panel.grid.major      = ggplot2::element_blank(),
-    panel.grid.minor      = ggplot2::element_blank(),
-    plot.title            = ggplot2::element_text(
-      hjust = hjust_val, size = .z(plot_title_size), face = "bold", family = font_family
-    ),
-    plot.subtitle         = ggplot2::element_text(
-      hjust = hjust_val, size = .z(plot_title_size - 2), family = font_family
-    ),
-    plot.caption          = ggplot2::element_text(
-      hjust = 1, size = .z(base_size - 2), color = "grey50", family = font_family
-    ),
-    axis.title.x          = ggplot2::element_text(size = .z(axis_title_size), family = font_family),
-    axis.title.y          = ggplot2::element_text(size = .z(axis_title_size), family = font_family),
-    axis.title.y.right    = if (show_cumulative && what == "variance") {
-      ggplot2::element_text(
-        size = .z(axis_title_size), color = cumulative_color, family = font_family
-      )
-    } else {
-      ggplot2::element_blank()
-    },
-    axis.text.x           = ggplot2::element_text(size = .z(axis_text_size), family = font_family),
-    axis.text.y           = if (show_values && !show_cumulative) {
-      ggplot2::element_blank()
-    } else {
-      ggplot2::element_text(size = .z(axis_text_size), family = font_family)
-    },
-    axis.text.y.right     = if (show_cumulative && what == "variance") {
-      ggplot2::element_text(
-        size = .z(axis_text_size), color = cumulative_color, family = font_family
-      )
-    } else {
-      ggplot2::element_blank()
-    },
-    axis.ticks.y          = if (show_values && !show_cumulative) {
-      ggplot2::element_blank()
-    } else {
-      ggplot2::element_line()
-    },
-    plot.margin           = ggplot2::margin(10, 10, 10, 10)
+  plot_theme <- .ponder_theme(theme_choice, sizes, font_family) + ggplot2::theme(
+    panel.grid.major   = ggplot2::element_blank(),
+    panel.grid.minor   = ggplot2::element_blank(),
+    plot.title         = ggplot2::element_text(hjust = hjust_val),
+    plot.subtitle      = ggplot2::element_text(hjust = hjust_val),
+    plot.caption       = ggplot2::element_text(hjust = 1),
+    axis.title.y.right = if (has_cum)
+      ggplot2::element_text(size = sizes$ylab, color = cumulative_color)
+    else ggplot2::element_blank(),
+    axis.text.y        = if (hide_y) ggplot2::element_blank()
+    else ggplot2::element_text(size = sizes$axis_text),
+    axis.text.y.right  = if (has_cum)
+      ggplot2::element_text(size = sizes$axis_text, color = cumulative_color)
+    else ggplot2::element_blank(),
+    axis.ticks.y       = if (hide_y) ggplot2::element_blank() else ggplot2::element_line()
   )
 
   # ============================================================================
@@ -351,13 +272,13 @@ plot_scree <- function(
     p <- p + ggplot2::geom_col(fill = bar_color, alpha = 0.75, width = 0.6)
   } else if (type == "line") {
     p <- p +
-      ggplot2::geom_line(color = line_color, linewidth = .z(1.2), group = 1L) +
-      ggplot2::geom_point(color = line_color, size = .z(3))
+      ggplot2::geom_line(color = line_color, linewidth = 0.7, group = 1L) +
+      ggplot2::geom_point(color = line_color, size = 2)
   } else {  # both
     p <- p +
       ggplot2::geom_col(fill = bar_color, alpha = 0.5, width = 0.6) +
-      ggplot2::geom_line(color = line_color, linewidth = .z(1.2), group = 1L) +
-      ggplot2::geom_point(color = line_color, size = .z(3))
+      ggplot2::geom_line(color = line_color, linewidth = 0.7, group = 1L) +
+      ggplot2::geom_point(color = line_color, size = 2)
   }
 
   # Primary value labels
@@ -374,7 +295,7 @@ plot_scree <- function(
       p <- p + ggrepel::geom_text_repel(
         data               = lbl_data,
         ggplot2::aes(label = Label),
-        size               = .z(base_size / 3.5),
+        size               = .pt_to_mm(sizes$label),
         color              = "black",
         family             = font_family,
         box.padding        = 0.3,
@@ -391,7 +312,7 @@ plot_scree <- function(
         data               = lbl_data,
         ggplot2::aes(label = Label),
         vjust              = -0.5,
-        size               = .z(base_size / 3.5),
+        size               = .pt_to_mm(sizes$label),
         color              = "black",
         family             = font_family
       )
@@ -411,7 +332,7 @@ plot_scree <- function(
         data               = cum_data,
         ggplot2::aes(x = PC_num, y = CumValue),
         color              = cumulative_color,
-        linewidth          = .z(1),
+        linewidth          = 0.6,
         linetype           = "dashed",
         group              = 1L
       ) +
@@ -419,7 +340,7 @@ plot_scree <- function(
         data               = cum_data,
         ggplot2::aes(x = PC_num, y = CumValue),
         color              = cumulative_color,
-        size               = .z(2.5)
+        size               = 1.8
       )
 
     if (use_ggrepel) {
@@ -427,7 +348,7 @@ plot_scree <- function(
         data               = cum_data,
         ggplot2::aes(x = PC_num, y = CumValue,
                      label = sprintf("%.1f", CumValue)),
-        size               = .z(base_size / 4),
+        size               = .pt_to_mm(sizes$label * 0.9),
         color              = cumulative_color,
         family             = font_family,
         fontface           = "italic",
@@ -446,7 +367,7 @@ plot_scree <- function(
         ggplot2::aes(x = PC_num, y = CumValue,
                      label = sprintf("%.1f", CumValue)),
         vjust              = -0.5,
-        size               = .z(base_size / 4),
+        size               = .pt_to_mm(sizes$label * 0.9),
         color              = cumulative_color,
         fontface           = "italic",
         family             = font_family
@@ -473,8 +394,7 @@ plot_scree <- function(
       subtitle = subtitle,
       caption  = caption
     ) +
-    base_theme +
-    custom_theme
+    plot_theme
 
   msg("Scree plot created successfully.")
   return(p)

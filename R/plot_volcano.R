@@ -28,7 +28,7 @@
 #'       and p-values are sourced from
 #'       \code{\link{run_diff}()}'s \code{$summary_table}, matched on feature name.
 #'       When \code{\link{run_foldchange}()} produced more than one pairwise
-#'       comparison, the \code{comparison} column is automatically used as
+#'       comparison, the \code{Comparison} column is automatically used as
 #'       \code{group}, overlaying all comparisons on a single plot with
 #'       distinct colours. This is the recommended usage.}
 #'     \item{\code{list(fc = <run_foldchange>)}}{
@@ -90,10 +90,10 @@
 #'   \code{group} is \code{NULL} only the first element is used (default
 #'   \code{"red"}). When \code{group} is supplied, one colour per group level
 #'   is used; if fewer colours than levels are provided they are recycled with
-#'   a warning. Default \code{c("red", "purple", "yellow")}.
+#'   a warning. Default \code{c("red", "purple", "#E69F00")}.
 #' @param down_color Character vector of colours for down-regulated points.
 #'   Same recycling behaviour as \code{up_color}. Default
-#'   \code{c("blue", "green", "cyan")}.
+#'   \code{c("blue", "#009E73", "#56B4E9")}.
 #' @param ns_color Colour for non-significant points. Default \code{"grey60"}.
 #' @param neglog10 Logical. If \code{TRUE} (default), the y-axis shows
 #'   \eqn{-\log_{10}(p)}; if \code{FALSE}, raw p-values are plotted with an
@@ -105,7 +105,7 @@
 #'   \code{down} line first and the \code{up} line second. Default \code{NULL}
 #'   inherits \code{ns_color}.
 #' @param size A single positive numeric value controlling the point size.
-#'   Default \code{5}.
+#'   Default \code{2}.
 #' @param alpha A single numeric value in \eqn{(0, 1]} controlling point
 #'   transparency. Overlapping points appear darker due to additive blending.
 #'   Default \code{0.6}.
@@ -120,19 +120,12 @@
 #'   \code{"log2 Fold Change"}.
 #' @param ylab Character string or \code{NULL}. Default \code{NULL} uses
 #'   \code{"-log10(p-value)"} or \code{"p-value"}.
-#' @param global_font_size A positive numeric value setting the base font size
-#'   for all text elements. Default \code{25}.
-#' @param title_size Override for title font size. Default \code{NULL}.
-#' @param subtitle_size Override for subtitle font size. Default \code{NULL}.
-#' @param xlab_size Override for x-axis label font size. Default \code{NULL}.
-#' @param ylab_size Override for y-axis label font size. Default \code{NULL}.
-#' @param axis_text_size Override for axis tick label font size. Default
-#'   \code{NULL}.
-#' @param label_size Font size for point annotation labels. Default \code{NULL}
-#'   (derived from \code{global_font_size} at \eqn{0.75\times}).
-#' @param legend_size Font size for legend text. Respects
-#'   \code{global_font_size} (\eqn{0.85\times}) when \code{NULL}. Default
-#'   \code{NULL}.
+#' @param base_size Base font size in points; every text element scales from
+#'   it. Default \code{11}, which suits a default 7 x 5 inch Quarto figure.
+#' @param title_size,subtitle_size,xlab_size,ylab_size,axis_text_size,label_size,legend_size
+#'   Font sizes in points for the title, subtitle, x-axis label, y-axis label,
+#'   tick labels, point labels and legend. Default \code{NULL} derives each
+#'   from \code{base_size}.
 #' @param legend_title A single character string for the legend title. Default
 #'   \code{NULL} (no legend title shown).
 #' @param legend_nrow A single positive integer controlling the number of rows
@@ -144,7 +137,7 @@
 #' \describe{
 #'   \item{\code{plots}}{A named list of \code{ggplot} objects.}
 #'   \item{\code{classified}}{A \code{data.frame} identical to \code{x} with
-#'     an additional column \code{.regulation} (\code{"Up"}, \code{"Down"},
+#'     an additional column \code{Regulation} (\code{"Up"}, \code{"Down"},
 #'     or \code{"NS"}).}
 #'   \item{\code{params}}{A list of all resolved parameter values.}
 #' }
@@ -230,10 +223,6 @@
 #' print(res4$plots[[1]])
 #'
 #' @author John Lennon L. Calorio
-#' @importFrom ggplot2 ggplot aes geom_point geom_hline geom_vline geom_text
-#' @importFrom ggplot2 scale_colour_manual labs theme_classic theme_minimal theme_bw theme_gray
-#' @importFrom ggplot2 theme_light theme_dark theme element_text element_blank scale_y_reverse guide_legend
-#' @importFrom ggrepel geom_text_repel
 #' @seealso \code{\link{run_foldchange}}, \code{\link{run_diff}}, \code{\link{get_volcanodata}}, \code{\link[dimsprepr]{run_DIpreprocess}}
 #' @export
 plot_volcano <- function(
@@ -248,20 +237,20 @@ plot_volcano <- function(
     annotate         = NULL,
     annotate2        = NULL,
     use_ggrepel      = TRUE,
-    up_color         = c("red",  "purple", "yellow"),
-    down_color       = c("blue", "green",  "cyan"),
+    up_color         = c("red",  "purple",  "#E69F00"),
+    down_color       = c("blue", "#009E73", "#56B4E9"),
     ns_color         = "grey60",
     neglog10         = TRUE,
     h_color          = NULL,
     v_color          = NULL,
-    size             = 5,
+    size             = 2,
     alpha            = 0.6,
     theme            = "nature",
     plot_title       = NULL,
     plot_subtitle    = NULL,
     xlab             = NULL,
     ylab             = NULL,
-    global_font_size = 25,
+    base_size        = 11,
     title_size       = NULL,
     subtitle_size    = NULL,
     xlab_size        = NULL,
@@ -299,8 +288,8 @@ plot_volcano <- function(
   # Auto-detected column names (can still be overridden via y / z):
   #   y  <- "log2fc"   (log2 fold change, created internally)
   #   z  <- "pvalue"   (raw p-value, created internally)
-  #   features <- "feature"
-  #   group    <- comparison label column (only when >1 comparison)
+  #   features <- "Feature"
+  #   group    <- "Comparison" (only when >1 comparison)
   # ---------------------------------------------------------------------------
   if (is.list(x) &&
       (inherits(x, "run_foldchange") ||
@@ -313,9 +302,9 @@ plot_volcano <- function(
     fc0   <- Filter(function(o) inherits(o, "run_foldchange"), objs0)
     has_p <- any(vapply(objs0, function(o) inherits(o, "run_diff") ||
                           (is.list(o) && is.data.frame(o$summary_table) &&
-                             "p_value" %in% names(o$summary_table)), logical(1L)))
+                             "p-value" %in% names(o$summary_table)), logical(1L)))
     if (length(fc0) && !has_p) {
-      st <- fc0[[1]]$summary_table
+      st <- fc0[[1]]$feature_stats
       means <- rbind(
         data.frame(grp = st$num_group, feature = st$feature, m = st$mean_num),
         data.frame(grp = st$den_group, feature = st$feature, m = st$mean_den))
@@ -326,7 +315,7 @@ plot_volcano <- function(
                          metadata = data.frame(grp = rownames(mat)), group = "grp")
       return(structure(
         list(plots = list(`Mean Abundance` = mm),
-             classified = data.frame(feature = colnames(mat), .regulation = "NS"),
+             classified = data.frame(Feature = colnames(mat), Regulation = "NS"),
              params = list(up = fc0[[1]]$params$up %||% 1.5,
                            down = fc0[[1]]$params$down %||% 0.5, pval = NA_real_)),
         class = c("plot_volcano", "list")))
@@ -354,24 +343,22 @@ plot_volcano <- function(
     if (missing(up))   up   <- fc_obj$params$up   %||% 1.5
     if (missing(down)) down <- fc_obj$params$down %||% 0.5
     if (missing(pval)) {
-      pval <- diff_obj$params$p_value %||% diff_obj$params$pval %||% 
-              diff_obj$params$adj_pval %||% 0.05
+      pval <- diff_obj$test_alpha %||% attr(diff_obj, "test_alpha") %||% 0.05
     }
 
     # Resolve column mapping
     if (missing(y) || is.null(y)) {
-      # Favor raw fold_change column from run_foldchange output
-      y <- if ("fold_change" %in% names(v_data)) "fold_change" else "log2_fc"
+      y <- "Fold change"
     }
     if (missing(z) || is.null(z)) {
-      z <- if ("p_value_adj" %in% names(v_data)) "p_value_adj" else "p_value"
+      z <- if ("Adjusted p-value" %in% names(v_data)) "Adjusted p-value" else "p-value"
     }
     if (missing(features) || is.null(features)) {
-      features <- "feature"
+      features <- "Feature"
     }
-    if ((missing(group) || is.null(group)) && "comparison" %in% names(v_data)) {
-      if (length(unique(v_data$comparison)) > 1L) {
-        group <- "comparison"
+    if ((missing(group) || is.null(group)) && "Comparison" %in% names(v_data)) {
+      if (length(unique(v_data$Comparison)) > 1L) {
+        group <- "Comparison"
       }
     }
 
@@ -395,21 +382,9 @@ plot_volcano <- function(
   # ---------------------------------------------------------------------------
   # 1b. Coerce character p-values back to numeric
   # ---------------------------------------------------------------------------
-  # When run_diff() returns a summary_table with simplify = TRUE, p-value
-  # columns are formatted as character strings (with superscript test markers).
-  # Strip any non-numeric characters (superscripts, letters, etc.) and coerce
-  # back to numeric for plotting.
-  for (pcol in intersect(c("p_value", "p_value_adj"), names(x))) {
-    if (is.character(x[[pcol]])) {
-      # Remove all non-numeric characters except "." and convert to numeric
-      lt <- startsWith(x[[pcol]], "<")
-      x[[pcol]] <- suppressWarnings(
-        as.numeric(gsub("[^0-9.]", "", x[[pcol]]))
-      )
-      # "<x" is only a bound; keep it strictly below x
-      x[[pcol]][lt %in% TRUE] <- x[[pcol]][lt %in% TRUE] * (1 - 1e-9)
-    }
-  }
+  # run_diff(simplify = TRUE) formats p-values as text with test markers.
+  if (is.character(z) && length(z) == 1L && z %in% names(x) && is.character(x[[z]]))
+    x[[z]] <- .p_to_num(x[[z]])
 
   # ---------------------------------------------------------------------------
   # 2.  Validate y, z
@@ -463,12 +438,6 @@ plot_volcano <- function(
   # ---------------------------------------------------------------------------
   # 5.  Validate thresholds / numerics
   # ---------------------------------------------------------------------------
-  # .chk_num1 <- function(v, nm) {
-  #   if (!is.numeric(v) || length(v) != 1L || is.na(v))
-  #     stop("`", nm, "` must be a single numeric value.", call. = FALSE)
-  # }
-  # .chk_num1(up,   "up")
-  # .chk_num1(down, "down")
   if (!is.numeric(up) || length(up) != 1L || is.na(up) || up <= 1)
     stop("`up` must be a single numeric value greater than 1 (e.g., 1.5 for a 1.5-fold increase).",
          call. = FALSE)
@@ -484,8 +453,7 @@ plot_volcano <- function(
     if (!is.numeric(v) || length(v) != 1L || is.na(v) || v <= 0)
       stop("`", nm, "` must be a single positive numeric value.", call. = FALSE)
   }
-  .chk_pos1(size,             "size")
-  .chk_pos1(global_font_size, "global_font_size")
+  .chk_pos1(size, "size")
 
   if (!is.numeric(alpha) || length(alpha) != 1L || is.na(alpha) ||
       alpha <= 0 || alpha > 1)
@@ -623,12 +591,6 @@ plot_volcano <- function(
   # ---------------------------------------------------------------------------
   # 10.  Validate theme and line colours
   # ---------------------------------------------------------------------------
-  valid_themes <- c("nature", "minimal", "bw", "classic", "plos",
-                    "gray",   "light",   "dark")
-  if (!is.character(theme) || length(theme) != 1L || !theme %in% valid_themes)
-    stop("`theme` must be one of: ", paste(valid_themes, collapse = ", "), ".",
-         call. = FALSE)
-
   .chk_color1 <- function(v, nm, n_allowed = NULL) {
     if (is.null(v)) return(invisible(NULL))
     if (!is.character(v)) stop("`", nm, "` must be a character vector.", call. = FALSE)
@@ -647,16 +609,8 @@ plot_volcano <- function(
   # ---------------------------------------------------------------------------
   # 11.  Resolve font sizes
   # ---------------------------------------------------------------------------
-  gfs <- global_font_size
-  .rsz <- function(usr, prop) if (!is.null(usr)) usr else gfs * prop
-
-  fs_title    <- .rsz(title_size,     1.20)
-  fs_subtitle <- .rsz(subtitle_size,  0.90)
-  fs_xlab     <- .rsz(xlab_size,      1.00)
-  fs_ylab     <- .rsz(ylab_size,      1.00)
-  fs_axis     <- .rsz(axis_text_size, 0.85)
-  fs_legend   <- .rsz(legend_size,    0.85)
-  fs_label    <- .rsz(label_size,     0.75)
+  sizes <- .text_sizes(base_size, title_size, subtitle_size, xlab_size, ylab_size,
+                       axis_text_size, legend_size, label = label_size)
 
   # ---------------------------------------------------------------------------
   # 12.  Handle zero p-values
@@ -697,7 +651,7 @@ plot_volcano <- function(
   # ---------------------------------------------------------------------------
   # 14.  Classify features
   # ---------------------------------------------------------------------------
-  x$.regulation <- ifelse(
+  x$Regulation <- ifelse(
     !is.na(x$.x_plot) & !is.na(x[[z]]) & x$.x_plot >= up_log2   & x[[z]] < pval, "Up",
     ifelse(
       !is.na(x$.x_plot) & !is.na(x[[z]]) & x$.x_plot <= down_log2 & x[[z]] < pval, "Down",
@@ -722,49 +676,28 @@ plot_volcano <- function(
   # ---------------------------------------------------------------------------
   if (is.null(grp_levels)) {
     # No group: key is simply "Up", "Down", "NS"
-    x$.colour_key <- x$.regulation
+    x$.colour_key <- x$Regulation
   } else {
     grp_char      <- as.character(x[[group]])
     x$.colour_key <- ifelse(
-      x$.regulation == "NS",
+      x$Regulation == "NS",
       "NS",
-      paste0(grp_char, "_", x$.regulation)
+      paste0(grp_char, "_", x$Regulation)
     )
   }
 
   # ---------------------------------------------------------------------------
   # 17.  Theme builder
   # ---------------------------------------------------------------------------
-  .build_theme <- function(theme_name) {
-    base <- switch(
-      theme_name,
-      nature  = , plos = ggplot2::theme_classic(base_size = gfs),
-      minimal = ggplot2::theme_minimal(base_size = gfs),
-      bw      = ggplot2::theme_bw(base_size = gfs),
-      classic = ggplot2::theme_classic(base_size = gfs),
-      gray    = ggplot2::theme_gray(base_size = gfs),
-      light   = ggplot2::theme_light(base_size = gfs),
-      dark    = ggplot2::theme_dark(base_size = gfs)
-    )
-    # Legend always at bottom-centre, horizontal layout
-    base + ggplot2::theme(
-      plot.title       = ggplot2::element_text(size = fs_title,    face = "bold"),
-      plot.subtitle    = ggplot2::element_text(size = fs_subtitle, colour = "grey40"),
-      axis.title.x     = ggplot2::element_text(size = fs_xlab),
-      axis.title.y     = ggplot2::element_text(size = fs_ylab),
-      axis.text        = ggplot2::element_text(size = fs_axis),
-      legend.position  = "bottom",
-      legend.justification = "center",
-      legend.direction = "horizontal",
-      legend.text      = ggplot2::element_text(size = fs_legend),
-      # Suppress legend title spacing when no title requested
-      legend.title     = if (is.null(legend_title)) {
-        ggplot2::element_blank()
-      } else {
-        ggplot2::element_text(size = fs_legend, face = "bold")
-      }
-    )
-  }
+  # Legend always at bottom-centre, horizontal layout
+  plot_theme <- .ponder_theme(theme, sizes) + ggplot2::theme(
+    legend.position      = "bottom",
+    legend.justification = "center",
+    legend.direction     = "horizontal"
+  )
+  # Suppress legend title spacing when no title requested
+  if (is.null(legend_title))
+    plot_theme <- plot_theme + ggplot2::theme(legend.title = ggplot2::element_blank())
 
   # ---------------------------------------------------------------------------
   # 18.  Colour scale builder
@@ -836,7 +769,7 @@ plot_volcano <- function(
         x        = x_lbl,
         y        = y_lbl
       ) +
-      .build_theme(theme)
+      plot_theme
 
     if (!neglog10) p <- p + ggplot2::scale_y_reverse()
 
@@ -855,7 +788,7 @@ plot_volcano <- function(
           repel_defaults <- list(
             data             = ann_df,
             mapping          = ggplot2::aes(label = .data[[".ann_lbl"]]),
-            size             = fs_label,
+            size             = .pt_to_mm(sizes$label),
             na.rm            = TRUE,
             max.overlaps     = Inf,
             show.legend      = FALSE,
@@ -870,7 +803,7 @@ plot_volcano <- function(
           txt_defaults <- list(
             data        = ann_df,
             mapping     = ggplot2::aes(label = .data[[".ann_lbl"]]),
-            size        = fs_label,
+            size        = .pt_to_mm(sizes$label),
             na.rm       = TRUE,
             show.legend = FALSE
           )
@@ -917,7 +850,7 @@ plot_volcano <- function(
         size         = size,
         alpha        = alpha,
         theme        = theme,
-        legend_size  = fs_legend,
+        legend_size  = sizes$legend,
         legend_title = legend_title,
         legend_nrow  = legend_nrow
       )
@@ -933,16 +866,16 @@ plot_volcano <- function(
 
 #' @title Print Method for \code{plot_volcano} Objects
 #' @description Compact console summary of a \code{\link{plot_volcano}} result.
-#' @param x An object as ouput of \code{"plot_volcano"}.
+#' @param x An object as output of \code{"plot_volcano"}.
 #' @param ... Ignored.
 #' @return Invisibly returns \code{x}.
 #' @author John Lennon L. Calorio
 #' @export
 print.plot_volcano <- function(x, ...) {
   clf  <- x$classified
-  up_n <- sum(clf$.regulation == "Up",   na.rm = TRUE)
-  dn_n <- sum(clf$.regulation == "Down", na.rm = TRUE)
-  ns_n <- sum(clf$.regulation == "NS",   na.rm = TRUE)
+  up_n <- sum(clf$Regulation == "Up",   na.rm = TRUE)
+  dn_n <- sum(clf$Regulation == "Down", na.rm = TRUE)
+  ns_n <- sum(clf$Regulation == "NS",   na.rm = TRUE)
   cat("-- plot_volcano results ------------------------------------\n")
   cat(sprintf("  Features   : %d  (Up: %d | Down: %d | NS: %d)\n",
               nrow(clf), up_n, dn_n, ns_n))

@@ -5,43 +5,35 @@
 #' @description
 #' Generates box plots or violin plots with statistical tests and pairwise
 #' comparisons. Automatically selects appropriate statistical tests based on
-#' assumptions, or allows manual specification. Statistical testing is
-#' performed internally via \code{\link{.run_diff_single}}, the unexported
-#' single-outcome engine that powers \code{\link{run_diff}}.
+#' assumptions, or allows manual specification. Statistical testing uses the
+#' same engine as \code{\link{run_diff}}.
 #'
 #' @param x A data frame containing the variables to plot, OR a pre-computed
 #'   multi-outcome \code{"run_diff"} object (i.e. the result of
 #'   \code{run_diff(..., summary_table = TRUE)} with more than one
 #'   \code{outcome}). When \code{x} is a \code{"run_diff"} object,
 #'   \code{\link{plot_diff}} reuses its statistics instead of recomputing them, and
-#'   prefers the \code{p_value_adj} column of \code{x$summary_table} (falling
-#'   back to \code{p_value} when adjustment was not performed, i.e. a single
-#'   outcome) for determining significance. \code{subgroup} and
+#'   prefers the \code{Adjusted p-value} column of \code{x$summary_table}
+#'   (falling back to \code{p-value} when adjustment was not performed, i.e. a
+#'   single outcome) for determining significance. \code{subgroup} and
 #'   \code{sample_id}/\code{label_points} are not supported in this mode;
 #'   run \code{run_diff(..., subgroup = ...)} beforehand, or pass the
 #'   underlying data frame instead.
-#' @param outcome Character string specifying the column name for the numeric
-#'   outcome variable. Used as the default for \code{plot_vars} if it is not
-#'   specified. Ignored when \code{x} is a \code{"run_diff"} object (use
-#'   \code{plot_vars} to select outcomes instead).
+#' @param outcome Character vector of numeric outcome column(s) to plot. When
+#'   \code{x} is a \code{"run_diff"} object, \code{NULL} (default) plots every
+#'   outcome it contains.
 #' @param group Character string specifying the column name for the grouping
 #'   variable. Ignored when \code{x} is a \code{"run_diff"} object (the
 #'   grouping variable used by \code{\link{run_diff}} is reused automatically).
 #' @param metadata A data frame containing metadata (e.g., grouping variables).
 #'   If \code{NULL}, \code{x} is used as metadata. Default is \code{NULL}.
 #'   Not used when \code{x} is a \code{"run_diff"} object.
-#' @param plot_vars Character vector specifying column name(s) for numeric
-#'   variables to plot. If \code{NULL} (default), uses the value of
-#'   \code{outcome}.
 #' @param plot_type Character string specifying plot type: \code{"boxplot"} or
 #'   \code{"violin"}. Default is \code{"boxplot"}.
 #' @param test_type Character string or \code{NULL}. Statistical test strategy:
 #'   \code{"auto"}, \code{"parametric"}, or \code{"nonparametric"}. See
 #'   \code{\link{run_diff}} for details. If \code{NULL} (default), uses
 #'   \code{"auto"}.
-#' @param posthoc Character string or \code{NULL}. Retained for API
-#'   compatibility; post-hoc selection is handled automatically by the
-#'   internal engine. Default is \code{NULL}.
 #' @param p_adjust_method Character string. P-value adjustment method for
 #'   post-hoc comparisons: \code{"holm"}, \code{"hochberg"}, \code{"hommel"},
 #'   \code{"bonferroni"}, \code{"BH"}, \code{"BY"}, \code{"fdr"},
@@ -65,28 +57,20 @@
 #'   \code{NULL}.
 #' @param ylab Character string or \code{NULL}. Y-axis label. Default is
 #'   \code{NULL}.
-#' @param linewidth Numeric. The width of the lines for the box/violin outlines 
-#'   and statistical brackets. Default is 3.
+#' @param linewidth Numeric. The width of the lines for the box/violin outlines
+#'   and statistical brackets. Default is 0.5.
 #' @param show_global_p Logical. If \code{TRUE}, annotates the plot with the
 #'   omnibus p-value. Default is \code{FALSE}.
 #' @param global_p_position Numeric or \code{NULL}. Y-axis position for the
 #'   global p-value annotation. Default is \code{NULL} (automatic).
 #' @param global_p_x Numeric or \code{NULL}. X-axis position for the global
 #'   p-value annotation. Default is \code{NULL} (automatic).
-#' @param global_font_size Numeric or \code{NULL}. Base font size for
-#'   proportional scaling of all text elements. Default is \code{30}.
-#' @param title_size Numeric or \code{NULL}. Title font size. Default is
-#'   \code{NULL}.
-#' @param subtitle_size Numeric or \code{NULL}. Subtitle font size. Default
-#'   is \code{NULL}.
-#' @param xlab_size Numeric or \code{NULL}. X-axis label font size. Default
-#'   is \code{NULL}.
-#' @param ylab_size Numeric or \code{NULL}. Y-axis label font size. Default
-#'   is \code{NULL}.
-#' @param pvalue_size Numeric or \code{NULL}. Font size for p-value
-#'   annotations (ggplot2 \code{size} units). Default is \code{NULL}.
-#' @param axis_text_size Numeric or \code{NULL}. Axis tick label font size.
-#'   Default is \code{NULL}.
+#' @param base_size Base font size in points; every text element scales from
+#'   it. Default is \code{11}, which suits a default 7 x 5 inch Quarto figure.
+#' @param title_size,subtitle_size,xlab_size,ylab_size,axis_text_size,pvalue_size
+#'   Font sizes in points for the title, subtitle, x-axis label, y-axis label,
+#'   tick labels and p-value annotations. Default \code{NULL} derives each from
+#'   \code{base_size}.
 #' @param format_p_numeric Character string or numeric. Controls p-value
 #'   formatting when \code{show_p_numeric = TRUE}. \code{"auto"} (default)
 #'   uses 3 decimal places.
@@ -115,17 +99,12 @@
 #'     \item{plots}{Named list of all generated \code{ggplot} objects.}
 #'     \item{significant_plots}{Named list of plots for variables with
 #'       significant results only.}
-#'     \item{statistics}{Named list of internal \code{.run_diff_single} result
-#'       objects for each variable, providing access to raw test objects,
-#'       descriptive statistics, and post-hoc tables.}
+#'     \item{statistics}{Named list of test results for each variable, with
+#'       raw test objects, descriptive statistics, and post-hoc tables.}
 #'     \item{subgroup_analysis}{Nested list of results per subgroup variable
 #'       and level, or \code{NULL} if no subgroup was specified.}
 #'   }
 #'
-#' @import ggpubr
-#' @import dplyr
-#' @import ggplot2
-#' @importFrom ggrepel geom_text_repel
 #' 
 #' @seealso \code{\link[dimsprepr]{run_DIpreprocess}}, \code{\link{run_diff}}
 #'
@@ -159,13 +138,13 @@
 #' )
 #' print(results$plots$weight)
 #'
-#' # Example 2: Global font size scaling and omnibus p-value annotation
+#' # Example 2: Larger text and omnibus p-value annotation
 #' results2 <- plot_diff(
-#'   x                = PlantGrowth,
-#'   outcome          = "weight",
-#'   group            = "group",
-#'   global_font_size = 16,
-#'   show_global_p    = TRUE
+#'   x             = PlantGrowth,
+#'   outcome       = "weight",
+#'   group         = "group",
+#'   base_size     = 14,
+#'   show_global_p = TRUE
 #' )
 #' print(results2$plots$weight)
 #'
@@ -189,10 +168,8 @@ plot_diff <- function(x,
                       outcome           = NULL,
                       group             = NULL,
                       metadata          = NULL,
-                      plot_vars         = NULL,
                       plot_type         = "boxplot",
                       test_type         = NULL,
-                      posthoc           = NULL,
                       p_adjust_method   = "BH",
                       hide_ns           = TRUE,
                       show_p_numeric    = FALSE,
@@ -203,11 +180,11 @@ plot_diff <- function(x,
                       plot_subtitle     = NULL,
                       xlab              = NULL,
                       ylab              = NULL,
-                      linewidth         = 3,
+                      linewidth         = 0.5,
                       show_global_p     = FALSE,
                       global_p_position = NULL,
                       global_p_x        = NULL,
-                      global_font_size  = 30,
+                      base_size         = 11,
                       title_size        = NULL,
                       subtitle_size     = NULL,
                       xlab_size         = NULL,
@@ -226,35 +203,10 @@ plot_diff <- function(x,
                       ...) {
 
   # ---------------------------------------------------------------------------
-  # 0. Package checks
+  # 1. Font sizes
   # ---------------------------------------------------------------------------
-  
-  if (!requireNamespace("ggpubr", quietly = TRUE))
-    stop("Package 'ggpubr' is required but not installed. Install with: install.packages('ggpubr')")
-  if (!requireNamespace("dplyr", quietly = TRUE))
-    stop("Package 'dplyr' is required but not installed. Install with: install.packages('dplyr')")
-  if (!requireNamespace("ggplot2", quietly = TRUE))
-    stop("Package 'ggplot2' is required but not installed. Install with: install.packages('ggplot2')")
-  if (!requireNamespace("ggrepel", quietly = TRUE))
-    stop("Package 'ggrepel' is required but not installed. Install with: install.packages('ggrepel')")
-  if (!requireNamespace("rstatix", quietly = TRUE))
-    stop("Package 'rstatix' is required but not installed. Install with: install.packages('rstatix')")
-
-  # ---------------------------------------------------------------------------
-  # 1. Font size resolution
-  # ---------------------------------------------------------------------------
-  .rs <- function(usr, gfs, prop, hard) {
-    if (!is.null(usr)) return(usr)
-    if (!is.null(gfs)) return(gfs * prop)
-    hard
-  }
-  fs_title    <- .rs(title_size,     global_font_size, 1.20, 14)
-  fs_subtitle <- .rs(subtitle_size,  global_font_size, 0.90, 11)
-  fs_xlab     <- .rs(xlab_size,      global_font_size, 1.00, 12)
-  fs_ylab     <- .rs(ylab_size,      global_font_size, 1.00, 12)
-  fs_axis     <- .rs(axis_text_size, global_font_size, 0.85, 10)
-  fs_pvalue   <- .rs(pvalue_size,    global_font_size, 0.35, 3.5)
-  fs_agg      <- .rs(NULL,           global_font_size, 0.30, 3.0)
+  sizes <- .text_sizes(base_size, title_size, subtitle_size, xlab_size, ylab_size,
+                       axis_text_size, label = pvalue_size)
 
   # ---------------------------------------------------------------------------
   # 2. p-value formatter
@@ -325,9 +277,9 @@ plot_diff <- function(x,
 
     run_diff_obj   <- x
     summary_tbl    <- x$summary_table
-    avail_outcomes <- summary_tbl$outcome
+    avail_outcomes <- summary_tbl$Variable
 
-    if (is.null(plot_vars)) plot_vars <- if (!is.null(outcome)) outcome else avail_outcomes
+    plot_vars <- if (!is.null(outcome)) outcome else avail_outcomes
     if (!all(plot_vars %in% avail_outcomes))
       stop(paste("Variable(s) to plot not found in x$summary_table:",
                  paste(setdiff(plot_vars, avail_outcomes), collapse = ", ")))
@@ -354,10 +306,7 @@ plot_diff <- function(x,
         stop(paste("Subgroup column(s) must be categorical:", paste(non_cat, collapse = ", ")))
     }
 
-    if (is.null(plot_vars)) plot_vars <- outcome
-    if (!all(plot_vars %in% names(x)))
-      stop(paste("Variable(s) to plot not found in data:",
-                 paste(setdiff(plot_vars, names(x)), collapse = ", ")))
+    plot_vars <- outcome
   }
 
   # ---------------------------------------------------------------------------
@@ -415,6 +364,13 @@ plot_diff <- function(x,
 
     n_groups      <- stat_results$n_groups
     posthoc_data  <- stat_results$posthoc_result
+    # run_diff() results carry report headers; the brackets need ggpubr's names
+    if (is.data.frame(posthoc_data)) {
+      back <- c("Group 1" = "group1", "Group 2" = "group2",
+                "Adjusted p-value" = "p.adj", "Significance" = "p.adj.signif")
+      hit  <- names(posthoc_data) %in% names(back)
+      names(posthoc_data)[hit] <- back[names(posthoc_data)[hit]]
+    }
     is_parametric <- isTRUE(stat_results$parametric)
 
     # Prefer the multiple-testing-adjusted p-value from x$summary_table
@@ -422,185 +378,11 @@ plot_diff <- function(x,
     # p-value. p_value_adj is only present when summary_table was built from
     # more than one outcome (see .build_summary_table()).
     main_test_p_val <- if (use_rundiff_input) {
-      p_col <- if ("p_value_adj" %in% names(summary_tbl)) "p_value_adj" else "p_value"
-      summary_tbl[[p_col]][summary_tbl$outcome == var]
+      p_col <- if ("Adjusted p-value" %in% names(summary_tbl)) "Adjusted p-value" else "p-value"
+      .p_to_num(summary_tbl[[p_col]][summary_tbl$Variable == var])
     } else {
       stat_results$test_result$p.value
     }
-
-    # # Prepare plotting data from raw_data stored in the rich list
-    # plot_data           <- stat_results$raw_data
-    # colnames(plot_data) <- c(var, group)
-
-    # if (!is.null(sample_id)) {
-    #   if (!sample_id %in% names(x))
-    #     stop(paste("Sample ID variable", sample_id, "not found in data."))
-    #   plot_data[[sample_id]] <- x[[sample_id]][stats::complete.cases(x[c(var, group)])]
-    # }
-
-    # y_max      <- max(plot_data[[var]], na.rm = TRUE)
-    # y_min      <- min(plot_data[[var]], na.rm = TRUE)
-    # y_range    <- y_max - y_min
-    # y_max_plot <- y_max + y_range * 0.15
-
-    # # -------------------------------------------------------------------------
-    # # 6a. Bracket annotation table
-    # # -------------------------------------------------------------------------
-    # stat_result_plot <- data.frame()
-
-    # if (n_groups > 2 && !is.null(posthoc_data) && nrow(posthoc_data) > 0) {
-    #   req_cols <- c("group1", "group2", "p.adj", "p.adj.signif")
-    #   if (!all(req_cols %in% names(posthoc_data))) {
-    #     warning(paste("Missing expected columns in post-hoc results for", var))
-    #   } else {
-    #     stat_result_plot <- posthoc_data %>%
-    #       dplyr::select(group1, group2, p.adj, p.adj.signif) %>%
-    #       dplyr::mutate(
-    #         y.position = y_max_plot + y_range * (0.05 + bracket_spacing * (dplyr::row_number() - 1))
-    #       )
-    #     if (hide_ns)
-    #       stat_result_plot <- dplyr::filter(stat_result_plot, p.adj < test_alpha)
-    #   }
-    # } else if (n_groups == 2) {
-    #   p_sig <- .signif_stars(main_test_p_val)
-    #   if (!hide_ns || p_sig != "ns") {
-    #     grp_names <- levels(plot_data[[group]])
-    #     if (is.null(grp_names)) grp_names <- unique(as.character(plot_data[[group]]))
-    #     stat_result_plot <- data.frame(
-    #       group1       = grp_names[1],
-    #       group2       = grp_names[2],
-    #       p.adj        = main_test_p_val,
-    #       p.adj.signif = p_sig,
-    #       y.position   = y_max_plot + y_range * 0.05
-    #     )
-    #   }
-    # }
-
-    # if (nrow(stat_result_plot) > 0 && show_p_numeric)
-    #   stat_result_plot$p.adj.fmt <- .fmt_p(stat_result_plot$p.adj)
-
-    # is_significant <- if (nrow(stat_result_plot) > 0)
-    #   any(stat_result_plot$p.adj < test_alpha, na.rm = TRUE)
-    # else
-    #   main_test_p_val < test_alpha
-
-    # # -------------------------------------------------------------------------
-    # # 6b. Labels
-    # # -------------------------------------------------------------------------
-    # title_text    <- if (!is.null(plot_title))    plot_title    else paste(var, "by", group)
-    # subtitle_text <- if (!is.null(plot_subtitle)) plot_subtitle else stat_results$test_used
-    # xlab_text     <- if (!is.null(xlab)) xlab else group
-    # ylab_text     <- if (!is.null(ylab)) ylab else var
-    # p_label_col   <- if (show_p_numeric) "p.adj.fmt" else "p.adj.signif"
-
-    # # -------------------------------------------------------------------------
-    # # 6c. Base plot
-    # # -------------------------------------------------------------------------
-    # base_theme <- ggplot2::theme(
-    #   legend.position = "none",
-    #   plot.title      = ggplot2::element_text(face = "bold", size = fs_title),
-    #   plot.subtitle   = ggplot2::element_text(size = fs_subtitle),
-    #   axis.title.x    = ggplot2::element_text(size = fs_xlab),
-    #   axis.title.y    = ggplot2::element_text(size = fs_ylab),
-    #   axis.text       = ggplot2::element_text(size = fs_axis)
-    # )
-
-    # # Backtick-protect var and group names so ggpubr/ggplot2 handle special characters
-    # # (hyphens, spaces, parentheses) in column names safely.
-    # safe_var   <- paste0("`", var, "`")
-    # safe_group <- paste0("`", group, "`")
-
-    # # -------------------------------------------------------------------------
-    # # 6c. Base plot
-    # # -------------------------------------------------------------------------
-    # p <- if (plot_type == "boxplot") {
-    #   ggpubr::ggboxplot(plot_data, x = safe_group, y = safe_var,
-    #                     color = safe_group, palette = plot_colors,
-    #                     add = "jitter", order = group_order, ...)
-    # } else {
-    #   ggpubr::ggviolin(plot_data, x = safe_group, y = safe_var,
-    #                   color = safe_group, fill = safe_group, palette = plot_colors,
-    #                   add = "boxplot", add.params = list(fill = "white"),
-    #                   order = group_order, ...)
-    # }
-
-    # p <- p +
-    #   ggplot2::labs(title = title_text, subtitle = subtitle_text,
-    #                 x = xlab_text, y = ylab_text) +
-    #   base_theme
-
-    # # -------------------------------------------------------------------------
-    # # 6d. Mean dot
-    # # -------------------------------------------------------------------------
-    # if (show_mean) {
-    #   p <- p + ggplot2::stat_summary(
-    #     mapping = ggplot2::aes(x = .data[[group]], y = .data[[var]]),
-    #     fun     = mean, geom = "point",
-    #     shape   = 21, size = 3, fill = "red", color = "black"
-    #   )
-    # }
-
-    # # -------------------------------------------------------------------------
-    # # 6e. Aggregate value text
-    # # -------------------------------------------------------------------------
-    # if (show_agg_val) {
-    #   # Pre-compute aggregate labels into a summary data frame.
-    #   # This avoids eval(parse()) and after_stat() entirely, both of which
-    #   # break on column names containing spaces, hyphens, or parentheses.
-    #   agg_fun    <- if (is_parametric) mean else median
-    #   agg_prefix <- if (is_parametric) "M" else "Med"
-    #   agg_color  <- if (is_parametric) "red" else "blue"
-
-    #   agg_df <- do.call(rbind, lapply(unique(plot_data[[group]]), function(g) {
-    #     vals <- plot_data[[var]][plot_data[[group]] == g]
-    #     agg  <- agg_fun(vals, na.rm = TRUE)
-    #     data.frame(
-    #       grp_col = g,
-    #       agg_val = agg,
-    #       agg_lbl = format_agg_val(agg, label_prefix = agg_prefix),
-    #       stringsAsFactors = FALSE
-    #     )
-    #   }))
-    #   names(agg_df)[1] <- group
-
-    #   p <- p + ggplot2::geom_text(
-    #     data    = agg_df,
-    #     mapping = ggplot2::aes(
-    #       x     = .data[[group]],
-    #       y     = agg_val,
-    #       label = agg_lbl
-    #     ),
-    #     vjust  = -0.7,
-    #     color  = agg_color,
-    #     size   = fs_agg,
-    #     inherit.aes = FALSE
-    #   )
-    # }
-
-    # # -------------------------------------------------------------------------
-    # # 6f. Point labels
-    # # -------------------------------------------------------------------------
-    # if (!is.null(label_points)) {
-    #   if (label_points == "all") {
-    #     p <- p + ggrepel::geom_text_repel(
-    #       data    = plot_data,
-    #       mapping = ggplot2::aes(x = .data[[group]], y = .data[[var]],
-    #                              label = .data[[sample_id]]),
-    #       size = fs_agg, max.overlaps = Inf
-    #     )
-    #   } else if (label_points == "outliers") {
-    #     outliers <- rstatix::identify_outliers(plot_data, var)
-    #     if (nrow(outliers) > 0) {
-    #       outlier_df <- outliers %>% dplyr::left_join(plot_data, by = c(var, group))
-    #       p <- p + ggrepel::geom_text_repel(
-    #         data    = outlier_df,
-    #         mapping = ggplot2::aes(x = .data[[group]], y = .data[[var]],
-    #                                label = .data[[sample_id]]),
-    #         size = fs_agg, color = "red", max.overlaps = Inf
-    #       )
-    #     }
-    #   }
-    # }
 
     # Prepare plotting data from raw_data stored in the rich list
     plot_data           <- stat_results$raw_data
@@ -637,8 +419,8 @@ plot_diff <- function(x,
       if (!all(req_cols %in% names(posthoc_data))) {
         warning(paste("Missing expected columns in post-hoc results for", var))
       } else {
-        stat_result_plot <- posthoc_data %>%
-          dplyr::select(group1, group2, p.adj, p.adj.signif) %>%
+        stat_result_plot <- posthoc_data |>
+          dplyr::select(group1, group2, p.adj, p.adj.signif) |>
           dplyr::mutate(
             y.position = y_max_plot + y_range * (0.05 + bracket_spacing * (dplyr::row_number() - 1))
           )
@@ -688,14 +470,8 @@ plot_diff <- function(x,
     # -------------------------------------------------------------------------
     # 6c. Base plot
     # -------------------------------------------------------------------------
-    base_theme <- ggplot2::theme(
-      legend.position = "none",
-      plot.title      = ggplot2::element_text(face = "bold", size = fs_title),
-      plot.subtitle   = ggplot2::element_text(size = fs_subtitle),
-      axis.title.x    = ggplot2::element_text(size = fs_xlab),
-      axis.title.y    = ggplot2::element_text(size = fs_ylab),
-      axis.text       = ggplot2::element_text(size = fs_axis)
-    )
+    base_theme <- .ponder_theme("classic", sizes) +
+      ggplot2::theme(legend.position = "none")
 
     p <- if (plot_type == "boxplot") {
       ggpubr::ggboxplot(plot_data, x = safe_group, y = safe_var,
@@ -756,7 +532,7 @@ plot_diff <- function(x,
         ),
         vjust  = -0.7,
         color  = agg_color,
-        size   = fs_agg,
+        size   = .pt_to_mm(sizes$label * 0.9),
         inherit.aes = FALSE
       )
     }
@@ -770,17 +546,17 @@ plot_diff <- function(x,
           data    = plot_data,
           mapping = ggplot2::aes(x = .data[[safe_group]], y = .data[[safe_var]],
                                  label = .data[[sample_id]]),
-          size = fs_agg, max.overlaps = Inf
+          size = .pt_to_mm(sizes$label * 0.9), max.overlaps = Inf
         )
       } else if (label_points == "outliers") {
         outliers <- rstatix::identify_outliers(plot_data, safe_var)
         if (nrow(outliers) > 0) {
-          outlier_df <- outliers %>% dplyr::left_join(plot_data, by = c(safe_var, safe_group))
+          outlier_df <- outliers |> dplyr::left_join(plot_data, by = c(safe_var, safe_group))
           p <- p + ggrepel::geom_text_repel(
             data    = outlier_df,
             mapping = ggplot2::aes(x = .data[[safe_group]], y = .data[[safe_var]],
                                    label = .data[[sample_id]]),
-            size = fs_agg, color = "red", max.overlaps = Inf
+            size = .pt_to_mm(sizes$label * 0.9), color = "red", max.overlaps = Inf
           )
         }
       }
@@ -792,8 +568,8 @@ plot_diff <- function(x,
     if (nrow(stat_result_plot) > 0) {
       p <- p + ggpubr::stat_pvalue_manual(
         stat_result_plot, label = p_label_col,
-        hide.ns = FALSE, tip.length = 0.01, size = fs_pvalue,
-        bracket.size = linewidth * 0.3
+        hide.ns = FALSE, tip.length = 0.01, size = .pt_to_mm(sizes$label),
+        bracket.size = linewidth * 0.6
       )
     }
 
@@ -806,13 +582,13 @@ plot_diff <- function(x,
       global_x  <- if (!is.null(global_p_x)) global_p_x else n_groups * 0.95
       gp_label  <- paste0(stat_results$test_used, "\np = ", .fmt_p(main_test_p_val))
       p <- p + ggplot2::annotate("text", x = global_x, y = global_y,
-                                 label = gp_label, hjust = 1, size = fs_pvalue)
+                                 label = gp_label, hjust = 1, size = .pt_to_mm(sizes$label))
     }
 
     if (horizontal) p <- p + ggplot2::coord_flip()
 
     all_plots[[var]]  <- p
-    statistics[[var]] <- stat_results
+    statistics[[var]] <- .report_tables(stat_results)
     if (is_significant) significant_plots[[var]] <- p
   }
 
@@ -864,10 +640,8 @@ plot_diff <- function(x,
               outcome           = var,
               group             = group,
               metadata          = metadata_sub,
-              plot_vars         = var,
               plot_type         = plot_type,
               test_type         = if (is.null(test_type)) "auto" else test_type,
-              posthoc           = posthoc,
               p_adjust_method   = p_adjust_method,
               hide_ns           = hide_ns,
               show_p_numeric    = show_p_numeric,
@@ -886,7 +660,7 @@ plot_diff <- function(x,
               show_global_p     = show_global_p,
               global_p_position = global_p_position,
               global_p_x        = global_p_x,
-              global_font_size  = global_font_size,
+              base_size         = base_size,
               title_size        = title_size,
               subtitle_size     = subtitle_size,
               xlab_size         = xlab_size,

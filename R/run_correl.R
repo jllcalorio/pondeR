@@ -1,28 +1,28 @@
 # Internal helpers -------------------------------------------------------------
 
-#' @keywords internal
+#' @noRd
 .detect_binary <- function(v) {
   uv <- unique(stats::na.omit(v))
   length(uv) == 2L
 }
 
-#' @keywords internal
+#' @noRd
 .detect_ordinal <- function(v) {
   is.ordered(v) || (is.factor(v) && !.detect_binary(as.integer(v)))
 }
 
-#' @keywords internal
+#' @noRd
 .is_continuous <- function(v) {
   is.numeric(v) && !.detect_binary(v) && !is.integer(v)
 }
 
-#' @keywords internal
+#' @noRd
 .count_ties <- function(v) {
   tb  <- table(v)
   sum(tb[tb > 1L])
 }
 
-#' @keywords internal
+#' @noRd
 .interpret_correl <- function(r, method, scale) {
   if (is.na(r) || is.null(scale)) return(NA_character_)
   v <- abs(r)
@@ -67,11 +67,9 @@
   return(NA_character_)
 }
 
-#' @keywords internal
+#' @noRd
 .auto_method <- function(vx, vy,
                           norm_result_x, norm_result_y,
-                          var_violated,
-                          alpha_normality = 0.05,
                           no_kendall      = FALSE) {
 
   bin_x  <- .detect_binary(vx)
@@ -103,13 +101,12 @@
       if (!no_kendall && (n < 30 || ties > 0.2)) return("kendall")
       return("spearman")
     }
-    if (var_violated) return("spearman")
     return("pearson")
   }
   return("spearman")
 }
 
-#' @keywords internal
+#' @noRd
 .check_normality_correl <- function(data_vector,
                                      label          = NULL,
                                      method         = "auto",
@@ -145,7 +142,7 @@
        method   = "Lilliefors (K-S) test", label = label)
 }
 
-#' @keywords internal
+#' @noRd
 .correl_pair <- function(vx, vy, xname, yname, method,
                           sig_threshold, normality_method, alpha_normality,
                           cor_args, exact = NULL, no_kendall = FALSE) {
@@ -160,21 +157,9 @@
   norm_y <- .check_normality_correl(vy_c, yname, normality_method,
                                      alpha_normality)
 
-  var_violated <- FALSE
-  if (is.numeric(vx_c) && is.numeric(vy_c)) {
-    var_violated <- tryCatch({
-      if (requireNamespace("car", quietly = TRUE)) {
-        grp <- rep(c("x", "y"), c(n, n))
-        car::leveneTest(c(vx_c, vy_c), factor(grp))$`Pr(>F)`[1L] < alpha_normality
-      } else {
-        stats::bartlett.test(list(vx_c, vy_c))$p.value < alpha_normality
-      }
-    }, error = function(e) FALSE)
-  }
 
   resolved_method <- if (method == "auto") {
-    .auto_method(vx_c, vy_c, norm_x, norm_y, var_violated, alpha_normality,
-                 no_kendall = no_kendall)
+    .auto_method(vx_c, vy_c, norm_x, norm_y, no_kendall = no_kendall)
   } else method
 
   result <- tryCatch({
@@ -186,17 +171,17 @@
       spearman = {
         # cor.test does not compute CIs for Spearman; use Fisher z on rho
         args_base <- list(x = vx_c, y = vy_c, method = "spearman")
-        if (!is.null(exact)) args_base$exact <- exact
+        args_base$exact <- exact %||% if (anyDuplicated(vx_c) || anyDuplicated(vy_c)) FALSE
         args   <- c(args_base, cor_args)
         ct     <- do.call(stats::cor.test, args)
         n_obs  <- length(vx_c)
         rho    <- unname(ct$estimate)
-        # Fisher z-transformation CI for Spearman rho
+        # Fisher z CI with the Fieller et al. (1957) SE for Spearman's rho
         # ponytail: Fisher z undefined at rho = ±1 (within floating-point tolerance);
         # exclude near-perfect correlations to avoid inf/NaN
         if (!is.na(rho) && abs(rho) < 0.9999999 && n_obs > 3) {
           z     <- atanh(rho)
-          se_z  <- 1 / sqrt(n_obs - 3)
+          se_z  <- sqrt(1.06 / (n_obs - 3))
           z_crit <- stats::qnorm(1 - (1 - 0.95) / 2)
           ci_lo <- tanh(z - z_crit * se_z)
           ci_hi <- tanh(z + z_crit * se_z)
@@ -207,18 +192,18 @@
         ct
       },
       kendall = {
-        # cor.test does not compute CIs for Kendall; use Fisher z on tau
+        # cor.test gives no CI for Kendall; Fisher z with the Fieller et al. (1957) SE
         args_base <- list(x = vx_c, y = vy_c, method = "kendall")
-        if (!is.null(exact)) args_base$exact <- exact
+        args_base$exact <- exact %||% if (anyDuplicated(vx_c) || anyDuplicated(vy_c)) FALSE
         args  <- c(args_base, cor_args)
         ct    <- do.call(stats::cor.test, args)
         n_obs <- length(vx_c)
         tau   <- unname(ct$estimate)
         # ponytail: Fisher z undefined at tau = ±1 (within floating-point tolerance);
         # exclude near-perfect correlations to avoid inf/NaN
-        if (!is.na(tau) && abs(tau) < 0.9999999 && n_obs > 3) {
+        if (!is.na(tau) && abs(tau) < 0.9999999 && n_obs > 4) {
           z     <- atanh(tau)
-          se_z  <- 1 / sqrt(n_obs - 3)
+          se_z  <- sqrt(0.437 / (n_obs - 4))
           z_crit <- stats::qnorm(1 - (1 - 0.95) / 2)
           ci_lo <- tanh(z - z_crit * se_z)
           ci_hi <- tanh(z + z_crit * se_z)
@@ -378,8 +363,8 @@
 #'   One of \code{"holm"}, \code{"hochberg"}, \code{"hommel"}, \code{"bonferroni"},
 #'   \code{"BH"} (default), \code{"BY"}, \code{"fdr"}, or \code{"none"}.
 #'   Applied only when \code{summary_table_only = TRUE} and the number of 
-#'   variable pairs is greater than 1. A \code{p_value_adj} column is added to 
-#'   the returned data frame when applicable. Default \code{"BH"}.
+#'   variable pairs is greater than 1. An \code{Adjusted p-value} column is
+#'   added to the returned data frame when applicable. Default \code{"BH"}.
 #' @param exact Logical or \code{NULL}. When \code{method} is \code{"spearman"} 
 #'   or \code{"kendall"}, controls whether an exact p-value should be computed.
 #'   Passed to \code{\link[stats]{cor.test}}. Default \code{NULL} (let \code{cor.test} decide).
@@ -396,9 +381,9 @@
 #'
 #' \tabular{ll}{
 #'   \strong{Method} \tab \strong{Conditions} \cr
-#'   Pearson         \tab Both continuous, normal, homoscedastic \cr
-#'   Spearman        \tab Ordinal or continuous, non-normal or heteroscedastic,
-#'                        \eqn{n \ge 30}, few ties \cr
+#'   Pearson         \tab Both continuous and normal \cr
+#'   Spearman        \tab Ordinal or continuous, non-normal, \eqn{n \ge 30},
+#'                        few ties \cr
 #'   Kendall         \tab Ordinal or continuous, non-normal, \eqn{n < 30} or
 #'                        many ties \cr
 #'   Point-biserial  \tab One continuous, one binary variable \cr
@@ -410,8 +395,9 @@
 #' }
 #'
 #' Normality is assessed via Shapiro-Wilk (\eqn{n < 50}) or Lilliefors
-#' (\eqn{n \ge 50}; requires \pkg{nortest}). Homoscedasticity is assessed via
-#' Levene's test (requires \pkg{car}) with Bartlett's test as fallback.
+#' (\eqn{n \ge 50}; requires \pkg{nortest}). Confidence intervals for Spearman's
+#' rho and Kendall's tau use the Fisher z transformation with the standard
+#' errors of Fieller, Hartley and Pearson (1957).
 #'
 #' Confidence intervals for Cramer's V and polychoric/polyserial correlations
 #' are not available and are returned as \code{NA}. When \code{summary_table_only = TRUE},
@@ -419,7 +405,7 @@
 #'
 #' \strong{P-value adjustment:} When \code{summary_table_only = TRUE} and the number
 #' of variable pairs is greater than 1, p-values are adjusted using the method
-#' specified in \code{p_adjust_method}, with results stored in a \code{p_value_adj}
+#' specified in \code{p_adjust_method}, with results stored in an \code{Adjusted p-value}
 #' column. This accounts for multiple comparisons across pairs.
 #'
 #' \strong{Exact p-values:} For Kendall's tau and Spearman's rho, the \code{exact}
@@ -478,30 +464,35 @@
 #' 2018 Aug 7;18(3):91-93. doi: 10.1016/j.tjem.2018.08.001. PMID: 30191186; 
 #' PMCID: PMC6107969.
 #'
-#' @return When \code{summary_table_only = FALSE}, returns a named list of class 
+#' Fieller EC, Hartley HO, Pearson ES (1957). Tests for rank correlation
+#'   coefficients. I. \emph{Biometrika}, 44(3/4), 470-481.
+#'   \doi{10.1093/biomet/44.3-4.470}
+#'
+#' @return When \code{summary_table_only = FALSE}, returns a named list of class
 #'   \code{"run_correl"} with the following elements:
 #'   \describe{
-#'     \item{\code{correlations}}{A tidy data frame of pairwise correlation
-#'       estimates with columns \code{var1}, \code{var2}, \code{estimate},
-#'       \code{method_used}, and \code{n}.}
+#'     \item{\code{correlations}}{A report-ready data frame of pairwise
+#'       correlations with columns \code{Variable 1}, \code{Variable 2},
+#'       \code{Correlation}, \code{Method}, and \code{n}.}
 #'     \item{\code{correlations_masked}}{Same as \code{correlations} but
-#'       \code{estimate} is \code{NA} for pairs where
-#'       \code{p_value >= sig_threshold}.}
-#'     \item{\code{p_values}}{A tidy data frame with columns \code{var1},
-#'       \code{var2}, and \code{p_value}.}
-#'     \item{\code{confidence_intervals}}{A tidy data frame with columns
-#'       \code{var1}, \code{var2}, \code{ci_lower}, and \code{ci_upper}.}
+#'       \code{Correlation} is \code{NA} for pairs that are not significant at
+#'       \code{sig_threshold}.}
+#'     \item{\code{p_values}}{A data frame with columns \code{Variable 1},
+#'       \code{Variable 2}, and \code{p-value}.}
+#'     \item{\code{confidence_intervals}}{A data frame with columns
+#'       \code{Variable 1}, \code{Variable 2}, \code{95\% CI lower}, and
+#'       \code{95\% CI upper}.}
 #'     \item{\code{sig_threshold}}{The significance threshold used.}
 #'     \item{\code{method}}{The method argument as supplied.}
 #'     \item{\code{call}}{The matched call.}
 #'   }
 #'   
 #'   When \code{summary_table_only = TRUE}, returns a data frame of class 
-#'   \code{"run_correl"} with columns \code{var1}, \code{var2}, \code{estimate},
-#'   \code{ci_lower}, \code{ci_upper}, \code{p_value}, and \code{method}.
-#'   When the number of variable pairs is greater than 1, an additional
-#'   \code{p_value_adj} column contains adjusted p-values. Optional columns
-#'   \code{interpretation} may be present if requested.
+#'   \code{"run_correl"} with columns \code{Variable 1}, \code{Variable 2},
+#'   \code{Correlation}, \code{95\% CI lower}, \code{95\% CI upper},
+#'   \code{p-value}, \code{Method} and \code{n}. When the number of variable
+#'   pairs is greater than 1, an \code{Adjusted p-value} column is added, and
+#'   an \code{Interpretation} column when requested.
 #'
 #' @examples
 #' ## Basic pairwise correlations (all numeric columns)
@@ -740,32 +731,6 @@ run_correl <- function(x,
 
   results <- vector("list", length(pairs))
 
-  # for (i in seq_along(pairs)) {
-  #   vnames     <- pairs[[i]]
-  #   xname      <- vnames[1L]
-  #   yname      <- vnames[2L]
-  #   vx         <- x[[xname]]
-  #   vy         <- x[[yname]]
-
-  #   results[[i]] <- .correl_pair(
-  #     vx               = vx,
-  #     vy               = vy,
-  #     xname            = xname,
-  #     yname            = yname,
-  #     method           = method,
-  #     sig_threshold    = sig_threshold,
-  #     normality_method = normality_method,
-  #     alpha_normality  = alpha_normality,
-  #     cor_args         = extra_args
-  #   )
-
-  #   if (verbose)
-  #     message(sprintf("[%d/%d] %s vs %s - method: %s, r = %.4f, p = %.4f",
-  #                     i, length(pairs), xname, yname,
-  #                     results[[i]]$method_used,
-  #                     results[[i]]$estimate %||% NA,
-  #                     results[[i]]$p_value   %||% NA))
-  # }
   for (i in seq_along(pairs)) {
     vnames     <- pairs[[i]]
     xname      <- vnames[1L]
@@ -819,47 +784,51 @@ run_correl <- function(x,
   sig    <- vapply(results, `[[`, logical(1L),   "sig")
 
   correlations <- data.frame(
-    var1        = var1,
-    var2        = var2,
-    estimate    = est,
+    `Variable 1` = var1,
+    `Variable 2` = var2,
+    Correlation  = est,
+    check.names  = FALSE,
     stringsAsFactors = FALSE
   )
 
   if (!is.null(interpretation)) {
-    correlations$interpretation <- mapply(
+    correlations$Interpretation <- mapply(
       .interpret_correl, est, mused,
       MoreArgs = list(scale = interpretation),
       USE.NAMES = FALSE
     )
   }
 
-  correlations$method_used <- mused
-  correlations$n           <- n_used
+  correlations$Method <- .correl_method_label(mused)
+  correlations$n      <- n_used
 
   est_masked             <- est
   est_masked[!sig]       <- NA_real_
 
   correlations_masked <- data.frame(
-    var1        = var1,
-    var2        = var2,
-    estimate    = est_masked,
-    method_used = mused,
-    n           = n_used,
+    `Variable 1` = var1,
+    `Variable 2` = var2,
+    Correlation  = est_masked,
+    Method       = .correl_method_label(mused),
+    n            = n_used,
+    check.names  = FALSE,
     stringsAsFactors = FALSE
   )
 
   p_values <- data.frame(
-    var1    = var1,
-    var2    = var2,
-    p_value = pval,
+    `Variable 1` = var1,
+    `Variable 2` = var2,
+    `p-value`    = pval,
+    check.names  = FALSE,
     stringsAsFactors = FALSE
   )
 
   confidence_intervals <- data.frame(
-    var1     = var1,
-    var2     = var2,
-    ci_lower = ci_lo,
-    ci_upper = ci_hi,
+    `Variable 1`   = var1,
+    `Variable 2`   = var2,
+    `95% CI lower` = ci_lo,
+    `95% CI upper` = ci_hi,
+    check.names    = FALSE,
     stringsAsFactors = FALSE
   )
 
@@ -868,14 +837,15 @@ run_correl <- function(x,
 
   if (summary_table_only) {
     res_df <- data.frame(
-      var1     = var1,
-      var2     = var2,
-      estimate = est,
-      ci_lower = ci_lo,
-      ci_upper = ci_hi,
-      p_value  = pval,
-      method   = mused,
-      n        = n_used,
+      `Variable 1`   = var1,
+      `Variable 2`   = var2,
+      Correlation    = est,
+      `95% CI lower` = ci_lo,
+      `95% CI upper` = ci_hi,
+      `p-value`      = pval,
+      Method         = .correl_method_label(mused),
+      n              = n_used,
+      check.names    = FALSE,
       stringsAsFactors = FALSE
     )
 
@@ -883,12 +853,12 @@ run_correl <- function(x,
     # ponytail: p-adjustment only added when multiple pairs present.
     # NA p-values pass through unchanged; stats::p.adjust preserves NA positions.
     if (nrow(res_df) > 1 && p_adjust_method != "none") {
-      res_df$p_value_adj <- stats::p.adjust(res_df$p_value, method = p_adjust_method)
+      res_df[["Adjusted p-value"]] <- stats::p.adjust(res_df[["p-value"]], method = p_adjust_method)
     }
 
     if (!is.null(interpretation)) {
-      res_df$interpretation <- mapply(
-        .interpret_correl, res_df$estimate, res_df$method,
+      res_df$Interpretation <- mapply(
+        .interpret_correl, res_df$Correlation, mused,
         MoreArgs = list(scale = interpretation),
         USE.NAMES = FALSE
       )
@@ -901,7 +871,7 @@ run_correl <- function(x,
       # Define preferred order for methods in footnote
       pref_order <- c("pearson", "spearman", "kendall", "pointbiserial",
                       "phi", "cramerv", "poly")
-      m_present  <- unique(res_df$method)
+      m_present  <- unique(mused)
       m_unique   <- m_present[order(match(m_present, pref_order), m_present)]
 
       # Unicode superscript lowercase letters a-z (sans q, which has no Unicode
@@ -923,7 +893,7 @@ run_correl <- function(x,
       # Store method superscripts as attribute for reference (e.g. custom rendering)
       method_superscripts <- m_sup
       
-      res_df$method <- NULL
+      res_df$Method <- NULL
       
       # Map internal method names to display labels for a cleaner footnote
       method_labels <- c(
@@ -946,9 +916,9 @@ run_correl <- function(x,
       )
 
       # Encode estimate as "<value><superscript>" string; NA estimates stay NA
-      res_df$estimate <- ifelse(
-        is.na(res_df$estimate), NA_character_,
-        paste0(sprintf("%.2f", res_df$estimate), m_sup[mused])
+      res_df$Correlation <- ifelse(
+        is.na(res_df$Correlation), NA_character_,
+        paste0(sprintf("%.2f", res_df$Correlation), m_sup[mused])
       )
     }
 
@@ -979,6 +949,16 @@ run_correl <- function(x,
 # S3 Methods -------------------------------------------------------------------
 
 #' @keywords internal
+# Display names for the correlation methods
+.correl_method_label <- function(m) {
+  labels <- c(pearson = "Pearson", spearman = "Spearman", kendall = "Kendall",
+              pointbiserial = "Point-biserial", phi = "Phi", cramerv = "Cramer's V",
+              poly = "Polychoric/Polyserial")
+  out <- unname(labels[m])
+  out[is.na(out)] <- m[is.na(out)]
+  out
+}
+
 .format_pval_display <- function(p) {
   format.pval(p, digits = max(1L, getOption("digits") - 3L),
               eps = .Machine$double.eps)
@@ -987,13 +967,13 @@ run_correl <- function(x,
 #' Print a run_correl object
 #'
 #' @param x A \code{\link{run_correl}} object.
-#' @param format_p Logical. If \code{TRUE} (default), the \code{p_value} and
-#'   \code{p_value_adj} columns (when present) are displayed via
+#' @param format_p Logical. If \code{TRUE} (default), the p-value
+#'   columns (when present) are displayed via
 #'   \code{\link{format.pval}} so that values indistinguishable from zero at
 #'   double precision print as \code{"< 2.2e-16"}, matching
 #'   \code{stats::cor.test}'s convention. Purely cosmetic: the object
 #'   returned (invisibly) is unchanged, so p-values remain numeric for
-#'   downstream filtering (e.g. \code{filter(p_value_adj < .05)}).
+#'   downstream filtering.
 #' @param ... Additional arguments passed to \code{print.data.frame}.
 #' @export
 print.run_correl <- function(x, format_p = TRUE, ...) {
@@ -1002,7 +982,7 @@ print.run_correl <- function(x, format_p = TRUE, ...) {
   class(tmp) <- "data.frame"
 
   if (format_p) {
-    for (col in intersect(c("p_value", "p_value_adj"), names(tmp))) {
+    for (col in intersect(c("p-value", "Adjusted p-value"), names(tmp))) {
       tmp[[col]] <- .format_pval_display(tmp[[col]])
     }
   }
@@ -1033,8 +1013,8 @@ print.run_correl <- function(x, format_p = TRUE, ...) {
 #'   \code{run_diff_summary} table from \code{\link{run_diff}}, a
 #'   \code{gtsummary} table, a data frame/tibble (or anything coercible with
 #'   \code{as.data.frame()}), or a \code{gt_tbl} (returned unchanged).
-#' @param format_p Logical. If \code{TRUE} (default), the \code{p_value} and
-#'   \code{p_value_adj} columns (when present) are displayed via
+#' @param format_p Logical. If \code{TRUE} (default), the p-value
+#'   columns (when present) are displayed via
 #'   \code{\link{format.pval}} so that values indistinguishable from zero at
 #'   double precision render as \code{"< 2.2e-16"}, matching
 #'   \code{\link[stats]{cor.test}}'s convention. Cosmetic only; does not
@@ -1100,7 +1080,7 @@ as_gt.run_correl <- function(x, format_p = TRUE, ...) {
   class(tmp) <- "data.frame"
 
   if (format_p) {
-    for (col in intersect(c("p_value", "p_value_adj"), names(tmp))) {
+    for (col in intersect(c("p-value", "Adjusted p-value"), names(tmp))) {
       tmp[[col]] <- .format_pval_display(tmp[[col]])
     }
   }

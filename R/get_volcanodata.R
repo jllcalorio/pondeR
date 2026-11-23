@@ -21,7 +21,8 @@
 #'
 #' @return A \code{data.frame} containing merged data from both objects:
 #'   fold change columns, effect size (95\% CI) and magnitude, and a single
-#'   p-value column (\code{p_value_adj} when present, otherwise \code{p_value}).
+#'   p-value column (\code{Adjusted p-value} when present, otherwise
+#'   \code{p-value}). Column names are ready for reports.
 #'   When the \code{\link{run_diff}} summary table is simplified, the p-value column
 #'   keeps its superscript test markers (legend stored in the
 #'   \code{"pvalue_legend"} attribute and shown by \code{\link{as_gt}}).
@@ -33,8 +34,8 @@
 #'   \item \code{up} and \code{down} are retrieved from the \code{\link{run_foldchange}} parameters.
 #'   \item Significance threshold (\code{pval}) is retrieved from \code{\link{run_diff}} parameters
 #'         (defaulting to 0.05 if not found).
-#'   \item When \code{\link{run_diff}} result has multiple outcomes (nrow > 1), a \code{p_value_adj}
-#'         column is present; this function prefers it over \code{p_value} for the volcano plot.
+#'   \item When \code{\link{run_diff}} result has multiple outcomes, an \code{Adjusted p-value}
+#'         column is present; this function prefers it over \code{p-value}.
 #' }
 #'
 #' @references
@@ -80,7 +81,7 @@ get_volcanodata <- function(..., up = NULL, down = NULL, pval = NULL, filter = T
   if (is.null(diff_obj)) {
     for (el in dots) {
       if (is.list(el) && !is.null(el$summary_table) &&
-          is.data.frame(el$summary_table) && "p_value" %in% names(el$summary_table)) {
+          is.data.frame(el$summary_table) && "p-value" %in% names(el$summary_table)) {
         diff_obj <- el
         break
       }
@@ -102,37 +103,36 @@ get_volcanodata <- function(..., up = NULL, down = NULL, pval = NULL, filter = T
   # Threshold resolution (passed arg > object param > default)
   up_val <- up %||% fc_obj$params$up %||% 1.5
   down_val <- down %||% fc_obj$params$down %||% 0.5
-  pval_val <- pval %||% diff_obj$params$p_value %||% 
-              diff_obj$params$pval %||% diff_obj$params$adj_pval %||% 0.05
+  pval_val <- pval %||% diff_obj$test_alpha %||% attr(diff_obj, "test_alpha") %||% 0.05
 
   # 3. Construct base table and merge
-  # prefer p_value_adj when present (multi-outcome, nrow > 1),
-  # otherwise use p_value (single outcome or when no adjustment applied).
-  # Only that column is kept in the output (superscript test markers retained).
-  p_col <- if (!is.null(df_diff) && "p_value_adj" %in% names(df_diff)) "p_value_adj" else "p_value"
+  # Prefer the adjusted p-value when present (multi-outcome); only that column
+  # is kept in the output (superscript test markers retained).
+  p_col <- if (!is.null(df_diff) && "Adjusted p-value" %in% names(df_diff)) "Adjusted p-value" else "p-value"
   if (!is.null(df_fc)) {
     res <- df_fc
     if (!is.null(df_diff)) {
-      res[[p_col]] <- df_diff[[p_col]][match(res$feature, df_diff$outcome)]
+      res[[p_col]] <- df_diff[[p_col]][match(res$Feature, df_diff$Variable)]
     } else {
       warning("No 'run_diff' object provided; p-values set to 1.", call. = FALSE)
       res[[p_col]] <- 1
     }
   } else {
     warning("No 'run_foldchange' object provided; fold changes set to 1.", call. = FALSE)
-    res <- df_diff
-    names(res)[names(res) == "outcome"] <- "feature"
-    res$fold_change <- 1
-    res$log2_fc <- 0
-    res[[setdiff(c("p_value", "p_value_adj"), p_col)]] <- NULL
+    res <- as.data.frame(df_diff, check.names = FALSE, stringsAsFactors = FALSE)
+    class(res) <- "data.frame"
+    names(res)[names(res) == "Variable"] <- "Feature"
+    res[["Fold change"]] <- 1
+    res[["log2 FC"]] <- 0
+    res[[setdiff(c("p-value", "Adjusted p-value"), p_col)]] <- NULL
   }
 
   # Add effect size (95% CI) + magnitude from run_diff
   es <- .get_diff_es(diff_obj)
-  if (!is.null(es) && !"ES (95% CI)" %in% names(res) && !"effect_size_estimate" %in% names(res)) {
-    idx <- match(res$feature, es$feature)
-    res[["ES (95% CI)"]]  <- es[["ES (95% CI)"]][idx]
-    res[["ES_magnitude"]] <- es[["ES_magnitude"]][idx]
+  if (!is.null(es) && !"ES (95% CI)" %in% names(res)) {
+    idx <- match(res$Feature, es$feature)
+    res[["ES (95% CI)"]] <- es[["ES (95% CI)"]][idx]
+    res[["Magnitude"]]   <- es[["ES_magnitude"]][idx]
   }
   res <- res[, c(setdiff(names(res), p_col), p_col), drop = FALSE]
 
@@ -142,9 +142,10 @@ get_volcanodata <- function(..., up = NULL, down = NULL, pval = NULL, filter = T
   # 6. Classification logic (mimics plot_volcano)
   up_log2   <- log2(up_val)
   down_log2 <- log2(down_val)
-  ok  <- !is.na(res$log2_fc) & !is.na(p_num) & p_num < pval_val
-  reg <- ifelse(ok & res$log2_fc >= up_log2, "Up",
-         ifelse(ok & res$log2_fc <= down_log2, "Down", "NS"))
+  lfc <- res[["log2 FC"]]
+  ok  <- !is.na(lfc) & !is.na(p_num) & p_num < pval_val
+  reg <- ifelse(ok & lfc >= up_log2, "Up",
+         ifelse(ok & lfc <= down_log2, "Down", "NS"))
 
   # 7. Filtering
   keep <- if (filter) reg %in% c("Up", "Down") else rep(TRUE, nrow(res))
@@ -152,7 +153,7 @@ get_volcanodata <- function(..., up = NULL, down = NULL, pval = NULL, filter = T
 
   # 8. Sort by effect size magnitude, then |estimate|
   if (sort_es != "none" && !is.null(es) && nrow(res) > 1L) {
-    idx <- match(res$feature, es$feature)
+    idx <- match(res$Feature, es$feature)
     mag <- .es_magnitude_rank(es$ES_magnitude[idx])
     ab  <- abs(es$estimate[idx])
     sgn <- if (sort_es == "desc") -1 else 1
@@ -175,20 +176,18 @@ get_volcanodata <- function(..., up = NULL, down = NULL, pval = NULL, filter = T
   if (is.null(diff_obj)) return(NULL)
   st <- diff_obj$summary_table
   if (is.data.frame(st)) {
-    if (all(c("ES (95% CI)", "ES_magnitude") %in% names(st))) {
-      return(data.frame(feature = st$outcome, `ES (95% CI)` = st[["ES (95% CI)"]],
-                        ES_magnitude = st$ES_magnitude,
+    if (all(c("ES (95% CI)", "Magnitude") %in% names(st))) {
+      return(data.frame(feature = st$Variable, `ES (95% CI)` = st[["ES (95% CI)"]],
+                        ES_magnitude = st$Magnitude,
                         # formatted "est (lo, hi)" string -> numeric estimate
                         estimate = suppressWarnings(as.numeric(sub(" \\(.*$", "", st[["ES (95% CI)"]]))),
                         check.names = FALSE, stringsAsFactors = FALSE))
     }
-    if (all(c("effect_size_estimate", "effect_size_ci_low", "effect_size_ci_high",
-              "effect_size_magnitude") %in% names(st))) {
-      return(data.frame(feature = st$outcome,
-                        `ES (95% CI)` = .fmt_es(st$effect_size_estimate,
-                                                st$effect_size_ci_low, st$effect_size_ci_high),
-                        ES_magnitude = st$effect_size_magnitude,
-                        estimate = st$effect_size_estimate,
+    if (all(c("ES", "ES CI lower", "ES CI upper", "Magnitude") %in% names(st))) {
+      return(data.frame(feature = st$Variable,
+                        `ES (95% CI)` = .fmt_es(st$ES, st[["ES CI lower"]], st[["ES CI upper"]]),
+                        ES_magnitude = st$Magnitude,
+                        estimate = st$ES,
                         check.names = FALSE, stringsAsFactors = FALSE))
     }
     return(NULL)

@@ -27,8 +27,8 @@ as_gt(x, ...)
 \item{...}{Additional arguments forwarded to \code{\link[gt]{gt}} (or to
 \code{\link[gtsummary]{as_gt}} for gtsummary objects).}
 
-\item{format_p}{Logical. If \code{TRUE} (default), the \code{p_value} and
-\code{p_value_adj} columns (when present) are displayed via
+\item{format_p}{Logical. If \code{TRUE} (default), the p-value
+columns (when present) are displayed via
 \code{\link{format.pval}} so that values indistinguishable from zero at
 double precision render as \code{"< 2.2e-16"}, matching
 \code{\link[stats]{cor.test}}'s convention. Cosmetic only; does not

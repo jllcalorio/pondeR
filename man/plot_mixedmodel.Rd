@@ -14,7 +14,7 @@ plot_mixedmodel(
   label_features = NULL,
   minmax = NULL,
   iqr_k = 1.5,
-  label_size = 3,
+  label_size = NULL,
   label_max_overlap = 20L,
   label_box = FALSE,
   label_color = "match",
@@ -33,9 +33,8 @@ plot_mixedmodel(
   facet_scales = "fixed",
   facet_ncol = NULL,
   theme = "nature",
-  base_size = 12,
-  font_family = "",
-  zoom = 1
+  base_size = 11,
+  font_family = ""
 )
 }
 \arguments{
@@ -74,8 +73,8 @@ Features beyond \eqn{Q1 - k \times IQR} or \eqn{Q3 + k \times IQR} are
 labelled. Set to \code{Inf} to disable automatic annotation entirely.
 Default: \code{1.5}.}
 
-\item{label_size}{Numeric. Font size for point labels (in ggplot2 pt units).
-Default: \code{3}.}
+\item{label_size}{Numeric. Font size for point labels, in points. Default:
+\code{NULL}, derived from \code{base_size}.}
 
 \item{label_max_overlap}{Integer. Passed to \code{ggrepel::geom_text_repel}'s
 \code{max.overlaps}. Default: \code{20}.}
@@ -137,15 +136,11 @@ grid. \code{NULL} lets \code{ggplot2} decide. Default: \code{NULL}.}
 \item{theme}{Character string. One of \code{"nature"} (default, built on
 \code{theme_bw}), \code{"minimal"}, \code{"classic"}, \code{"bw"}.}
 
-\item{base_size}{Numeric. Base font size passed to the theme. Default:
-\code{12}.}
+\item{base_size}{Base font size in points; every text element scales from
+it. Default: \code{11}, which suits a default 7 x 5 inch Quarto figure.}
 
 \item{font_family}{Character. Font family. Default: \code{""} (system
 default).}
-
-\item{zoom}{Numeric scalar. Multiplies all point sizes, label sizes, line
-widths, and base font size proportionally for export scaling. Default:
-\code{1}.}
 }
 \value{
 A \code{ggplot} object (single-term) or a patchwork-composed plot
@@ -165,14 +160,14 @@ the top-\eqn{n} features per panel or to a user-specified set of features.
 \strong{Significance classes}: Each feature is assigned one of three classes
 per term panel:
 \itemize{
-\item \strong{Up} — estimate > \code{estimate_threshold} AND p
+\item \strong{Up} - estimate > \code{estimate_threshold} AND p
 (adjusted or raw) < \code{p_threshold}.
-\item \strong{Down} — estimate < \eqn{-}\code{estimate_threshold} AND p <
+\item \strong{Down} - estimate < \eqn{-}\code{estimate_threshold} AND p <
 \code{p_threshold}.
-\item \strong{NS} — does not meet either criterion.
+\item \strong{NS} - does not meet either criterion.
 }
 When \code{estimate_threshold = 0} (default), the up/down split is purely on
-the sign of the estimate — useful for a single continuous predictor (e.g.,
+the sign of the estimate - useful for a single continuous predictor (e.g.,
 age, time as numeric) where there is no conventional fold-change cutoff.
 
 \strong{ggrepel}: If \pkg{ggrepel} is installed (strongly recommended for
@@ -181,6 +176,7 @@ dense plots), it is used automatically. Install with
 with a slight upward nudge.
 }
 \examples{
+\dontshow{if (requireNamespace("lmerTest", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 set.seed(42)
 meta <- data.frame(subject_id = factor(rep(1:15, each = 2)),
                    time       = rep(c("pre", "post"), 15))
@@ -194,7 +190,7 @@ fit <- run_mixedmodel(x, meta, formula = ".feature ~ time + (1 | subject_id)",
 
 plot_mixedmodel(fit)
 plot_mixedmodel(fit, label_features = "glucose", label_box = TRUE)
-
+\dontshow{\}) # examplesIf}
 }
 \references{
 Bates D, Machler M, Bolker B, Walker S (2015). Fitting linear mixed-effects

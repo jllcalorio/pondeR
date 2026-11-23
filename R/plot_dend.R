@@ -29,38 +29,26 @@
 #'   clusters rows), \code{"cols"} (clusters columns), or \code{"both"}
 #'   (returns a named list of two \code{ggplot2} objects).
 #' @param theme A single character string specifying the plot theme. One of
-#'   \code{"nature"} (default), \code{"classic"}, \code{"minimal"}, or
-#'   \code{"bw"}.
+#'   \code{"nature"} (default), \code{"classic"}, \code{"plos"},
+#'   \code{"minimal"}, \code{"bw"}, \code{"light"}, \code{"dark"}, or
+#'   \code{"gray"}.
 #' @param title A single character string for the plot title. Default
 #'   \code{NULL} (no title).
 #' @param subtitle A single character string for the plot subtitle. Default
 #'   \code{NULL} (no subtitle).
-#' @param global_font_size A single positive numeric specifying the base font
-#'   size in points. Default \code{15}.
-#' @param axis_title_size A single positive numeric for axis title font size.
-#'   Defaults to \code{global_font_size}.
-#' @param axis_text_size A single positive numeric for axis text font size.
-#'   Defaults to \code{global_font_size}.
-#' @param legend_title_size A single positive numeric for legend title font
-#'   size. Defaults to \code{global_font_size}.
-#' @param legend_text_size A single positive numeric for legend text font size.
-#'   Defaults to \code{global_font_size}.
-#' @param plot_title_size A single positive numeric for plot title font size.
-#'   Defaults to \code{global_font_size + 2}.
-#' @param plot_subtitle_size A single positive numeric for plot subtitle font
-#'   size. Defaults to \code{global_font_size}.
-#' @param label_size A single positive numeric controlling the font size of
-#'   leaf labels. Defaults to \code{global_font_size * 0.8}.
+#' @param base_size Base font size in points; every text element scales from
+#'   it. Default \code{11}, which suits a default 7 x 5 inch Quarto figure.
+#' @param title_size,subtitle_size,label_size Font sizes in points for the
+#'   title, subtitle and leaf labels. Default \code{NULL} derives each from
+#'   \code{base_size}.
 #' @param leaf_label_angle A single numeric specifying the rotation angle (in
 #'   degrees) for leaf label text. Default \code{NULL}. When \code{NULL}, the
 #'   angle defaults to 0 if \code{orientation = "rows"} (horizontal labels) or
 #'   90 if \code{orientation = "cols"} (vertical labels).
-#' @param leaf_label_size A single positive numeric controlling the font size of
-#'   leaf labels. Defaults to \code{global_font_size * 0.8}. When provided,
-#'   overrides \code{label_size}.
-#' @param leaf_labels A character vector of custom names for the leaf labels.
-#'   Default \code{NULL}. When provided, must have length equal to the number of
-#'   columns in \code{x}, and will override the default leaf names.
+#' @param leaf_labels A character vector of custom leaf names. Default
+#'   \code{NULL}. Must have one name per row for \code{orientation = "rows"} and
+#'   one per column for \code{orientation = "cols"}; not used with
+#'   \code{orientation = "both"}.
 #' @param line_width A single positive numeric for dendrogram branch width.
 #'   Default \code{0.5}.
 #' @param line_color A single character string for branch colour.
@@ -89,7 +77,7 @@
 #'   overview. \emph{WIREs Data Mining and Knowledge Discovery}, 2(1), 86-97.
 #'   \doi{10.1002/widm.53}
 #'
-#' @examples
+#' @examplesIf requireNamespace("ggdendro", quietly = TRUE)
 #' ## Row dendrogram (default)
 #' plot_dend(mtcars)
 #'
@@ -104,7 +92,7 @@
 #'
 #' ## Custom styling
 #' plot_dend(mtcars, theme = "minimal", line_color = "#2166AC",
-#'           line_width = 0.8, global_font_size = 10,
+#'           line_width = 0.8, base_size = 10,
 #'           title = "Sample Clustering")
 #'
 #' @author John Lennon L. Calorio
@@ -117,29 +105,20 @@ plot_dend <- function(x,
                        theme                    = "nature",
                        title                    = NULL,
                        subtitle                 = NULL,
-                       global_font_size         = 15,
-                       axis_title_size          = NULL,
-                       axis_text_size           = NULL,
-                       legend_title_size        = NULL,
-                       legend_text_size         = NULL,
-                       plot_title_size          = NULL,
-                       plot_subtitle_size       = NULL,
+                       base_size                = 11,
+                       title_size               = NULL,
+                       subtitle_size            = NULL,
                        label_size               = NULL,
                        leaf_label_angle         = NULL,
-                       leaf_label_size          = NULL,
                        leaf_labels              = NULL,
                        line_width               = 0.5,
                        line_color               = "black",
                        ...) {
 
   # --- Dependencies -----------------------------------------------------------
-  if (!requireNamespace("ggplot2",  quietly = TRUE))
-    stop("Package 'ggplot2' is required. Install with: install.packages('ggplot2')",
-         call. = FALSE)
   if (!requireNamespace("ggdendro", quietly = TRUE))
     stop("Package 'ggdendro' is required. Install with: install.packages('ggdendro')",
          call. = FALSE)
-
   # --- Input validation -------------------------------------------------------
   if (!is.data.frame(x) && !is.matrix(x))
     stop("`x` must be a data frame, tibble, or matrix.", call. = FALSE)
@@ -165,63 +144,29 @@ plot_dend <- function(x,
     stop("`orientation` must be one of: ",
          paste0('"', valid_orient, '"', collapse = ", "), ".", call. = FALSE)
 
-  valid_themes <- c("nature", "classic", "minimal", "bw")
-  if (!theme %in% valid_themes)
-    stop("`theme` must be one of: ",
-         paste0('"', valid_themes, '"', collapse = ", "), ".", call. = FALSE)
-
   if (!is.null(title) && (!is.character(title) || length(title) != 1L))
     stop("`title` must be a single character string or NULL.", call. = FALSE)
   if (!is.null(subtitle) && (!is.character(subtitle) || length(subtitle) != 1L))
     stop("`subtitle` must be a single character string or NULL.", call. = FALSE)
 
-  if (!is.numeric(global_font_size) || length(global_font_size) != 1L ||
-      global_font_size <= 0)
-    stop("`global_font_size` must be a single positive numeric.", call. = FALSE)
-
-  .fs <- function(param, default) {
-    if (!is.null(param)) {
-      if (!is.numeric(param) || length(param) != 1L || param <= 0)
-        stop(deparse(substitute(param)),
-             " must be a single positive numeric.", call. = FALSE)
-      param
-    } else {
-      default
-    }
-  }
-
-  fs_axis_title    <- .fs(axis_title_size,    global_font_size)
-  fs_axis_text     <- .fs(axis_text_size,     global_font_size)
-  fs_legend_title  <- .fs(legend_title_size,  global_font_size)
-  fs_legend_text   <- .fs(legend_text_size,   global_font_size)
-  fs_plot_title    <- .fs(plot_title_size,    global_font_size + 2)
-  fs_plot_subtitle <- .fs(plot_subtitle_size, global_font_size)
-  fs_label         <- .fs(label_size,         global_font_size * 0.8)
-
+  sizes <- .text_sizes(base_size, title_size, subtitle_size, label = label_size)
   if (!is.numeric(line_width) || length(line_width) != 1L || line_width <= 0)
     stop("`line_width` must be a single positive numeric.", call. = FALSE)
   if (!is.character(line_color) || length(line_color) != 1L)
     stop("`line_color` must be a single character string.", call. = FALSE)
 
   # Determine leaf label angle based on orientation if not provided
-  if (is.null(leaf_label_angle)) {
-    leaf_label_angle <- if (orientation == "rows") 0 else 90
-  } else {
-    if (!is.numeric(leaf_label_angle) || length(leaf_label_angle) != 1L)
-      stop("`leaf_label_angle` must be a single numeric value or NULL.",
-           call. = FALSE)
-  }
-
-  # Determine leaf label size; defaults to label_size, which defaults to global_font_size * 0.8
-  fs_leaf_label <- .fs(leaf_label_size, .fs(label_size, global_font_size * 0.8))
+  if (!is.null(leaf_label_angle) &&
+      (!is.numeric(leaf_label_angle) || length(leaf_label_angle) != 1L))
+    stop("`leaf_label_angle` must be a single numeric value or NULL.",
+         call. = FALSE)
 
   # Validate leaf_labels if provided
   if (!is.null(leaf_labels)) {
     if (!is.character(leaf_labels))
       stop("`leaf_labels` must be a character vector or NULL.", call. = FALSE)
-    if (length(leaf_labels) != ncol(x))
-      stop("`leaf_labels` must have length equal to the number of columns in `x`.",
-           call. = FALSE)
+    if (orientation == "both")
+      stop("`leaf_labels` needs `orientation = \"rows\"` or `\"cols\"`.", call. = FALSE)
   }
 
   # --- Prepare numeric matrix -------------------------------------------------
@@ -232,7 +177,13 @@ plot_dend <- function(x,
 
   # Apply custom row names if provided (before any row filtering)
   if (!is.null(leaf_labels)) {
-    colnames(mat) <- leaf_labels
+    n_leaf <- if (orientation == "rows") nrow(mat) else ncol(mat)
+    if (length(leaf_labels) != n_leaf)
+      stop("`leaf_labels` must have ", n_leaf, " element(s), one per ",
+           if (orientation == "rows") "row" else "numeric column", " of `x`.",
+           call. = FALSE)
+    if (orientation == "rows") rownames(mat) <- leaf_labels
+    else colnames(mat) <- leaf_labels
   }
 
   row_ok <- rowSums(!is.na(mat)) > 0L
@@ -269,7 +220,15 @@ plot_dend <- function(x,
     seg <- ggdendro::segment(ddr)
     lab <- ggdendro::label(ddr)
 
-    # Always build ggplot first, then add theme and theme() overrides
+    # Leaf names are axis labels, so ggplot2 reserves the room they need
+    angle     <- leaf_label_angle %||% (if (flip) 0 else 90)
+    leaf_text <- ggplot2::element_text(
+      size  = sizes$label,
+      angle = angle,
+      hjust = if (flip || angle != 0) 1 else 0.5,
+      vjust = if (flip || angle != 0) 0.5 else 1
+    )
+
     p <- ggplot2::ggplot() +
       ggplot2::geom_segment(
         data      = seg,
@@ -277,39 +236,22 @@ plot_dend <- function(x,
         linewidth = line_width,
         colour    = line_color
       ) +
-      ggplot2::geom_text(
-        data    = lab,
-        ggplot2::aes(x = x, y = y, label = label),
-        hjust   = 1,
-        angle   = leaf_label_angle,
-        size    = fs_leaf_label / ggplot2::.pt,
-        nudge_y = -max(seg$y, na.rm = TRUE) * 0.02
-      ) +
-      ggplot2::labs(title = plot_title, subtitle = plot_subtitle)
+      ggplot2::scale_x_continuous(breaks = lab$x, labels = as.character(lab$label),
+                                  expand = ggplot2::expansion(add = 0.5)) +
+      ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0, 0.02))) +
+      ggplot2::labs(title = plot_title, subtitle = plot_subtitle, x = NULL, y = NULL)
 
-    if (flip) p <- p + ggplot2::coord_flip(clip = "off")
-
-    base_theme_fn <- switch(theme,
-      nature  = ggplot2::theme_bw,
-      classic = ggplot2::theme_classic,
-      minimal = ggplot2::theme_minimal,
-      bw      = ggplot2::theme_bw
-    )
+    if (flip) p <- p + ggplot2::coord_flip()
 
     p +
-      base_theme_fn(base_size = global_font_size) +
+      .ponder_theme(theme, sizes) +
       ggplot2::theme(
         panel.grid.major = ggplot2::element_blank(),
         panel.grid.minor = ggplot2::element_blank(),
         panel.border     = ggplot2::element_blank(),
-        axis.title       = ggplot2::element_blank(),
-        axis.text        = ggplot2::element_blank(),
-        axis.ticks       = ggplot2::element_blank(),
-        plot.title       = ggplot2::element_text(
-          size = fs_plot_title, face = "bold"),
-        plot.subtitle    = ggplot2::element_text(size = fs_plot_subtitle),
-        legend.title     = ggplot2::element_text(size = fs_legend_title),
-        legend.text      = ggplot2::element_text(size = fs_legend_text)
+        axis.text.x      = if (flip) ggplot2::element_blank() else leaf_text,
+        axis.text.y      = if (flip) leaf_text else ggplot2::element_blank(),
+        axis.ticks       = ggplot2::element_blank()
       )
   }
 

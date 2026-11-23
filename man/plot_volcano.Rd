@@ -16,20 +16,20 @@ plot_volcano(
   annotate = NULL,
   annotate2 = NULL,
   use_ggrepel = TRUE,
-  up_color = c("red", "purple", "yellow"),
-  down_color = c("blue", "green", "cyan"),
+  up_color = c("red", "purple", "#E69F00"),
+  down_color = c("blue", "#009E73", "#56B4E9"),
   ns_color = "grey60",
   neglog10 = TRUE,
   h_color = NULL,
   v_color = NULL,
-  size = 5,
+  size = 2,
   alpha = 0.6,
   theme = "nature",
   plot_title = NULL,
   plot_subtitle = NULL,
   xlab = NULL,
   ylab = NULL,
-  global_font_size = 25,
+  base_size = 11,
   title_size = NULL,
   subtitle_size = NULL,
   xlab_size = NULL,
@@ -58,7 +58,7 @@ Both objects are supplied. Fold changes are sourced from
 and p-values are sourced from
 \code{\link{run_diff}()}'s \code{$summary_table}, matched on feature name.
 When \code{\link{run_foldchange}()} produced more than one pairwise
-comparison, the \code{comparison} column is automatically used as
+comparison, the \code{Comparison} column is automatically used as
 \code{group}, overlaying all comparisons on a single plot with
 distinct colours. This is the recommended usage.}
 \item{\code{list(fc = <run_foldchange>)}}{
@@ -131,11 +131,11 @@ connector segments. If \code{FALSE}, uses \code{ggplot2::geom_text()}.}
 \code{group} is \code{NULL} only the first element is used (default
 \code{"red"}). When \code{group} is supplied, one colour per group level
 is used; if fewer colours than levels are provided they are recycled with
-a warning. Default \code{c("red", "purple", "yellow")}.}
+a warning. Default \code{c("red", "purple", "#E69F00")}.}
 
 \item{down_color}{Character vector of colours for down-regulated points.
 Same recycling behaviour as \code{up_color}. Default
-\code{c("blue", "green", "cyan")}.}
+\code{c("blue", "#009E73", "#56B4E9")}.}
 
 \item{ns_color}{Colour for non-significant points. Default \code{"grey60"}.}
 
@@ -152,7 +152,7 @@ single string colours both lines; a two-element vector colours the
 inherits \code{ns_color}.}
 
 \item{size}{A single positive numeric value controlling the point size.
-Default \code{5}.}
+Default \code{2}.}
 
 \item{alpha}{A single numeric value in \eqn{(0, 1]} controlling point
 transparency. Overlapping points appear darker due to additive blending.
@@ -174,26 +174,12 @@ generates an automatic title.}
 \item{ylab}{Character string or \code{NULL}. Default \code{NULL} uses
 \code{"-log10(p-value)"} or \code{"p-value"}.}
 
-\item{global_font_size}{A positive numeric value setting the base font size
-for all text elements. Default \code{25}.}
+\item{base_size}{Base font size in points; every text element scales from
+it. Default \code{11}, which suits a default 7 x 5 inch Quarto figure.}
 
-\item{title_size}{Override for title font size. Default \code{NULL}.}
-
-\item{subtitle_size}{Override for subtitle font size. Default \code{NULL}.}
-
-\item{xlab_size}{Override for x-axis label font size. Default \code{NULL}.}
-
-\item{ylab_size}{Override for y-axis label font size. Default \code{NULL}.}
-
-\item{axis_text_size}{Override for axis tick label font size. Default
-\code{NULL}.}
-
-\item{label_size}{Font size for point annotation labels. Default \code{NULL}
-(derived from \code{global_font_size} at \eqn{0.75\times}).}
-
-\item{legend_size}{Font size for legend text. Respects
-\code{global_font_size} (\eqn{0.85\times}) when \code{NULL}. Default
-\code{NULL}.}
+\item{title_size, subtitle_size, xlab_size, ylab_size, axis_text_size, label_size, legend_size}{Font sizes in points for the title, subtitle, x-axis label, y-axis label,
+tick labels, point labels and legend. Default \code{NULL} derives each
+from \code{base_size}.}
 
 \item{legend_title}{A single character string for the legend title. Default
 \code{NULL} (no legend title shown).}
@@ -209,7 +195,7 @@ A named list with elements:
 \describe{
 \item{\code{plots}}{A named list of \code{ggplot} objects.}
 \item{\code{classified}}{A \code{data.frame} identical to \code{x} with
-an additional column \code{.regulation} (\code{"Up"}, \code{"Down"},
+an additional column \code{Regulation} (\code{"Up"}, \code{"Down"},
 or \code{"NS"}).}
 \item{\code{params}}{A list of all resolved parameter values.}
 }

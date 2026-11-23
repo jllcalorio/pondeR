@@ -15,12 +15,12 @@ plot_oddsratio(
   dot_size = 3,
   line_size = 0.8,
   theme = "nature",
-  global_font_size = 15,
+  base_size = 11,
   plot_title = NULL,
   plot_subtitle = NULL,
   x_label = NULL,
   y_label = NULL,
-  font_family = "Helvetica"
+  font_family = ""
 )
 }
 \arguments{
@@ -43,7 +43,7 @@ supplying only one of \code{low} / \code{high} raises an error.}
 
 \item{ci}{Numeric scalar (default \code{95}). The confidence level expressed
 as a percentage (e.g., \code{95}, \code{99}). Used only in axis and legend
-labels — it does not compute any CI values.}
+labels - it does not compute any CI values.}
 
 \item{feature_col}{Optional. A single character string giving the name of the
 column in \code{x} to use as feature/row labels on the y-axis. If
@@ -62,12 +62,12 @@ bars. Only used when both \code{low} and \code{high} are supplied. Defaults
 to \code{0.8}.}
 
 \item{theme}{Character string specifying the ggplot2 theme. One of
-\code{"nature"} (default), \code{"bw"}, \code{"classic"}, \code{"minimal"},
-\code{"gray"}, or \code{"dark"}.}
+\code{"nature"} (default), \code{"classic"}, \code{"plos"},
+\code{"minimal"}, \code{"bw"}, \code{"light"}, \code{"dark"}, or
+\code{"gray"}.}
 
-\item{global_font_size}{Numeric scalar. Base font size (in pt) applied to all
-text elements in the plot (axis text, axis titles, plot title, subtitle,
-caption, legend). Defaults to \code{15}.}
+\item{base_size}{Base font size in points; every text element scales from
+it. Defaults to \code{11}, which suits a default 7 x 5 inch Quarto figure.}
 
 \item{plot_title}{Character string. Main title of the plot. Defaults to
 \code{NULL} (no title).}
@@ -84,7 +84,7 @@ percentage from \code{ci}).}
 \code{NULL} (no label).}
 
 \item{font_family}{Character string. Font family for all text elements.
-Defaults to \code{"Helvetica"}.}
+Defaults to \code{""} (the graphics device's default).}
 }
 \value{
 A \code{ggplot2} object that can be further customized, saved with
@@ -106,9 +106,9 @@ etc.).
 
 Each odds ratio point is colored by comparing its value to 1:
 \itemize{
-\item OR < 1  → first color in \code{colors} (default \code{"blue"})
-\item OR = 1  → second color in \code{colors} (default \code{"grey"})
-\item OR > 1  → third color in \code{colors} (default \code{"red"})
+\item OR < 1  -> first color in \code{colors} (default \code{"blue"})
+\item OR = 1  -> second color in \code{colors} (default \code{"grey"})
+\item OR > 1  -> third color in \code{colors} (default \code{"red"})
 }
 A small numerical tolerance (\code{.Machine$double.eps^0.5}) is applied when
 testing for exact equality to 1.
@@ -126,7 +126,7 @@ Individual rows where \code{low} and/or \code{high} are \code{NA} will have
 their error bars silently omitted; the OR dot is still plotted.
 }
 \examples{
-# ── Basic usage: OR only ─────────────────────────────────────────────────────
+# -- Basic usage: OR only -----------------------------------------------------
 df_basic <- data.frame(
   feature  = c("Age", "BMI", "Smoking", "Hypertension", "Diabetes"),
   OR       = c(1.45, 0.82, 2.31, 0.55, 1.02),
@@ -136,7 +136,7 @@ rownames(df_basic) <- df_basic$feature
 
 plot_oddsratio(x = df_basic, or = "OR")
 
-# ── With confidence intervals ────────────────────────────────────────────────
+# -- With confidence intervals ------------------------------------------------
 df_ci <- data.frame(
   feature  = c("Age", "BMI", "Smoking", "Hypertension", "Diabetes"),
   OR       = c(1.45, 0.82, 2.31, 0.55, 1.02),
@@ -155,7 +155,7 @@ plot_oddsratio(
   plot_title  = "Logistic Regression: Odds Ratios"
 )
 
-# ── Special-character column names ───────────────────────────────────────────
+# -- Special-character column names -------------------------------------------
 df_special <- data.frame(
   check.names = FALSE,
   "OR (adjusted)" = c(0.73, 1.88, 1.05),
@@ -171,7 +171,7 @@ plot_oddsratio(
   high = "Upper 95\% CI"
 )
 
-# ── Custom colors and theme ──────────────────────────────────────────────────
+# -- Custom colors and theme --------------------------------------------------
 plot_oddsratio(
   x      = df_ci,
   or     = "OR",
@@ -180,11 +180,12 @@ plot_oddsratio(
   feature_col = "feature",
   colors = c("#2166AC", "#878787", "#D6604D"),
   theme  = "classic",
-  global_font_size = 13,
+  base_size  = 12,
   plot_title = "Forest Plot",
   x_label    = "Odds Ratio (95\% CI)",
   y_label    = "Predictor"
 )
+
 
 }
 \references{

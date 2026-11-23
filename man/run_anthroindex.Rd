@@ -123,10 +123,10 @@ the bilateral pitting oedema variable in \code{x}. Valid cell values are
 WHO severity labels into a single category, across \emph{all} indices
 (not just BMI-for-age). When \code{TRUE}, combines all stages of Obesity
 ("Stage 1 Obesity", "Stage 2 Obesity", "Stage 3 Obesity", and "Obesity")
-into just \code{"Obese"}, and — via the \code{merge_wasted},
+into just \code{"Obese"}, and - via the \code{merge_wasted},
 \code{merge_malnourished}, \code{merge_underweight}, \code{merge_stunted},
 and \code{merge_thinness} arguments below, each of which defaults to this
-value — also collapses the wasted, malnourished, underweight, stunted,
+value - also collapses the wasted, malnourished, underweight, stunted,
 and thinness categories for wfa, hfa, wfh, and acfa. Defaults to
 \code{FALSE}.}
 
@@ -157,7 +157,7 @@ Defaults to \code{"Nutritional Status"}.}
 \item{simplify}{Logical. When \code{TRUE} (default), excludes additional
 flag and auxiliary z-score columns (e.g., \code{fbmi}, \code{zbmia},
 \code{sbmi}) from the result, keeping only supporting columns and the
-primary \code{z_score}.}
+primary \code{Z-score}.}
 
 \item{return}{A character string or vector specifying which anthropometric
 indices to compute. One or more of: \code{"wfa"}, \code{"hfa"},
@@ -166,7 +166,7 @@ indices to compute. One or more of: \code{"wfa"}, \code{"hfa"},
 eight WHO indices (\code{"bmi"} is not included by default). Unlike the
 other indices, \code{"bmi"} does not use \code{\link[anthro]{anthro_zscores}}
 or \code{\link[anthroplus]{anthroplus_zscores}}; it is classified using
-the WHO adult BMI cut-offs applied to every row regardless of age — see
+the WHO adult BMI cut-offs applied to every row regardless of age - see
 \strong{Details}.}
 }
 \value{
@@ -178,17 +178,17 @@ The columns are ordered as follows:
 \item All original columns from \code{x} (returned as-is, in their
 original order).
 \item Supporting columns from \code{anthro_zscores} (e.g.,
-\code{age_in_days}, \code{age_in_months}, \code{clenhei},
-\code{cbmi}).
-\item \code{z_score} — the primary z-score for the requested index.
-For BMIFA: sourced from \pkg{anthro} (\code{zbmi}) for ages 0–< 5 years
-and from \pkg{anthroplus} (\code{zbfa}) for ages 5–< 20 years. For ages
-\eqn{\geq} 20 years, \code{z_score} is \code{NA} (classification uses
+\code{Age (days)}, \code{Age (months)}, \code{Length/height (cm)},
+\code{BMI}).
+\item \code{Z-score} - the primary z-score for the requested index.
+For BMIFA: sourced from \pkg{anthro} (\code{zbmi}) for ages 0-< 5 years
+and from \pkg{anthroplus} (\code{zbfa}) for ages 5-< 20 years. For ages
+\eqn{\geq} 20 years, \code{Z-score} is \code{NA} (classification uses
 raw BMI instead).
 \item Additional flag and auxiliary columns for the index (e.g.,
 \code{fbmi}, \code{zbmia}, \code{sbmi}). These are omitted if
 \code{simplify = TRUE}.
-\item Nutritional Status — a character column (named via
+\item Nutritional Status - a character column (named via
 \code{status_col_name}) containing the WHO
 classification label based on z-score (ages < 20 years) or raw BMI
 (ages \eqn{\geq} 20 years, BMIFA only).
@@ -206,10 +206,10 @@ objects is returned, with element names matching the index codes (e.g.,
 }
 \description{
 Computes WHO Child Growth Standards z-scores for up to eight anthropometric
-indices—weight-for-age (WFA), length/height-for-age (HFA),
+indices-weight-for-age (WFA), length/height-for-age (HFA),
 weight-for-length/height (WFH), BMI-for-age (BMIFA), head
 circumference-for-age (HCFA), arm circumference-for-age (ACFA), triceps
-skinfold-for-age (TSFA), and subscapular skinfold-for-age (SSFA)—using
+skinfold-for-age (TSFA), and subscapular skinfold-for-age (SSFA)-using
 \code{\link[anthro]{anthro_zscores}} (WHO Child Growth Standards 2006) for
 ages 0 to < 5 years, and
 \code{\link[anthroplus]{anthroplus_zscores}} (WHO Growth Reference 2007)
@@ -266,13 +266,13 @@ The two WHO packages cover different age windows. The table below shows
 which package supplies the z-score for each index and age group:\tabular{llll}{
    Index \tab 0 to < 5 years \tab 5 to < 20 years \tab \eqn{\geq} 20 years \cr
    BMIFA \tab \pkg{anthro} (\code{zbmi}) \tab \pkg{anthroplus} (\code{zbfa}) \tab raw BMI \cr
-   WFA \tab \pkg{anthro} (\code{zwei}) \tab \pkg{anthroplus} (\code{zwfa}) \tab — \cr
-   HFA \tab \pkg{anthro} (\code{zlen}) \tab \pkg{anthroplus} (\code{zhfa}) \tab — \cr
-   WFH, HCFA, ACFA, TSFA, SSFA \tab \pkg{anthro} \tab not available \tab — \cr
+   WFA \tab \pkg{anthro} (\code{zwei}) \tab \pkg{anthroplus} (\code{zwfa}) \tab - \cr
+   HFA \tab \pkg{anthro} (\code{zlen}) \tab \pkg{anthroplus} (\code{zhfa}) \tab - \cr
+   WFH, HCFA, ACFA, TSFA, SSFA \tab \pkg{anthro} \tab not available \tab - \cr
 }
 
 
-All z-scores are stored in a unified \code{z_score} column in the output.
+All z-scores are stored in a unified \code{Z-score} column in the output.
 }
 
 \subsection{Partial results}{
@@ -281,15 +281,15 @@ When a requested index cannot be computed because its required measurement
 column was not supplied, a warning is issued and that index is silently
 skipped. Required columns per index:
 \itemize{
-\item \code{wfa}   — \code{weight_col}
-\item \code{hfa}   — \code{height_col}
-\item \code{wfh}   — \code{weight_col} + \code{height_col}
-\item \code{bmifa} — \code{weight_col} + \code{height_col}
-\item \code{hcfa}  — \code{headcircumference_col}
-\item \code{acfa}  — \code{armcircumference_col}
-\item \code{tsfa}  — \code{tricepskinfold_col}
-\item \code{ssfa}  — \code{subscapularskinfold_col}
-\item \code{bmi}   — \code{weight_col} + \code{height_col}
+\item \code{wfa}   - \code{weight_col}
+\item \code{hfa}   - \code{height_col}
+\item \code{wfh}   - \code{weight_col} + \code{height_col}
+\item \code{bmifa} - \code{weight_col} + \code{height_col}
+\item \code{hcfa}  - \code{headcircumference_col}
+\item \code{acfa}  - \code{armcircumference_col}
+\item \code{tsfa}  - \code{tricepskinfold_col}
+\item \code{ssfa}  - \code{subscapularskinfold_col}
+\item \code{bmi}   - \code{weight_col} + \code{height_col}
 }
 }
 
@@ -307,8 +307,8 @@ obtain metres (an exact conversion, since 1 m = 100 cm exactly). The
 resulting data frame has a numeric \code{bmi} column, and
 \code{status_col_name} is populated using the WHO \strong{adult} BMI
 cut-offs (see the 20 years and above table below) applied to every row
-regardless of age — no z-score is involved. This differs from
-\code{bmifa}, whose \code{cbmi} column is also raw BMI but is only
+regardless of age - no z-score is involved. This differs from
+\code{bmifa}, whose \code{BMI} column is also raw BMI but is only
 classified with these adult cut-offs for participants aged
 \eqn{\geq} 20 years; younger ages use z-score-based classification instead.
 }
@@ -334,7 +334,7 @@ classified with these adult cut-offs for participants aged
 
 }
 
-\subsection{5 to 19 years — BMI-for-age only}{\tabular{ll}{
+\subsection{5 to 19 years - BMI-for-age only}{\tabular{ll}{
    Nutritional status \tab Z-score threshold \cr
    Obesity \tab > +2 SD \cr
    Overweight \tab > +1 SD and \eqn{\leq} +2 SD \cr
@@ -344,13 +344,13 @@ classified with these adult cut-offs for participants aged
 }
 
 
-WHO nutritional status classifications for ages 5–19 years are currently
+WHO nutritional status classifications for ages 5-19 years are currently
 only available for BMIFA. For all other indices in participants aged 5 years
 and above, \code{Nutritional Status} will be \code{NA} with an informational
 message.
 }
 
-\subsection{20 years and above — BMI (absolute value) only}{
+\subsection{20 years and above - BMI (absolute value) only}{
 
 For participants aged 20 years and above, nutritional status is derived from
 the computed BMI value directly (not from a z-score), and is only populated
@@ -386,7 +386,7 @@ if (requireNamespace("anthro", quietly = TRUE)) {
     oedema   = sample(c("n", "y"), n, replace = TRUE, prob = c(0.95, 0.05))
   )
 
-  # --- Multiple indices — returns a named list ---------------------------
+  # --- Multiple indices - returns a named list ---------------------------
   res <- run_anthroindex(
     x               = children,
     sex_col         = "sex",
@@ -401,10 +401,10 @@ if (requireNamespace("anthro", quietly = TRUE)) {
     return          = c("wfa", "hfa", "wfh", "bmifa")
   )
 
-  head(res$wfa[,  c("z_score", "Nutritional Status")])
-  head(res$bmifa[, c("cbmi", "z_score", "Nutritional Status")])
+  head(res$wfa[,  c("Z-score", "Nutritional Status")])
+  head(res$bmifa[, c("BMI", "Z-score", "Nutritional Status")])
 
-  # --- Single index — returns a plain data frame -------------------------
+  # --- Single index - returns a plain data frame -------------------------
   wfa_only <- run_anthroindex(
     x               = children,
     sex_col         = "sex",
@@ -437,7 +437,7 @@ if (requireNamespace("anthro", quietly = TRUE)) {
       height_measured = "H",
       return          = "bmifa"
     )
-    bmi_res[, c("age_yr", "cbmi", "z_score", "Nutritional Status")]
+    bmi_res[, c("age_yr", "BMI", "Z-score", "Nutritional Status")]
   }
 }
 
@@ -447,13 +447,13 @@ WHO Multicentre Growth Reference Study Group (2006). \emph{WHO Child Growth
 Standards: Length/height-for-age, weight-for-age, weight-for-length,
 weight-for-height and body mass index-for-age: Methods and development}.
 Geneva: World Health Organization; pp 312.
-\url{http://www.who.int/childgrowth/publications/en/}
+\url{https://www.who.int/publications/i/item/924154693X}
 
 WHO Multicentre Growth Reference Study Group (2007). \emph{WHO Child Growth
 Standards: Head circumference-for-age, arm circumference-for-age, triceps
 skinfold-for-age and subscapular skinfold-for-age: Methods and development}.
 Geneva: World Health Organization; pp 217.
-\url{http://www.who.int/childgrowth/publications/en/}
+\url{https://www.who.int/publications/i/item/9789241547185}
 
 de Onis M, Onyango AW, Borghi E, Siyam A, Nishida C, Siekmann J (2007).
 Development of a WHO growth reference for school-aged children and
@@ -470,13 +470,13 @@ classification of nutritional status of infants and children. Geneva: WHO.
 World Health Organization (2006). \emph{WHO child growth standards: methods
 and development. Length/height-for-age, weight-for-age, weight-for-length,
 weight-for-height and body mass index-for-age}. Geneva: WHO.
-\url{http://www.who.int/nutrition/publications/childgrowthstandards_technical_report_1/en/}
+\url{https://www.who.int/publications/i/item/924154693X}
 
 Note: Weight-for-length is used for infants and young children aged 0-23
 months; weight-for-height is used for children aged 24 months and older.
 
 World Health Organization. Nutrition Landscape Information System (NLiS):
-Malnutrition in Women — Moderate and severe thinness, underweight,
+Malnutrition in Women - Moderate and severe thinness, underweight,
 overweight, obesity. Geneva: WHO.
 \url{https://apps.who.int/nutrition/landscape/help.aspx?menu=0&helpid=420}
 

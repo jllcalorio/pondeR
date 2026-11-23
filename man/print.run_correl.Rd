@@ -9,13 +9,13 @@
 \arguments{
 \item{x}{A \code{\link{run_correl}} object.}
 
-\item{format_p}{Logical. If \code{TRUE} (default), the \code{p_value} and
-\code{p_value_adj} columns (when present) are displayed via
+\item{format_p}{Logical. If \code{TRUE} (default), the p-value
+columns (when present) are displayed via
 \code{\link{format.pval}} so that values indistinguishable from zero at
 double precision print as \code{"< 2.2e-16"}, matching
 \code{stats::cor.test}'s convention. Purely cosmetic: the object
 returned (invisibly) is unchanged, so p-values remain numeric for
-downstream filtering (e.g. \code{filter(p_value_adj < .05)}).}
+downstream filtering.}
 
 \item{...}{Additional arguments passed to \code{print.data.frame}.}
 }

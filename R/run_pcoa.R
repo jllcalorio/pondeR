@@ -37,7 +37,7 @@
 #' @param perms A positive integer. Number of permutations for PERMANOVA.
 #'   Passed as the \code{permutations} argument to \code{\link[vegan]{adonis2}}.
 #'   The same value is used when \code{dispersion = TRUE}.
-#'   Default: \code{9999}.
+#'   Default: \code{999}.
 #' @param groups A single character string naming a column of \code{metadata} to
 #'   use for pairwise post-hoc testing via \code{OmicFlow::pairwise_adonis}.
 #'   When \code{NULL} (default), post-hoc analysis is skipped.
@@ -250,7 +250,7 @@ run_pcoa <- function(x,
                      correction = "none",
                      metadata   = NULL,
                      rhs        = NULL,
-                     perms      = 9999L,
+                     perms      = 999L,
                      groups     = NULL,
                      p_adjust   = "BH",
                      dispersion  = FALSE,
@@ -258,6 +258,14 @@ run_pcoa <- function(x,
 
   # -- 0. Capture call ----------------------------------------------------------
   .call <- match.call()
+
+  # dimsprepr result: distances such as Bray-Curtis need the non-negative,
+  # normalized data rather than the scaled data
+  if (.is_di(x)) {
+    di <- .di_unpack(x, stage = "normalized")
+    if (is.null(metadata)) metadata <- di$metadata
+    x <- di$data
+  }
 
   # -- 1. Check required packages -----------------------------------------------
   if (!requireNamespace("vegan", quietly = TRUE)) {
@@ -572,19 +580,12 @@ run_pcoa <- function(x,
       .split_dots_adonis2(all_dots)
     }
 
+    # Call by name: adonis2() deparses its call, which breaks on inlined data
+    perm_by    <- adonis_args[["by"]] %||% "margin"
+    perm_extra <- adonis_args[setdiff(names(adonis_args), "by")]
     adonis_out <- tryCatch(
-      do.call(
-        vegan::adonis2,
-        c(
-          list(
-            formula      = perm_formula,
-            data         = perm_data,
-            permutations = perms,
-            by           = adonis_args[["by"]] %||% "margin"
-          ),
-          adonis_args[setdiff(names(adonis_args), "by")]
-        )
-      ),
+      rlang::inject(vegan::adonis2(perm_formula, data = perm_data, permutations = perms,
+                                   by = perm_by, !!!perm_extra)),
       error = function(e) {
         stop(
           "vegan::adonis2() failed:\n  ", conditionMessage(e), "\n",
@@ -594,10 +595,6 @@ run_pcoa <- function(x,
         )
       }
     )
-
-    # # Extract key scalars for the grouping term (first data row)
-    # adonis_df  <- as.data.frame(adonis_out)
-    # grp_row    <- adonis_df[rhs, , drop = FALSE]
 
     # Extract key scalars for the grouping term (first data row)
     adonis_df  <- as.data.frame(adonis_out)
@@ -719,7 +716,8 @@ run_pcoa <- function(x,
     betadisper         = betadisper_result,
     permdisp           = permdisp_result,
     call               = .call,
-    p_adjust           = p_adjust
+    p_adjust           = p_adjust,
+    metadata           = metadata
   )
   class(result) <- c("run_pcoa", "list")
   result
@@ -783,8 +781,8 @@ summary.run_pcoa <- function(object, n_axes = 5L, ...) {
   eig_df <- data.frame(
     Axis           = names(object$variance_explained)[seq_len(show_n)],
     Eigenvalue     = round(object$eigenvalues[seq_len(show_n)], 5L),
-    Variance_pct   = round(object$variance_explained[seq_len(show_n)], 3L),
-    Cumulative_pct = round(cumsum(object$variance_explained)[seq_len(show_n)], 3L),
+    "Variance explained (%)" = round(object$variance_explained[seq_len(show_n)], 3L),
+    "Cumulative (%)" = round(cumsum(object$variance_explained)[seq_len(show_n)], 3L),
     stringsAsFactors = FALSE,
     check.names    = FALSE
   )

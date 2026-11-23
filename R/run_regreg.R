@@ -3,8 +3,8 @@
 #' @title Regularized Regression with Cross-Validation (Ridge, Elastic Net, LASSO)
 #'
 #' @description
-#' Fits regularized regression models — Ridge (alpha = 0), LASSO (alpha = 1), or
-#' Elastic Net (0 < alpha < 1) — with k-fold cross-validation via
+#' Fits regularized regression models - Ridge (alpha = 0), LASSO (alpha = 1), or
+#' Elastic Net (0 < alpha < 1) - with k-fold cross-validation via
 #' \code{\link[glmnet]{cv.glmnet}}. Supports both categorical (binary and multinomial
 #' classification) and continuous (Gaussian regression) dependent variables.
 #' When multiple alpha values are supplied, all are evaluated on identical
@@ -121,7 +121,7 @@
 #'   for coordinate descent convergence. Default: \code{100000}.
 #' @param seed A single numeric value passed to \code{set.seed()} for
 #'   reproducibility of the train/test split and cross-validation fold
-#'   assignment. Set to \code{NULL} to disable. Default: \code{123}.
+#'   assignment. Default \code{NULL} leaves the random number generator alone.
 #'
 #' @return A named list of class \code{"run_regreg"} with the following elements:
 #' \describe{
@@ -138,7 +138,7 @@
 #'         regression).}
 #'       \item{\code{Coefficients}}{A \code{data.frame} of non-zero coefficients
 #'         (intercept included if non-zero). Columns: \code{Feature},
-#'         \code{Coefficient}, and \code{OddsRatio} (classification) or just
+#'         \code{Coefficient}, and \code{Odds ratio} (classification) or just
 #'         \code{Feature} and \code{Coefficient} (regression). Multinomial
 #'         models include a leading \code{Comparison} column.}
 #'       \item{\code{N_Coefficients}}{Integer; total non-zero coefficients
@@ -158,7 +158,6 @@
 #'     \code{NULL} when only one alpha is tested.}
 #' }
 #'
-#' @importFrom stats predict
 #' 
 #' @author John Lennon L. Calorio
 #'
@@ -284,7 +283,7 @@ run_regreg <- function(
     parallel      = FALSE,
     standardize   = FALSE,
     maxit         = 100000L,
-    seed          = 123
+    seed          = NULL
 ) {
 
   # ---------------------------------------------------------------------------
@@ -299,11 +298,12 @@ run_regreg <- function(
   # ---------------------------------------------------------------------------
   # 0.5 run_DIpreprocess extraction
   # ---------------------------------------------------------------------------
-  if (inherits(x, "run_DIpreprocess")) {
-    if (is.null(metadata))
-      metadata <- if (!is.null(x$metadata_merged)) x$metadata_merged else x$metadata
-    qc_types <- if (!is.null(x$parameters$qc_types)) x$parameters$qc_types else qc_types
-    x <- if (!is.null(x$data_nonpls_merged)) x$data_nonpls_merged else x$data_nonpls
+  if (.is_di(x)) {
+    di <- .di_unpack(x)
+    if (is.null(metadata)) metadata <- di$metadata
+    if (missing(pred)) pred <- di$group
+    qc_types <- di$qc
+    x <- di$data
   } else if (!is.data.frame(x) && !is.matrix(x)) {
     stop("'x' must be a data.frame, matrix, or an object of class 'run_DIpreprocess'.",
          call. = FALSE)
@@ -339,7 +339,6 @@ run_regreg <- function(
     keep     <- !grp_raw %in% qc_types
     n_removed <- sum(!keep)
     if (n_removed > 0L) {
-      message(n_removed, " row(s) removed based on 'qc_types'.")
       x        <- x[keep, , drop = FALSE]
       metadata <- metadata[keep, , drop = FALSE]
     }
@@ -447,8 +446,8 @@ run_regreg <- function(
     alpha_perf[[i]] <- data.frame(
       Alpha          = av,
       fit$Performance,
-      N_Coefficients = fit$N_Coefficients,
-      stringsAsFactors = FALSE
+      "Non-zero coefficients" = fit$N_Coefficients,
+      stringsAsFactors = FALSE, check.names = FALSE
     )
   }
 
@@ -471,10 +470,10 @@ run_regreg <- function(
   # ---------------------------------------------------------------------------
   modelsummary <- perf_df
   if (resp_type == "categorical") {
-    modelsummary$AccuracyRank <- rank(-modelsummary$Accuracy,
+    modelsummary[["Accuracy rank"]] <- rank(-modelsummary$Accuracy,
                                      ties.method = "min")
   } else {
-    modelsummary$RMSERank <- rank(modelsummary$RMSE, ties.method = "min")
+    modelsummary[["RMSE rank"]] <- rank(modelsummary$RMSE, ties.method = "min")
   }
   modelsummary <- modelsummary[order(modelsummary$Alpha), ]
   rownames(modelsummary) <- NULL
@@ -999,7 +998,7 @@ run_regreg <- function(
                          fold_ids, pen_fac, parallel, standardize, maxit,
                          resp_type, resp_info) {
 
-  cv_fit <- glmnet::cv.glmnet(
+  fit_cv <- function(...) glmnet::cv.glmnet(
     x              = x_train,
     y              = y_train,
     alpha          = av,
@@ -1009,8 +1008,14 @@ run_regreg <- function(
     penalty.factor = pen_fac,
     parallel       = parallel,
     standardize    = standardize,
-    maxit          = as.integer(maxit)
+    ...
   )
+  # glmnet >= 5 takes maxit through `control`; older versions take it directly
+  cv_fit <- if ("control" %in% names(formals(glmnet::cv.glmnet))) {
+    fit_cv(control = list(maxit = as.integer(maxit)))
+  } else {
+    fit_cv(maxit = as.integer(maxit))
+  }
 
   # Select lambda
   sel_lambda <- if (lambda_rule == "1se") {
@@ -1114,8 +1119,8 @@ run_regreg <- function(
         Comparison       = paste0(grp, " vs ", ref_level),
         Feature          = rownames(norm_mat)[active],
         Coefficient      = betas[active],
-        OddsRatio        = exp(betas[active]),
-        stringsAsFactors = FALSE
+        "Odds ratio"     = exp(betas[active]),
+        stringsAsFactors = FALSE, check.names = FALSE
       )
     })
     coef_df <- do.call(rbind, rows[!vapply(rows, is.null, logical(1L))])
@@ -1131,8 +1136,8 @@ run_regreg <- function(
   coef_df           <- coef_df[coef_df$Coefficient != 0, , drop = FALSE]
 
   if (family_type == "binomial") {
-    coef_df$OddsRatio <- exp(coef_df$Coefficient)
-    coef_df <- coef_df[, c("Feature", "Coefficient", "OddsRatio"),
+    coef_df[["Odds ratio"]] <- exp(coef_df$Coefficient)
+    coef_df <- coef_df[, c("Feature", "Coefficient", "Odds ratio"),
                         drop = FALSE]
   } else {
     coef_df <- coef_df[, c("Feature", "Coefficient"), drop = FALSE]

@@ -27,13 +27,13 @@ plot_relabund(
   unknown_before_others = TRUE,
   theme = "nature",
   colors = NULL,
-  plot_title = "",
-  plot_subtitle = "",
-  legend_title = "",
+  plot_title = NULL,
+  plot_subtitle = NULL,
+  legend_title = NULL,
   xlab = NULL,
   ylab = "Relative abundance",
-  global_font_size = 20,
-  font_family = "sans",
+  base_size = 11,
+  font_family = "",
   title_size = NULL,
   subtitle_size = NULL,
   legend_size = NULL,
@@ -68,8 +68,8 @@ are shown instead. If \code{NULL}, all features are plotted. Default is
 selected (when \code{limit} is set) and the order features appear in the
 legend/stack. \code{NULL} (default) preserves the original column order of
 \code{x}. Options: \code{"alphanumeric"} (lexicographic),
-\code{"high"} (highest total abundance first — selects top \code{limit}),
-\code{"low"} (lowest total abundance first — selects bottom \code{limit}).
+\code{"high"} (highest total abundance first - selects top \code{limit}),
+\code{"low"} (lowest total abundance first - selects bottom \code{limit}).
 \strong{Note:} \code{"high"} and \code{"low"} rank by column totals and
 are meaningful only when \code{x} contains raw counts or intensities
 (row sums not already 0 or 1). If normalised data is detected, a warning
@@ -96,9 +96,9 @@ simultaneously with \code{group_brackets}.}
 
 \item{normalize_to_relabund}{Logical. Relevant when \code{group_aggregate =
 TRUE} or \code{sort} is \code{"high"}/\code{"low"}. If \code{TRUE}
-(default), row-wise relative abundance normalisation is applied to \code{x}
-via \code{run_normalize(method = "row_rel_abundance")} before aggregation
-or ranking. Set to \code{FALSE} if \code{x} is already appropriately
+(default), row-wise relative abundance normalisation (each sample divided
+by its total) is applied to \code{x} before aggregation or ranking. Set
+to \code{FALSE} if \code{x} is already appropriately
 normalised. Ignored when \code{ignore_normalization = TRUE}.}
 
 \item{ignore_normalization}{Logical. If \code{TRUE}, all normalisation checks
@@ -159,41 +159,36 @@ before \code{"Others"} in the legend/stack, or last when
 \code{exclude_others = TRUE}. Partial matches are not considered; only
 column names that are \emph{entirely} the word "unknown" are affected.}
 
-\item{theme}{Character. ggplot2 theme. One of \code{"nature"},
-\code{"minimal"}, \code{"classic"}, \code{"bw"}, \code{"light"},
-\code{"dark"}. Default \code{"nature"}.}
+\item{theme}{Character. ggplot2 theme. One of \code{"nature"} (default),
+\code{"classic"}, \code{"plos"}, \code{"minimal"}, \code{"bw"},
+\code{"light"}, \code{"dark"}, or \code{"gray"}.}
 
-\item{colors}{Character vector or \code{NULL}. Custom fill colours. Length
-must equal the number of plotted fill levels. Named vectors matched by
-name. \code{NULL} uses the Okabe-Ito palette (extended with HCL colours).}
+\item{colors}{Character vector of fill colours, one per plotted feature,
+named by feature or given in plotting order. Default \code{NULL} uses a
+colour-blind-safe palette.}
 
 \item{plot_title}{Character. Main title. Supports \code{ggtext} markdown:
-\code{**bold**}, \code{*italic*}. Default \code{""}.}
+\code{**bold**}, \code{*italic*}. Default \code{NULL} (no title).}
 
 \item{plot_subtitle}{Character. Subtitle. Supports same markdown. Default
-\code{""}.}
+\code{NULL} (no subtitle).}
 
-\item{legend_title}{Character. Legend title. Default \code{""}.}
+\item{legend_title}{Character or \code{NULL}. Legend title. Default \code{NULL}.}
 
 \item{xlab}{Character or \code{NULL}. X-axis label. Defaults to
 \code{show_x_as}.}
 
 \item{ylab}{Character. Y-axis label. Default \code{"Relative abundance"}.}
 
-\item{global_font_size}{Numeric or \code{NULL}. Scales all text elements
-proportionally relative to an internal 11 pt reference. Default \code{20}.}
+\item{base_size}{Base font size in points; every text element scales from
+it. Default \code{11}, which suits a default 7 x 5 inch Quarto figure.}
 
-\item{font_family}{Character. Font family for all text. Default \code{"sans"}.}
+\item{font_family}{Character. Font family for all text. Default \code{""}
+(the graphics device's default).}
 
-\item{title_size}{Numeric or \code{NULL}. Title font size (pt).}
-
-\item{subtitle_size}{Numeric or \code{NULL}. Subtitle font size (pt).}
-
-\item{legend_size}{Numeric or \code{NULL}. Legend title font size (pt).}
-
-\item{xlab_size}{Numeric or \code{NULL}. X-axis label font size (pt).}
-
-\item{ylab_size}{Numeric or \code{NULL}. Y-axis label font size (pt).}
+\item{title_size, subtitle_size, legend_size, xlab_size, ylab_size}{Font sizes in
+points for the title, subtitle, legend, x-axis label and y-axis label.
+Default \code{NULL} derives each from \code{base_size}.}
 
 \item{...}{Additional arguments passed to \code{ggplot2::geom_bar()}.}
 }
@@ -228,9 +223,8 @@ instead builds the long-format data frame manually.
 by total are retained instead.
 
 \strong{Normalisation flow.} When \code{ignore_normalization = FALSE} and
-\code{normalize_to_relabund = TRUE}, row-relative abundance is applied via
-\code{run_normalize(method = "row_rel_abundance")} before any aggregation or
-ranking. Row-wise proportions are then computed so each bar sums to 100\\%.
+\code{normalize_to_relabund = TRUE}, each sample is divided by its total
+(row-relative abundance) before any aggregation or ranking. Row-wise proportions are then computed so each bar sums to 100\\%.
 When \code{ignore_normalization = TRUE}, the data are plotted as supplied
 and the y-axis label should be interpreted accordingly.
 

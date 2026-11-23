@@ -12,26 +12,26 @@ plot_bar(
   x_axis,
   show_y_as = "n",
   show_values = FALSE,
-  values_position = "auto",
   fill_missing_levels = TRUE,
   arrange_x = NULL,
   x_axis_label = NULL,
   y_axis_label = NULL,
-  title = "",
-  subtitle = "",
-  caption = "",
+  title = NULL,
+  subtitle = NULL,
+  caption = NULL,
   legend = NULL,
   legend_position = "bottom",
   flip = FALSE,
-  global_font_size = 25,
-  title_size = global_font_size,
-  subtitle_size = global_font_size,
-  caption_size = global_font_size,
-  legend_size = global_font_size,
-  axis_title_size = global_font_size,
-  axis_text_size = global_font_size,
-  theme = "nature",
-  ...
+  base_size = 11,
+  title_size = NULL,
+  subtitle_size = NULL,
+  caption_size = NULL,
+  legend_size = NULL,
+  xlab_size = NULL,
+  ylab_size = NULL,
+  axis_text_size = NULL,
+  label_size = NULL,
+  theme = "nature"
 )
 }
 \arguments{
@@ -67,15 +67,6 @@ Default is \code{"n"}.}
 \item{show_values}{Logical. If \code{TRUE}, count or percentage labels are
 displayed on the bars. Default is \code{FALSE}.}
 
-\item{values_position}{Character string specifying label placement.
-Supported options are:
-\itemize{
-\item \code{"auto"}: automatic placement
-\item \code{"inside"}: inside bars
-\item \code{"outside"}: outside bars
-}
-Default is \code{"auto"}.}
-
 \item{fill_missing_levels}{Logical. Default is \code{TRUE}.
 If \code{x_axis} is numeric, all integer values between the minimum and maximum
 observed values will be displayed on the axis, including values with zero
@@ -107,26 +98,12 @@ Default is \code{"bottom"}.}
 \item{flip}{Logical. If \code{TRUE}, flips the plot coordinates using
 \code{ggplot2::coord_flip()}. Default is \code{FALSE}.}
 
-\item{global_font_size}{A single positive numeric value specifying
-the base font size for the plot. Default is \code{25}.}
+\item{base_size}{Base font size in points; every text element scales from
+it. Default is \code{11}, which suits a default 7 x 5 inch Quarto figure.}
 
-\item{title_size}{A single positive numeric value specifying title font size.
-Defaults to \code{global_font_size}.}
-
-\item{subtitle_size}{A single positive numeric value specifying subtitle
-font size. Defaults to \code{global_font_size}.}
-
-\item{caption_size}{A single positive numeric value specifying caption
-font size. Defaults to \code{global_font_size}.}
-
-\item{legend_size}{A single positive numeric value specifying legend
-font size. Defaults to \code{global_font_size}.}
-
-\item{axis_title_size}{A single positive numeric value specifying axis
-title font size. Defaults to \code{global_font_size}.}
-
-\item{axis_text_size}{A single positive numeric value specifying axis
-text font size. Defaults to \code{global_font_size}.}
+\item{title_size, subtitle_size, caption_size, legend_size, xlab_size, ylab_size, axis_text_size, label_size}{Font sizes in points for the title, subtitle, caption, legend, x-axis label,
+y-axis label, tick labels and value labels. Default \code{NULL} derives each from
+\code{base_size}.}
 
 \item{theme}{Character string specifying ggplot2 theme style.
 Supported options are:
@@ -139,8 +116,6 @@ Supported options are:
 \item \code{"dark"}
 }
 Default is \code{"nature"}.}
-
-\item{...}{Additional arguments passed to \code{ggplot2::ggplot()}.}
 }
 \value{
 A \code{ggplot2} object representing the generated bar plot.
@@ -168,13 +143,6 @@ palette:
 Missing values are explicitly displayed as \code{"NA"}.
 
 Gridlines are removed by default for a cleaner publication-ready appearance.
-
-Requires the packages:
-\itemize{
-\item ggplot2
-\item scales
-\item ggrepel
-}
 }
 \examples{
 # Basic count plot

@@ -13,7 +13,6 @@ run_auc(
   include_cols = NULL,
   include_rows = NULL,
   direction = "auto",
-  compute_auc = TRUE,
   compute_ci = TRUE,
   ci_level = 0.95,
   compute_performance_metrics = TRUE,
@@ -23,16 +22,16 @@ run_auc(
   nrow = NULL,
   plot_title = NULL,
   plot_subtitle = NULL,
-  plot_legend = "AUC (95\% CI)",
+  plot_legend = NULL,
   xlab = NULL,
   ylab = NULL,
-  linewidth = 3,
-  global_font_size = 25,
-  title_font_size = NULL,
-  subtitle_font_size = NULL,
-  xlab_font_size = NULL,
-  ylab_font_size = NULL,
-  inplot_font_size = NULL,
+  linewidth = 0.8,
+  base_size = 11,
+  title_size = NULL,
+  subtitle_size = NULL,
+  xlab_size = NULL,
+  ylab_size = NULL,
+  legend_size = NULL,
   min_vip = 1,
   up = 1.5,
   down = 0.6,
@@ -52,22 +51,19 @@ contains the binary grouping variable (cases vs. controls). The column
 may be categorical (\code{character} / \code{factor}) with exactly two
 levels after optional removal via \code{remove}, or numeric containing only
 \code{0} (control) and \code{1} (case) after optional removal. If \code{x}
-is a \code{run_DIpreprocess} object or a list containing one, \code{y} will
-default to \code{x$parameters$group_col} if not explicitly provided.}
+is a \code{run_DIpreprocess} object or a list containing one, \code{y}
+defaults to its standardized \code{Group} column.}
 
 \item{remove}{Optional. A vector of values to remove from \code{y} before
-analysis, used to reduce a multi-level variable down to exactly two. If
-\code{x} is a \code{run_DIpreprocess} object or a list containing one,
-\code{remove} will default to \code{x$parameters$qc_types} if not
-explicitly provided. May be a character vector (for categorical \code{y}),
-groups. May be a character vector (for categorical \code{y}), a numeric
-vector (for numeric \code{y}), or a mixed list. Ignored when \code{y}
-already contains exactly two categories or only \code{0}/\code{1} values.
-Default \code{NULL}.}
+analysis, used to reduce a multi-level variable down to exactly two groups.
+May be a character vector (for categorical \code{y}), a numeric vector (for
+numeric \code{y}), or a mixed list. If \code{x} is a
+\code{run_DIpreprocess} object or a list containing one, defaults to its
+QC labels. Default \code{NULL}.}
 
-\item{metadata}{An optional object of the same class and row count as
-\code{x} carrying additional sample annotations. Currently reserved for
-future use and is ignored by the analysis. Default \code{NULL}.}
+\item{metadata}{An optional data frame of sample annotations with one row
+per row of \code{x}. \code{y} may be one of its columns, and its columns
+are never treated as predictors. Default \code{NULL}.}
 
 \item{set_control}{A single string specifying which level of a categorical
 \code{y} represents the control group. Ignored when \code{y} is numeric.
@@ -86,8 +82,6 @@ integer sequence. Default \code{NULL} includes all rows.}
 passed to \code{pROC::roc()}. Choices: \code{"auto"} (default),
 \code{">"} (controls > cases), or \code{"<"} (controls < cases). See
 \code{?pROC::roc} for details.}
-
-\item{compute_auc}{Logical. Whether to compute the AUC. Default \code{TRUE}.}
 
 \item{compute_ci}{Logical. Whether to compute bootstrap or DeLong
 confidence intervals for the AUC. Default \code{TRUE}.}
@@ -137,7 +131,8 @@ being plotted.}
 \code{NULL} (no subtitle).}
 
 \item{plot_legend}{A single string for the legend title. Default
-\code{"AUC (95\% CI)"}.}
+\code{NULL} shows \code{"AUC"} with the confidence level in use, for
+example \code{"AUC (95\% CI)"}.}
 
 \item{xlab}{A single string for the x-axis label. Default \code{NULL}
 renders \code{"1 - Specificity (False Positive Rate)"}.}
@@ -146,28 +141,14 @@ renders \code{"1 - Specificity (False Positive Rate)"}.}
 renders \code{"Sensitivity (True Positive Rate)"}.}
 
 \item{linewidth}{A positive numeric value controlling the ROC curve line
-width. Default \code{3}.}
+width. Default \code{0.8}.}
 
-\item{global_font_size}{A positive numeric value setting the base font size
-for all plot text elements. Default \code{25}. Derived sizes:
-title \eqn{= 1.20 \times}, subtitle \eqn{= 0.90 \times},
-axis labels / ticks \eqn{= 1.00 \times}.}
+\item{base_size}{Base font size in points; every text element scales from
+it. Default \code{11}, which suits a default 7 x 5 inch Quarto figure.}
 
-\item{title_font_size}{Override for the title font size. Default \code{NULL}
-(derived from \code{global_font_size}).}
-
-\item{subtitle_font_size}{Override for the subtitle font size. Default
-\code{NULL} (derived from \code{global_font_size}).}
-
-\item{xlab_font_size}{Override for the x-axis label and tick font size.
-Default \code{NULL} (derived from \code{global_font_size}).}
-
-\item{ylab_font_size}{Override for the y-axis label and tick font size.
-Default \code{NULL} (derived from \code{global_font_size}).}
-
-\item{inplot_font_size}{Font size of the in-plot legend text (e.g., AUC
-labels in combined plots). Default \code{NULL} (derived from
-\code{global_font_size}).}
+\item{title_size, subtitle_size, xlab_size, ylab_size, legend_size}{Font sizes in
+points for the title, subtitle, x-axis label, y-axis label and legend.
+Default \code{NULL} derives each from \code{base_size}.}
 
 \item{min_vip}{A single numeric value specifying the minimum VIP score for features to be considered.
 Only applied if a \code{\link{run_pls}} object is provided in the \code{x} list. Default \code{1.0}.}
@@ -193,19 +174,16 @@ A named list with the following elements:
 \describe{
 \item{\code{roc_list}}{Named list of \code{pROC::roc} objects, one per
 analysed predictor.}
-\item{\code{auc_table}}{A \code{data.frame} with columns
-\code{predictor}, \code{auc}, \code{ci_lower}, \code{ci_upper},
-\code{ci_level}, \code{direction}, \code{n_cases}, and
-\code{n_controls}, plus \code{auc_interpretation} (conventional
-label; see Details) right after \code{ci_upper}. When a \code{\link{run_diff}}
-object with effect sizes is supplied in the \code{x} list,
-\code{ES (95\% CI)} and \code{ES_magnitude} columns are added after
-\code{n_controls}. When \code{compute_performance_metrics = TRUE},
-additional columns are included: \code{sensitivity},
-\code{specificity}, \code{ppv} (positive predictive value),
-\code{npv} (negative predictive value), \code{accuracy},
-\code{youden_index}, and \code{optimal_threshold} (all computed at
-the threshold that maximizes Youden's index: sensitivity + specificity - 1).}
+\item{\code{auc_table}}{A report-ready \code{data.frame} with columns
+\code{Predictor}, \code{AUC}, the confidence limits (e.g.
+\code{95\% CI lower}, \code{95\% CI upper}), \code{Interpretation}
+(conventional label; see Details) and \code{Direction}. When a
+\code{\link{run_diff}} object with effect sizes is supplied in the
+\code{x} list, \code{ES (95\% CI)} and \code{Magnitude} are added. When
+\code{compute_performance_metrics = TRUE}, \code{Sensitivity},
+\code{Specificity}, \code{PPV}, \code{NPV}, \code{Accuracy},
+\code{Youden index} and \code{Optimal cutoff} are included (all at the
+threshold that maximizes Youden's index: sensitivity + specificity - 1).}
 \item{\code{plots}}{A named list of \code{ggplot} objects (or
 \code{NULL} when \code{plot = "none"}). The element \code{"combined"}
 is present for combined-mode plots; individual predictor names are used
@@ -242,7 +220,7 @@ significant figures is used.
 }
 
 \strong{AUC interpretation}\cr
-The \code{auc_interpretation} column of \code{auc_table} labels each AUC
+The \code{Interpretation} column of \code{auc_table} labels each AUC
 using the conventional thresholds below. These are only a convention (a
 rule of thumb), not a rule; acceptable discrimination depends on the
 clinical or scientific context, and the confidence interval should be
@@ -265,11 +243,6 @@ is always drawn.
 \strong{Legend placement}\cr
 For combined plots (\code{plot = "all"}) the legend is positioned at the
 bottom-right inside the plot area by default.
-
-\strong{pROC dependency}\cr
-This function requires \pkg{pROC} (\eqn{\ge} 1.18) and \pkg{ggplot2}
-(\eqn{\ge} 3.4). Both are listed as \code{Imports} in the package
-\code{DESCRIPTION} file.
 }
 \examples{
 ## -----------------------------------------------------------------------
@@ -317,8 +290,8 @@ res3 <- run_auc(
 )
 # The auc_table now includes sensitivity, specificity, PPV, NPV, accuracy,
 # Youden index, and optimal threshold values
-head(res3$auc_table[, c("predictor", "auc", "sensitivity", "specificity", 
-                          "ppv", "npv", "youden_index")])
+head(res3$auc_table[, c("Predictor", "AUC", "Sensitivity", "Specificity",
+                        "PPV", "NPV", "Youden index")])
 
 ## -----------------------------------------------------------------------
 ## Example 4 - column names with spaces, select top-2 by AUC

@@ -40,15 +40,16 @@ plot_multi_y(
   x_lab = NULL,
   y_lab_main = NULL,
   y_lab_secondary = "Secondary axis",
-  global_font_size = 20,
-  title_font_size = NULL,
-  subtitle_font_size = NULL,
-  caption_font_size = NULL,
-  axis_font_size = NULL,
-  legend_font_size = NULL,
-  facet_font_size = NULL,
-  theme = "nature",
-  zoom = 1
+  base_size = 11,
+  title_size = NULL,
+  subtitle_size = NULL,
+  caption_size = NULL,
+  xlab_size = NULL,
+  ylab_size = NULL,
+  axis_text_size = NULL,
+  legend_size = NULL,
+  strip_size = NULL,
+  theme = "nature"
 )
 }
 \arguments{
@@ -156,33 +157,17 @@ an empty string.}
 \item{y_lab_secondary}{Character. Secondary y-axis label. Defaults to
 \code{"Secondary axis"}.}
 
-\item{global_font_size}{Numeric. Base font size in points. Default
-\code{20}.}
+\item{base_size}{Numeric. Base font size in points; every text element
+scales from it. Default \code{11}, which suits a default 7 x 5 inch Quarto
+figure.}
 
-\item{title_font_size}{Numeric. Override font size for the plot title.
-Defaults to \code{1.20 * global_font_size}.}
-
-\item{subtitle_font_size}{Numeric. Override font size for the subtitle.
-Defaults to \code{0.90 * global_font_size}.}
-
-\item{caption_font_size}{Numeric. Override font size for the caption.
-Defaults to \code{0.75 * global_font_size}.}
-
-\item{axis_font_size}{Numeric. Override font size for axis titles and text.
-Defaults to \code{1.00 * global_font_size}.}
-
-\item{legend_font_size}{Numeric. Override font size for legend text.
-Defaults to \code{0.90 * global_font_size}.}
-
-\item{facet_font_size}{Numeric. Override font size for facet strip labels.
-Only relevant when \code{facet} is non-\code{NULL}. Defaults to
-\code{0.85 * global_font_size}.}
+\item{title_size, subtitle_size, caption_size, xlab_size, ylab_size, axis_text_size, legend_size, strip_size}{Numeric. Font sizes in points for the title, subtitle, caption, x-axis
+label, y-axis labels, tick labels, legend and facet strips. Default
+\code{NULL} derives each from \code{base_size}.}
 
 \item{theme}{Character. Visual theme. One of \code{"nature"} (default),
-\code{"minimal"}, or \code{"classic"}.}
-
-\item{zoom}{Numeric. Multiplicative scaling factor applied to all resolved
-sizes at construction time. Default \code{1}.}
+\code{"classic"}, \code{"plos"}, \code{"minimal"}, \code{"bw"},
+\code{"light"}, \code{"dark"}, or \code{"gray"}.}
 }
 \value{
 A \code{\link[ggplot2]{ggplot}} object.

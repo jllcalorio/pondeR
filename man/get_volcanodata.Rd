@@ -33,7 +33,8 @@ Cohen's d vs. rank-biserial correlation) are not strictly comparable.}
 \value{
 A \code{data.frame} containing merged data from both objects:
 fold change columns, effect size (95\\% CI) and magnitude, and a single
-p-value column (\code{p_value_adj} when present, otherwise \code{p_value}).
+p-value column (\code{Adjusted p-value} when present, otherwise
+\code{p-value}). Column names are ready for reports.
 When the \code{\link{run_diff}} summary table is simplified, the p-value column
 keeps its superscript test markers (legend stored in the
 \code{"pvalue_legend"} attribute and shown by \code{\link{as_gt}}).
@@ -51,8 +52,8 @@ The function automatically detects the thresholds:
 \item \code{up} and \code{down} are retrieved from the \code{\link{run_foldchange}} parameters.
 \item Significance threshold (\code{pval}) is retrieved from \code{\link{run_diff}} parameters
 (defaulting to 0.05 if not found).
-\item When \code{\link{run_diff}} result has multiple outcomes (nrow > 1), a \code{p_value_adj}
-column is present; this function prefers it over \code{p_value} for the volcano plot.
+\item When \code{\link{run_diff}} result has multiple outcomes, an \code{Adjusted p-value}
+column is present; this function prefers it over \code{p-value}.
 }
 }
 \examples{

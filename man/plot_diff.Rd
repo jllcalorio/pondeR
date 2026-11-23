@@ -9,10 +9,8 @@ plot_diff(
   outcome = NULL,
   group = NULL,
   metadata = NULL,
-  plot_vars = NULL,
   plot_type = "boxplot",
   test_type = NULL,
-  posthoc = NULL,
   p_adjust_method = "BH",
   hide_ns = TRUE,
   show_p_numeric = FALSE,
@@ -23,11 +21,11 @@ plot_diff(
   plot_subtitle = NULL,
   xlab = NULL,
   ylab = NULL,
-  linewidth = 3,
+  linewidth = 0.5,
   show_global_p = FALSE,
   global_p_position = NULL,
   global_p_x = NULL,
-  global_font_size = 30,
+  base_size = 11,
   title_size = NULL,
   subtitle_size = NULL,
   xlab_size = NULL,
@@ -52,17 +50,16 @@ multi-outcome \code{"run_diff"} object (i.e. the result of
 \code{run_diff(..., summary_table = TRUE)} with more than one
 \code{outcome}). When \code{x} is a \code{"run_diff"} object,
 \code{\link{plot_diff}} reuses its statistics instead of recomputing them, and
-prefers the \code{p_value_adj} column of \code{x$summary_table} (falling
-back to \code{p_value} when adjustment was not performed, i.e. a single
-outcome) for determining significance. \code{subgroup} and
+prefers the \code{Adjusted p-value} column of \code{x$summary_table}
+(falling back to \code{p-value} when adjustment was not performed, i.e. a
+single outcome) for determining significance. \code{subgroup} and
 \code{sample_id}/\code{label_points} are not supported in this mode;
 run \code{run_diff(..., subgroup = ...)} beforehand, or pass the
 underlying data frame instead.}
 
-\item{outcome}{Character string specifying the column name for the numeric
-outcome variable. Used as the default for \code{plot_vars} if it is not
-specified. Ignored when \code{x} is a \code{"run_diff"} object (use
-\code{plot_vars} to select outcomes instead).}
+\item{outcome}{Character vector of numeric outcome column(s) to plot. When
+\code{x} is a \code{"run_diff"} object, \code{NULL} (default) plots every
+outcome it contains.}
 
 \item{group}{Character string specifying the column name for the grouping
 variable. Ignored when \code{x} is a \code{"run_diff"} object (the
@@ -72,10 +69,6 @@ grouping variable used by \code{\link{run_diff}} is reused automatically).}
 If \code{NULL}, \code{x} is used as metadata. Default is \code{NULL}.
 Not used when \code{x} is a \code{"run_diff"} object.}
 
-\item{plot_vars}{Character vector specifying column name(s) for numeric
-variables to plot. If \code{NULL} (default), uses the value of
-\code{outcome}.}
-
 \item{plot_type}{Character string specifying plot type: \code{"boxplot"} or
 \code{"violin"}. Default is \code{"boxplot"}.}
 
@@ -83,10 +76,6 @@ variables to plot. If \code{NULL} (default), uses the value of
 \code{"auto"}, \code{"parametric"}, or \code{"nonparametric"}. See
 \code{\link{run_diff}} for details. If \code{NULL} (default), uses
 \code{"auto"}.}
-
-\item{posthoc}{Character string or \code{NULL}. Retained for API
-compatibility; post-hoc selection is handled automatically by the
-internal engine. Default is \code{NULL}.}
 
 \item{p_adjust_method}{Character string. P-value adjustment method for
 post-hoc comparisons: \code{"holm"}, \code{"hochberg"}, \code{"hommel"},
@@ -122,7 +111,7 @@ Default is \code{NULL}.}
 \code{NULL}.}
 
 \item{linewidth}{Numeric. The width of the lines for the box/violin outlines
-and statistical brackets. Default is 3.}
+and statistical brackets. Default is 0.5.}
 
 \item{show_global_p}{Logical. If \code{TRUE}, annotates the plot with the
 omnibus p-value. Default is \code{FALSE}.}
@@ -133,26 +122,12 @@ global p-value annotation. Default is \code{NULL} (automatic).}
 \item{global_p_x}{Numeric or \code{NULL}. X-axis position for the global
 p-value annotation. Default is \code{NULL} (automatic).}
 
-\item{global_font_size}{Numeric or \code{NULL}. Base font size for
-proportional scaling of all text elements. Default is \code{30}.}
+\item{base_size}{Base font size in points; every text element scales from
+it. Default is \code{11}, which suits a default 7 x 5 inch Quarto figure.}
 
-\item{title_size}{Numeric or \code{NULL}. Title font size. Default is
-\code{NULL}.}
-
-\item{subtitle_size}{Numeric or \code{NULL}. Subtitle font size. Default
-is \code{NULL}.}
-
-\item{xlab_size}{Numeric or \code{NULL}. X-axis label font size. Default
-is \code{NULL}.}
-
-\item{ylab_size}{Numeric or \code{NULL}. Y-axis label font size. Default
-is \code{NULL}.}
-
-\item{pvalue_size}{Numeric or \code{NULL}. Font size for p-value
-annotations (ggplot2 \code{size} units). Default is \code{NULL}.}
-
-\item{axis_text_size}{Numeric or \code{NULL}. Axis tick label font size.
-Default is \code{NULL}.}
+\item{title_size, subtitle_size, xlab_size, ylab_size, axis_text_size, pvalue_size}{Font sizes in points for the title, subtitle, x-axis label, y-axis label,
+tick labels and p-value annotations. Default \code{NULL} derives each from
+\code{base_size}.}
 
 \item{format_p_numeric}{Character string or numeric. Controls p-value
 formatting when \code{show_p_numeric = TRUE}. \code{"auto"} (default)
@@ -192,9 +167,8 @@ A list containing:
 \item{plots}{Named list of all generated \code{ggplot} objects.}
 \item{significant_plots}{Named list of plots for variables with
 significant results only.}
-\item{statistics}{Named list of internal \code{.run_diff_single} result
-objects for each variable, providing access to raw test objects,
-descriptive statistics, and post-hoc tables.}
+\item{statistics}{Named list of test results for each variable, with
+raw test objects, descriptive statistics, and post-hoc tables.}
 \item{subgroup_analysis}{Nested list of results per subgroup variable
 and level, or \code{NULL} if no subgroup was specified.}
 }
@@ -202,9 +176,8 @@ and level, or \code{NULL} if no subgroup was specified.}
 \description{
 Generates box plots or violin plots with statistical tests and pairwise
 comparisons. Automatically selects appropriate statistical tests based on
-assumptions, or allows manual specification. Statistical testing is
-performed internally via \code{\link{.run_diff_single}}, the unexported
-single-outcome engine that powers \code{\link{run_diff}}.
+assumptions, or allows manual specification. Statistical testing uses the
+same engine as \code{\link{run_diff}}.
 }
 \details{
 Create Box or Violin Plots with Statistical Comparisons
@@ -220,13 +193,13 @@ results <- plot_diff(
 )
 print(results$plots$weight)
 
-# Example 2: Global font size scaling and omnibus p-value annotation
+# Example 2: Larger text and omnibus p-value annotation
 results2 <- plot_diff(
-  x                = PlantGrowth,
-  outcome          = "weight",
-  group            = "group",
-  global_font_size = 16,
-  show_global_p    = TRUE
+  x             = PlantGrowth,
+  outcome       = "weight",
+  group         = "group",
+  base_size     = 14,
+  show_global_p = TRUE
 )
 print(results2$plots$weight)
 

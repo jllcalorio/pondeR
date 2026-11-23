@@ -26,7 +26,7 @@
 #'   supplying only one of \code{low} / \code{high} raises an error.
 #' @param ci Numeric scalar (default \code{95}). The confidence level expressed
 #'   as a percentage (e.g., \code{95}, \code{99}). Used only in axis and legend
-#'   labels — it does not compute any CI values.
+#'   labels - it does not compute any CI values.
 #' @param feature_col Optional. A single character string giving the name of the
 #'   column in \code{x} to use as feature/row labels on the y-axis. If
 #'   \code{NULL} (default), row names of \code{x} are used; if \code{x} has no
@@ -40,11 +40,11 @@
 #'   bars. Only used when both \code{low} and \code{high} are supplied. Defaults
 #'   to \code{0.8}.
 #' @param theme Character string specifying the ggplot2 theme. One of
-#'   \code{"nature"} (default), \code{"bw"}, \code{"classic"}, \code{"minimal"},
-#'   \code{"gray"}, or \code{"dark"}.
-#' @param global_font_size Numeric scalar. Base font size (in pt) applied to all
-#'   text elements in the plot (axis text, axis titles, plot title, subtitle,
-#'   caption, legend). Defaults to \code{15}.
+#'   \code{"nature"} (default), \code{"classic"}, \code{"plos"},
+#'   \code{"minimal"}, \code{"bw"}, \code{"light"}, \code{"dark"}, or
+#'   \code{"gray"}.
+#' @param base_size Base font size in points; every text element scales from
+#'   it. Defaults to \code{11}, which suits a default 7 x 5 inch Quarto figure.
 #' @param plot_title Character string. Main title of the plot. Defaults to
 #'   \code{NULL} (no title).
 #' @param plot_subtitle Character string. Subtitle of the plot. Defaults to
@@ -56,7 +56,7 @@
 #' @param y_label Character string. Label for the y-axis. Defaults to
 #'   \code{NULL} (no label).
 #' @param font_family Character string. Font family for all text elements.
-#'   Defaults to \code{"Helvetica"}.
+#'   Defaults to \code{""} (the graphics device's default).
 #'
 #' @return A \code{ggplot2} object that can be further customized, saved with
 #'   \code{\link[ggplot2]{ggsave}}, or passed to \code{\link{save_plots}()}.
@@ -66,9 +66,9 @@
 #'
 #' Each odds ratio point is colored by comparing its value to 1:
 #' \itemize{
-#'   \item OR < 1  → first color in \code{colors} (default \code{"blue"})
-#'   \item OR = 1  → second color in \code{colors} (default \code{"grey"})
-#'   \item OR > 1  → third color in \code{colors} (default \code{"red"})
+#'   \item OR < 1  -> first color in \code{colors} (default \code{"blue"})
+#'   \item OR = 1  -> second color in \code{colors} (default \code{"grey"})
+#'   \item OR > 1  -> third color in \code{colors} (default \code{"red"})
 #' }
 #' A small numerical tolerance (\code{.Machine$double.eps^0.5}) is applied when
 #' testing for exact equality to 1.
@@ -95,7 +95,7 @@
 #'   Springer-Verlag New York. \doi{10.1007/978-3-319-24277-4}
 #'
 #' @examples
-#' # ── Basic usage: OR only ─────────────────────────────────────────────────────
+#' # -- Basic usage: OR only -----------------------------------------------------
 #' df_basic <- data.frame(
 #'   feature  = c("Age", "BMI", "Smoking", "Hypertension", "Diabetes"),
 #'   OR       = c(1.45, 0.82, 2.31, 0.55, 1.02),
@@ -105,7 +105,7 @@
 #'
 #' plot_oddsratio(x = df_basic, or = "OR")
 #'
-#' # ── With confidence intervals ────────────────────────────────────────────────
+#' # -- With confidence intervals ------------------------------------------------
 #' df_ci <- data.frame(
 #'   feature  = c("Age", "BMI", "Smoking", "Hypertension", "Diabetes"),
 #'   OR       = c(1.45, 0.82, 2.31, 0.55, 1.02),
@@ -124,7 +124,7 @@
 #'   plot_title  = "Logistic Regression: Odds Ratios"
 #' )
 #'
-#' # ── Special-character column names ───────────────────────────────────────────
+#' # -- Special-character column names -------------------------------------------
 #' df_special <- data.frame(
 #'   check.names = FALSE,
 #'   "OR (adjusted)" = c(0.73, 1.88, 1.05),
@@ -140,7 +140,7 @@
 #'   high = "Upper 95% CI"
 #' )
 #'
-#' # ── Custom colors and theme ──────────────────────────────────────────────────
+#' # -- Custom colors and theme --------------------------------------------------
 #' plot_oddsratio(
 #'   x      = df_ci,
 #'   or     = "OR",
@@ -149,17 +149,12 @@
 #'   feature_col = "feature",
 #'   colors = c("#2166AC", "#878787", "#D6604D"),
 #'   theme  = "classic",
-#'   global_font_size = 13,
+#'   base_size  = 12,
 #'   plot_title = "Forest Plot",
 #'   x_label    = "Odds Ratio (95% CI)",
 #'   y_label    = "Predictor"
 #' )
 #'
-#' @importFrom ggplot2 ggplot aes geom_point geom_errorbarh geom_vline
-#' @importFrom ggplot2 scale_color_manual scale_x_log10 coord_cartesian labs theme_bw
-#' @importFrom ggplot2 theme_classic theme_minimal theme_gray theme_dark theme element_text
-#' @importFrom ggplot2 element_line element_blank margin expansion
-#' @importFrom rlang sym
 #'
 #' @export
 plot_oddsratio <- function(
@@ -173,109 +168,13 @@ plot_oddsratio <- function(
     dot_size        = 3,
     line_size       = 0.8,
     theme           = "nature",
-    global_font_size = 15,
+    base_size       = 11,
     plot_title      = NULL,
     plot_subtitle   = NULL,
     x_label         = NULL,
     y_label         = NULL,
-    font_family     = "Helvetica"
+    font_family     = ""
 ) {
-
-  # ── 0. Internal helpers ──────────────────────────────────────────────────────
-
-  .resolve_font <- function(family) {
-    if (is.null(family) || !nzchar(family)) "sans" else family
-  }
-
-  .apply_nature_theme <- function(p, fs, ff) {
-    p + ggplot2::theme_bw(base_size = fs, base_family = ff) +
-      ggplot2::theme(
-        panel.grid.major  = ggplot2::element_blank(),
-        panel.grid.minor  = ggplot2::element_blank(),
-        panel.border      = ggplot2::element_rect(color = "black", fill = NA, linewidth = 0.6),
-        axis.ticks        = ggplot2::element_line(color = "black", linewidth = 0.4),
-        axis.text         = ggplot2::element_text(size = fs, family = ff, color = "black"),
-        axis.title        = ggplot2::element_text(size = fs, family = ff, color = "black"),
-        plot.title        = ggplot2::element_text(size = fs + 2, family = ff, face = "bold",
-                                                  hjust = 0, margin = ggplot2::margin(b = 4)),
-        plot.subtitle     = ggplot2::element_text(size = fs, family = ff, color = "grey30",
-                                                  hjust = 0, margin = ggplot2::margin(b = 6)),
-        legend.text       = ggplot2::element_text(size = fs, family = ff),
-        legend.title      = ggplot2::element_text(size = fs, family = ff, face = "bold"),
-        legend.position   = "bottom",
-        legend.key        = ggplot2::element_blank(),
-        legend.background = ggplot2::element_blank(),
-        strip.text        = ggplot2::element_text(size = fs, family = ff),
-        plot.margin       = ggplot2::margin(10, 15, 10, 10)
-      )
-  }
-
-  .apply_theme <- function(p, theme_name, fs, ff) {
-    switch(
-      theme_name,
-      "nature"  = .apply_nature_theme(p, fs, ff),
-      "bw"      = p + ggplot2::theme_bw(base_size = fs, base_family = ff) +
-        ggplot2::theme(
-          axis.text     = ggplot2::element_text(size = fs, family = ff),
-          axis.title    = ggplot2::element_text(size = fs, family = ff),
-          plot.title    = ggplot2::element_text(size = fs + 2, family = ff, face = "bold"),
-          plot.subtitle = ggplot2::element_text(size = fs, family = ff),
-          legend.text   = ggplot2::element_text(size = fs, family = ff),
-          legend.title  = ggplot2::element_text(size = fs, family = ff, face = "bold"),
-          legend.position = "bottom"
-        ),
-      "classic" = p + ggplot2::theme_classic(base_size = fs, base_family = ff) +
-        ggplot2::theme(
-          axis.text     = ggplot2::element_text(size = fs, family = ff),
-          axis.title    = ggplot2::element_text(size = fs, family = ff),
-          plot.title    = ggplot2::element_text(size = fs + 2, family = ff, face = "bold"),
-          plot.subtitle = ggplot2::element_text(size = fs, family = ff),
-          legend.text   = ggplot2::element_text(size = fs, family = ff),
-          legend.title  = ggplot2::element_text(size = fs, family = ff, face = "bold"),
-          legend.position = "bottom"
-        ),
-      "minimal" = p + ggplot2::theme_minimal(base_size = fs, base_family = ff) +
-        ggplot2::theme(
-          axis.text     = ggplot2::element_text(size = fs, family = ff),
-          axis.title    = ggplot2::element_text(size = fs, family = ff),
-          plot.title    = ggplot2::element_text(size = fs + 2, family = ff, face = "bold"),
-          plot.subtitle = ggplot2::element_text(size = fs, family = ff),
-          legend.text   = ggplot2::element_text(size = fs, family = ff),
-          legend.title  = ggplot2::element_text(size = fs, family = ff, face = "bold"),
-          legend.position = "bottom"
-        ),
-      "gray"    = p + ggplot2::theme_gray(base_size = fs, base_family = ff) +
-        ggplot2::theme(
-          axis.text     = ggplot2::element_text(size = fs, family = ff),
-          axis.title    = ggplot2::element_text(size = fs, family = ff),
-          plot.title    = ggplot2::element_text(size = fs + 2, family = ff, face = "bold"),
-          plot.subtitle = ggplot2::element_text(size = fs, family = ff),
-          legend.text   = ggplot2::element_text(size = fs, family = ff),
-          legend.title  = ggplot2::element_text(size = fs, family = ff, face = "bold"),
-          legend.position = "bottom"
-        ),
-      "dark"    = p + ggplot2::theme_dark(base_size = fs, base_family = ff) +
-        ggplot2::theme(
-          axis.text     = ggplot2::element_text(size = fs, family = ff),
-          axis.title    = ggplot2::element_text(size = fs, family = ff),
-          plot.title    = ggplot2::element_text(size = fs + 2, family = ff, face = "bold"),
-          plot.subtitle = ggplot2::element_text(size = fs, family = ff),
-          legend.text   = ggplot2::element_text(size = fs, family = ff),
-          legend.title  = ggplot2::element_text(size = fs, family = ff, face = "bold"),
-          legend.position = "bottom"
-        ),
-      stop(
-        sprintf(
-          paste0(
-            "plot_oddsratio: 'theme' must be one of \"nature\", \"bw\", \"classic\", ",
-            "\"minimal\", \"gray\", or \"dark\". Got: \"%s\"."
-          ),
-          theme_name
-        ),
-        call. = FALSE
-      )
-    )
-  }
 
   # ── 1. Validate 'x' ─────────────────────────────────────────────────────────
 
@@ -482,15 +381,9 @@ plot_oddsratio <- function(
   }
 
   # Test colors are valid R colors
-  invalid_colors <- character(0)
-  for (col in colors) {
-    tryCatch(
-      grDevices::col2rgb(col),
-      error = function(e) {
-        invalid_colors <<- c(invalid_colors, col)
-      }
-    )
-  }
+  invalid_colors <- colors[vapply(colors, function(col) {
+    inherits(try(grDevices::col2rgb(col), silent = TRUE), "try-error")
+  }, logical(1L))]
   if (length(invalid_colors) > 0L) {
     stop(
       sprintf(
@@ -508,9 +401,6 @@ plot_oddsratio <- function(
   }
   if (!is.numeric(line_size) || length(line_size) != 1L || line_size <= 0) {
     stop("plot_oddsratio: 'line_size' must be a single positive numeric value.", call. = FALSE)
-  }
-  if (!is.numeric(global_font_size) || length(global_font_size) != 1L || global_font_size <= 0) {
-    stop("plot_oddsratio: 'global_font_size' must be a single positive numeric value.", call. = FALSE)
   }
 
   # ── 7. Validate 'feature_col' ────────────────────────────────────────────────
@@ -594,15 +484,12 @@ plot_oddsratio <- function(
       "Odds Ratio"
     }
   }
-  if (is.null(y_label)) y_label <- ""
 
   # ── 11. Color mapping ────────────────────────────────────────────────────────
 
   color_map <- stats::setNames(colors, c("OR < 1", "OR = 1", "OR > 1"))
 
   # ── 12. Build plot ───────────────────────────────────────────────────────────
-
-  ff <- .resolve_font(font_family)
 
   p <- ggplot2::ggplot(
     data    = plt_df,
@@ -622,14 +509,15 @@ plot_oddsratio <- function(
 
   # Confidence interval error bars (drawn before dots so dots sit on top)
   if (has_ci) {
-    p <- p + ggplot2::geom_errorbarh(
+    p <- p + ggplot2::geom_errorbar(
       mapping  = ggplot2::aes(
         xmin = .data[[".low"]],
         xmax = .data[[".high"]]
       ),
-      height    = 0.25,
-      linewidth = line_size,
-      na.rm     = TRUE
+      orientation = "y",
+      width       = 0.25,
+      linewidth   = line_size,
+      na.rm       = TRUE
     )
   }
 
@@ -642,12 +530,10 @@ plot_oddsratio <- function(
     expand = ggplot2::expansion(0)
   )
 
-  # Color scale — `limits` forces all three levels into the legend even when
-  # no data row falls in that group (e.g., no variable has OR exactly = 1).
+  # Color scale: the legend lists only the directions present in the data
   p <- p + ggplot2::scale_color_manual(
     values = color_map,
     name   = "Direction",
-    limits = c("OR < 1", "OR = 1", "OR > 1"),
     labels = c(
       "OR < 1" = "OR < 1 (decreased odds)",
       "OR = 1" = "OR = 1 (no effect)",
@@ -664,7 +550,8 @@ plot_oddsratio <- function(
   )
 
   # Apply theme
-  p <- .apply_theme(p, theme, global_font_size, ff)
+  p <- p + .ponder_theme(theme, .text_sizes(base_size), font_family) +
+    ggplot2::theme(legend.position = "bottom")
 
   p
 }

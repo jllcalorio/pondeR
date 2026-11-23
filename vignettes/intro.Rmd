@@ -18,6 +18,37 @@ knitr::opts_chunk$set(
 library(pondeR)
 ```
 
+## Tables and figures for reports
+
+Every plot defaults to `base_size = 11`, which suits the 7 x 5 inch figures of a
+default Quarto or R Markdown document. Changing `base_size` rescales all the text
+in a figure. Arguments such as `title_size` and `xlab_size` override one element.
+
+Result tables already have report-ready column names, so they can be printed
+as they are.
+
+```{r report-table}
+res <- run_diff(iris, outcome = "Sepal.Length", group = "Species")
+knitr::kable(res$data_summary[c("Group", "n", "Mean", "SD")], digits = 2)
+knitr::kable(res$posthoc_result[c("Group 1", "Group 2", "Adjusted p-value", "Significance")],
+             digits = 3)
+```
+
+## Working with dimsprepr
+
+pondeR accepts a `dimsprepr::run_DIpreprocess()` result directly. The data,
+metadata, group column and QC samples are picked up for you, and QC samples are
+left out of group comparisons.
+
+```{r dimsprepr, eval = requireNamespace("dimsprepr", quietly = TRUE), fig.width = 7, fig.height = 5}
+di <- dimsprepr::run_DIpreprocess(dimsprepr::dims_data, dimsprepr::dims_metadata,
+                                  verbose = FALSE)
+di_fc   <- run_foldchange(di)
+di_diff <- run_diff(di, summary_table = TRUE)
+plot_volcano(list(di_fc, di_diff))$plots[[1]]
+plot_score(run_pca(di))
+```
+
 
 ## Fold change against significance and against other metrics
 
@@ -77,8 +108,7 @@ plot_fcmetric(list(fc = fc, diff = diff), metric = "effect_size",
 Needs a `run_pls()` result (PLS-DA or OPLS-DA) and the suggested package
 `ropls`.
 
-```{r vip-fit, eval = requireNamespace("ropls", quietly = TRUE), fig.show = "hide"}
-# ropls draws diagnostic plots while fitting; hide them here
+```{r vip-fit, eval = requireNamespace("ropls", quietly = TRUE)}
 pls <- run_pls(scale(x), metadata = meta, group = "Group", method = "plsda",
                crossvalI = 5, permI = 0, verbose = FALSE)
 ```

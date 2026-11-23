@@ -14,7 +14,7 @@
 #' variables), then injected into the table. Each p-value cell carries a
 #' letter superscript identifying the exact test used; a legend is appended
 #' as table footnotes. Variables for which a p-value could not be computed
-#' are shown as \code{---†} with a corresponding footnote.
+#' are shown as a dash marked with a dagger and a corresponding footnote.
 #'
 #' @param x Dataframe. The input dataframe.
 #' @param summarize_what Character vector. Column names to include in the
@@ -174,9 +174,6 @@
 #' @param table_name String or \code{NULL}. Table title. \code{"auto"}
 #'   (default) generates a title automatically. \code{NULL} suppresses the
 #'   title.
-#' @param .in_subgroup_recursion Internal use only. Logical flag set to
-#'   \code{TRUE} when \code{\link{run_summarytable}()} calls itself recursively to
-#'   build subgroup tables; not intended to be set by users.
 #'
 #' @return A \code{gt_tbl} object (via \code{gtsummary::as_gt()}) representing
 #'   the descriptive (and optionally inferential) statistics table.
@@ -185,8 +182,6 @@
 #' \code{\link{run_diff}} for the continuous-variable test engine.
 #' \code{\link{run_assoc}} for the categorical-variable test engine.
 #'
-#' @importFrom openxlsx saveWorkbook writeData addWorksheet createWorkbook
-#' @import gtsummary
 #'
 #' @author John Lennon L. Calorio
 #'
@@ -240,11 +235,6 @@
 #' # Quick example
 #' run_summarytable(iris, split_by = "Species")
 #' \donttest{
-#' if (requireNamespace("forcats", quietly = TRUE) &&
-#'     requireNamespace("purrr", quietly = TRUE)) {
-#' library(gtsummary)
-#' library(dplyr)
-#'
 #' set.seed(123)
 #' sample_df <- data.frame(
 #'   Age       = sample(c(18:65, NA), 100, replace = TRUE,
@@ -255,17 +245,9 @@
 #'                         "Bachelors", "Masters", NA), 100,
 #'                      replace = TRUE,
 #'                      prob = c(0.40, 0.30, 0.15, 0.10, 0.05)),
-#'   Income    = sample(c(seq(5000, 40000, by = 5000), NA), 100,
-#'                      replace = TRUE, prob = c(rep(1, 8), 2)),
 #'   Smoker    = sample(c(1, 0, NA), 100, replace = TRUE,
-#'                      prob = c(0.25, 0.65, 0.10)),
-#'   Region    = sample(c("North", "South", "East", "West", NA), 100,
-#'                      replace = TRUE,
-#'                      prob = c(0.24, 0.24, 0.24, 0.24, .04))
+#'                      prob = c(0.25, 0.65, 0.10))
 #' )
-#'
-#' # Basic descriptive statistics (no grouping)
-#' sample_df |> run_summarytable()
 #'
 #' # Descriptive statistics split by Gender
 #' sample_df |>
@@ -273,7 +255,6 @@
 #'     split_by        = "Gender",
 #'     split_by_header = "Participant Gender",
 #'     rename_variables = list(Age    ~ "Age (Years)",
-#'                             Income ~ "Annual Income",
 #'                             Smoker ~ "Smoking Status")
 #'   )
 #'
@@ -294,23 +275,6 @@
 #'     add_inferential_pvalues = TRUE
 #'   )
 #'
-#' # Force non-parametric tests for continuous variables
-#' sample_df |>
-#'   run_summarytable(
-#'     split_by                = "Gender",
-#'     add_inferential_pvalues = TRUE,
-#'     test_type_continuous    = "nonparametric",
-#'     test_type_categorical   = "fisher"
-#'   )
-#'
-#' # Paired inferential p-values (descriptive body remains unpaired)
-#' sample_df |>
-#'   run_summarytable(
-#'     split_by                = "Gender",
-#'     add_inferential_pvalues = TRUE,
-#'     paired                  = TRUE
-#'   )
-#'
 #' # Combining categorical levels
 #' sample_df |>
 #'   run_summarytable(
@@ -324,12 +288,11 @@
 #'
 #' # Subgroup analysis: separate tables for each Education level,
 #' # with Gender comparison within each
-#' sample_df |>
+#' sample_df[c("Age", "Gender", "Education")] |>
 #'   run_summarytable(
 #'     subgroup = "Education",
 #'     split_by = "Gender"
 #'   )
-#' }
 #' }
 #'
 #' @export
@@ -372,27 +335,24 @@ run_summarytable <- function(
     bold_labels                   = TRUE,
     italicize_levels              = TRUE,
     clean_table                   = TRUE,
-    table_name                    = "auto",
-    .in_subgroup_recursion        = FALSE  # Internal: TRUE when called from subgroup loop
+    table_name                    = "auto"
 ) {
 
   # ---------------------------------------------------------------------------
   # 0.5 Coerce input to data frame
   # ---------------------------------------------------------------------------
-  if (inherits(x, "run_DIpreprocess")) {
-    if (is.null(filter)) filter <- eval(x$parameters$qc_types)
-    if (is.null(split_by)) split_by <- x$parameters$group_col
-    
-    # Inform user if QC types are being automatically filtered
-    if (!is.null(filter) && length(filter) > 0) {
-      message(sprintf("`run_DIpreprocess` object detected. Automatically filtering out samples with '%s' in '%s'. To include these samples, explicitly set `filter = NULL`.",
-                      paste(filter, collapse = ", "), split_by))
-    }
-    
-    
-    target_meta <- if (!is.null(x$metadata_merged)) x$metadata_merged else x$metadata
-    target_data <- if (!is.null(x$data_nonpls_merged)) x$data_nonpls_merged else x$data_nonpls
-    x <- cbind(target_meta, target_data)
+  # Set on subgroup tables by the recursive call below
+  sg_label    <- attr(x, ".ponder_subgroup", exact = TRUE)
+  in_subgroup <- !is.null(sg_label)
+  if (in_subgroup) attr(x, ".ponder_subgroup") <- NULL
+
+  if (.is_di(x)) {
+    di <- .di_unpack(x)
+    if (is.null(filter)) filter <- di$qc
+    if (is.null(split_by)) split_by <- di$group
+    # Summarise the features, not sample IDs and injection metadata
+    if (is.null(summarize_what)) summarize_what <- colnames(di$data)
+    x <- cbind(di$metadata, di$data)
   }
 
   x <- as.data.frame(x)
@@ -468,10 +428,10 @@ run_summarytable <- function(
       # ponytail: We don't drop the subgroup column from the data—it's not part of
       # summarize_what anyway (excluded at line ~630). Passing it through does no harm.
       x_sg <- x[x[[subgroup]] == sg_level, , drop = FALSE]
-      
-      # Recursively call run_summarytable on the subgroup with subgroup = NULL
-      # to avoid infinite recursion. Set .in_subgroup_recursion = TRUE to allow
-      # graceful degradation if split_by has insufficient levels in this subgroup.
+      attr(x_sg, ".ponder_subgroup") <- as.character(sg_level)
+
+      # Recurse with subgroup = NULL; the attribute above tells the call it is a
+      # subgroup, so split_by with too few levels degrades gracefully.
       result_tables[[as.character(sg_level)]] <- run_summarytable(
         x                             = x_sg,
         summarize_what                = summarize_what,
@@ -511,13 +471,10 @@ run_summarytable <- function(
         bold_labels                   = bold_labels,
         italicize_levels              = italicize_levels,
         clean_table                   = clean_table,
-        table_name                    = if (identical(table_name, "auto"))
-                                          paste0("auto (", sg_level, ")")
-                                        else if (is.null(table_name))
-                                          NULL
+        table_name                    = if (is.null(table_name) || identical(table_name, "auto"))
+                                          table_name
                                         else
-                                          paste0(table_name, " - ", sg_level),
-        .in_subgroup_recursion        = TRUE
+                                          paste0(table_name, " - ", sg_level)
       )
     }
     
@@ -662,7 +619,7 @@ run_summarytable <- function(
     if (n_split_levels < 2) {
       # ponytail: In a subgroup recursion, gracefully disable split_by if a subgroup
       # happens to have insufficient levels. Issue a message and proceed without splits.
-      if (.in_subgroup_recursion) {
+      if (in_subgroup) {
         message(sprintf(
           "Subgroup has insufficient levels for 'split_by' ('%s': %d level only). Proceeding without splits.",
           split_by, n_split_levels
@@ -704,7 +661,7 @@ run_summarytable <- function(
     if (is.null(split_by)) {
       # ponytail: If split_by was disabled due to insufficient subgroup levels,
       # gracefully disable p-values as well.
-      if (.in_subgroup_recursion) {
+      if (in_subgroup) {
         message("'add_inferential_pvalues' requires 'split_by'; disabling for this subgroup.")
         add_inferential_pvalues <- FALSE
       } else {
@@ -916,7 +873,7 @@ run_summarytable <- function(
     
     # Also include grouping variables if missing values should be explicit columns
     if (include_missing_in_splits) {
-      to_convert <- unique(c(to_convert, split_by, strata_by)) |> purrr::compact()
+      to_convert <- unique(c(to_convert, split_by, strata_by))
     }
     
     if (length(to_convert) > 0) {
@@ -928,7 +885,7 @@ run_summarytable <- function(
     }
   } else if (include_missing_in_splits) {
     # Only grouping variables need conversion if they aren't using total denom
-    to_convert <- unique(c(split_by, strata_by)) |> purrr::compact()
+    to_convert <- unique(c(split_by, strata_by))
     if (length(to_convert) > 0) {
       x <- x |>
         dplyr::mutate(dplyr::across(
@@ -1029,7 +986,7 @@ run_summarytable <- function(
     if (zero_as_exp) {
       make_exp_formatter <- function(dig) {
         function(x_val) {
-          purrr::map_chr(x_val, function(v) {
+          vapply(x_val, function(v) {
             if (is.na(v))   return(NA_character_)
             if (v == 0)     return(formatC(0, format = "f", digits = dig))
             rv <- round(v, dig)
@@ -1040,7 +997,7 @@ run_summarytable <- function(
               return(sci)
             }
             formatC(v, format = "f", digits = dig)
-          })
+          }, character(1L), USE.NAMES = FALSE)
         }
       }
       continuous_digits_arg <- lapply(actual_digits, make_exp_formatter)
@@ -1154,7 +1111,7 @@ run_summarytable <- function(
           
           denom_group <- grp_ns[idx]
           
-          tb[[col_nm]] <- purrr::imap_chr(tb[[col_nm]], function(cell, i) {
+          tb[[col_nm]] <- as.character(mapply(function(cell, i) {
             if (is.na(cell) || !nzchar(cell)) return(cell)
 
             row_t  <- tb$row_type[i]
@@ -1197,7 +1154,7 @@ run_summarytable <- function(
             }
 
             cell
-          })
+          }, tb[[col_nm]], seq_along(tb[[col_nm]]), USE.NAMES = FALSE))
         }
         tb
       })
@@ -1265,7 +1222,7 @@ run_summarytable <- function(
         tb |>
           dplyr::mutate(dplyr::across(
             dplyr::starts_with("stat_"),
-            ~ purrr::imap_chr(.x, function(cell, i) {
+            ~ as.character(mapply(function(cell, i) {
               if (is.na(cell) || !nzchar(trimws(cell))) return(cell)
               is_cont <- isTRUE(tb$var_type[i] == "continuous") ||
                          isTRUE(tb$variable[i] %in% forced_cont_vars)
@@ -1273,7 +1230,7 @@ run_summarytable <- function(
                 .apply_exp_to_cell(cell, dig1, dig2)
               else
                 cell
-            })
+            }, .x, seq_along(.x), USE.NAMES = FALSE))
           ))
       })
   }
@@ -1301,37 +1258,7 @@ run_summarytable <- function(
     label_vars <- intersect(label_vars, summarize_what)
 
     # -- 19b. Format p-value string ------------------------------------------
-    .fmt_p <- function(p) {
-      if (is.na(p)) return(NA_character_)
-      
-      # Determine active decimal places to evaluate rounding behavior
-      dig <- if (is.null(n_digits_pvalues)) {
-        if (p < 0.10) 3 else 1
-      } else {
-        n_digits_pvalues
-      }
-      
-      # Prevent p-values from rounding up to a misleading 1.0, 1.00, or 1.000
-      if (p == 1 || round(p, dig) >= 1) {
-        if (dig == 3) return(">.999")
-        if (dig == 1) return(">.9")
-        return(paste0(">.", strrep("9", dig))) # Fallback for other custom digit lengths
-      }
-
-      # Low-bound threshold check
-      if (p < 0.001) return("<.001")
-      
-      # Standard formatting matching user-defined precision string
-      formatted_p <- if (is.null(n_digits_pvalues)) {
-        if (p < 0.10)  formatC(p, digits = 3, format = "f")
-        else           formatC(p, digits = 1, format = "f")
-      } else {
-        formatC(p, digits = n_digits_pvalues, format = "f")
-      }
-      
-      # Remove leading zero (e.g., "0.043" becomes ".043")
-      sub("^0\\.", ".", formatted_p)
-    }
+    .fmt_p <- function(p) .format_pvalue_simplify(p, n_digits_pvalues)
 
     # -- 19c. Run engines and collect results ---------------------------------
     # We build two lookup tables keyed by variable name:
@@ -1360,12 +1287,11 @@ run_summarytable <- function(
       if (.is_continuous(var_nm)) {
         # ---- run_diff -------------------------------------------------------
         engine_result <- tryCatch({
-          run_diff(
+          .run_diff_single(
             x                     = x_clean[, var_nm, drop = FALSE],
             metadata              = x_clean,
             outcome               = var_nm,
             group                 = split_by,
-            filter                = NULL, # already filtered globally
             paired                = paired,
             test_type             = test_type_continuous,
             test_alpha            = bold_significant_pvalues_at,
@@ -1827,9 +1753,6 @@ run_summarytable <- function(
   # ---------------------------------------------------------------------------
   # 20. Table title
   # ---------------------------------------------------------------------------
-  if (!requireNamespace("gt", quietly = TRUE))
-    stop("Package 'gt' is required. Install with: install.packages('gt')")
-
   if (!is.null(table_name)) {
     title_text <- if (identical(table_name, "auto")) {
       prefix <- if (add_inferential_pvalues)
@@ -1845,6 +1768,8 @@ run_summarytable <- function(
     } else {
       table_name
     }
+    if (identical(table_name, "auto") && in_subgroup)
+      title_text <- paste0(title_text, " (", sg_label, ")")
 
     result_table <- result_table |>
       gt::tab_header(title = gt::md(paste0("**", title_text, "**")))

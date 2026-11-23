@@ -1,6 +1,6 @@
 Package: pondeR
 Title: Making Statistical Analysis a Little Bit Easier
-Version: 1.0
+Version: 1.0.0
 Authors@R:
     person("John Lennon", "Calorio", , "jllcalorio@gmail.com", role = c("aut", "cre"))
 Description: Generate publication-ready statistical tables and figures
@@ -20,7 +20,7 @@ Description: Generate publication-ready statistical tables and figures
     child growth z-scores, and plotting helpers for volcano, score, scree,
     heatmap, dendrogram, odds-ratio and relative-abundance plots.
 License: MIT + file LICENSE
-URL: https://jllcalorio.github.io/pondeR, https://github.com/jllcalorio/pondeR
+URL: https://jllcalorio.github.io/pondeR/, https://github.com/jllcalorio/pondeR
 BugReports: https://github.com/jllcalorio/pondeR/issues
 Depends:
     R (>= 4.1.0)
@@ -29,34 +29,26 @@ Imports:
     dplyr,
     effectsize,
     forcats,
-    ggplot2,
+    ggplot2 (>= 3.5.0),
     ggpubr,
     ggrepel,
     grDevices,
     grid,
+    gt,
     gtsummary,
-    lme4,
-    lmerTest,
     logistf,
-    magrittr,
     MASS,
-    methods,
-    moments,
     nortest,
     openxlsx,
     parallel,
     patchwork,
     performance,
     pROC,
-    purrr,
     rlang,
     rstatix,
-    scales,
     stats,
-    tibble,
     tools,
-    utils,
-    viridis
+    utils
 Suggests:
     anthro,
     anthroplus,
@@ -69,26 +61,25 @@ Suggests:
     ggdendro,
     ggtext,
     glmnet,
-    gt,
     htmlwidgets,
     irrCAC,
     knitr,
+    lme4,
+    lmerTest,
     mixOmics,
     OmicFlow,
     plotly,
     polycor,
     quarto,
-    reshape2,
     rmarkdown,
     ropls,
     testthat (>= 3.0.0),
     vegan,
     withr
-Remotes:
-    jllcalorio/dimsprepr
 VignetteBuilder:
     knitr
 Config/testthat/edition: 3
 Config/roxygen2/version: 8.1.1
 Encoding: UTF-8
+Language: en-US
 Roxygen: list(markdown = TRUE)

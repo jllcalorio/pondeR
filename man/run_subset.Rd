@@ -15,7 +15,7 @@ run_subset(
   random = TRUE,
   top_to_bottom = TRUE,
   left_to_right = TRUE,
-  seed = 123
+  seed = NULL
 )
 }
 \arguments{
@@ -57,7 +57,8 @@ that define additional grouping strata.}
 
 \item{left_to_right}{Logical; \code{TRUE} (default). For deterministic col pulls.}
 
-\item{seed}{An integer; \code{123} (default). The random seed. \code{NULL} disables seeding.}
+\item{seed}{An integer passed to \code{\link[=set.seed]{set.seed()}} for a reproducible draw. Default
+\code{NULL} leaves the random number generator alone.}
 }
 \value{
 A named list of class \code{"run_subset"}.
@@ -80,7 +81,7 @@ requirement of \strong{any} \code{match} column (union). This maximises the
 number of chosen rows.
 \item \strong{\code{independent = FALSE}:} All \code{match} columns are crossed
 into a single Cartesian product of categories (e.g.
-\code{"1-2 years × Male"}), and every unique combination is represented
+\code{"1-2 years x Male"}), and every unique combination is represented
 equally. This guarantees perfect joint balance.
 }
 }

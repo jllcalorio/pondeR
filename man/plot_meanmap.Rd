@@ -18,15 +18,15 @@ plot_meanmap(
   n_clusters = NULL,
   cluster_labels = NULL,
   cluster_colors = NULL,
-  heatmap_colors = c("#008000", "#FFFF00", "#FF0000"),
+  heatmap_colors = c("#2166AC", "#F7F7F7", "#B2182B"),
   show_values = FALSE,
   value_digits = 2L,
   value_color = "black",
-  global_font_size = 11,
-  row_font_size = NULL,
-  col_font_size = NULL,
-  legend_font_size = NULL,
-  cluster_label_size = NULL,
+  base_size = 11,
+  xlab_size = NULL,
+  ylab_size = NULL,
+  legend_size = NULL,
+  label_size = NULL,
   sig_marker_size = NULL,
   dend_width = 0.2,
   legend_position = "right",
@@ -90,7 +90,8 @@ Must have length equal to \code{n_clusters} when supplied. Default
 
 \item{heatmap_colors}{A character vector of length \eqn{\ge 2} specifying
 the colour gradient for the heatmap fill, from low to high values.
-Default \code{c("#008000", "#FFFF00", "#FF0000")} (green–yellow–red).}
+Default \code{c("#2166AC", "#F7F7F7", "#B2182B")} (blue-white-red, which
+stays readable for colour-blind viewers).}
 
 \item{show_values}{Logical. Whether to print the rounded mean value inside
 each heatmap cell. Default \code{FALSE}.}
@@ -102,26 +103,14 @@ for in-cell value labels. Default \code{2}. Ignored when
 \item{value_color}{A single character string for in-cell text colour.
 Default \code{"black"}.}
 
-\item{global_font_size}{Numeric. Base font size in points. Default
-\code{11}.}
+\item{base_size}{Numeric. Base font size in points; every text element
+scales from it. Default \code{11}, which suits a default 7 x 5 inch Quarto
+figure.}
 
-\item{row_font_size}{Numeric or \code{NULL}. Font size for row (variable)
-labels on the right y-axis. Derived from \code{global_font_size} when
-\code{NULL} (default).}
-
-\item{col_font_size}{Numeric or \code{NULL}. Font size for column (group)
-labels on the x-axis. Derived from \code{global_font_size} when
-\code{NULL} (default).}
-
-\item{legend_font_size}{Numeric or \code{NULL}. Font size for legend text.
-Derived from \code{global_font_size} when \code{NULL} (default).}
-
-\item{cluster_label_size}{Numeric or \code{NULL}. Font size for cluster
-bracket labels. Derived from \code{global_font_size} when \code{NULL}
-(default). Ignored when \code{n_clusters} is \code{NULL}.}
-
-\item{sig_marker_size}{Numeric or \code{NULL}. Font size for significance
-markers. Derived from \code{global_font_size} when \code{NULL} (default).}
+\item{xlab_size, ylab_size, legend_size, label_size, sig_marker_size}{Font sizes
+in points for the group labels (x axis), variable labels (y axis), legend
+text, cluster labels and in-cell values, and significance markers. Default
+\code{NULL} derives each from \code{base_size}.}
 
 \item{dend_width}{Numeric in (0, 1). Relative width of the dendrogram panel
 as a fraction of the total plot width. Default \code{0.2}.}
@@ -194,8 +183,9 @@ appropriate. For raw intensities on very different scales, use
 across all rows.
 }
 \examples{
+\dontshow{if (requireNamespace("ggdendro", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 \donttest{
-## ── Basic example: iris mean intensity by species ────────────────────────
+## Basic example: iris mean intensity by species
 data(iris)
 num_part <- iris[, 1:4]
 meta_part <- data.frame(Species = iris$Species)
@@ -208,7 +198,7 @@ p <- plot_meanmap(
 )
 print(p)
 
-## ── With cluster colouring and significance markers ──────────────────────
+## With cluster colouring and significance markers
 p2 <- plot_meanmap(
   x                = num_part,
   metadata         = meta_part,
@@ -217,12 +207,11 @@ p2 <- plot_meanmap(
   n_clusters       = 2,
   cluster_labels   = c("Cluster I", "Cluster II"),
   sig_vars         = c("Petal.Length", "Petal.Width"),
-  sig_color        = "red",
-  global_font_size = 11
+  sig_color        = "red"
 )
 print(p2)
 
-## ── Custom group order and colour palette ────────────────────────────────
+## Custom group order and colour palette
 p3 <- plot_meanmap(
   x           = num_part,
   metadata    = meta_part,
@@ -234,7 +223,7 @@ p3 <- plot_meanmap(
 )
 print(p3)
 }
-
+\dontshow{\}) # examplesIf}
 }
 \references{
 Ward JH (1963). Hierarchical grouping to optimize an objective function.

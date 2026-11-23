@@ -118,7 +118,7 @@
 #'   Royal Statistical Society: Series B}, 57(1), 289-300.
 #'   \doi{10.1111/j.2517-6161.1995.tb02031.x}
 #'
-#' @examples
+#' @examplesIf requireNamespace("lmerTest", quietly = TRUE)
 #' set.seed(42)
 #' n_subj  <- 20
 #' n_times <- 2
@@ -151,9 +151,6 @@
 #'
 #' @author John Lennon L. Calorio
 #'
-#' @importFrom lme4 VarCorr ranef
-#' @importFrom lmerTest lmer
-#' @importFrom stats as.formula p.adjust fitted resid ppoints confint vcov df.residual qt
 #'
 #' @export
 run_mixedmodel <- function(
@@ -168,17 +165,14 @@ run_mixedmodel <- function(
 ) {
 
   # --- Integration with run_DIpreprocess ---
-  if (inherits(x, "run_DIpreprocess")) {
-    if (missing(metadata) || is.null(metadata)) {
-      metadata <- if (!is.null(x$metadata_merged)) x$metadata_merged else x$metadata
-    }
+  if (.is_di(x)) {
+    di <- .di_unpack(x)
+    if (missing(metadata) || is.null(metadata)) metadata <- di$metadata
     # QC samples are not study samples: drop them from both x and metadata
-    md0 <- if (!is.null(x$metadata_merged)) x$metadata_merged else x$metadata
-    grp_col <- if ("Group" %in% names(md0)) "Group" else x$parameters$group_col
-    keep <- !(as.character(md0[[grp_col]]) %in% eval(x$parameters$qc_types))
-    x <- if (!is.null(x$data_nonpls_merged)) x$data_nonpls_merged else x$data_nonpls
-    if (is.data.frame(metadata) && nrow(metadata) == length(keep)) metadata <- metadata[keep, , drop = FALSE]
-    x <- x[keep, , drop = FALSE]
+    keep <- !(as.character(di$metadata[[di$group]]) %in% di$qc)
+    if (is.data.frame(metadata) && nrow(metadata) == length(keep))
+      metadata <- metadata[keep, , drop = FALSE]
+    x <- di$data[keep, , drop = FALSE]
   }
 
   # ---- soft dependencies ---------------------------------------------------
@@ -248,7 +242,7 @@ run_mixedmodel <- function(
     found      <- candidates[candidates %in% names(metadata)]
     if (length(found)) {
       subject_col <- found[[1L]]
-      message(sprintf("'subject_col' not specified; using detected column: '%s'.", subject_col))
+      if (verbose) message(sprintf("'subject_col' not specified; using detected column: '%s'.", subject_col))
     } else {
       warning(
         "'subject_col' is NULL and no default column (ID, id, SubjectID, subject_id) ",
@@ -576,6 +570,21 @@ run_mixedmodel <- function(
     data.frame()
   }
 
+  # ---- report-ready column names -------------------------------------------
+  .report_names <- function(d) {
+    if (is.null(d) || !nrow(d)) return(d)
+    header <- c(feature = "Feature", term = "Term", estimate = "Estimate",
+                std_error = "Std. error", t_value = "t", p_value = "p-value",
+                ci_lower = "95% CI lower", ci_upper = "95% CI upper",
+                p_adj = "Adjusted p-value", stars = "Significance")
+    hit <- names(d) %in% names(header)
+    names(d)[hit] <- header[names(d)[hit]]
+    d
+  }
+  combined_fe <- .report_names(combined_fe)
+  for (feat in names(successful))
+    all_results[[feat]]$fixed_effects <- .report_names(all_results[[feat]]$fixed_effects)
+
   # ---- assemble return object ----------------------------------------------
   out_list <- c(
     all_results,
@@ -600,13 +609,11 @@ run_mixedmodel <- function(
 
   class(out_list) <- c("run_mixedmodel", "list")
 
-  message(sprintf(
-    "\nrun_mixedmodel complete: %d/%d features fitted successfully (%.1f%%).",
-    n_success, length(feature_names),
-    n_success / length(feature_names) * 100
-  ))
+  if (verbose)
+    message(sprintf("run_mixedmodel complete: %d/%d features fitted successfully.",
+                    n_success, length(feature_names)))
 
-  invisible(out_list)
+  out_list
 }
 
 
@@ -626,8 +633,8 @@ print.run_mixedmodel <- function(x, ...) {
 #' @export
 summary.run_mixedmodel <- function(object, n = 10L, ...) {
   cfe <- object$combined_fixed_effects
-  if (!is.null(cfe) && nrow(cfe) > 0L && "p_adj" %in% names(cfe)) {
-    top <- head(cfe[order(cfe$p_adj, na.last = TRUE), ], n)
+  if (!is.null(cfe) && nrow(cfe) > 0L && "Adjusted p-value" %in% names(cfe)) {
+    top <- head(cfe[order(cfe[["Adjusted p-value"]], na.last = TRUE), ], n)
   } else {
     top <- data.frame()
   }
@@ -655,7 +662,8 @@ print.summary.run_mixedmodel <- function(x, ...) {
   cat("\n-- Top Features by Adjusted P-value --\n")
   if (nrow(x$top_effects) > 0L) {
     print(x$top_effects[, intersect(
-      c("feature","term","estimate","p_value","p_adj","stars"), names(x$top_effects)
+      c("Feature", "Term", "Estimate", "p-value", "Adjusted p-value", "Significance"),
+      names(x$top_effects)
     )], row.names = FALSE)
   } else {
     cat("  No significant effects found.\n")

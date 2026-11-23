@@ -9,8 +9,8 @@
 #' \code{\link{run_regreg}} performs: removing rows with \code{NA} in
 #' \code{pred}, and optionally subsetting rows to match those that would
 #' survive the \code{not_penalized} NA removal. This lets the user see exactly
-#' why \code{\link{run_regreg}} may warn that \code{cv_folds} was reduced — because
-#' the smallest group has fewer samples than the requested number of folds —
+#' why \code{\link{run_regreg}} may warn that \code{cv_folds} was reduced - because
+#' the smallest group has fewer samples than the requested number of folds -
 #' and which group is the bottleneck.
 #'
 #' @details
@@ -27,10 +27,10 @@
 #'
 #' When \code{metadata} is a named list (parallel to a \code{lapply} call),
 #' each element is processed and results are stacked with a leading
-#' \code{taxon} column.
+#' \code{Taxon} column.
 #'
 #' @param metadata A \code{data.frame}, \code{tibble}, \strong{or a named
-#'   list} of such objects — identical to what was (or will be) passed to
+#'   list} of such objects - identical to what was (or will be) passed to
 #'   \code{\link{run_regreg}()}. When a list, names must be set.
 #' @param pred A single character string naming the dependent variable column
 #'   in \code{metadata}.
@@ -45,7 +45,7 @@
 #'   step uses the same coercion logic, so group sizes are counted on exactly
 #'   the same sample set. For example, if \code{"Serum albumin (g/L)"} is
 #'   stored as character but is truly numeric, listing it here prevents it from
-#'   being coerced to integer codes — which could introduce spurious NAs or
+#'   being coerced to integer codes - which could introduce spurious NAs or
 #'   hide real ones. Default: \code{NULL}.
 #' @param train_percent A numeric scalar in \code{(0, 1)} matching the
 #'   \code{train_percent} argument passed to \code{\link{run_regreg}()}. Used to
@@ -54,25 +54,26 @@
 #'   \code{\link{run_regreg}()}. Used to flag groups whose projected training-set size
 #'   is smaller than the requested folds. Default: \code{10L}.
 #' @param show_summary_table Logical. If \code{TRUE} and \code{pred} is
-#'   categorical, a \code{\link{run_summarytable}()} summary of \code{metadata}
-#'   stratified by \code{pred} is printed as a side-effect. The numeric count
-#'   data frame is still returned invisibly. Default: \code{FALSE}.
+#'   categorical, the result becomes a list holding the \code{group_sizes} data
+#'   frame and a \code{\link{run_summarytable}()} \code{summary_table} of
+#'   \code{metadata} stratified by \code{pred}. Default: \code{FALSE}.
 #' @param summarytable_args A named list of additional arguments forwarded to
 #'   \code{\link{run_summarytable}} when \code{show_summary_table = TRUE}.
 #'   Default: \code{list()}.
 #'
-#' @return A \code{data.frame} with the following columns:
+#' @return A report-ready \code{data.frame} with the following columns (or a
+#'   list containing it; see \code{show_summary_table}):
 #' \describe{
-#'   \item{\code{taxon}}{Only when \code{metadata} is a named list.}
-#'   \item{\code{group}}{Level of the \code{pred} variable.}
-#'   \item{\code{n_total}}{Number of samples in that group (after NA removal).}
-#'   \item{\code{n_train_projected}}{Projected training-set size:
-#'     \code{floor(n_total * train_percent)}.}
-#'   \item{\code{folds_requested}}{The value of \code{cv_folds}.}
-#'   \item{\code{fold_reduction_expected}}{Logical; \code{TRUE} when
-#'     \code{n_train_projected < cv_folds}.}
-#'   \item{\code{suggested_cv_folds}}{The fold count \code{\link{run_regreg}} would
-#'     actually use: \code{max(3, n_train_projected)}.}
+#'   \item{\code{Taxon}}{Only when \code{metadata} is a named list.}
+#'   \item{\code{Group}}{Level of the \code{pred} variable.}
+#'   \item{\code{Total n}}{Number of samples in that group (after NA removal).}
+#'   \item{\code{Projected training n}}{Projected training-set size:
+#'     \code{floor(Total n * train_percent)}.}
+#'   \item{\code{Folds requested}}{The value of \code{cv_folds}.}
+#'   \item{\code{Fold reduction expected}}{Logical; \code{TRUE} when the
+#'     projected training size is below \code{cv_folds}.}
+#'   \item{\code{Suggested CV folds}}{The fold count \code{\link{run_regreg}}
+#'     would actually use: the projected training size, but at least 3.}
 #' }
 #'
 #' @references
@@ -168,7 +169,7 @@ get_groupsizes <- function(
     rows <- lapply(names(metadata), function(nm) {
       out <- .ggs_single(metadata[[nm]], pred, not_penalized, is_numeric,
                          train_percent, cv_folds)
-      cbind(taxon = nm, out, stringsAsFactors = FALSE)
+      cbind(Taxon = nm, out, stringsAsFactors = FALSE)
     })
 
     combined <- do.call(rbind, rows)
@@ -192,26 +193,14 @@ get_groupsizes <- function(
   # Optional summary table (single metadata only)
   # ---------------------------------------------------------------------------
   if (show_summary_table) {
-
     if (!is.character(metadata[[pred]]) && !is.factor(metadata[[pred]])) {
-      message(
-        "'show_summary_table = TRUE' is only supported for categorical 'pred' ",
-        "variables. Skipping summary table."
-      )
+      message("'show_summary_table = TRUE' needs a categorical 'pred'; skipping it.")
     } else {
-
       # Filter metadata to only the rows that run_regreg would see
       meta_clean <- .ggs_filter_meta(metadata, pred, not_penalized)
-
-      tbl_args <- c(
-        list(df = meta_clean, split_by = pred),
-        summarytable_args
-      )
-
-      cat("\n--- run_summarytable() output ---\n")
-      tbl <- do.call(run_summarytable, tbl_args)
-      print(tbl)
-      cat("\n")
+      tbl <- do.call(run_summarytable,
+                     c(list(x = meta_clean, split_by = pred), summarytable_args))
+      return(list(group_sizes = result, summary_table = tbl))
     }
   }
 
@@ -244,13 +233,14 @@ get_groupsizes <- function(
     n_valid <- sum(!is.na(resp))
     n_train <- floor(n_valid * train_percent)
     return(data.frame(
-      group                   = "(numeric response)",
-      n_total                 = n_valid,
-      n_train_projected       = n_train,
-      folds_requested         = as.integer(cv_folds),
-      fold_reduction_expected = n_train < cv_folds,
-      suggested_cv_folds      = max(3L, n_train),
-      stringsAsFactors        = FALSE
+      Group                     = "(numeric response)",
+      `Total n`                 = n_valid,
+      `Projected training n`    = n_train,
+      `Folds requested`         = as.integer(cv_folds),
+      `Fold reduction expected` = n_train < cv_folds,
+      `Suggested CV folds`      = max(3L, n_train),
+      check.names               = FALSE,
+      stringsAsFactors          = FALSE
     ))
   }
 
@@ -265,14 +255,15 @@ get_groupsizes <- function(
   suggested_folds <- pmax(3L, n_train_proj)
 
   data.frame(
-    group                   = lvls,
-    n_total                 = ns,
-    n_train_projected       = n_train_proj,
-    folds_requested         = as.integer(cv_folds),
-    fold_reduction_expected = will_reduce,
-    suggested_cv_folds      = suggested_folds,
-    stringsAsFactors        = FALSE,
-    row.names               = NULL
+    Group                     = lvls,
+    `Total n`                 = ns,
+    `Projected training n`    = n_train_proj,
+    `Folds requested`         = as.integer(cv_folds),
+    `Fold reduction expected` = will_reduce,
+    `Suggested CV folds`      = suggested_folds,
+    check.names               = FALSE,
+    stringsAsFactors          = FALSE,
+    row.names                 = NULL
   )
 }
 

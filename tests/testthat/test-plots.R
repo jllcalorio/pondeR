@@ -46,7 +46,7 @@ test_that("plot_volcano classifies features against thresholds", {
   expect_built(v$plots[[1]])
   cl <- v$classified
   expect_true(is.data.frame(cl))
-  expect_equal(cl$.regulation, c("Up", "Down", "NS", "NS"))
+  expect_equal(cl$Regulation, c("Up", "Down", "NS", "NS"))
 })
 
 test_that("plot_fcmetric builds from run_foldchange", {
@@ -74,6 +74,7 @@ test_that("plot_score builds from run_pcoa", {
 })
 
 test_that("plot_mixedmodel builds from run_mixedmodel", {
+  skip_if_not_installed("lmerTest")
   set.seed(4)
   meta <- data.frame(subject_id = factor(rep(1:15, each = 2)),
                      time = rep(c("pre", "post"), 15))
@@ -91,4 +92,16 @@ test_that("plot_relabund normalises counts to 100%", {
   b <- ggplot2::ggplot_build(p)$data[[1]]
   tot <- tapply(b$ymax - b$ymin, b$x, sum)
   expect_true(all(abs(tot - max(tot)) < 1e-6))        # every bar has the same total
+})
+
+test_that("plot_relabund group bars average per-sample proportions", {
+  # Unequal sample totals: summing raw counts would give A = 0.48/0.52
+  counts <- data.frame(t1 = c(10, 200, 5, 1), t2 = c(30, 200, 5, 9))
+  meta <- data.frame(SampleID = paste0("s", 1:4), Group = c("A", "A", "B", "B"))
+  p <- suppressWarnings(suppressMessages(
+    plot_relabund(counts, metadata = meta, show_x_as = "Group", group_aggregate = TRUE)))
+  b <- ggplot2::ggplot_build(p)$data[[1]]
+  h <- b$ymax - b$ymin
+  props <- unlist(tapply(h, b$x, function(v) sort(v / sum(v))))
+  expect_equal(unname(sort(props)), sort(c(0.375, 0.625, 0.3, 0.7)), tolerance = 1e-6)
 })

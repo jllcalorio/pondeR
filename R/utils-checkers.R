@@ -61,11 +61,6 @@
 #' # Matrix
 #' is_tabular(matrix(1:12, nrow = 3))
 #'
-#' # tibble (if tibble is installed)
-#' if (requireNamespace("tibble", quietly = TRUE)) {
-#'   is_tabular(tibble::tibble(x = 1:3, y = letters[1:3]))
-#' }
-#'
 #' # data.table (if data.table is installed)
 #' if (requireNamespace("data.table", quietly = TRUE)) {
 #'   is_tabular(data.table::data.table(a = 1:5, b = rnorm(5)))

@@ -33,7 +33,7 @@ run_diff(
   n_digits_pvalues = 3,
   n_digits = 2,
   zero_as_exp = TRUE,
-  verbose = TRUE,
+  verbose = FALSE,
   num_cores = 1
 )
 }
@@ -46,7 +46,7 @@ used as the metadata source (single data-frame workflow).}
 
 \item{metadata}{A data frame containing sample-level metadata (e.g.,
 grouping, subgroups, subject IDs). When \code{NULL} (default),
-\code{x} is used for both feature values and metadata — useful when a
+\code{x} is used for both feature values and metadata - useful when a
 single data frame holds all columns (see Examples).}
 
 \item{outcome}{A character string or character vector naming the numeric
@@ -145,17 +145,18 @@ to the returned list. Default \code{FALSE}.}
 \item{simplify}{Logical; when \code{summary_table = TRUE}, controls whether
 \code{$summary_table} (and subgroup tables) are post-processed into a
 compact, presentation-ready form (class \code{"run_diff_summary"}, with
-an \code{\link{as_gt}} method). See \code{\link{.simplify_summary_table}}
-for the full set of transformations. Default \code{TRUE}.}
+an \code{\link{as_gt}} method): values are formatted, the effect size and
+its confidence interval are merged, and superscripts on the p-values
+identify the test used. Default \code{TRUE}.}
 
 \item{n_digits_pvalues}{Numeric or \code{NULL}; decimal places for
-\code{p_value} / \code{p_value_adj} in \code{$summary_table} when
+the p-value columns in \code{$summary_table} when
 \code{simplify = TRUE}. \code{NULL} auto-formats (3 d.p. when
 \eqn{p < 0.10}, otherwise 1 d.p.), matching \code{\link{run_summarytable}}'s
 \code{n_digits_pvalues}. Default \code{3}.}
 
 \item{n_digits}{Integer; decimal places for numeric \code{$summary_table}
-columns (\code{statistic}, \code{mean_*}, effect-size estimate/CI) when
+columns (statistic, group means, effect-size estimate/CI) when
 \code{simplify = TRUE}. Default \code{2}.}
 
 \item{zero_as_exp}{Logical; when \code{TRUE} (default) and
@@ -163,7 +164,7 @@ columns (\code{statistic}, \code{mean_*}, effect-size estimate/CI) when
 to \code{0} at \code{n_digits} but are genuinely non-zero are shown in
 scientific notation, matching \code{\link{run_summarytable}}'s \code{zero_as_exp}.}
 
-\item{verbose}{Logical. Default \code{TRUE}.}
+\item{verbose}{Logical. Print progress messages. Default \code{FALSE}.}
 
 \item{num_cores}{Integer or \code{"max"}. Default \code{1}.}
 }
@@ -180,7 +181,14 @@ When \code{outcome} is a single string, a list of class
 
 When \code{outcome} is length > 1, a named list of \code{"run_diff"}
 objects, optionally with \code{$summary_table} and
-\code{$summary_table_<sg>} elements.
+\code{$summary_table_<sg>} elements. The summary table is ready for
+reports, with columns \code{Variable}, \code{Statistic}, \code{df}, one
+\code{Mean (<group>)} per group, \code{ES measure}, \code{ES (95\% CI)},
+\code{Magnitude}, \code{Significant pairs}, \code{Pairs tested},
+\code{p-value}, \code{Adjusted p-value}, \code{Significant} and
+\code{Interpretation}. With \code{simplify = FALSE} it also has
+\code{Test}, and \code{ES}, \code{ES CI lower} and \code{ES CI upper}
+replace \code{ES (95\% CI)}.
 }
 \description{
 Performs an automatic comparison of a numeric outcome variable across two or
@@ -208,7 +216,7 @@ ANOVA-family test is used.
 
 \strong{Assumption Checking (\code{test_type = "auto"}):}
 \itemize{
-\item \strong{Normality:} Shapiro-Wilk (n < 50) or Lilliefors (n ≥ 50)
+\item \strong{Normality:} Shapiro-Wilk (n < 50) or Lilliefors (n >= 50)
 under \code{"auto"}. Per-group for 2-group comparisons; on model
 residuals for > 2 groups.
 \item \strong{Homogeneity of Variance:} Levene's test (\code{car});
@@ -217,12 +225,12 @@ falls back to Bartlett's test if \code{car} is unavailable.
 
 \strong{Test Selection Logic (\code{test_type = "auto"}):}
 \itemize{
-\item Independent two-sample: Mann-Whitney U (normality violated) →
-Welch's t (variance violated) → Student's t.
-\item Paired two-sample: Wilcoxon signed-rank (normality violated) →
+\item Independent two-sample: Mann-Whitney U (normality violated) ->
+Welch's t (variance violated) -> Student's t.
+\item Paired two-sample: Wilcoxon signed-rank (normality violated) ->
 Paired t.
-\item Independent > 2 groups: Kruskal-Wallis (normality violated) →
-Welch's ANOVA (variance violated) → One-way ANOVA.
+\item Independent > 2 groups: Kruskal-Wallis (normality violated) ->
+Welch's ANOVA (variance violated) -> One-way ANOVA.
 }
 
 \strong{Post-Hoc Tests (> 2 groups, significant omnibus):}
@@ -258,36 +266,31 @@ within each group (a warning is emitted). Use \code{within} +
 (> 2 time points / conditions).
 }
 \examples{
-\dontrun{
-# --- Single data frame: x serves as its own metadata ---
-
-# 3+ groups (auto test selection)
+# 3+ groups (auto test selection); x serves as its own metadata
 res_iris <- run_diff(iris, outcome = "Sepal.Length", group = "Species")
-print(res_iris); summary(res_iris)
-
-# Two-sample independent
-mtcars$am <- factor(mtcars$am, labels = c("automatic", "manual"))
-run_diff(mtcars, outcome = "mpg", group = "am")
+res_iris
+res_iris$posthoc_result
 
 # Paired (with subject alignment)
 run_diff(sleep, outcome = "extra", group = "group",
          paired = TRUE, subject_id = "ID")
 
-# --- Separate x / metadata data frames ---
-
-# Multi-outcome with summary table
+\donttest{
+# Several outcomes in one summary table, with separate x and metadata
 outcomes <- c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width")
-x_iris   <- iris[, outcomes]
-meta_iris <- iris["Species"]
-res_multi <- run_diff(x_iris, meta_iris, outcomes, "Species",
-                      summary_table = TRUE, verbose = FALSE)
+res_multi <- run_diff(iris[outcomes], iris["Species"], outcomes, "Species",
+                      summary_table = TRUE)
 res_multi$summary_table
 
-# --- One-way RM ANOVA ---
-run_diff(df_long, outcome = "HeartRate",
-         within = "Time", subject_id = "ID")
-
-# --- Mixed ANOVA ---
+# Repeated-measures and mixed ANOVA
+set.seed(1)
+df_long <- data.frame(
+  ID        = factor(rep(1:12, each = 3)),
+  Time      = factor(rep(c("T1", "T2", "T3"), 12)),
+  Group     = rep(c("A", "B"), each = 18),
+  HeartRate = rnorm(36, 70, 5) + rep(c(0, 3, 6), 12)
+)
+run_diff(df_long, outcome = "HeartRate", within = "Time", subject_id = "ID")
 run_diff(df_long, outcome = "HeartRate", group = "Group",
          within = "Time", subject_id = "ID")
 }

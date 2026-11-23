@@ -14,14 +14,14 @@
 #'   via S3 dispatch based on the class of \code{res}.
 #' @param pc Character vector of length 2. Principal components to plot, e.g., `c("PC1", "PC2")`.
 #'   Can also be numeric, e.g., `c(1, 2)`. Default: `c(1, 2)`.
-#' @param color_by Character. Name of column in `metadata` to use for coloring points.
-#'   If the column contains categorical data, points are colored by discrete groups with optional
-#'   confidence ellipses. If the column contains numeric data, points are colored using a
-#'   continuous gradient scale. Required parameter with no default.
-#' @param points_from Character. Name of column in `metadata` to use for labeling points.
-#'   This determines which values are used for sample labels in the plot and for outlier
-#'   labeling when enabled. If the specified column is not found in metadata, sequential
-#'   labels will be used instead. Required parameter with no default.
+#' @param color_by Character. Name of the metadata column used to colour points.
+#'   Categorical columns give discrete groups with optional confidence ellipses;
+#'   numeric columns give a continuous gradient. Default \code{NULL} uses the
+#'   \code{group} column of the fitted \code{\link{run_pca}()} or
+#'   \code{\link{run_pls}()} model (required for \code{\link{run_pcoa}()}).
+#' @param points_from Character. Name of the metadata column holding sample
+#'   labels, used when labelling outliers. Default \code{NULL} uses the sample
+#'   (row) names.
 #' @param title Character. Main plot title. Default: auto-generated based on PCs.
 #' @param subtitle Character. Plot subtitle. Default: `NULL` (no subtitle).
 #' @param caption Character. Plot caption (bottom-right). Default: `NULL` (no caption).
@@ -46,10 +46,8 @@
 #'   threshold that exactly matches the drawn `stat_ellipse` boundary (same covariance
 #'   estimator and critical value formula). Default `1.0` labels any sample that falls outside
 #'   that boundary. Values > 1 require the sample to be proportionally farther beyond it:
-#'   `1.0`–`1.5` labels most ellipse-breaching samples; `1.5`–`3.0` labels clearly
-#'   separated samples; `> 3.0` labels only extreme outliers.
-#' @param outlier_label_size Numeric or `NULL`. Font size (ggplot2 text units) for outlier
-#'   labels. Default: `NULL` (resolves to `base_size / 3.5`, consistent with `base_size`).
+#'   `1.0` to `1.5` labels most ellipse-breaching samples; `1.5` to `3.0` labels
+#'   clearly separated samples; `> 3.0` labels only extreme outliers.
 #' @param show_groups Character vector or `NULL`. Subset of group values from `color_by` to
 #'   include in the plot. Samples not in `show_groups` are hidden. Default: `NULL` (all groups
 #'   plotted). Only applies when `color_by` is categorical. When supplied, axis labels are
@@ -57,21 +55,20 @@
 #' @param colors Character vector. Custom color palette for discrete groups. If `NULL`
 #'   (default), the Okabe-Ito colorblind-friendly palette is used. Ignored when `color_by`
 #'   is numeric (continuous scale is always used for numeric variables).
-#' @param point_size Numeric. Size of points. Default: `10`.
+#' @param point_size Numeric. Size of points. Default: `3`.
 #' @param point_alpha Numeric. Transparency of points (0-1). Default: `0.8`.
-#' @param theme Character. ggplot2 theme to apply. Options: `"nature"`, `"minimal"`,
-#'   `"classic"`, `"bw"`, `"light"`, `"dark"`. Default: `"nature"` (a clean, publication-ready
-#'   style based on `theme_bw()`).
-#' @param base_size Numeric. Base font size for the theme (pts). Default: `30`.
-#' @param font_family Character. Font family for all text elements. Default: `"sans"`.
-#' @param axis_title_size Numeric. Font size for axis titles. Default: `base_size + 1`.
-#' @param axis_text_size Numeric. Font size for axis tick labels. Default: `base_size - 1`.
-#' @param plot_title_size Numeric. Font size for the plot title. Default: `base_size + 3`.
-#' @param legend_title_size Numeric. Font size for the legend title. Default: `base_size`.
-#' @param legend_text_size Numeric. Font size for legend text. Default: `base_size - 1`.
-#' @param zoom Numeric. Scaling factor applied uniformly to all text and point size elements.
-#'   Values > 1 enlarge, values < 1 shrink. Default: `1`.
-#' @param verbose Logical. Print progress messages. Default: `TRUE`.
+#' @param theme Character. ggplot2 theme to apply. Options: `"nature"`, `"classic"`,
+#'   `"plos"`, `"minimal"`, `"bw"`, `"light"`, `"dark"`, `"gray"`. Default:
+#'   `"nature"` (a clean, publication-ready style based on `theme_bw()`).
+#' @param base_size Base font size in points; every text element scales from it.
+#'   Default: `11`, which suits a default 7 x 5 inch Quarto figure.
+#' @param font_family Character. Font family for all text elements. Default: `""`
+#'   (the graphics device's default).
+#' @param title_size,subtitle_size,xlab_size,ylab_size,axis_text_size,legend_size,label_size
+#'   Font sizes in points for the title, subtitle, x-axis label, y-axis label,
+#'   tick labels, legend and outlier labels. Default `NULL` derives each from
+#'   `base_size`.
+#' @param verbose Logical. Print progress messages. Default: `FALSE`.
 #' @param ... Additional arguments passed to methods.
 #'
 #' @return A `ggplot2` object.
@@ -152,13 +149,6 @@
 #' and presentations that are friendly to colorblind people*.
 #' \url{https://jfly.uni-koeln.de/color/}
 #'
-#' @importFrom ggplot2 ggplot aes geom_point stat_ellipse scale_color_manual
-#' @importFrom ggplot2 scale_shape_manual scale_fill_manual labs theme_bw theme_minimal theme_classic
-#' @importFrom ggplot2 theme_light theme_dark theme element_text element_blank element_line element_rect unit
-#' @importFrom viridis scale_color_viridis
-#' @importFrom ggrepel geom_label_repel
-#' @importFrom stats mahalanobis cov qt qnorm qf qchisq
-#' @importFrom MASS cov.trob
 #'
 #' @seealso \code{\link[dimsprepr]{run_DIpreprocess}}, \code{\link{run_pca}}, \code{\link{run_pls}}
 #' 
@@ -181,8 +171,8 @@ plot_score <- function(res, ...) UseMethod("plot_score")
 plot_score.run_pca <- function(
     res,
     pc               = c(1, 2),
-    color_by,
-    points_from,
+    color_by         = NULL,
+    points_from      = NULL,
     title            = NULL,
     subtitle         = NULL,
     caption          = NULL,
@@ -196,21 +186,21 @@ plot_score.run_pca <- function(
     show_outliers    = FALSE,
     label_outliers   = "all",
     outlier_margin   = 1.0,
-    outlier_label_size = NULL,
     show_groups      = NULL,
     colors           = NULL,
-    point_size       = 10,
+    point_size       = 3,
     point_alpha      = 0.8,
     theme            = "nature",
-    base_size        = 30,
-    font_family      = "sans",
-    axis_title_size  = NULL,
+    base_size        = 11,
+    font_family      = "",
+    title_size       = NULL,
+    subtitle_size    = NULL,
+    xlab_size        = NULL,
+    ylab_size        = NULL,
     axis_text_size   = NULL,
-    plot_title_size  = NULL,
-    legend_title_size = NULL,
-    legend_text_size = NULL,
-    zoom             = 1,
-    verbose          = TRUE,
+    legend_size      = NULL,
+    label_size       = NULL,
+    verbose          = FALSE,
     ...
 ) {
 
@@ -229,35 +219,16 @@ plot_score.run_pca <- function(
   # INPUT VALIDATION
   # ============================================================================
 
-  if (missing(color_by)) {
-    stop(
-      "'color_by' is required. Please specify a column name from metadata.\n",
-      sprintf("Available columns: %s\n", paste(colnames(res$metadata), collapse = ", ")),
-      "Solution: Add color_by = 'ColumnName' to your function call."
-    )
-  }
-
-  if (missing(points_from)) {
-    stop(
-      "'points_from' is required. Please specify a column name from metadata for point labels.\n",
-      sprintf("Available columns: %s\n", paste(colnames(res$metadata), collapse = ", ")),
-      "Solution: Add points_from = 'ColumnName' (e.g., points_from = 'Sample') to your function call."
-    )
-  }
-
-  if (!is.character(color_by) || length(color_by) != 1L) {
-    stop(
-      "'color_by' must be a single character string.\n",
-      "Solution: Use color_by = 'ColumnName' with a valid column from metadata."
-    )
-  }
-
-  if (!is.character(points_from) || length(points_from) != 1L) {
-    stop(
-      "'points_from' must be a single character string.\n",
-      "Solution: Use points_from = 'ColumnName' with a valid column from metadata."
-    )
-  }
+  # Default to the grouping column used when the model was fitted
+  if (is.null(color_by)) color_by <- res$parameters$group
+  if (is.null(color_by))
+    stop("'color_by' is required. Available columns: ",
+         paste(colnames(res$metadata), collapse = ", "), ".", call. = FALSE)
+  if (!is.character(color_by) || length(color_by) != 1L)
+    stop("'color_by' must be a single metadata column name.", call. = FALSE)
+  if (!is.null(points_from) &&
+      (!is.character(points_from) || length(points_from) != 1L))
+    stop("'points_from' must be a single metadata column name or NULL.", call. = FALSE)
 
   position        <- tolower(position)
   ellipse_type    <- tolower(ellipse_type)
@@ -283,14 +254,6 @@ plot_score.run_pca <- function(
     stop(
       "'ellipse_level' must be a numeric value strictly between 0 and 1.\n",
       "Solution: Use ellipse_level = 0.95 (default) or another value such as 0.99."
-    )
-  }
-
-  valid_themes <- c("nature", "minimal", "classic", "bw", "light", "dark")
-  if (!theme_choice %in% valid_themes) {
-    stop(
-      sprintf("'theme' must be one of: %s.\n", paste(valid_themes, collapse = ", ")),
-      "Solution: Use theme = 'nature' (default) or another listed option."
     )
   }
 
@@ -332,37 +295,11 @@ plot_score.run_pca <- function(
     }
   }
 
-  if (!is.numeric(zoom) || length(zoom) != 1L || zoom <= 0) {
-    stop(
-      "'zoom' must be a single positive numeric value.\n",
-      "Solution: Use zoom = 1 (default), zoom = 1.5 to enlarge, or zoom = 0.8 to shrink."
-    )
-  }
+  if (!is.character(font_family) || length(font_family) != 1L)
+    stop("'font_family' must be a single character string.", call. = FALSE)
 
-  if (!is.numeric(base_size) || length(base_size) != 1L || base_size <= 0) {
-    stop(
-      "'base_size' must be a positive numeric value.\n",
-      "Solution: Use base_size = 11 (default) or another positive number."
-    )
-  }
-
-  if (!is.character(font_family) || length(font_family) != 1L) {
-    stop(
-      "'font_family' must be a single character string.\n",
-      "Solution: Use font_family = 'sans' (default), 'serif', or 'mono'."
-    )
-  }
-
-  # Resolve size defaults (allow per-element overrides, fall back to base_size offsets)
-  axis_title_size   <- if (is.null(axis_title_size))   base_size + 1 else axis_title_size
-  axis_text_size    <- if (is.null(axis_text_size))    base_size - 1 else axis_text_size
-  plot_title_size   <- if (is.null(plot_title_size))   base_size + 3 else plot_title_size
-  legend_title_size <- if (is.null(legend_title_size)) base_size     else legend_title_size
-  legend_text_size   <- if (is.null(legend_text_size))   base_size - 1   else legend_text_size
-  outlier_label_size <- if (is.null(outlier_label_size)) base_size / 3.5 else outlier_label_size
-
-  # Apply zoom uniformly
-  .z <- function(x) x * zoom
+  sizes <- .text_sizes(base_size, title_size, subtitle_size, xlab_size, ylab_size,
+                       axis_text_size, legend_size, label = label_size)
 
   # Parse PC specification
   if (is.numeric(pc)) {
@@ -436,16 +373,14 @@ plot_score.run_pca <- function(
   pc_x_col <- paste0("PC", pc_x)
   pc_y_col <- paste0("PC", pc_y)
 
-  if (points_from %in% colnames(metadata)) {
-    sample_labels <- as.character(metadata[[points_from]])
-    msg(sprintf("Using labels from column '%s'", points_from))
+  sample_labels <- if (is.null(points_from)) {
+    rownames(scores) %||% paste0("Sample_", seq_len(nrow(scores)))
+  } else if (points_from %in% colnames(metadata)) {
+    as.character(metadata[[points_from]])
   } else {
-    warning(
-      sprintf("Column '%s' specified in 'points_from' not found in metadata.\n", points_from),
-      sprintf("Available columns: %s\n", paste(colnames(metadata), collapse = ", ")),
-      "Solution: Using sequential labels instead (Sample_1, Sample_2, ...)."
-    )
-    sample_labels <- paste0("Sample_", seq_len(nrow(scores)))
+    warning("Column '", points_from, "' in 'points_from' not found in metadata; ",
+            "using sequential labels (Sample_1, Sample_2, ...).", call. = FALSE)
+    paste0("Sample_", seq_len(nrow(scores)))
   }
 
   plot_data <- data.frame(
@@ -550,42 +485,15 @@ plot_score.run_pca <- function(
   # THEME CONSTRUCTION
   # ============================================================================
 
-  base_theme <- switch(
-    theme_choice,
-    "nature"  = ggplot2::theme_bw(base_size = base_size, base_family = font_family) +
-      ggplot2::theme(
-        panel.grid.major  = ggplot2::element_line(color = "grey92", linewidth = 0.4),
-        panel.grid.minor  = ggplot2::element_blank(),
-        panel.border      = ggplot2::element_rect(color = "grey70", fill = NA, linewidth = 0.6),
-        strip.background  = ggplot2::element_rect(fill = "grey95", color = "grey70"),
-        strip.text        = ggplot2::element_text(face = "bold", family = font_family)
-      ),
-    "minimal" = ggplot2::theme_minimal(base_size = base_size, base_family = font_family),
-    "classic" = ggplot2::theme_classic(base_size = base_size, base_family = font_family),
-    "bw"      = ggplot2::theme_bw(base_size = base_size, base_family = font_family),
-    "light"   = ggplot2::theme_light(base_size = base_size, base_family = font_family),
-    "dark"    = ggplot2::theme_dark(base_size = base_size, base_family = font_family)
-  )
-
   hjust_val <- switch(position, "left" = 0, "center" = 0.5, "right" = 1, 0.5)
 
-  custom_theme <- ggplot2::theme(
-    panel.grid.major   = ggplot2::element_blank(),
-    panel.grid.minor   = ggplot2::element_blank(),
-    legend.position    = legend_position,
-    plot.title         = ggplot2::element_text(
-      hjust = hjust_val, size = .z(plot_title_size), face = "bold", family = font_family
-    ),
-    plot.subtitle      = ggplot2::element_text(
-      hjust = hjust_val, size = .z(plot_title_size - 2), family = font_family
-    ),
-    plot.caption       = ggplot2::element_text(
-      hjust = 1, size = .z(base_size - 2), color = "grey50", family = font_family
-    ),
-    axis.title         = ggplot2::element_text(size = .z(axis_title_size), family = font_family),
-    axis.text          = ggplot2::element_text(size = .z(axis_text_size),  family = font_family),
-    legend.title       = ggplot2::element_text(size = .z(legend_title_size), family = font_family),
-    legend.text        = ggplot2::element_text(size = .z(legend_text_size),  family = font_family)
+  plot_theme <- .ponder_theme(theme_choice, sizes, font_family) + ggplot2::theme(
+    panel.grid.major = ggplot2::element_blank(),
+    panel.grid.minor = ggplot2::element_blank(),
+    legend.position  = legend_position,
+    plot.title       = ggplot2::element_text(hjust = hjust_val),
+    plot.subtitle    = ggplot2::element_text(hjust = hjust_val),
+    plot.caption     = ggplot2::element_text(hjust = 1)
   )
 
   # ============================================================================
@@ -625,7 +533,7 @@ plot_score.run_pca <- function(
   }
 
   # Points
-  p <- p + ggplot2::geom_point(size = .z(point_size), alpha = point_alpha)
+  p <- p + ggplot2::geom_point(size = point_size, alpha = point_alpha)
 
   # Discrete color + shape + fill scales
   if (!is_numeric_color) {
@@ -633,7 +541,9 @@ plot_score.run_pca <- function(
     p <- p +
       ggplot2::scale_color_manual(values = pal, name = legend_title) +
       ggplot2::scale_shape_manual(
-        values = seq_len(nlevels(plot_data$ColorGroup)),
+        # Filled shapes first: they read better at small sizes
+        values = rep_len(c(16, 17, 15, 18, 3, 4, 8, 1, 2, 0, 5, 6),
+                         nlevels(plot_data$ColorGroup)),
         name   = legend_title
       ) +
       ggplot2::scale_fill_manual(values = pal, name = legend_title, guide = "none")
@@ -675,7 +585,7 @@ plot_score.run_pca <- function(
   # Continuous color scale (viridis plasma)
   if (is_numeric_color) {
     legend_title <- if (!is.null(legend)) legend else color_by
-    p <- p + viridis::scale_color_viridis(option = "plasma", name = legend_title)
+    p <- p + ggplot2::scale_color_viridis_c(option = "plasma", name = legend_title)
   }
 
   # Outlier labels
@@ -692,7 +602,7 @@ plot_score.run_pca <- function(
         ggplot2::aes(label = Label, color = ColorGroup),
         fill               = "white",
         family             = font_family,
-        size               = .z(outlier_label_size),
+        size               = .pt_to_mm(sizes$label),
         label.padding      = ggplot2::unit(0.15, "lines"),
         box.padding        = ggplot2::unit(0.8,  "lines"),
         point.padding      = ggplot2::unit(0.5,  "lines"),
@@ -722,8 +632,7 @@ plot_score.run_pca <- function(
       subtitle = .or_null(subtitle),
       caption  = .or_null(caption)
     ) +
-    base_theme +
-    custom_theme
+    plot_theme
 
   msg("Scores plot created successfully.")
   return(p)
@@ -840,12 +749,12 @@ plot_score.run_pls <- function(
       p_q2   <- if (!is.null(sum_df) && "pQ2"  %in% colnames(sum_df)) sum_df[1L, "pQ2"]  else NA_real_
       perm_n <- res$parameters$permI
 
-      sprintf(
-        "R\u00b2X = %s, R\u00b2Y = %s, Q\u00b2 = %s | perm = %d; p(R\u00b2Y) = %s, p(Q\u00b2) = %s",
-        .fmt_r(r2x), .fmt_r(r2y), .fmt_r(q2),
-        perm_n,
-        .fmt_p(p_r2y), .fmt_p(p_q2)
-      )
+      fit <- sprintf("R\u00b2X = %s, R\u00b2Y = %s, Q\u00b2 = %s",
+                     .fmt_r(r2x), .fmt_r(r2y), .fmt_r(q2))
+      if (isTRUE(perm_n > 0))
+        fit <- sprintf("%s | %d permutations: p(R\u00b2Y) = %s, p(Q\u00b2) = %s",
+                       fit, perm_n, .fmt_p(p_r2y), .fmt_p(p_q2))
+      fit
     }, error = function(e) NULL)
   }
 
@@ -974,47 +883,25 @@ plot_score.run_pls <- function(
 
 #' @rdname plot_score
 #' @param metadata A \code{data.frame} with one row per observation (sample).
-#'   Required for \code{plot_score.run_pcoa} because \code{\link{run_pcoa}()} does not
-#'   bundle metadata inside its result (unlike \code{\link{run_pca}()}). Row order must
+#'   Used by \code{plot_score.run_pcoa}; defaults to the metadata stored by
+#'   \code{\link{run_pcoa}()} when it was given one. Row order must
 #'   match the row order of the data matrix originally passed to
 #'   \code{\link{run_pcoa}()}.
 #' @export
 plot_score.run_pcoa <- function(
     res,
     pc               = c(1, 2),
-    color_by,
-    points_from,
+    color_by         = NULL,
+    points_from      = NULL,
     metadata         = NULL, # Reordered to fix S3 consistency
     title            = NULL,
     subtitle         = NULL,
-    caption          = NULL,
-    position         = "center",
-    arrange_levels   = NULL,
-    ellipse          = TRUE,
-    ellipse_type     = "t",
-    ellipse_level    = 0.95,
-    legend           = NULL,
-    legend_position  = "bottom",
-    show_outliers    = FALSE,
-    label_outliers   = "all",
-    colors           = NULL,
-    point_size       = 3,
-    point_alpha      = 0.8,
-    theme            = "nature",
-    base_size        = 11,
-    font_family      = "sans",
-    axis_title_size  = NULL,
-    axis_text_size   = NULL,
-    plot_title_size  = NULL,
-    legend_title_size = NULL,
-    legend_text_size  = NULL,
-    zoom             = 1,
-    verbose          = TRUE,
     ...
 ) {
 
   # -- 1. Validate metadata ----------------------------------------------------
-  if (missing(metadata) || is.null(metadata)) {
+  metadata <- metadata %||% res$metadata
+  if (is.null(metadata)) {
     stop(
       "'metadata' is required for plot_score.run_pcoa().\n",
       "  Provide a data.frame with one row per observation, in the same row ",
@@ -1091,7 +978,7 @@ plot_score.run_pcoa <- function(
 
     # 2. Determine number of levels in the rhs grouping variable
     n_levels <- NA_integer_
-    if (!is.null(res$permanova) && !missing(metadata)) {
+    if (!is.null(res$permanova)) {
       rhs_col  <- res$permanova$rhs
       if (rhs_col %in% colnames(metadata)) {
         n_levels <- length(unique(metadata[[rhs_col]]))
@@ -1143,35 +1030,13 @@ plot_score.run_pcoa <- function(
 
   # -- 4. Delegate to run_pca method -------------------------------------------
   p <- plot_score.run_pca(
-    res               = proxy,
-    pc                = pc,
-    color_by          = color_by,
-    points_from       = points_from,
-    title             = title,
-    subtitle          = subtitle,    # Automatically populated here
-    caption           = caption,
-    position          = position,
-    arrange_levels    = arrange_levels,
-    ellipse           = ellipse,
-    ellipse_type      = ellipse_type,
-    ellipse_level     = ellipse_level,
-    legend            = legend,
-    legend_position   = legend_position,
-    show_outliers     = show_outliers,
-    label_outliers    = label_outliers,
-    colors            = colors,
-    point_size        = point_size,
-    point_alpha       = point_alpha,
-    theme             = theme,
-    base_size         = base_size,
-    font_family       = font_family,
-    axis_title_size   = axis_title_size,
-    axis_text_size    = axis_text_size,
-    plot_title_size   = plot_title_size,
-    legend_title_size = legend_title_size,
-    legend_text_size  = legend_text_size,
-    zoom              = zoom,
-    verbose           = verbose
+    res         = proxy,
+    pc          = pc,
+    color_by    = color_by,
+    points_from = points_from,
+    title       = title,
+    subtitle    = subtitle,
+    ...
   )
 
   # -- 5. Re-label axes to "PCo" convention ------------------------------------

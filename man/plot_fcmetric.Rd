@@ -23,14 +23,14 @@ plot_fcmetric(
   ns_color = "grey60",
   h_color = NULL,
   v_color = NULL,
-  size = 5,
+  size = 2,
   alpha = 0.6,
   theme = "nature",
   plot_title = NULL,
   plot_subtitle = NULL,
   xlab = NULL,
   ylab = NULL,
-  global_font_size = 25,
+  base_size = 11,
   title_size = NULL,
   subtitle_size = NULL,
   xlab_size = NULL,
@@ -93,15 +93,16 @@ Features beyond them are coloured Up/Down. Inherited from a
 \item{annotate}{Optional (named) character vector of feature identifiers
 to label; see \code{\link{plot_volcano}}. Default \code{NULL}.}
 
-\item{use_ggrepel, up_color, down_color, ns_color, h_color, v_color, size, alpha, theme, plot_title, plot_subtitle, xlab, ylab, global_font_size, title_size, subtitle_size, xlab_size, ylab_size, axis_text_size, label_size, legend_size, legend_title, legend_nrow, ...}{As in \code{\link{plot_volcano}}. Here \code{h_color} colours the
+\item{use_ggrepel, up_color, down_color, ns_color, h_color, v_color, size, alpha, theme, plot_title, plot_subtitle, xlab, ylab, base_size, title_size, subtitle_size, xlab_size, ylab_size, axis_text_size, label_size, legend_size, legend_title, legend_nrow, ...}{As in \code{\link{plot_volcano}}. Here \code{h_color} colours the
 horizontal \code{up}/\code{down} fold-change lines and \code{v_color} the
 vertical \code{x_cut} lines. \code{plot_title = NULL} gives a title naming
 the metric (plus the comparison when there are several).}
 }
 \value{
 A list of class \code{\link{plot_fcmetric}} with \code{plots} (named list
-of \code{ggplot} objects), \code{classified} (data with the metric in
-\code{metric_value} and \code{.regulation}) and \code{params}.
+of \code{ggplot} objects), \code{classified} (a table with
+\code{Comparison}, \code{Feature}, \code{Fold change}, \code{log2 FC}, the
+metric and \code{Regulation}) and \code{params}.
 }
 \description{
 Plots the fold change of each feature (y-axis) against a per-feature
@@ -143,7 +144,7 @@ meta <- droplevels(iris[iris$Species != "setosa", "Species", drop = FALSE])
 fc   <- run_foldchange(x, metadata = meta, group = "Species")
 
 plot_fcmetric(fc)                                  # MA-style plot
-plot_fcmetric(fc, metric = "sd", global_font_size = 12)
+plot_fcmetric(fc, metric = "sd", base_size = 12)
 
 \donttest{
 dif <- run_diff(x, meta, outcome = names(x), group = "Species",

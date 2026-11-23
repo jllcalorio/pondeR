@@ -52,7 +52,7 @@
 #'   \code{\link{run_foldchange}()} object when missing; otherwise \code{1.5}/\code{0.5}.
 #' @param annotate Optional (named) character vector of feature identifiers
 #'   to label; see \code{\link{plot_volcano}}. Default \code{NULL}.
-#' @param use_ggrepel,up_color,down_color,ns_color,h_color,v_color,size,alpha,theme,plot_title,plot_subtitle,xlab,ylab,global_font_size,title_size,subtitle_size,xlab_size,ylab_size,axis_text_size,label_size,legend_size,legend_title,legend_nrow,...
+#' @param use_ggrepel,up_color,down_color,ns_color,h_color,v_color,size,alpha,theme,plot_title,plot_subtitle,xlab,ylab,base_size,title_size,subtitle_size,xlab_size,ylab_size,axis_text_size,label_size,legend_size,legend_title,legend_nrow,...
 #'   As in \code{\link{plot_volcano}}. Here \code{h_color} colours the
 #'   horizontal \code{up}/\code{down} fold-change lines and \code{v_color} the
 #'   vertical \code{x_cut} lines. \code{plot_title = NULL} gives a title naming
@@ -81,8 +81,9 @@
 #' }
 #'
 #' @return A list of class \code{\link{plot_fcmetric}} with \code{plots} (named list
-#'   of \code{ggplot} objects), \code{classified} (data with the metric in
-#'   \code{metric_value} and \code{.regulation}) and \code{params}.
+#'   of \code{ggplot} objects), \code{classified} (a table with
+#'   \code{Comparison}, \code{Feature}, \code{Fold change}, \code{log2 FC}, the
+#'   metric and \code{Regulation}) and \code{params}.
 #'
 #' @references
 #' Cohen J (1988). \emph{Statistical Power Analysis for the Behavioral
@@ -97,7 +98,7 @@
 #' fc   <- run_foldchange(x, metadata = meta, group = "Species")
 #'
 #' plot_fcmetric(fc)                                  # MA-style plot
-#' plot_fcmetric(fc, metric = "sd", global_font_size = 12)
+#' plot_fcmetric(fc, metric = "sd", base_size = 12)
 #'
 #' \donttest{
 #' dif <- run_diff(x, meta, outcome = names(x), group = "Species",
@@ -129,14 +130,14 @@ plot_fcmetric <- function(
     ns_color         = "grey60",
     h_color          = NULL,
     v_color          = NULL,
-    size             = 5,
+    size             = 2,
     alpha            = 0.6,
     theme            = "nature",
     plot_title       = NULL,
     plot_subtitle    = NULL,
     xlab             = NULL,
     ylab             = NULL,
-    global_font_size = 25,
+    base_size        = 11,
     title_size       = NULL,
     subtitle_size    = NULL,
     xlab_size        = NULL,
@@ -162,7 +163,7 @@ plot_fcmetric <- function(
 
   es_metric_name <- NULL
   if (!is.null(fc_obj)) {
-    d <- fc_obj$summary_table
+    d <- fc_obj$feature_stats
     feats <- unique(d$feature)
 
     if (metric %in% c("variance", "sd") && !"sd_num" %in% names(d))
@@ -249,18 +250,13 @@ plot_fcmetric <- function(
   for (nm in c("log2", "log10_x", "use_ggrepel"))
     if (!is.logical(get(nm)) || length(get(nm)) != 1L || is.na(get(nm)))
       stop("`", nm, "` must be TRUE or FALSE.", call. = FALSE)
-  for (nm in c("size", "global_font_size"))
-    if (!is.numeric(get(nm)) || length(get(nm)) != 1L || get(nm) <= 0)
-      stop("`", nm, "` must be a single positive numeric value.", call. = FALSE)
+  if (!is.numeric(size) || length(size) != 1L || is.na(size) || size <= 0)
+    stop("`size` must be a single positive numeric value.", call. = FALSE)
   if (!is.numeric(alpha) || length(alpha) != 1L || is.na(alpha) || alpha <= 0 || alpha > 1)
     stop("`alpha` must be a single numeric value in (0, 1].", call. = FALSE)
   if (!is.null(x_cut) && (!is.numeric(x_cut) || anyNA(x_cut)))
     stop("`x_cut` must be a numeric vector without NA.", call. = FALSE)
 
-  valid_themes <- c("nature", "minimal", "bw", "classic", "plos", "gray", "light", "dark")
-  if (!is.character(theme) || length(theme) != 1L || !theme %in% valid_themes)
-    stop("`theme` must be one of: ", paste(valid_themes, collapse = ", "), ".",
-         call. = FALSE)
   if (!is.null(legend_nrow) &&
       (!is.numeric(legend_nrow) || length(legend_nrow) != 1L ||
        is.na(legend_nrow) || legend_nrow < 1 || legend_nrow %% 1 != 0))
@@ -304,7 +300,7 @@ plot_fcmetric <- function(
   up_line   <- if (log2) log2(up)   else up
   down_line <- if (log2) log2(down) else down
   ref_line  <- if (log2) 0 else 1
-  x$.regulation <- ifelse(is.na(x[[y]]), "NS",
+  x$Regulation <- ifelse(is.na(x[[y]]), "NS",
                    ifelse(x[[y]] >= up, "Up", ifelse(x[[y]] <= down, "Down", "NS")))
   if (!is.null(ann_lookup)) {
     f <- as.character(x[[features]])
@@ -324,34 +320,19 @@ plot_fcmetric <- function(
     if (log2) expression(log[2]~"(Fold Change)") else "Fold Change"
 
   # 5. Theme / colours (same look as plot_volcano)
-  gfs <- global_font_size
-  .rsz <- function(usr, prop) if (!is.null(usr)) usr else gfs * prop
-  fs_label  <- .rsz(label_size, 0.75)
-  fs_legend <- .rsz(legend_size, 0.85)
+  sizes <- .text_sizes(base_size, title_size, subtitle_size, xlab_size, ylab_size,
+                       axis_text_size, legend_size, label = label_size)
   h_col <- if (!is.null(h_color)) h_color else ns_color
   v_col <- if (!is.null(v_color)) v_color else ns_color
   res_title <- if (is.null(legend_title)) "" else legend_title
 
-  th <- switch(theme,
-    nature = , plos = , classic = ggplot2::theme_classic(base_size = gfs),
-    minimal = ggplot2::theme_minimal(base_size = gfs),
-    bw      = ggplot2::theme_bw(base_size = gfs),
-    gray    = ggplot2::theme_gray(base_size = gfs),
-    light   = ggplot2::theme_light(base_size = gfs),
-    dark    = ggplot2::theme_dark(base_size = gfs)
-  ) + ggplot2::theme(
-    plot.title        = ggplot2::element_text(size = .rsz(title_size, 1.2), face = "bold"),
-    plot.subtitle     = ggplot2::element_text(size = .rsz(subtitle_size, 0.9), colour = "grey40"),
-    axis.title.x      = ggplot2::element_text(size = .rsz(xlab_size, 1)),
-    axis.title.y      = ggplot2::element_text(size = .rsz(ylab_size, 1)),
-    axis.text         = ggplot2::element_text(size = .rsz(axis_text_size, 0.85)),
+  th <- .ponder_theme(theme, sizes) + ggplot2::theme(
     legend.position   = "bottom",
     legend.justification = "center",
-    legend.direction  = "horizontal",
-    legend.text       = ggplot2::element_text(size = fs_legend),
-    legend.title      = if (is.null(legend_title)) ggplot2::element_blank() else
-      ggplot2::element_text(size = fs_legend, face = "bold")
+    legend.direction  = "horizontal"
   )
+  if (is.null(legend_title))
+    th <- th + ggplot2::theme(legend.title = ggplot2::element_blank())
 
   guide_args <- Filter(Negate(is.null), list(
     override.aes = list(size = size * 1.5, alpha = 1),
@@ -366,7 +347,7 @@ plot_fcmetric <- function(
   # 6. Plot builder
   .build_plot <- function(df, title_str) {
     p <- ggplot2::ggplot(df, ggplot2::aes(x = .data[[".x_plot"]], y = .data[[".y_plot"]],
-                                          colour = .data[[".regulation"]])) +
+                                          colour = .data[["Regulation"]])) +
       ggplot2::geom_point(size = size, alpha = alpha, na.rm = TRUE) +
       col_scale +
       ggplot2::geom_hline(yintercept = ref_line, colour = h_col, linewidth = 0.6) +
@@ -385,7 +366,7 @@ plot_fcmetric <- function(
         extra  <- list(...)
         extra  <- extra[names(extra) %in% names(formals(fn))]
         defs   <- list(data = ann_df, mapping = ggplot2::aes(label = .data[[".ann_lbl"]]),
-                       size = fs_label, na.rm = TRUE, show.legend = FALSE)
+                       size = .pt_to_mm(sizes$label), na.rm = TRUE, show.legend = FALSE)
         if (use_ggrepel)
           defs <- c(defs, list(max.overlaps = Inf, min.segment.length = 0,
                                segment.color = "black", segment.size = 0.4))
@@ -408,11 +389,18 @@ plot_fcmetric <- function(
           lv, ttl), ttl)
   }
 
-  drop_cols <- intersect(c(".x_plot", ".y_plot", ".ann_lbl"), colnames(x))
+  drop_cols <- intersect(c(".x_plot", ".y_plot", ".ann_lbl", "num_group", "den_group",
+                           "mean_num", "mean_den", "sd_num", "sd_den", "n_num", "n_den"),
+                         colnames(x))
+  classified <- x[, setdiff(colnames(x), drop_cols), drop = FALSE]
+  header <- c(comparison = "Comparison", feature = "Feature", fold_change = "Fold change",
+              log2_fc = "log2 FC", metric_value = sub(",.*", "", metric_nm))
+  hit <- names(classified) %in% names(header)
+  names(classified)[hit] <- header[names(classified)[hit]]
   structure(
     list(
       plots      = plots,
-      classified = x[, setdiff(colnames(x), drop_cols), drop = FALSE],
+      classified = classified,
       params     = list(y = y, z = z, group = group, features = features,
                         metric = metric, log2 = log2, log10_x = log10_x,
                         x_cut = x_cut, up = up, down = down, annotate = annotate,
@@ -431,7 +419,7 @@ plot_fcmetric <- function(
 #' @author John Lennon L. Calorio
 #' @export
 print.plot_fcmetric <- function(x, ...) {
-  r <- x$classified$.regulation
+  r <- x$classified$Regulation
   cat("-- plot_fcmetric results -----------------------------------\n")
   cat(sprintf("  Metric     : %s\n", x$params$metric))
   cat(sprintf("  Features   : %d  (Up: %d | Down: %d | NS: %d)\n",

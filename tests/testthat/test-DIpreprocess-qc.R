@@ -32,7 +32,7 @@ test_that("run_auc drops QC samples for a bare run_DIpreprocess object", {
 test_that("plot_volcano falls back to mean abundance without run_diff results", {
   di <- make_di()
   fc <- suppressMessages(run_foldchange(di, from = "normalized"))
-  expect_message(v <- plot_volcano(list(fc), y = "fold_change", z = "p_value"),
+  expect_message(v <- plot_volcano(list(fc)),
                  "mean abundance")
   expect_s3_class(v, "plot_volcano")
   expect_named(v$plots, "Mean Abundance")
@@ -45,10 +45,11 @@ test_that("DI-aware run_* functions drop QC samples by default", {
   q <- function(e) suppressWarnings(suppressMessages(e))
 
   fc <- q(run_foldchange(di, from = "normalized"))
-  expect_equal(sum(unique(fc$summary_table[c("n_num", "n_den")])), n_study)
+  expect_equal(sum(unique(fc$feature_stats[c("n_num", "n_den")])), n_study)
   expect_equal(sum(q(run_diff(di, outcome = f1))$group_ns), n_study)
   # logreg would error on 3 outcome levels if QC were kept
   expect_s3_class(q(run_logreg(di, y = "Group", indep = f1, ref = "Control")), "data.frame")
+  skip_if_not_installed("lmerTest")
   mm <- q(run_mixedmodel(di, formula = ".feature ~ Batch + (1|Group)"))
   expect_equal(mm[[1]]$n_obs, n_study)
 })

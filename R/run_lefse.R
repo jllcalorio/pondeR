@@ -18,11 +18,13 @@
 #'   level for the pairwise Wilcoxon test (default: 0.05).
 #' @param lda_threshold Numeric value specifying the threshold on the absolute
 #'   logarithmic LDA score for discriminative features (default: 2.0).
-#' @param verbose Logical indicating whether to print progress messages (default: TRUE).
+#' @param verbose Logical indicating whether to print progress messages (default: FALSE).
 #' @return A list of class \code{\link{run_lefse}} containing:
-#'   \item{lda}{A data frame with LDA results (features, means per class, LDA scores).}
-#'   \item{summary_table}{A data frame summarizing significant features with
-#'     effect sizes, p-values, and classifications.}
+#'   \item{lda}{A data frame with \code{Feature}, one \code{Mean (<class>)} column
+#'     per class, and \code{LDA score}.}
+#'   \item{summary_table}{A report-ready data frame of the discriminative
+#'     features: the columns of \code{lda} plus \code{p-value}, ordered by LDA
+#'     score.}
 #'   \item{parameters}{A list of the parameters used in the analysis.}
 #'   \item{call}{The matched call.}
 #' @details
@@ -79,7 +81,7 @@ run_lefse <- function(x,
                       alpha = 0.05,
                       wilcox_alpha = 0.05,
                       lda_threshold = 2.0,
-                      verbose = TRUE) {
+                      verbose = FALSE) {
   
   # Define internal message function
   msg <- function(...) if (verbose) message(...)
@@ -175,7 +177,7 @@ run_lefse <- function(x,
     if (length(groups) < 2) return(NA)  # Need at least 2 groups
     
     # Perform Kruskal-Wallis test
-    kruskal.test(feature ~ class_vec[complete_cases])$p.value
+    kruskal.test(feature[complete_cases] ~ class_vec[complete_cases])$p.value
   })
   
   # Features passing KW test
@@ -183,7 +185,7 @@ run_lefse <- function(x,
   msg("  Features passing Kruskal-Wallis test (p < ", alpha, "): ", sum(kw_sig, na.rm = TRUE))
   
   if (sum(kw_sig, na.rm = TRUE) == 0) {
-    warning("No features passed the Kruskal-Wallis test. Consider adjusting alpha.", call = FALSE)
+    warning("No features passed the Kruskal-Wallis test. Consider adjusting alpha.", call. = FALSE)
     return(structure(list(
       lda = data.frame(),
       summary_table = data.frame(),
@@ -254,7 +256,7 @@ run_lefse <- function(x,
   msg("  Final significant features: ", sum(final_sig, na.rm = TRUE))
   
   if (sum(final_sig, na.rm = TRUE) == 0) {
-    warning("No features passed both statistical tests. Consider adjusting parameters.", call = FALSE)
+    warning("No features passed both statistical tests. Consider adjusting parameters.", call. = FALSE)
     return(structure(list(
       lda = data.frame(),
       summary_table = data.frame(),
@@ -274,7 +276,7 @@ run_lefse <- function(x,
   # Remove samples with missing class
   complete_mask <- !is.na(lda_class)
   if (sum(complete_mask) < 2) {
-    warning("Insufficient samples with class information for LDA.", call = FALSE)
+    warning("Insufficient samples with class information for LDA.", call. = FALSE)
     return(structure(list(
       lda = data.frame(),
       summary_table = data.frame(),
@@ -290,7 +292,7 @@ run_lefse <- function(x,
   # Check if we have enough classes
   unique_classes <- unique(lda_class)
   if (length(unique_classes) < 2) {
-    warning("Need at least 2 classes for LDA.", call = FALSE)
+    warning("Need at least 2 classes for LDA.", call. = FALSE)
     return(structure(list(
       lda = data.frame(),
       summary_table = data.frame(),
@@ -302,9 +304,6 @@ run_lefse <- function(x,
   
   # Simple LDA implementation using MASS::lda if available, otherwise manual
   lda_results <- tryCatch({
-    if (!requireNamespace("MASS", quietly = TRUE)) {
-      stop("Package 'MASS' is required for LDA. Install with: install.packages('MASS')", call = FALSE)
-    }
     
     xm <- as.matrix(lda_features)
     lda_obj <- MASS::lda(x = xm, grouping = factor(lda_class))
@@ -332,7 +331,7 @@ run_lefse <- function(x,
 
     lda_df
   }, error = function(e) {
-    warning("LDA failed: ", e$message, ". Using effect size based on fold changes.", call = FALSE)
+    warning("LDA failed: ", e$message, ". Using effect size based on fold changes.", call. = FALSE)
     # Fallback: compute effect size as log2(fold change) between group means
     lda_df <- data.frame(
       feature = colnames(lda_features),
@@ -385,10 +384,24 @@ run_lefse <- function(x,
   
   # Add p-value from KW test
   summary_table$pvalue <- kw_pvals[final_sig][lda_significant]
-  
-# Order results by LDA score (largest first)
-  ord <- order(-summary_table$lda_score)
-  summary_table <- summary_table[ord, ]
+
+  # Order results by LDA score (largest first)
+  summary_table <- summary_table[order(-summary_table$lda_score), , drop = FALSE]
+  rownames(summary_table) <- NULL
+
+  # Report-ready column names
+  .report_names <- function(d) {
+    nm <- names(d)
+    nm[nm == "feature"]   <- "Feature"
+    nm[nm == "lda_score"] <- "LDA score"
+    nm[nm == "pvalue"]    <- "p-value"
+    is_mean <- startsWith(nm, "mean_")
+    nm[is_mean] <- paste0("Mean (", substring(nm[is_mean], 6L), ")")
+    names(d) <- nm
+    d
+  }
+  lda_results   <- .report_names(lda_results)
+  summary_table <- .report_names(summary_table)
   
   # Create final structure
   result <- list(
@@ -405,4 +418,17 @@ run_lefse <- function(x,
   )
   class(result) <- "run_lefse"
   return(result)
+}
+
+#' @export
+print.run_lefse <- function(x, ...) {
+  cat(sprintf("LEfSe: %d discriminative feature(s) (class: %s, LDA >= %g)\n",
+              nrow(x$summary_table), x$parameters$class, x$parameters$lda_threshold))
+  if (nrow(x$summary_table) > 0L) {
+    tbl <- x$summary_table
+    num <- vapply(tbl, is.numeric, logical(1L))
+    tbl[num] <- lapply(tbl[num], signif, 3)
+    print(tbl, row.names = FALSE)
+  }
+  invisible(x)
 }

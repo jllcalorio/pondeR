@@ -7,7 +7,7 @@
 #' computes advanced model fit metrics, maps specific reference categories, removes specified
 #' categories from predictor variables, and optionally iterates through all possible combinations
 #' of independent variables. When \code{apply_firth = TRUE}, Firth's correction is applied
-#' selectively — only to models where at least one predictor-outcome cross-tabulation contains a
+#' selectively - only to models where at least one predictor-outcome cross-tabulation contains a
 #' zero cell, which is the primary condition warranting penalized likelihood. A column in the
 #' output indicates whether Firth's correction was applied to each model. Output is formatted as
 #' a clean data frame.
@@ -55,7 +55,7 @@
 #'   applied, as \code{car::vif()} does not support \code{logistf} objects. In crude mode,
 #'   VIF is not meaningful for simple (one-predictor) models and will be \code{NA} throughout.
 #' @param apply_firth Logical; if \code{TRUE} (default), Firth's bias-reduced penalized-likelihood
-#'   logistic regression (\code{logistf::logistf()}) is applied \emph{selectively} — only to models
+#'   logistic regression (\code{logistf::logistf()}) is applied \emph{selectively} - only to models
 #'   where at least one predictor variable has a zero cell count in its cross-tabulation with the
 #'   outcome. Models with no zero cells are fitted using standard \code{glm()} regardless of this
 #'   setting. A logical column \code{Firth Corrected} is added to the output indicating whether
@@ -97,9 +97,9 @@
 #' @details
 #' \strong{Crude odds ratios (\code{crude = TRUE}):} Each variable in \code{indep} is fitted in
 #' a separate simple logistic regression model with \code{y} as the only outcome and no
-#' covariates, yielding unadjusted (crude) odds ratios. All preprocessing steps — category
+#' covariates, yielding unadjusted (crude) odds ratios. All preprocessing steps - category
 #' exclusion (\code{exclude}), predictor category removal (\code{remove}), dependent variable
-#' releveling (\code{ref}), and predictor releveling (\code{ref_levels}) — are applied before
+#' releveling (\code{ref}), and predictor releveling (\code{ref_levels}) - are applied before
 #' each model is fitted. The results are stacked row-wise into a single tidy data frame. Each
 #' variable's rows are separated by a blank spacer row to visually group the predictors.
 #' Inline model-fit metrics (Deviance, AIC, BIC, and R2 measures) are placed in the first row
@@ -116,7 +116,7 @@
 #' \strong{Firth's correction (\code{apply_firth}):} Firth's penalized-likelihood method
 #' (\code{logistf::logistf()}) addresses the monotone likelihood problem caused by complete or
 #' quasi-complete separation, which arises when a predictor level perfectly predicts one outcome
-#' group — typically evidenced by a zero cell in the cross-tabulation. When \code{apply_firth = TRUE},
+#' group - typically evidenced by a zero cell in the cross-tabulation. When \code{apply_firth = TRUE},
 #' the function checks each model's predictors against the outcome for zero cells. If any are found,
 #' \code{logistf()} is used in place of \code{glm()} for that model. If \code{force_apply_firth = TRUE},
 #' this check is skipped and all models are fitted with \code{logistf()}. The \code{Firth Corrected}
@@ -157,12 +157,12 @@
 #' @return
 #' If \code{crude = TRUE}, returns a single tidy data frame with rows for all \code{indep}
 #' variables stacked sequentially (separated by blank spacer rows). Columns: Predictor, Log Odds,
-#' Std Error, p-value, Significance, OR, 95\% CI Low, 95\% CI High, VIF (all \code{NA}),
+#' Std. error, p-value, Significance, OR, 95\% CI Low, 95\% CI High, VIF (all \code{NA}),
 #' Deviance, AIC, BIC, McFadden R2, CoxSnell R2, Nagelkerke R2, Tjur R2, Firth Corrected.
 #' Inline model metrics are placed in the first (intercept) row of each variable's block.
 #'
 #' If \code{crude = FALSE} and \code{iterate = FALSE}, returns a data frame containing Predictor,
-#' Log Odds, Std Error, p-value, Significance, OR, 95\% CIs, VIF, and inline model metrics
+#' Log Odds, Std. error, p-value, Significance, OR, 95\% CIs, VIF, and inline model metrics
 #' (Deviance, AIC, BIC, McFadden R2, CoxSnell R2, Nagelkerke R2, Tjur R2, Firth Corrected) in
 #' the first row. Model metrics are also attached as \code{attr(result, "model_metrics")}. When
 #' \code{stepwise = TRUE}, the variables removed at each step (and their triggering VIF) are
@@ -201,10 +201,10 @@
 #' Fox J, Weisberg S (2019). \emph{An R Companion to Applied Regression}, 3rd ed. Sage.
 #'
 #' Firth D (1993). "Bias reduction of maximum likelihood estimates." \emph{Biometrika}, 80(1),
-#' 27–38. \doi{10.1093/biomet/80.1.27}
+#' 27-38. \doi{10.1093/biomet/80.1.27}
 #'
 #' Heinze G, Schemper M (2002). "A solution to the problem of separation in logistic regression."
-#' \emph{Statistics in Medicine}, 21(16), 2409–2419. \doi{10.1002/sim.1047}
+#' \emph{Statistics in Medicine}, 21(16), 2409-2419. \doi{10.1002/sim.1047}
 #'
 #' Heinze G, Ploner M, Jiricka L, Steuer A (2024). \emph{logistf: Firth's Bias-Reduced Logistic
 #' Regression}. R package. \url{https://CRAN.R-project.org/package=logistf}
@@ -213,11 +213,6 @@
 #' for Assessment, Comparison and Testing of Statistical Models." \emph{Journal of Open Source Software},
 #' 6(60), 3139. \doi{10.21105/joss.03139}
 #'
-#' @importFrom stats glm binomial as.formula confint.default nobs AIC BIC terms model.matrix relevel
-#' @importFrom performance r2_mcfadden r2_coxsnell r2_nagelkerke r2_tjur
-#' @importFrom car vif
-#' @importFrom logistf logistf
-#' @importFrom utils combn
 #' @export
 run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels = NULL,
                        remove = NULL, exclude = NULL, iterate = FALSE, crude = FALSE,
@@ -227,74 +222,73 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
                        verbose = FALSE) {
 
   # --- Integration with run_DIpreprocess ---
-  if (inherits(x, "run_DIpreprocess")) {
-    target_meta <- if (!is.null(x$metadata_merged)) x$metadata_merged else x$metadata
-    target_data <- if (!is.null(x$data_nonpls_merged)) x$data_nonpls_merged else x$data_nonpls
+  if (.is_di(x)) {
+    di <- .di_unpack(x)
     # QC samples are not study samples: drop them
-    grp_col <- if ("Group" %in% names(target_meta)) "Group" else x$parameters$group_col
-    keep <- !(as.character(target_meta[[grp_col]]) %in% eval(x$parameters$qc_types))
-    x <- cbind(target_meta, target_data)[keep, , drop = FALSE]
+    keep <- !(as.character(di$metadata[[di$group]]) %in% di$qc)
+    x <- cbind(di$metadata, di$data)[keep, , drop = FALSE]
   }
+  if (is.matrix(x)) x <- as.data.frame(x)
 
   # ---------------------------------------------------------------------------
   # 1. Error Handling & Input Validation
   # ---------------------------------------------------------------------------
-  if (!is.data.frame(x)) stop("Error: 'x' must be a data frame, matrix, or tibble.")
+  if (!is.data.frame(x)) stop("'x' must be a data frame, matrix, or tibble.")
   x <- as.data.frame(x)
 
-  if (!(y %in% names(x))) stop(sprintf("Error: Dependent variable '%s' not found in data.", y))
+  if (!(y %in% names(x))) stop(sprintf("Dependent variable '%s' not found in data.", y))
 
   if (crude) {
     if (is.null(indep)) {
-      stop("Error: 'indep' must be specified when 'crude = TRUE'.")
+      stop("'indep' must be specified when 'crude = TRUE'.")
     }
     if (!is.null(confounders)) {
       warning(
-        "Constructive Warning: 'confounders' is ignored when 'crude = TRUE'. ",
+        "'confounders' is ignored when 'crude = TRUE'. ",
         "Crude models are unadjusted (simple) regressions for each variable in 'indep'.",
         call. = FALSE
       )
     }
     if (iterate) {
       warning(
-        "Constructive Warning: 'iterate' is ignored when 'crude = TRUE'.",
+        "'iterate' is ignored when 'crude = TRUE'.",
         call. = FALSE
       )
     }
     if (stepwise) {
       warning(
-        "Constructive Warning: 'stepwise' is ignored when 'crude = TRUE'. ",
+        "'stepwise' is ignored when 'crude = TRUE'. ",
         "Crude models have a single predictor each, so VIF-based removal does not apply.",
         call. = FALSE
       )
     }
   } else {
     if (is.null(confounders) && is.null(indep)) {
-      stop("Error: Both 'confounders' and 'indep' cannot be NULL at the same time.")
+      stop("Both 'confounders' and 'indep' cannot be NULL at the same time.")
     }
   }
 
   all_vars <- c(confounders, indep)
   missing_vars <- setdiff(all_vars, names(x))
   if (length(missing_vars) > 0) {
-    stop(sprintf("Error: Predictors not found in data: %s", paste(missing_vars, collapse = ", ")))
+    stop(sprintf("Predictors not found in data: %s", paste(missing_vars, collapse = ", ")))
   }
 
   if (!crude && stepwise) {
     if (iterate) {
-      stop("Error: 'stepwise' and 'iterate' cannot both be TRUE; choose one variable-selection strategy.")
+      stop("'stepwise' and 'iterate' cannot both be TRUE; choose one variable-selection strategy.")
     }
     if (is.null(indep) || length(indep) == 0) {
-      stop("Error: 'stepwise = TRUE' requires 'indep' variables to be specified (confounders are never removed).")
+      stop("'stepwise = TRUE' requires 'indep' variables to be specified (confounders are never removed).")
     }
     if (!is.numeric(step_n) || length(step_n) != 1L || is.na(step_n) ||
         step_n != as.integer(step_n) || step_n < 1L) {
-      stop("Error: 'step_n' must be a single positive integer.")
+      stop("'step_n' must be a single positive integer.")
     }
     step_n <- as.integer(step_n)
     if (step_n > length(all_vars)) {
       stop(sprintf(
-        "Error: 'step_n' (%d) cannot exceed the number of variables in 'indep' + 'confounders' (%d).",
+        "'step_n' (%d) cannot exceed the number of variables in 'indep' + 'confounders' (%d).",
         step_n, length(all_vars)
       ))
     }
@@ -316,12 +310,12 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
   # Drop specified categories from predictor variables via 'remove'
   if (!is.null(remove)) {
     if (!is.list(remove)) {
-      stop("Error: 'remove' must be a list of formulas (e.g., list(\"Sex\" ~ \"Unknown\")).")
+      stop("'remove' must be a list of formulas (e.g., list(\"Sex\" ~ \"Unknown\")).")
     }
 
     for (mapping in remove) {
       if (!inherits(mapping, "formula") || length(mapping) != 3) {
-        stop("Error: Each element in 'remove' must be a two-sided formula.")
+        stop("Each element in 'remove' must be a two-sided formula.")
       }
 
       lhs      <- mapping[[2]]
@@ -331,12 +325,12 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
       cat_val <- if (is.character(rhs)) rhs else as.character(rhs)
 
       if (!(col_name %in% names(x))) {
-        stop(sprintf("Error: Column '%s' from 'remove' not found in data.", col_name))
+        stop(sprintf("Column '%s' from 'remove' not found in data.", col_name))
       }
 
       col_vals <- as.character(x[[col_name]])
       if (!(cat_val %in% col_vals)) {
-        stop(sprintf("Error: Category '%s' not found in column '%s'.", cat_val, col_name))
+        stop(sprintf("Category '%s' not found in column '%s'.", cat_val, col_name))
       }
 
       x <- x[col_vals != cat_val, , drop = FALSE]
@@ -348,11 +342,11 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
   valid_levels <- levels(x[[y]])
 
   if (!(ref %in% valid_levels)) {
-    stop(sprintf("Error: Reference category '%s' not found in '%s'.", ref, y))
+    stop(sprintf("Reference category '%s' not found in '%s'.", ref, y))
   }
   if (length(valid_levels) != 2) {
     stop(sprintf(
-      "Error: Dependent variable '%s' must have exactly 2 categories after exclusions.", y
+      "Dependent variable '%s' must have exactly 2 categories after exclusions.", y
     ))
   }
   x[[y]] <- stats::relevel(x[[y]], ref = ref)
@@ -360,12 +354,12 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
   # Apply reference levels to predictor variables
   if (!is.null(ref_levels)) {
     if (!is.list(ref_levels)) {
-      stop("Error: 'ref_levels' must be a list of formulas (e.g., list(\"Sex\" ~ \"Female\")).")
+      stop("'ref_levels' must be a list of formulas (e.g., list(\"Sex\" ~ \"Female\")).")
     }
 
     for (mapping in ref_levels) {
       if (!inherits(mapping, "formula") || length(mapping) != 3) {
-        stop("Error: Each element in 'ref_levels' must be a two-sided formula.")
+        stop("Each element in 'ref_levels' must be a two-sided formula.")
       }
 
       lhs      <- mapping[[2]]
@@ -375,12 +369,12 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
       ref_val <- if (is.character(rhs)) rhs else as.character(rhs)
 
       if (!(col_name %in% names(x))) {
-        stop(sprintf("Error: Column '%s' from ref_levels not found in data.", col_name))
+        stop(sprintf("Column '%s' from ref_levels not found in data.", col_name))
       }
 
       x[[col_name]] <- as.factor(x[[col_name]])
       if (!(ref_val %in% levels(x[[col_name]]))) {
-        stop(sprintf("Error: Category '%s' not found in column '%s'.", ref_val, col_name))
+        stop(sprintf("Category '%s' not found in column '%s'.", ref_val, col_name))
       }
       x[[col_name]] <- stats::relevel(x[[col_name]], ref = ref_val)
     }
@@ -530,12 +524,12 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
       res_df <- data.frame(
         Predictor    = terms_used,
         `Log Odds`   = as.numeric(coef_est),
-        `Std Error`  = as.numeric(std_err),
+        `Std. error`  = as.numeric(std_err),
         `p-value`    = as.numeric(p_vals),
         Significance = sig_stars(as.numeric(p_vals)),
         OR           = exp(as.numeric(coef_est)),
-        `95% CI Low` = as.numeric(ci_low),
-        `95% CI High`= as.numeric(ci_high),
+        `95% CI lower` = as.numeric(ci_low),
+        `95% CI upper`= as.numeric(ci_high),
         stringsAsFactors = FALSE,
         check.names  = FALSE
       )
@@ -552,8 +546,8 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
         model_label <- if (!is.null(combo_name)) sprintf(" [Model: %s]", combo_name) else ""
         warning(
           sprintf(
-            "Constructive Warning%s: %d aliased term(s) detected and excluded from output due to ",
-            model_label, length(aliased_terms)
+            "%d aliased term(s)%s detected and excluded from output due to ",
+            length(aliased_terms), model_label
           ),
           "perfect or quasi-complete separation. These levels appear in only one outcome group. ",
           "Excluded term(s): ", paste(aliased_terms, collapse = ", "), ".",
@@ -567,12 +561,12 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
       res_df <- data.frame(
         Predictor    = rownames(coefs),
         `Log Odds`   = coefs[, "Estimate"],
-        `Std Error`  = coefs[, "Std. Error"],
+        `Std. error`  = coefs[, "Std. Error"],
         `p-value`    = coefs[, "Pr(>|z|)"],
         Significance = sig_stars(coefs[, "Pr(>|z|)"]),
         OR           = exp(coefs[, "Estimate"]),
-        `95% CI Low` = exp(ci[, 1]),
-        `95% CI High`= exp(ci[, 2]),
+        `95% CI lower` = exp(ci[, 1]),
+        `95% CI upper`= exp(ci[, 2]),
         stringsAsFactors = FALSE,
         check.names  = FALSE
       )
@@ -628,7 +622,7 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
             }
           }, error = function(e) {
             warning(
-              "Constructive Warning: Could not compute VIF for model with predictors [",
+              "Could not compute VIF for model with predictors [",
               paste(pred_vars, collapse = ", "), "]. ",
               "Perfect multicollinearity or a rank-deficient model matrix is likely. ",
               "Consider removing or combining collinear predictors.",
@@ -696,7 +690,7 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
       bad <- pred_vars[degenerate]
       warning(
         sprintf(
-          "Constructive Warning: Model '%s' skipped. The following predictor(s) have fewer than ",
+          "Model '%s' skipped. The following predictor(s) have fewer than ",
           combo_name
         ),
         "2 unique levels in the working data and cannot be used in regression: ",
@@ -719,7 +713,7 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
         do.call(logistf::logistf, logistf_args),
         error = function(e) {
           warning(sprintf(
-            "Constructive Warning: Firth model failed for '%s'. Falling back to glm(). Error: %s",
+            "Firth model failed for '%s'. Falling back to glm(). Error: %s",
             combo_name, e$message
           ), call. = FALSE)
           NULL
@@ -731,7 +725,7 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
                      family = stats::binomial(link = "logit")),
           error = function(e) {
             warning(sprintf(
-              "Constructive Warning: glm fallback also failed for '%s'. Error: %s",
+              "glm fallback also failed for '%s'. Error: %s",
               combo_name, e$message
             ), call. = FALSE)
             NULL
@@ -745,7 +739,7 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
                    family = stats::binomial(link = "logit")),
         error = function(e) {
           warning(sprintf(
-            "Constructive Warning: Model failed for combination '%s'. Error: %s",
+            "Model failed for combination '%s'. Error: %s",
             combo_name, e$message
           ), call. = FALSE)
           NULL
@@ -794,12 +788,12 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
         na_row <- data.frame(
           Predictor    = v,
           `Log Odds`   = NA_real_,
-          `Std Error`  = NA_real_,
+          `Std. error`  = NA_real_,
           `p-value`    = NA_real_,
           Significance = NA_character_,
           OR           = NA_real_,
-          `95% CI Low` = NA_real_,
-          `95% CI High`= NA_real_,
+          `95% CI lower` = NA_real_,
+          `95% CI upper`= NA_real_,
           VIF          = NA_real_,
           Deviance     = NA_real_,
           AIC          = NA_real_,
@@ -920,7 +914,7 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
   } else {
 
     if (is.null(indep)) {
-      stop("Error: 'iterate = TRUE' requires 'indep' variables to be specified.")
+      stop("'iterate = TRUE' requires 'indep' variables to be specified.")
     }
 
     combo_list <- unlist(
@@ -977,8 +971,8 @@ run_logreg <- function(x, y, confounders = NULL, indep = NULL, ref, ref_levels =
 
     filtered_tables <- Filter(function(tbl) {
       non_int <- tbl[tbl$Predictor != "(Intercept)", ]
-      low     <- non_int$`95% CI Low`
-      high    <- non_int$`95% CI High`
+      low     <- non_int$`95% CI lower`
+      high    <- non_int$`95% CI upper`
       !(all(is.infinite(low)  | low  == 0) |
         all(is.infinite(high) | high == 0))
     }, results_tables)

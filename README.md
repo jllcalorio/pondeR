@@ -1,75 +1,104 @@
-# pondeR: Statistical Analysis Made Easier
+# pondeR
 
-`pondeR` is an R package providing a curated collection of functions for generating publication-ready descriptive and inferential statistics tables and figures — with minimal coding overhead. It is built upon the robust `gtsummary` framework and leverages the power of the `tidyverse`.
-
-This package aims to make statistical analysis more accessible for everyone, ensuring transparency in analytical methods and providing a consistent template for results.
-
-## Key Features
-
-`pondeR` offers a comprehensive suite of tools for various stages of data analysis and general statistical reporting:
-
-*   **Summarizing Data & Checking Distributions**: Generate publication-ready summary tables, calculate anthropometric indices according to WHO standards, and test for normality or skewness.
-*   **Comparing Groups & Identifying Associations**: Provides methods for detecting differences between cohorts, calculating fold changes, and testing statistical associations. Includes plotting functions like volcano plots and heatmaps.
-*   **Predictive Modeling & Classification**: Offers tools for regularized regression (Ridge, LASSO, Elastic Net), Linear Mixed-Effect Models, and Logistic regression analysis with performance evaluation (AUC/AUROC) and automated bias correction options.
-*   **Multivariate Exploration and Discrimination**: Features dimensionality reduction and visualization tools (PCA, PLS, PCoA) for simplified exploration of complex datasets, including scree and score plots.
-*   **Plotting Functions**: A variety of plotting utilities, including distribution plots, mean maps, and multi-Y plots.
-*   **Export Functions**: Easily export data frames to Excel/CSV files and figures to PNGs.
-*   **Utilities & Helpers**: A collection of utility functions for data management, relabelling, and randomization.
+pondeR turns a data frame into publication-ready statistical tables and figures
+with very little code. It picks a suitable test, reports effect sizes and post
+hoc comparisons, and returns tables whose column names can go straight into a
+report.
 
 ## Installation
 
-You can install the development version of `pondeR` directly from GitHub:
-
-```R
-# Install pak if you haven't already
-install.packages("pak")
-
-# Install the GitHub package
+```r
+# install.packages("pak")
 pak::pak("jllcalorio/pondeR")
 ```
 
-## Quick Start
+A few functions use optional packages. If one is missing, the function tells you
+which package to install.
 
-Here's a quick example of how to generate a descriptive summary table using `pondeR` (assuming you have a data frame named `my_data`):
+## Quick start
 
-```R
+```r
 library(pondeR)
-library(dplyr) # Often useful with gtsummary-based packages
 
-# Example data (replace with your actual data)
-my_data <- tibble::tibble(
-  age = rnorm(100, 30, 5),
-  gender = sample(c("Male", "Female"), 100, replace = TRUE),
-  treatment = sample(c("A", "B", "C"), 100, replace = TRUE),
-  score = runif(100, 0, 100)
-)
+# Descriptive table with p-values
+run_summarytable(iris, split_by = "Species", add_inferential_pvalues = TRUE)
 
-# Generate a summary table
-my_data %>%
-  run_summarytable(
-    # Specify variables and grouping if needed
-    include = c(age, gender, score),
-    by = treatment
-  )
+# Automatic test selection, effect sizes and post hoc comparisons
+res <- run_diff(iris, outcome = c("Sepal.Length", "Sepal.Width"),
+                group = "Species", summary_table = TRUE)
+res$summary_table
+
+# A figure from the same result
+plot_diff(res, outcome = "Sepal.Length")$plots[[1]]
+
+# Correlations with confidence intervals
+run_correl(mtcars[c("mpg", "wt", "hp")], summary_table_only = TRUE)
 ```
-*(Note: The exact arguments for `run_summarytable` may vary. Please refer to the package documentation for detailed usage.)*
+
+## Working with dimsprepr
+
+pondeR accepts a [dimsprepr](https://github.com/jllcalorio/dimsprepr)
+`run_DIpreprocess()` result directly. The data, metadata, group column and QC
+samples are picked up for you, and QC samples are left out of group comparisons.
+
+```r
+library(dimsprepr)
+library(pondeR)
+
+di <- run_DIpreprocess(dims_data, dims_metadata, verbose = FALSE)
+
+# Differential analysis
+fc  <- run_foldchange(di)
+dif <- run_diff(di, summary_table = TRUE)
+plot_volcano(list(fc, dif))$plots[[1]]
+
+# Multivariate analysis
+pca <- run_pca(di)
+plot_score(pca)
+plot_scree(pca)
+```
+
+If you preprocessed with several methods at once, choose one result first, for
+example `run_pca(di[["median_log10"]])`.
+
+## Figures and tables in reports
+
+Every plot defaults to `base_size = 11`, which suits the 7 x 5 inch figures of a
+default Quarto document. Changing `base_size` rescales all the text in a figure.
+Arguments such as `title_size` and `xlab_size` override a single element.
+
+Table columns already have report-ready names, such as `Adjusted p-value` and
+`95% CI lower`, so tables can be printed without renaming anything:
+
+```r
+knitr::kable(res$Sepal.Length$data_summary, digits = 2)
+as_gt(res$summary_table)
+```
+
+## What's included
+
+| Task | Functions |
+|:--|:--|
+| Summary tables | `run_summarytable()`, `run_anthroindex()` |
+| Group comparisons | `run_diff()`, `plot_diff()`, `run_foldchange()`, `plot_volcano()`, `plot_fcmetric()`, `run_lefse()` |
+| Associations and correlations | `run_assoc()`, `run_single_assoc()`, `run_correl()`, `plot_heatmap()`, `plot_dend()` |
+| Modelling | `run_logreg()`, `run_regreg()`, `run_mixedmodel()`, `plot_mixedmodel()`, `plot_oddsratio()`, `run_auc()` |
+| Multivariate analysis | `run_pca()`, `run_pls()`, `run_pcoa()`, `plot_score()`, `plot_scree()` |
+| Other figures | `plot_bar()`, `plot_meanmap()`, `plot_multi_y()`, `plot_relabund()` |
+| Content validity | `run_contentvalidity()`, `run_contentvaliditycvr()` |
+| Export and reports | `save_excel()`, `save_plots()`, `render_metabolomics()` |
+| Data helpers | `run_relabel()`, `run_randomize()`, `run_subset()`, `run_reduce()`, `run_vector2df()`, `run_move_names()` |
+
+See the [function reference](https://jllcalorio.github.io/pondeR/reference/) for
+details.
 
 ## Contributing
 
-We welcome contributions to `pondeR`! Please review our Code of Conduct before contributing.
-
-## Reporting Bugs
-
-If you encounter any bugs or have feature requests, please open an issue on our GitHub Issues page.
+Bug reports and feature requests are welcome on the
+[issue tracker](https://github.com/jllcalorio/pondeR/issues). Please note that
+this project has a
+[Code of Conduct](https://github.com/jllcalorio/pondeR/blob/main/CODE_OF_CONDUCT.md).
 
 ## License
 
-This project is licensed under the MIT License.
-
-## Acknowledgements
-
-Huge thanks to The R Project for Statistical Computing, Positron, RStudio, the developers of the gtsummary, dplyr, ggplot2, everything in the tidyverse package, and all the dependencies I fail to mention. Your work makes `pondeR` possible.
-
-## Future Development
-
-More functions are continuously being added to `pondeR` to further enhance its capabilities and ease of use. Stay tuned for updates!
+MIT

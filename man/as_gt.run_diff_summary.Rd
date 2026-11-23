@@ -17,11 +17,11 @@ A \code{gt_tbl} object.
 }
 \description{
 Renders the \code{df_footnote} and \code{pvalue_legend} attributes
-attached by \code{\link{.simplify_summary_table}} as source notes, mirroring
+of the simplified table as source notes, mirroring
 \code{\link{as_gt.run_correl}}'s footnote pattern. Row-subsetting via
 \code{`[`} (see \code{\link{[.run_diff_summary}}) preserves these
 attributes; operations that bypass it (\code{rbind()}, \code{dplyr}
 verbs, \code{as.data.frame()}) do not, even though \code{class(x)} still
-reads \code{"run_diff_summary"} — in that case a generic fallback note is
+reads \code{"run_diff_summary"} - in that case a generic fallback note is
 shown instead of nothing.
 }

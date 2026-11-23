@@ -6,10 +6,10 @@
 \usage{
 save_plots(
   x,
-  filename = "plot",
+  filename = NULL,
   format = NULL,
-  width = 15,
-  height = 12,
+  width = 7,
+  height = 5,
   dpi = 300,
   folder = NULL,
   transparent = FALSE,
@@ -27,28 +27,29 @@ types: \code{ggplot}, \code{plotly}, \code{grob}/\code{gtable},
 result object.  One level of list nesting is automatically unpacked when
 no direct plot objects are found at the top level.}
 
-\item{filename}{A single character string for the output file name.  Used
-when \code{x} is a single plot.  When \code{x} is a multi-plot list this
+\item{filename}{A single character string for the output file name. Used
+when \code{x} is a single plot. When \code{x} is a multi-plot list this
 argument is ignored and each element's name is used as the file name.
 The extension in \code{filename} sets the format unless \code{format} is
-also supplied.  Defaults to \code{"plot"} when omitted.}
+also supplied. Nothing is written unless \code{filename} or \code{folder}
+is supplied.}
 
 \item{format}{Optional single character string overriding the file
 extension for all exported files, e.g. \code{"pdf"}, \code{"svg"},
 \code{"png"}.  Case-insensitive; accepts with or without a leading dot.
 When supplied, the extension in \code{filename} is ignored.}
 
-\item{width}{Numeric.  Output width in inches.  Default \code{15}.}
+\item{width}{Numeric. Output width in inches. Default \code{7}.}
 
-\item{height}{Numeric.  Output height in inches.  Default \code{12}.}
+\item{height}{Numeric. Output height in inches. Default \code{5}.}
 
 \item{dpi}{Numeric.  Resolution in dots per inch for raster formats.
 Default \code{300}.  Ignored for vector formats.}
 
 \item{folder}{A single character string for the target directory.
 Supports nested folders (e.g., \code{"Main folder/sub folder"}).
-Created recursively if absent. Defaults to \code{NULL} (current working
-directory).}
+Created recursively if absent. With the default \code{NULL}, files go to
+the current working directory, so \code{filename} must then be given.}
 
 \item{transparent}{Logical.  Use a transparent background.  Defaults to
 \code{FALSE}.  A warning is issued and white is used as fallback for

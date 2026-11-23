@@ -13,8 +13,8 @@ plot_score(res, ...)
 \method{plot_score}{run_pca}(
   res,
   pc = c(1, 2),
-  color_by,
-  points_from,
+  color_by = NULL,
+  points_from = NULL,
   title = NULL,
   subtitle = NULL,
   caption = NULL,
@@ -28,21 +28,21 @@ plot_score(res, ...)
   show_outliers = FALSE,
   label_outliers = "all",
   outlier_margin = 1,
-  outlier_label_size = NULL,
   show_groups = NULL,
   colors = NULL,
-  point_size = 10,
+  point_size = 3,
   point_alpha = 0.8,
   theme = "nature",
-  base_size = 30,
-  font_family = "sans",
-  axis_title_size = NULL,
+  base_size = 11,
+  font_family = "",
+  title_size = NULL,
+  subtitle_size = NULL,
+  xlab_size = NULL,
+  ylab_size = NULL,
   axis_text_size = NULL,
-  plot_title_size = NULL,
-  legend_title_size = NULL,
-  legend_text_size = NULL,
-  zoom = 1,
-  verbose = TRUE,
+  legend_size = NULL,
+  label_size = NULL,
+  verbose = FALSE,
   ...
 )
 
@@ -51,34 +51,11 @@ plot_score(res, ...)
 \method{plot_score}{run_pcoa}(
   res,
   pc = c(1, 2),
-  color_by,
-  points_from,
+  color_by = NULL,
+  points_from = NULL,
   metadata = NULL,
   title = NULL,
   subtitle = NULL,
-  caption = NULL,
-  position = "center",
-  arrange_levels = NULL,
-  ellipse = TRUE,
-  ellipse_type = "t",
-  ellipse_level = 0.95,
-  legend = NULL,
-  legend_position = "bottom",
-  show_outliers = FALSE,
-  label_outliers = "all",
-  colors = NULL,
-  point_size = 3,
-  point_alpha = 0.8,
-  theme = "nature",
-  base_size = 11,
-  font_family = "sans",
-  axis_title_size = NULL,
-  axis_text_size = NULL,
-  plot_title_size = NULL,
-  legend_title_size = NULL,
-  legend_text_size = NULL,
-  zoom = 1,
-  verbose = TRUE,
   ...
 )
 
@@ -94,15 +71,15 @@ via S3 dispatch based on the class of \code{res}.}
 \item{pc}{Character vector of length 2. Principal components to plot, e.g., \code{c("PC1", "PC2")}.
 Can also be numeric, e.g., \code{c(1, 2)}. Default: \code{c(1, 2)}.}
 
-\item{color_by}{Character. Name of column in \code{metadata} to use for coloring points.
-If the column contains categorical data, points are colored by discrete groups with optional
-confidence ellipses. If the column contains numeric data, points are colored using a
-continuous gradient scale. Required parameter with no default.}
+\item{color_by}{Character. Name of the metadata column used to colour points.
+Categorical columns give discrete groups with optional confidence ellipses;
+numeric columns give a continuous gradient. Default \code{NULL} uses the
+\code{group} column of the fitted \code{\link{run_pca}()} or
+\code{\link{run_pls}()} model (required for \code{\link{run_pcoa}()}).}
 
-\item{points_from}{Character. Name of column in \code{metadata} to use for labeling points.
-This determines which values are used for sample labels in the plot and for outlier
-labeling when enabled. If the specified column is not found in metadata, sequential
-labels will be used instead. Required parameter with no default.}
+\item{points_from}{Character. Name of the metadata column holding sample
+labels, used when labelling outliers. Default \code{NULL} uses the sample
+(row) names.}
 
 \item{title}{Character. Main plot title. Default: auto-generated based on PCs.}
 
@@ -140,11 +117,8 @@ or a character vector of specific group names from the \code{color_by} variable.
 threshold that exactly matches the drawn \code{stat_ellipse} boundary (same covariance
 estimator and critical value formula). Default \code{1.0} labels any sample that falls outside
 that boundary. Values > 1 require the sample to be proportionally farther beyond it:
-\code{1.0}–\code{1.5} labels most ellipse-breaching samples; \code{1.5}–\code{3.0} labels clearly
-separated samples; \verb{> 3.0} labels only extreme outliers.}
-
-\item{outlier_label_size}{Numeric or \code{NULL}. Font size (ggplot2 text units) for outlier
-labels. Default: \code{NULL} (resolves to \code{base_size / 3.5}, consistent with \code{base_size}).}
+\code{1.0} to \code{1.5} labels most ellipse-breaching samples; \code{1.5} to \code{3.0} labels
+clearly separated samples; \verb{> 3.0} labels only extreme outliers.}
 
 \item{show_groups}{Character vector or \code{NULL}. Subset of group values from \code{color_by} to
 include in the plot. Samples not in \code{show_groups} are hidden. Default: \code{NULL} (all groups
@@ -155,36 +129,29 @@ removed because variance explained is computed on the full dataset, not the show
 (default), the Okabe-Ito colorblind-friendly palette is used. Ignored when \code{color_by}
 is numeric (continuous scale is always used for numeric variables).}
 
-\item{point_size}{Numeric. Size of points. Default: \code{10}.}
+\item{point_size}{Numeric. Size of points. Default: \code{3}.}
 
 \item{point_alpha}{Numeric. Transparency of points (0-1). Default: \code{0.8}.}
 
-\item{theme}{Character. ggplot2 theme to apply. Options: \code{"nature"}, \code{"minimal"},
-\code{"classic"}, \code{"bw"}, \code{"light"}, \code{"dark"}. Default: \code{"nature"} (a clean, publication-ready
-style based on \code{theme_bw()}).}
+\item{theme}{Character. ggplot2 theme to apply. Options: \code{"nature"}, \code{"classic"},
+\code{"plos"}, \code{"minimal"}, \code{"bw"}, \code{"light"}, \code{"dark"}, \code{"gray"}. Default:
+\code{"nature"} (a clean, publication-ready style based on \code{theme_bw()}).}
 
-\item{base_size}{Numeric. Base font size for the theme (pts). Default: \code{30}.}
+\item{base_size}{Base font size in points; every text element scales from it.
+Default: \code{11}, which suits a default 7 x 5 inch Quarto figure.}
 
-\item{font_family}{Character. Font family for all text elements. Default: \code{"sans"}.}
+\item{font_family}{Character. Font family for all text elements. Default: \code{""}
+(the graphics device's default).}
 
-\item{axis_title_size}{Numeric. Font size for axis titles. Default: \code{base_size + 1}.}
+\item{title_size, subtitle_size, xlab_size, ylab_size, axis_text_size, legend_size, label_size}{Font sizes in points for the title, subtitle, x-axis label, y-axis label,
+tick labels, legend and outlier labels. Default \code{NULL} derives each from
+\code{base_size}.}
 
-\item{axis_text_size}{Numeric. Font size for axis tick labels. Default: \code{base_size - 1}.}
-
-\item{plot_title_size}{Numeric. Font size for the plot title. Default: \code{base_size + 3}.}
-
-\item{legend_title_size}{Numeric. Font size for the legend title. Default: \code{base_size}.}
-
-\item{legend_text_size}{Numeric. Font size for legend text. Default: \code{base_size - 1}.}
-
-\item{zoom}{Numeric. Scaling factor applied uniformly to all text and point size elements.
-Values > 1 enlarge, values < 1 shrink. Default: \code{1}.}
-
-\item{verbose}{Logical. Print progress messages. Default: \code{TRUE}.}
+\item{verbose}{Logical. Print progress messages. Default: \code{FALSE}.}
 
 \item{metadata}{A \code{data.frame} with one row per observation (sample).
-Required for \code{plot_score.run_pcoa} because \code{\link{run_pcoa}()} does not
-bundle metadata inside its result (unlike \code{\link{run_pca}()}). Row order must
+Used by \code{plot_score.run_pcoa}; defaults to the metadata stored by
+\code{\link{run_pcoa}()} when it was given one. Row order must
 match the row order of the data matrix originally passed to
 \code{\link{run_pcoa}()}.}
 }

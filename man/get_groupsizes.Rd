@@ -18,7 +18,7 @@ get_groupsizes(
 }
 \arguments{
 \item{metadata}{A \code{data.frame}, \code{tibble}, \strong{or a named
-list} of such objects — identical to what was (or will be) passed to
+list} of such objects - identical to what was (or will be) passed to
 \code{\link{run_regreg}()}. When a list, names must be set.}
 
 \item{pred}{A single character string naming the dependent variable column
@@ -36,7 +36,7 @@ argument of \code{\link{run_regreg}} and ensures that the NA-filtering
 step uses the same coercion logic, so group sizes are counted on exactly
 the same sample set. For example, if \code{"Serum albumin (g/L)"} is
 stored as character but is truly numeric, listing it here prevents it from
-being coerced to integer codes — which could introduce spurious NAs or
+being coerced to integer codes - which could introduce spurious NAs or
 hide real ones. Default: \code{NULL}.}
 
 \item{train_percent}{A numeric scalar in \code{(0, 1)} matching the
@@ -48,27 +48,28 @@ compute the projected minimum training-group size. Default: \code{0.8}.}
 is smaller than the requested folds. Default: \code{10L}.}
 
 \item{show_summary_table}{Logical. If \code{TRUE} and \code{pred} is
-categorical, a \code{\link{run_summarytable}()} summary of \code{metadata}
-stratified by \code{pred} is printed as a side-effect. The numeric count
-data frame is still returned invisibly. Default: \code{FALSE}.}
+categorical, the result becomes a list holding the \code{group_sizes} data
+frame and a \code{\link{run_summarytable}()} \code{summary_table} of
+\code{metadata} stratified by \code{pred}. Default: \code{FALSE}.}
 
 \item{summarytable_args}{A named list of additional arguments forwarded to
 \code{\link{run_summarytable}} when \code{show_summary_table = TRUE}.
 Default: \code{list()}.}
 }
 \value{
-A \code{data.frame} with the following columns:
+A report-ready \code{data.frame} with the following columns (or a
+list containing it; see \code{show_summary_table}):
 \describe{
-\item{\code{taxon}}{Only when \code{metadata} is a named list.}
-\item{\code{group}}{Level of the \code{pred} variable.}
-\item{\code{n_total}}{Number of samples in that group (after NA removal).}
-\item{\code{n_train_projected}}{Projected training-set size:
-\code{floor(n_total * train_percent)}.}
-\item{\code{folds_requested}}{The value of \code{cv_folds}.}
-\item{\code{fold_reduction_expected}}{Logical; \code{TRUE} when
-\code{n_train_projected < cv_folds}.}
-\item{\code{suggested_cv_folds}}{The fold count \code{\link{run_regreg}} would
-actually use: \code{max(3, n_train_projected)}.}
+\item{\code{Taxon}}{Only when \code{metadata} is a named list.}
+\item{\code{Group}}{Level of the \code{pred} variable.}
+\item{\code{Total n}}{Number of samples in that group (after NA removal).}
+\item{\code{Projected training n}}{Projected training-set size:
+\code{floor(Total n * train_percent)}.}
+\item{\code{Folds requested}}{The value of \code{cv_folds}.}
+\item{\code{Fold reduction expected}}{Logical; \code{TRUE} when the
+projected training size is below \code{cv_folds}.}
+\item{\code{Suggested CV folds}}{The fold count \code{\link{run_regreg}}
+would actually use: the projected training size, but at least 3.}
 }
 }
 \description{
@@ -77,8 +78,8 @@ Tabulates the number of samples per level of the dependent variable
 \code{\link{run_regreg}} performs: removing rows with \code{NA} in
 \code{pred}, and optionally subsetting rows to match those that would
 survive the \code{not_penalized} NA removal. This lets the user see exactly
-why \code{\link{run_regreg}} may warn that \code{cv_folds} was reduced — because
-the smallest group has fewer samples than the requested number of folds —
+why \code{\link{run_regreg}} may warn that \code{cv_folds} was reduced - because
+the smallest group has fewer samples than the requested number of folds -
 and which group is the bottleneck.
 }
 \details{
@@ -97,7 +98,7 @@ An optional publication-ready summary table can be produced via
 
 When \code{metadata} is a named list (parallel to a \code{lapply} call),
 each element is processed and results are stacked with a leading
-\code{taxon} column.
+\code{Taxon} column.
 }
 \examples{
 set.seed(1)

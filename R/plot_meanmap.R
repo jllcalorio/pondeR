@@ -59,7 +59,8 @@
 #'   \code{NULL}, which uses the Okabe-Ito colour-blind-safe palette.
 #' @param heatmap_colors A character vector of length \eqn{\ge 2} specifying
 #'   the colour gradient for the heatmap fill, from low to high values.
-#'   Default \code{c("#008000", "#FFFF00", "#FF0000")} (green–yellow–red).
+#'   Default \code{c("#2166AC", "#F7F7F7", "#B2182B")} (blue-white-red, which
+#'   stays readable for colour-blind viewers).
 #' @param show_values Logical. Whether to print the rounded mean value inside
 #'   each heatmap cell. Default \code{FALSE}.
 #' @param value_digits A single non-negative integer. Number of decimal places
@@ -67,21 +68,13 @@
 #'   \code{show_values = FALSE}.
 #' @param value_color A single character string for in-cell text colour.
 #'   Default \code{"black"}.
-#' @param global_font_size Numeric. Base font size in points. Default
-#'   \code{11}.
-#' @param row_font_size Numeric or \code{NULL}. Font size for row (variable)
-#'   labels on the right y-axis. Derived from \code{global_font_size} when
-#'   \code{NULL} (default).
-#' @param col_font_size Numeric or \code{NULL}. Font size for column (group)
-#'   labels on the x-axis. Derived from \code{global_font_size} when
-#'   \code{NULL} (default).
-#' @param legend_font_size Numeric or \code{NULL}. Font size for legend text.
-#'   Derived from \code{global_font_size} when \code{NULL} (default).
-#' @param cluster_label_size Numeric or \code{NULL}. Font size for cluster
-#'   bracket labels. Derived from \code{global_font_size} when \code{NULL}
-#'   (default). Ignored when \code{n_clusters} is \code{NULL}.
-#' @param sig_marker_size Numeric or \code{NULL}. Font size for significance
-#'   markers. Derived from \code{global_font_size} when \code{NULL} (default).
+#' @param base_size Numeric. Base font size in points; every text element
+#'   scales from it. Default \code{11}, which suits a default 7 x 5 inch Quarto
+#'   figure.
+#' @param xlab_size,ylab_size,legend_size,label_size,sig_marker_size Font sizes
+#'   in points for the group labels (x axis), variable labels (y axis), legend
+#'   text, cluster labels and in-cell values, and significance markers. Default
+#'   \code{NULL} derives each from \code{base_size}.
 #' @param dend_width Numeric in (0, 1). Relative width of the dendrogram panel
 #'   as a fraction of the total plot width. Default \code{0.2}.
 #' @param legend_position A single character string for legend placement.
@@ -147,9 +140,9 @@
 #'   figures and presentations that are friendly to colorblind people}.
 #'   \url{https://jfly.uni-koeln.de/color/}
 #'
-#' @examples
+#' @examplesIf requireNamespace("ggdendro", quietly = TRUE)
 #' \donttest{
-#' ## ── Basic example: iris mean intensity by species ────────────────────────
+#' ## Basic example: iris mean intensity by species
 #' data(iris)
 #' num_part <- iris[, 1:4]
 #' meta_part <- data.frame(Species = iris$Species)
@@ -162,7 +155,7 @@
 #' )
 #' print(p)
 #'
-#' ## ── With cluster colouring and significance markers ──────────────────────
+#' ## With cluster colouring and significance markers
 #' p2 <- plot_meanmap(
 #'   x                = num_part,
 #'   metadata         = meta_part,
@@ -171,12 +164,11 @@
 #'   n_clusters       = 2,
 #'   cluster_labels   = c("Cluster I", "Cluster II"),
 #'   sig_vars         = c("Petal.Length", "Petal.Width"),
-#'   sig_color        = "red",
-#'   global_font_size = 11
+#'   sig_color        = "red"
 #' )
 #' print(p2)
 #'
-#' ## ── Custom group order and colour palette ────────────────────────────────
+#' ## Custom group order and colour palette
 #' p3 <- plot_meanmap(
 #'   x           = num_part,
 #'   metadata    = meta_part,
@@ -205,25 +197,21 @@ plot_meanmap <- function(
     n_clusters        = NULL,
     cluster_labels    = NULL,
     cluster_colors    = NULL,
-    heatmap_colors    = c("#008000", "#FFFF00", "#FF0000"),
+    heatmap_colors    = c("#2166AC", "#F7F7F7", "#B2182B"),
     show_values       = FALSE,
     value_digits      = 2L,
     value_color       = "black",
-    global_font_size  = 11,
-    row_font_size     = NULL,
-    col_font_size     = NULL,
-    legend_font_size  = NULL,
-    cluster_label_size = NULL,
+    base_size         = 11,
+    xlab_size         = NULL,
+    ylab_size         = NULL,
+    legend_size       = NULL,
+    label_size        = NULL,
     sig_marker_size   = NULL,
     dend_width        = 0.2,
     legend_position   = "right",
     na_color          = "grey80"
 ) {
 
-  if (!requireNamespace("ggplot2", quietly = TRUE))
-    stop("Package 'ggplot2' is required but not installed. Install with: install.packages('ggplot2')")
-  if (!requireNamespace("patchwork", quietly = TRUE))
-    stop("Package 'patchwork' is required but not installed. Install with: install.packages('patchwork')")
   if (!requireNamespace("ggdendro", quietly = TRUE))
     stop("Package 'ggdendro' is required but not installed. Install with: install.packages('ggdendro')")
   
@@ -351,14 +339,7 @@ plot_meanmap <- function(
       stop(sprintf("`%s` must be a single positive numeric value or NULL.", nm),
            call. = FALSE)
   }
-  if (!is.numeric(global_font_size) || length(global_font_size) != 1L ||
-      global_font_size <= 0)
-    stop("`global_font_size` must be a single positive numeric.", call. = FALSE)
-  .pos_num(row_font_size,     "row_font_size")
-  .pos_num(col_font_size,     "col_font_size")
-  .pos_num(legend_font_size,  "legend_font_size")
-  .pos_num(cluster_label_size,"cluster_label_size")
-  .pos_num(sig_marker_size,   "sig_marker_size")
+  .pos_num(sig_marker_size, "sig_marker_size")
   if (!is.numeric(dend_width) || length(dend_width) != 1L ||
       dend_width <= 0 || dend_width >= 1)
     stop("`dend_width` must be a single numeric in (0, 1).", call. = FALSE)
@@ -373,11 +354,9 @@ plot_meanmap <- function(
     stop("`show_values` must be a single non-NA logical.", call. = FALSE)
 
   # ── 2. Derived font sizes ────────────────────────────────────────────────────
-  fs_row   <- row_font_size      %||% (global_font_size * 0.85)
-  fs_col   <- col_font_size      %||% (global_font_size * 0.85)
-  fs_leg   <- legend_font_size   %||% (global_font_size * 0.80)
-  fs_clust <- cluster_label_size %||% (global_font_size * 0.85)
-  fs_sig   <- sig_marker_size    %||% (global_font_size * 0.90)
+  sizes <- .text_sizes(base_size, xlab = xlab_size, ylab = ylab_size,
+                       legend = legend_size, label = label_size)
+  fs_sig <- sig_marker_size %||% base_size
 
   # ── 3. Compute group means (variables × groups) ──────────────────────────────
   # x is observations × variables; transpose to variables × observations first
@@ -540,9 +519,6 @@ plot_meanmap <- function(
     segs$seg_col <- "#444444"
   }
 
-  # x-axis limits for dendrogram: extend left for bracket + label margin
-  dend_x_expand <- if (!is.null(n_clusters)) 0.5 else 0.05
-
   dend_plot <- ggplot2::ggplot() +
     ggplot2::geom_segment(
       data    = segs,
@@ -552,44 +528,47 @@ plot_meanmap <- function(
     ) +
     ggplot2::scale_colour_identity()
 
-  # Cluster brackets: vertical coloured lines on the left of the dendrogram
+  # Cluster brackets sit left of the tree root, with their labels in the margin
+  label_margin <- 0
   if (!is.null(bracket_df)) {
-    bracket_x <- -max(segs$y, na.rm = TRUE) * 0.08   # just left of tree root
-    tick_x    <-  max(segs$y, na.rm = TRUE) * 0.04
+    bracket_x <- max(segs$y, na.rm = TRUE) * 1.08
+    tick_x    <- max(segs$y, na.rm = TRUE) * 0.03
+    # simplified: text width estimated at 0.55 em per character; very wide fonts
+    # may need a larger `dend_width`. Upgrade path: measure with grid::stringWidth.
+    label_margin <- max(nchar(clust_label_df$label)) * sizes$label * 0.55
 
     dend_plot <- dend_plot +
       # Vertical bracket bar
       ggplot2::geom_segment(
         data    = bracket_df,
-        mapping = ggplot2::aes(x = ymin, xend = ymax,
+        mapping = ggplot2::aes(x = ymin + 0.1, xend = ymax - 0.1,
                                 y = bracket_x, yend = bracket_x,
                                 colour = color),
-        linewidth = 2.5,
-        lineend   = "butt",
+        linewidth = 0.8,
         inherit.aes = FALSE
       ) +
-      # Short horizontal ticks at bracket ends
+      # Short ticks at the bracket ends, pointing at the tree
       ggplot2::geom_segment(
         data    = bracket_df,
-        mapping = ggplot2::aes(x = ymin, xend = ymin,
+        mapping = ggplot2::aes(x = ymin + 0.1, xend = ymin + 0.1,
                                 y = bracket_x, yend = bracket_x - tick_x,
                                 colour = color),
-        linewidth = 1.2, inherit.aes = FALSE
+        linewidth = 0.8, inherit.aes = FALSE
       ) +
       ggplot2::geom_segment(
         data    = bracket_df,
-        mapping = ggplot2::aes(x = ymax, xend = ymax,
+        mapping = ggplot2::aes(x = ymax - 0.1, xend = ymax - 0.1,
                                 y = bracket_x, yend = bracket_x - tick_x,
                                 colour = color),
-        linewidth = 1.2, inherit.aes = FALSE
+        linewidth = 0.8, inherit.aes = FALSE
       ) +
       # Cluster labels
       ggplot2::geom_text(
         data    = clust_label_df,
-        mapping = ggplot2::aes(x = y, y = bracket_x - tick_x * 2.5,
+        mapping = ggplot2::aes(x = y, y = bracket_x + tick_x,
                                 label = label, colour = color),
-        size        = fs_clust / ggplot2::.pt,
-        hjust       = 0.5,
+        size        = .pt_to_mm(sizes$label),
+        hjust       = 1,
         inherit.aes = FALSE
       )
   }
@@ -601,12 +580,12 @@ plot_meanmap <- function(
       expand = c(0, 0.5)
     ) +
     ggplot2::scale_y_reverse(
-      expand = ggplot2::expansion(mult = c(dend_x_expand, 0.05))
+      expand = ggplot2::expansion(mult = c(0.02, 0.05))
     ) +
-    ggplot2::coord_flip() +
-    ggplot2::theme_void(base_size = global_font_size) +
+    ggplot2::coord_flip(clip = "off") +
+    ggplot2::theme_void(base_size = base_size) +
     ggplot2::theme(
-      plot.margin     = ggplot2::margin(0, 0, 0, 0),
+      plot.margin     = ggplot2::margin(0, 0, 0, label_margin),
       axis.text       = ggplot2::element_blank(),
       axis.ticks      = ggplot2::element_blank(),
       panel.grid      = ggplot2::element_blank(),
@@ -625,8 +604,8 @@ plot_meanmap <- function(
   )
 
   # Factor levels: variables in leaf order (top of plot = last level for y)
-  heat_long$variable <- factor(heat_long$variable,
-                                levels = rev(var_order))
+  # Level i sits at height i, the same height as dendrogram leaf i
+  heat_long$variable <- factor(heat_long$variable, levels = var_order)
   heat_long$group    <- factor(heat_long$group, levels = grp_levels)
 
   # Significance flag per row
@@ -641,54 +620,30 @@ plot_meanmap <- function(
     )
   }
 
-  # Colour scale midpoint
-  val_range  <- range(scaled_ord, na.rm = TRUE)
-  clr_mid    <- if (length(heatmap_colors) >= 3L) {
-    mean(val_range)
-  } else {
-    NULL
-  }
-
   heat_plot <- ggplot2::ggplot(
     heat_long,
     ggplot2::aes(x = group, y = variable, fill = value)
   ) +
     ggplot2::geom_tile(colour = "white", linewidth = 0.3) +
-    {
-      if (length(heatmap_colors) == 2L) {
-        ggplot2::scale_fill_gradient(
-          low      = heatmap_colors[1L],
-          high     = heatmap_colors[2L],
-          na.value = na_color,
-          name     = NULL,
-          guide    = ggplot2::guide_colorbar(
-            barwidth  = ggplot2::unit(0.5, "lines"),
-            barheight = ggplot2::unit(4,   "lines"),
-            title     = NULL,
-            label.theme = ggplot2::element_text(size = fs_leg)
-          )
+    ggplot2::scale_fill_gradientn(
+      colours  = heatmap_colors,
+      na.value = na_color,
+      name     = NULL,
+      guide    = ggplot2::guide_colorbar(
+        title = NULL,
+        theme = ggplot2::theme(
+          legend.key.width  = ggplot2::unit(0.5, "lines"),
+          legend.key.height = ggplot2::unit(4,   "lines")
         )
-      } else {
-        ggplot2::scale_fill_gradientn(
-          colours  = heatmap_colors,
-          na.value = na_color,
-          name     = NULL,
-          guide    = ggplot2::guide_colorbar(
-            barwidth  = ggplot2::unit(0.5, "lines"),
-            barheight = ggplot2::unit(4,   "lines"),
-            title     = NULL,
-            label.theme = ggplot2::element_text(size = fs_leg)
-          )
-        )
-      }
-    }
+      )
+    )
 
   # In-cell values
   if (show_values) {
     heat_plot <- heat_plot +
       ggplot2::geom_text(
         ggplot2::aes(label = label),
-        size   = (global_font_size * 0.6) / ggplot2::.pt,
+        size   = .pt_to_mm(sizes$label),
         colour = value_color,
         na.rm  = TRUE
       )
@@ -709,7 +664,7 @@ plot_meanmap <- function(
         data        = sig_df,
         mapping     = ggplot2::aes(x = x_pos, y = variable, label = sig_marker),
         colour      = sig_color,
-        size        = fs_sig / ggplot2::.pt,
+        size        = .pt_to_mm(fs_sig),
         inherit.aes = FALSE,
         hjust       = 0.5
       ) +
@@ -725,15 +680,17 @@ plot_meanmap <- function(
   }
 
   heat_plot <- heat_plot +
-    ggplot2::scale_y_discrete(position = "right") +
+    # Same half-row padding as the dendrogram, so rows and leaves line up
+    ggplot2::scale_y_discrete(position = "right",
+                              expand = ggplot2::expansion(add = 0.5)) +
     ggplot2::coord_cartesian(clip = "off") +
-    ggplot2::theme_minimal(base_size = global_font_size) +
+    ggplot2::theme_minimal(base_size = base_size) +
     ggplot2::theme(
       axis.text.x    = ggplot2::element_text(
-        angle = 0, hjust = 0.5, vjust = 1, size = fs_col
+        angle = 0, hjust = 0.5, vjust = 1, size = sizes$xlab
       ),
       axis.text.y    = ggplot2::element_text(
-        hjust = 0, size = fs_row
+        hjust = 0, size = sizes$ylab
       ),
       axis.title     = ggplot2::element_blank(),
       axis.ticks     = ggplot2::element_blank(),
@@ -741,7 +698,7 @@ plot_meanmap <- function(
       panel.border   = ggplot2::element_blank(),
       plot.margin    = ggplot2::margin(0, 0, 0, 0),
       legend.position = legend_position,
-      legend.text    = ggplot2::element_text(size = fs_leg)
+      legend.text    = ggplot2::element_text(size = sizes$legend)
     )
 
   # ── 11. Assemble ──────────────────────────────────────────────────────────────
@@ -749,7 +706,7 @@ plot_meanmap <- function(
     dend_plot, heat_plot,
     ncol   = 2L,
     widths = c(dend_width, 1 - dend_width)
-  ) & ggplot2::theme(plot.margin = ggplot2::margin(0, 0, 0, 0))
+  )
 
   # ── 12. Attach result attributes ─────────────────────────────────────────────
   attr(combined, "mean_matrix")        <- mean_ord

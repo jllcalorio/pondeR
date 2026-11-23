@@ -18,7 +18,6 @@
 #' @return A data frame with the names moved into the data area. When moving row 
 #'   names to a column, original data types of other columns are preserved.
 #'
-#' @importFrom methods is
 #' 
 #' @author John Lennon L. Calorio
 #' 

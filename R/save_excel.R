@@ -5,7 +5,7 @@
 
 # ── Internal helpers ──────────────────────────────────────────────────────────
 
-#' @keywords internal
+#' @noRd
 .sanitize_filename_xl <- function(x) {
   x <- gsub('[/\\\\:*?"<>|]', "", x)
   x <- gsub("\\.{2,}", ".", x)
@@ -14,7 +14,7 @@
   x
 }
 
-#' @keywords internal
+#' @noRd
 .sanitize_sheet_name_xl <- function(x) {
   # Strip Excel-illegal characters and leading apostrophes
   # NOTE: colon must be escaped as a literal inside the character class
@@ -55,7 +55,7 @@
   .truncate_sheet(x, 25L)
 }
 
-#' @keywords internal
+#' @noRd
 .unique_names_xl <- function(nms, max_suffix = 999L) {
   counts <- table(nms)
   dups   <- names(counts)[counts > 1L]
@@ -80,7 +80,7 @@
   nms
 }
 
-#' @keywords internal
+#' @noRd
 .resolve_path_xl <- function(folder, base_name, ext,
                               fd_date_stamp, fd_time_stamp,
                               fn_date_stamp, fn_time_stamp,
@@ -122,10 +122,10 @@
 
 # ── Tabular type checks ───────────────────────────────────────────────────────
 
-#' @keywords internal
+#' @noRd
 .is_tabular <- function(obj) is_tabular(obj, warn = FALSE)
 
-#' @keywords internal
+#' @noRd
 .is_ponder_result <- function(obj) {
   # pondeR run_* function results carry a class starting with "run_" or any
   # registered pondeR class.  We extract the first data-frame-like element.
@@ -133,7 +133,7 @@
     any(class(obj) %in% c("run_auc", "run_assoc", "run_diff"))
 }
 
-#' @keywords internal
+#' @noRd
 .extract_tables_from_ponder <- function(obj) {
   # Return a named list of data frames found inside a pondeR result object
   candidates <- Filter(.is_tabular, obj)
@@ -161,15 +161,15 @@
 #'   of \code{\link{run_auc}()}, \code{\link{run_diff}()}), or a named list whose elements
 #'   are any combination of those types.  One level of nesting is automatically
 #'   unpacked when no direct tabular elements are found at the top level.
-#' @param filename A single character string for the output file name.  Used
-#'   as-is when \code{x} is a single object.  Ignored when \code{x} is a list
-#'   with multiple elements — each element's name is used as its sheet name and
-#'   the list object's name becomes the file name.  Illegal characters are
-#'   removed silently.  Defaults to \code{"output"} if not supplied.
+#' @param filename A single character string for the output file name. Used
+#'   as-is when \code{x} is a single object. Illegal characters are removed
+#'   silently. When \code{NULL} (default), the name of the object passed as
+#'   \code{x} is used. Nothing is written unless \code{filename} or
+#'   \code{folder} is supplied.
 #' @param folder A single character string giving the target directory.
 #'   Supports nested folders (e.g., \code{"Main folder/sub folder"}).
-#'   Created recursively if absent. Defaults to \code{NULL} (current working
-#'   directory).
+#'   Created recursively if absent. With the default \code{NULL}, the file goes
+#'   to the current working directory, so \code{filename} must then be given.
 #' @param overwrite Logical.  When \code{TRUE} an existing file is silently
 #'   overwritten.  When \code{FALSE} (default) a Windows-style counter suffix
 #'   is appended, e.g. \code{"results (1).xlsx"}.
@@ -196,11 +196,8 @@
 #' \code{" (N)"} suffix (up to \code{" (999)"}, hence the 25-character base
 #' limit).
 #'
-#' \strong{Filename priority.}  The \code{filename} argument is prioritized
-#' unless it is left as the default \code{"output"}.  If \code{filename} is
-#' \code{"output"} and \code{x} is a list (or a pondeR result containing
-#' multiple tables), the function automatically uses the variable name of
-#' \code{x} as the filename for convenience.
+#' \strong{Filename.}  When \code{filename} is \code{NULL}, the name of the
+#' object passed as \code{x} is used.
 #'
 #' \strong{pondeR result objects.}  Objects whose class starts with
 #' \code{run_} (e.g. \code{\link{run_auc}}, \code{\link{run_diff}}) are unpacked
@@ -232,7 +229,7 @@
 #' @export
 save_excel <- function(
     x,
-    filename         = "output",
+    filename         = NULL,
     folder           = NULL,
     overwrite        = FALSE,
     freeze_first_row = TRUE,
@@ -265,6 +262,11 @@ save_excel <- function(
   .chk(fn_time_stamp,    "fn_time_stamp")
 
   # ── 2. filename validation ─────────────────────────────────────────────────
+  # Never write to a default location: the user must say where
+  if (is.null(filename) && is.null(folder))
+    stop("Say where to save: supply `filename` and/or `folder`.", call. = FALSE)
+  filename_given <- !is.null(filename)
+  if (!filename_given) filename <- "output"
   if (!is.character(filename) || length(filename) != 1L ||
       is.na(filename) || !nzchar(trimws(filename)))
     stop("'filename' must be a single non-empty character string, e.g. \"results\".",
@@ -321,7 +323,7 @@ save_excel <- function(
   if (is_tabular(x, warn = FALSE)) {
     # --- Single tabular object: honour filename ---
     sheets <- stats::setNames(list(as.data.frame(x)), base_name)
-    use_filename <- if (base_name == "output") x_name_safe else base_name
+    use_filename <- if (filename_given) base_name else x_name_safe
 
   } else if (.is_ponder_result(x)) {
     # --- pondeR result: unpack tables, use filename ---
@@ -330,7 +332,7 @@ save_excel <- function(
       stop("The pondeR result object contains no tabular data to export.",
            call. = FALSE)
     sheets <- coerce_list(tbls)
-    use_filename <- if (base_name == "output") x_name_safe else base_name
+    use_filename <- if (filename_given) base_name else x_name_safe
 
   } else if (is.list(x)) {
     # Check if any direct element is tabular / pondeR
@@ -393,7 +395,7 @@ save_excel <- function(
     sheets <- coerce_list(expanded)
 
     # Prioritize provided filename over variable name fallback
-    use_filename <- if (base_name == "output") x_name_safe else base_name
+    use_filename <- if (filename_given) base_name else x_name_safe
 
   } else {
     stop(paste0(

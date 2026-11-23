@@ -103,21 +103,12 @@ run_relabel <- function(x, column, conversion_map) {
   conversion_keys <- names(conversion_map)
   conversion_values <- as.character(unname(conversion_map))
 
-  tryCatch({
-    for (i in seq_along(conversion_keys)) {
-      key <- conversion_keys[i]
-      value <- conversion_values[i]
-
-      # Handle potential NA values in the key matching
-      matches <- !is.na(x_copy[[column]]) & x_copy[[column]] == key
-      x_copy[[column]][matches] <- value
-    }
-  }, error = function(e) {
-    stop("Error during recoding: ", e$message)
-  })
+  # All keys are matched at once, so c(A = "B", B = "C") cannot chain A to C
+  idx <- match(x_copy[[column]], conversion_keys)
+  x_copy[[column]] <- ifelse(is.na(idx), x_copy[[column]], conversion_values[idx])
 
   # Identify the recoded levels in the order they appear in conversion_map
-  ordered_levels <- conversion_values
+  ordered_levels <- unique(conversion_values)
 
   # Get all other unique values in the column (excluding NA values for sorting)
   all_unique <- unique(x_copy[[column]])
@@ -131,9 +122,6 @@ run_relabel <- function(x, column, conversion_map) {
   # Combine the ordered levels with the sorted other levels
   # Include NA if present in the data
   all_levels <- c(ordered_levels, other_levels)
-  if (any(is.na(x_copy[[column]]))) {
-    all_levels <- c(all_levels, NA)
-  }
 
   # Convert the column to a factor with the defined levels
   tryCatch({

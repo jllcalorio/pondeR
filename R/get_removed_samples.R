@@ -9,7 +9,7 @@
 #' samples together with the columns responsible, so the user can inspect,
 #' impute, or exclude them deliberately before re-running the model.
 #'
-#' The function operates entirely on the original inputs — no fitted model
+#' The function operates entirely on the original inputs - no fitted model
 #' object is needed. This means it can be called before \code{\link{run_regreg}()} to
 #' pre-screen data, or after to audit a run.
 #'
@@ -26,10 +26,10 @@
 #'
 #' When \code{x} is a named list (e.g., from a \code{lapply} call over
 #' taxonomic levels), the function iterates over each list element and returns
-#' a combined data frame with a leading \code{taxon} column.
+#' a combined data frame with a leading \code{Taxon} column.
 #'
 #' @param x A \code{data.frame}, \code{tibble}, \code{matrix}, \strong{or a
-#'   named list} of such objects — matching what was passed (or would be
+#'   named list} of such objects - matching what was passed (or would be
 #'   passed) to \code{\link{run_regreg}()}. When a list is supplied, each element is
 #'   processed independently.
 #' @param metadata A \code{data.frame} or \code{tibble} of sample metadata,
@@ -44,18 +44,18 @@
 #' @param include_metadata_cols Logical. If \code{TRUE} (default), all columns
 #'   of \code{metadata} are appended to the returned data frame for context. If
 #'   \code{FALSE}, only the columns specified in \code{not_penalized} (plus
-#'   \code{taxon} when \code{x} is a list) are returned.
-#' @param row_numbers Logical. If \code{TRUE}, a column \code{.row} containing
+#'   \code{Taxon} when \code{x} is a list) are returned.
+#' @param row_numbers Logical. If \code{TRUE}, a column \code{Row} containing
 #'   the original row index of each flagged sample is prepended to the result.
 #'   Default: \code{TRUE}.
 #'
 #' @return A \code{data.frame} of flagged samples. Columns include:
 #' \describe{
-#'   \item{\code{taxon}}{Only present when \code{x} is a named list. The name
+#'   \item{\code{Taxon}}{Only present when \code{x} is a named list. The name
 #'     of the list element from which the sample originated.}
-#'   \item{\code{.row}}{Original row index in \code{metadata} (when
+#'   \item{\code{Row}}{Original row index in \code{metadata} (when
 #'     \code{row_numbers = TRUE}).}
-#'   \item{\code{.missing_in}}{A semicolon-separated string naming the
+#'   \item{\code{Missing in}}{A semicolon-separated string naming the
 #'     \code{not_penalized} columns that are \code{NA} for that sample.}
 #'   \item{Metadata columns}{All columns of \code{metadata} (when
 #'     \code{include_metadata_cols = TRUE}).}
@@ -122,7 +122,7 @@ get_removed_samples <- function(
     results <- lapply(names(x), function(nm) {
       out <- .grs_single(x[[nm]], metadata, not_penalized, pred,
                          include_metadata_cols, row_numbers)
-      if (nrow(out) > 0L) cbind(taxon = nm, out, stringsAsFactors = FALSE)
+      if (nrow(out) > 0L) cbind(Taxon = nm, out, stringsAsFactors = FALSE)
       else NULL
     })
 
@@ -187,10 +187,9 @@ get_removed_samples <- function(
 
   # Prepend helper columns
   if (row_numbers) {
-    out <- cbind(.row = flagged, .missing_in = missing_in, out,
-                 stringsAsFactors = FALSE)
+    out <- cbind(data.frame(Row = flagged, `Missing in` = missing_in, check.names = FALSE), out)
   } else {
-    out <- cbind(.missing_in = missing_in, out, stringsAsFactors = FALSE)
+    out <- cbind(data.frame(`Missing in` = missing_in, check.names = FALSE), out)
   }
 
   rownames(out) <- NULL

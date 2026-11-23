@@ -24,7 +24,8 @@
 #'   \code{\link{run_correl}}. Default \code{0.05}.
 #' @param remove Level-exclusion list passed to \code{\link{run_correl}}.
 #' @param theme A single character string: \code{"nature"} (default),
-#'   \code{"classic"}, \code{"minimal"}, or \code{"bw"}.
+#'   \code{"classic"}, \code{"plos"}, \code{"minimal"}, \code{"bw"},
+#'   \code{"light"}, \code{"dark"}, or \code{"gray"}.
 #' @param plot_title A single character string for the plot title. Default
 #'   \code{NULL}.
 #' @param plot_subtitle A single character string for the plot subtitle. Default
@@ -40,7 +41,7 @@
 #' @param color A character vector of length 3 specifying fill colours for
 #'   negative, neutral, and positive correlation respectively. Default
 #'   \code{c("#2166AC", "#F7F7F7", "#B2182B")}.
-#' @param clab_angle A single numeric (0–360) controlling the rotation angle
+#' @param clab_angle A single numeric (0 to 360) controlling the rotation angle
 #'   of column (x-axis) labels in degrees. Default \code{45}.
 #' @param show_triangle A single character string: \code{"all"} (default),
 #'   \code{"lower"} (retain lower triangle only), or \code{"upper"} (retain
@@ -51,13 +52,12 @@
 #'   coefficient annotation. Default \code{2}. When rounding produces exactly
 #'   \code{1} or \code{-1} for a non-unity value, scientific notation is used
 #'   and the font is reduced. Ignored when \code{show_coef = FALSE}.
-#' @param mark_x Logical. Overlay an \code{"\u00D7"} on non-significant cells
-#'   when \code{show_coef = TRUE}. Default \code{TRUE}.
-#' @param mark_x_size A single positive numeric acting as a multiplier for the 
-#'   size of the "×" mark. Default \code{1.0} (fills ~85% of the cell). 
-#'   Ignored when \code{mark_x = FALSE}.
-#' @param mark_x_alpha A single numeric (0–1) controlling the transparency of 
-#'   the "×" mark. Default \code{0.6}. Ignored when \code{mark_x = FALSE}.
+#' @param mark_x Logical. Overlay a cross on non-significant cells when
+#'   \code{show_coef = TRUE}. Default \code{TRUE}.
+#' @param mark_x_size A single positive numeric acting as a multiplier for the
+#'   size of the cross. Default \code{1}. Ignored when \code{mark_x = FALSE}.
+#' @param mark_x_alpha A single numeric (0 to 1) controlling the transparency
+#'   of the cross. Default \code{0.6}. Ignored when \code{mark_x = FALSE}.
 #' @param show_dend Logical. Whether to attach hierarchical clustering
 #'   dendrograms to the heatmap margins. Requires \pkg{patchwork}.
 #'   Default \code{FALSE}.
@@ -67,23 +67,11 @@
 #' @param dend_col_height A single positive numeric controlling the relative
 #'   height of the column dendrogram panel when \code{show_dend = TRUE}.
 #'   Default \code{0.2}.
-#' @param global_font_size A single positive numeric specifying the base font
-#'   size in points. Default \code{15}.
-#' @param axis_title_size Font size for axis titles. Defaults to
-#'   \code{global_font_size}.
-#' @param axis_text_size Font size for axis tick labels. Defaults to
-#'   \code{global_font_size}.
-#' @param legend_title_size Font size for the legend title. Defaults to
-#'   \code{global_font_size}.
-#' @param legend_text_size Font size for legend text. Defaults to
-#'   \code{global_font_size}.
-#' @param coef_text_size Font size for in-cell coefficient annotations.
-#'   Defaults to \code{global_font_size * 0.7}. Ignored when
-#'   \code{show_coef = FALSE}.
-#' @param plot_title_size Font size for the plot title. Defaults to
-#'   \code{global_font_size + 2}.
-#' @param plot_subtitle_size Font size for the plot subtitle. Defaults to
-#'   \code{global_font_size}.
+#' @param base_size Base font size in points; every text element scales from
+#'   it. Default \code{11}, which suits a default 7 x 5 inch Quarto figure.
+#' @param title_size,subtitle_size,axis_text_size,legend_size,label_size Font
+#'   sizes in points for the title, subtitle, tick labels, legend and in-cell
+#'   coefficients. Default \code{NULL} derives each from \code{base_size}.
 #' @param ... Additional arguments passed to \code{\link{run_correl}} and,
 #'   when \code{show_dend = TRUE}, to \code{\link{plot_dend}}.
 #'
@@ -119,7 +107,9 @@
 #' plot_heatmap(mtcars, show_coef = TRUE, mark_x = TRUE)
 #'
 #' ## With dendrograms
-#' plot_heatmap(mtcars, show_dend = TRUE)
+#' if (requireNamespace("ggdendro", quietly = TRUE)) {
+#'   plot_heatmap(mtcars, show_dend = TRUE)
+#' }
 #'
 #' @author John Lennon L. Calorio
 #' 
@@ -145,30 +135,17 @@ plot_heatmap <- function(x,
                           round              = 2L,
                           mark_x             = TRUE,
                           mark_x_size        = 1.0,
-                          mark_x_alpha       = 0.6,
+                          mark_x_alpha       = 0.4,
                           show_dend          = FALSE,
                           dend_row_width     = 0.2,
                           dend_col_height    = 0.2,
-                          global_font_size   = 15,
-                          axis_title_size    = NULL,
+                          base_size          = 11,
+                          title_size         = NULL,
+                          subtitle_size      = NULL,
                           axis_text_size     = NULL,
-                          legend_title_size  = NULL,
-                          legend_text_size   = NULL,
-                          coef_text_size     = NULL,
-                          plot_title_size    = NULL,
-                          plot_subtitle_size = NULL,
+                          legend_size        = NULL,
+                          label_size         = NULL,
                           ...) {
-
-  # --- Dependencies -----------------------------------------------------------
-  if (!requireNamespace("ggplot2",  quietly = TRUE))
-    stop("Package 'ggplot2' is required. Install with: install.packages('ggplot2')",
-         call. = FALSE)
-  if (!requireNamespace("reshape2", quietly = TRUE))
-    stop("Package 'reshape2' is required. Install with: install.packages('reshape2')",
-         call. = FALSE)
-  if (show_dend && !requireNamespace("patchwork", quietly = TRUE))
-    stop("Package 'patchwork' is required for `show_dend = TRUE`. ",
-         "Install with: install.packages('patchwork')", call. = FALSE)
 
   # --- Input validation -------------------------------------------------------
   if (!is.data.frame(x) && !is.matrix(x))
@@ -182,7 +159,6 @@ plot_heatmap <- function(x,
   }
   .check_str1(out,           c("all", "masked"),                  "out")
   .check_str1(show_triangle, c("all", "lower", "upper"),          "show_triangle")
-  .check_str1(theme,         c("nature", "classic", "minimal", "bw"), "theme")
 
   if (!is.numeric(mark_x_size) || length(mark_x_size) != 1L || mark_x_size <= 0)
     stop("`mark_x_size` must be a single positive numeric.", call. = FALSE)
@@ -215,29 +191,9 @@ plot_heatmap <- function(x,
     bottom_n <- as.integer(bottom_n)
   }
 
-  if (!is.numeric(global_font_size) || length(global_font_size) != 1L ||
-      global_font_size <= 0)
-    stop("`global_font_size` must be a single positive numeric.", call. = FALSE)
-
-  .fs <- function(param, default) {
-    if (!is.null(param)) {
-      if (!is.numeric(param) || length(param) != 1L || param <= 0)
-        stop(deparse(substitute(param)),
-             " must be a single positive numeric.", call. = FALSE)
-      param
-    } else {
-      default
-    }
-  }
-
-  fs_axis_title    <- .fs(axis_title_size,    global_font_size)
-  fs_axis_text     <- .fs(axis_text_size,     global_font_size)
-  fs_legend_title  <- .fs(legend_title_size,  global_font_size)
-  fs_legend_text   <- .fs(legend_text_size,   global_font_size)
-  fs_coef          <- .fs(coef_text_size,     global_font_size * 0.7)
-  fs_plot_title    <- .fs(plot_title_size,    global_font_size + 2)
-  fs_plot_subtitle <- .fs(plot_subtitle_size, global_font_size)
-
+  sizes <- .text_sizes(base_size, title_size, subtitle_size,
+                       axis_text = axis_text_size, legend = legend_size,
+                       label = label_size)
   # --- Separate ... args for run_correl vs plot_dend --------------------------
   dots          <- list(...)
   dend_formals  <- c(names(formals(plot_dend)),
@@ -256,12 +212,19 @@ plot_heatmap <- function(x,
       correl_args)
   )
 
-  tbl_use  <- if (out == "masked") cor_res$correlations_masked else cor_res$correlations
-  pval_tbl <- cor_res$p_values
+  # run_correl() labels its tables for reports; use short names here
+  .short <- function(d) {
+    names(d)[1:2] <- c("var1", "var2")
+    names(d)[names(d) == "Correlation"] <- "estimate"
+    names(d)[names(d) == "p-value"] <- "p_value"
+    d
+  }
+  tbl_use  <- .short(if (out == "masked") cor_res$correlations_masked else cor_res$correlations)
+  pval_tbl <- .short(cor_res$p_values)
 
   # --- top_n / bottom_n filter ------------------------------------------------
   if (!is.null(top_n) || !is.null(bottom_n)) {
-    abs_est <- abs(cor_res$correlations$estimate)
+    abs_est <- abs(cor_res$correlations$Correlation)
     keep_idx <- if (!is.null(top_n)) {
       order(abs_est, decreasing = TRUE)[seq_len(min(top_n, length(abs_est)))]
     } else {
@@ -318,17 +281,12 @@ plot_heatmap <- function(x,
   }
 
   # --- Melt to long -----------------------------------------------------------
-  df_long <- reshape2::melt(mat_ord, varnames = c("Var1", "Var2"),
-                            value.name = "estimate", na.rm = FALSE)
-  df_long$Var1 <- factor(df_long$Var1, levels = ord)
-  df_long$Var2 <- factor(df_long$Var2, levels = rev(ord))
-
-  pmat_long    <- reshape2::melt(pmat_ord, varnames = c("Var1", "Var2"),
-                                 value.name = "p_value", na.rm = FALSE)
-  df_long$p_value <- pmat_long$p_value[
-    match(paste(df_long$Var1, df_long$Var2),
-          paste(pmat_long$Var1, pmat_long$Var2))
-  ]
+  df_long <- data.frame(
+    Var1     = factor(rep(rownames(mat_ord), times = ncol(mat_ord)), levels = ord),
+    Var2     = factor(rep(colnames(mat_ord), each = nrow(mat_ord)), levels = rev(ord)),
+    estimate = as.vector(mat_ord),
+    p_value  = as.vector(pmat_ord)
+  )
 
   # --- Coefficient labels -----------------------------------------------------
   if (show_coef) {
@@ -372,6 +330,21 @@ plot_heatmap <- function(x,
 
   # Coefficient annotations
   if (show_coef) {
+    # Crosses go underneath so the coefficient stays readable
+    if (mark_x) {
+      df_ns <- df_long[!is.na(df_long$p_value) &
+                       df_long$p_value >= sig_threshold &
+                       !is.na(df_long$estimate), ]
+      if (nrow(df_ns) > 0L)
+        p <- p + ggplot2::geom_text(
+          data = df_ns,
+          ggplot2::aes(label = "\u00D7"),
+          size   = min(12, 110 / length(levels(df_long$Var1))) * mark_x_size,
+          colour = "grey40",
+          alpha  = mark_x_alpha
+        )
+    }
+
     df_coef        <- df_long[!is.na(df_long$estimate) & df_long$label != "", ]
     df_coef_normal <- df_coef[!df_coef$use_small, ]
     df_coef_small  <- df_coef[ df_coef$use_small,  ]
@@ -380,51 +353,20 @@ plot_heatmap <- function(x,
       p <- p + ggplot2::geom_text(
         data = df_coef_normal,
         ggplot2::aes(label = label),
-        size   = fs_coef / ggplot2::.pt,
+        size   = .pt_to_mm(sizes$label),
         colour = "black"
       )
     if (nrow(df_coef_small) > 0L)
       p <- p + ggplot2::geom_text(
         data = df_coef_small,
         ggplot2::aes(label = label),
-        size   = (fs_coef * 0.7) / ggplot2::.pt,
+        size   = .pt_to_mm(sizes$label * 0.7),
         colour = "black"
       )
-
-    if (show_coef && mark_x) {
-    df_ns <- df_long[!is.na(df_long$p_value) & 
-                     df_long$p_value >= sig_threshold & 
-                     !is.na(df_long$estimate), ]
-    
-    if (nrow(df_ns) > 0L) {
-      # Calculate base size to fill the tile
-      n_vars      <- length(levels(df_long$Var1))
-      base_x_size <- (150 / n_vars) * 0.85
-      
-      # Apply the user-defined multiplier
-      final_x_size <- base_x_size * mark_x_size
-
-      p <- p + ggplot2::geom_text(
-        data = df_ns,
-        ggplot2::aes(label = "\u00D7"),
-        size   = final_x_size,
-        colour = "grey40",
-        alpha  = mark_x_alpha # Uses the new transparency parameter
-      )
-    }
   }
-  }
-
-  # Base theme — call the function, not the object, so base_size is applied
-  base_theme_fn <- switch(theme,
-    nature  = ggplot2::theme_bw,
-    classic = ggplot2::theme_classic,
-    minimal = ggplot2::theme_minimal,
-    bw      = ggplot2::theme_bw
-  )
 
   p <- p +
-    base_theme_fn(base_size = global_font_size) +
+    .ponder_theme(theme, sizes) +
     ggplot2::theme(
       panel.grid.major = ggplot2::element_blank(),
       panel.grid.minor = ggplot2::element_blank(),
@@ -434,17 +376,13 @@ plot_heatmap <- function(x,
       axis.title.y     = ggplot2::element_blank(),
       axis.text.x = if (show_clab)
         ggplot2::element_text(angle = clab_angle, hjust = clab_hjust,
-                              size  = fs_axis_text)
+                              size  = sizes$axis_text)
       else
         ggplot2::element_blank(),
       axis.text.y = if (show_rlab)
-        ggplot2::element_text(size = fs_axis_text)
+        ggplot2::element_text(size = sizes$axis_text)
       else
-        ggplot2::element_blank(),
-      legend.title  = ggplot2::element_text(size = fs_legend_title),
-      legend.text   = ggplot2::element_text(size = fs_legend_text),
-      plot.title    = ggplot2::element_text(size = fs_plot_title,    face = "bold"),
-      plot.subtitle = ggplot2::element_text(size = fs_plot_subtitle)
+        ggplot2::element_blank()
     )
 
   # --- Attach dendrograms if requested ----------------------------------------
@@ -455,7 +393,7 @@ plot_heatmap <- function(x,
     c(list(x           = x,
            orientation = "both",
            theme       = theme,
-           global_font_size = global_font_size),
+           base_size   = base_size),
       dend_args)
   )
 

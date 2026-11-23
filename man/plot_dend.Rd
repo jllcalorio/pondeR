@@ -13,16 +13,11 @@ plot_dend(
   theme = "nature",
   title = NULL,
   subtitle = NULL,
-  global_font_size = 15,
-  axis_title_size = NULL,
-  axis_text_size = NULL,
-  legend_title_size = NULL,
-  legend_text_size = NULL,
-  plot_title_size = NULL,
-  plot_subtitle_size = NULL,
+  base_size = 11,
+  title_size = NULL,
+  subtitle_size = NULL,
   label_size = NULL,
   leaf_label_angle = NULL,
-  leaf_label_size = NULL,
   leaf_labels = NULL,
   line_width = 0.5,
   line_color = "black",
@@ -53,8 +48,9 @@ clusters rows), \code{"cols"} (clusters columns), or \code{"both"}
 (returns a named list of two \code{ggplot2} objects).}
 
 \item{theme}{A single character string specifying the plot theme. One of
-\code{"nature"} (default), \code{"classic"}, \code{"minimal"}, or
-\code{"bw"}.}
+\code{"nature"} (default), \code{"classic"}, \code{"plos"},
+\code{"minimal"}, \code{"bw"}, \code{"light"}, \code{"dark"}, or
+\code{"gray"}.}
 
 \item{title}{A single character string for the plot title. Default
 \code{NULL} (no title).}
@@ -62,42 +58,22 @@ clusters rows), \code{"cols"} (clusters columns), or \code{"both"}
 \item{subtitle}{A single character string for the plot subtitle. Default
 \code{NULL} (no subtitle).}
 
-\item{global_font_size}{A single positive numeric specifying the base font
-size in points. Default \code{15}.}
+\item{base_size}{Base font size in points; every text element scales from
+it. Default \code{11}, which suits a default 7 x 5 inch Quarto figure.}
 
-\item{axis_title_size}{A single positive numeric for axis title font size.
-Defaults to \code{global_font_size}.}
-
-\item{axis_text_size}{A single positive numeric for axis text font size.
-Defaults to \code{global_font_size}.}
-
-\item{legend_title_size}{A single positive numeric for legend title font
-size. Defaults to \code{global_font_size}.}
-
-\item{legend_text_size}{A single positive numeric for legend text font size.
-Defaults to \code{global_font_size}.}
-
-\item{plot_title_size}{A single positive numeric for plot title font size.
-Defaults to \code{global_font_size + 2}.}
-
-\item{plot_subtitle_size}{A single positive numeric for plot subtitle font
-size. Defaults to \code{global_font_size}.}
-
-\item{label_size}{A single positive numeric controlling the font size of
-leaf labels. Defaults to \code{global_font_size * 0.8}.}
+\item{title_size, subtitle_size, label_size}{Font sizes in points for the
+title, subtitle and leaf labels. Default \code{NULL} derives each from
+\code{base_size}.}
 
 \item{leaf_label_angle}{A single numeric specifying the rotation angle (in
 degrees) for leaf label text. Default \code{NULL}. When \code{NULL}, the
 angle defaults to 0 if \code{orientation = "rows"} (horizontal labels) or
 90 if \code{orientation = "cols"} (vertical labels).}
 
-\item{leaf_label_size}{A single positive numeric controlling the font size of
-leaf labels. Defaults to \code{global_font_size * 0.8}. When provided,
-overrides \code{label_size}.}
-
-\item{leaf_labels}{A character vector of custom names for the leaf labels.
-Default \code{NULL}. When provided, must have length equal to the number of
-columns in \code{x}, and will override the default leaf names.}
+\item{leaf_labels}{A character vector of custom leaf names. Default
+\code{NULL}. Must have one name per row for \code{orientation = "rows"} and
+one per column for \code{orientation = "cols"}; not used with
+\code{orientation = "both"}.}
 
 \item{line_width}{A single positive numeric for dendrogram branch width.
 Default \code{0.5}.}
@@ -128,6 +104,7 @@ When \code{orientation = "both"}, the returned object is a named list with
 elements \code{rows} and \code{cols}.
 }
 \examples{
+\dontshow{if (requireNamespace("ggdendro", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 ## Row dendrogram (default)
 plot_dend(mtcars)
 
@@ -142,9 +119,9 @@ dends$cols
 
 ## Custom styling
 plot_dend(mtcars, theme = "minimal", line_color = "#2166AC",
-          line_width = 0.8, global_font_size = 10,
+          line_width = 0.8, base_size = 10,
           title = "Sample Clustering")
-
+\dontshow{\}) # examplesIf}
 }
 \references{
 Ward JH (1963). Hierarchical grouping to optimize an objective function.

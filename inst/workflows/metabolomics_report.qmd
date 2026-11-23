@@ -56,7 +56,7 @@ as_gt(data.frame(
             if (is.null(p$norm_factor_col)) "none" else p$norm_factor_col,
             paste(p$transform_method, collapse = ", "),
             paste(p$scale_nonpls, "/", p$scale_pls),
-            if (isTRUE(p$correct_drift)) "yes" else "no",
+            p$drift_method,
             paste(qc, collapse = ", "), paste(groups, collapse = ", "))))
 ```
 
@@ -86,7 +86,7 @@ as_gt(rbind(data.frame(Group = names(tab), n = as.integer(tab)),
 ## Before vs. after batch / drift correction
 
 ```{r}
-if (isTRUE(di$parameters$correct_drift) && !is.null(di$data_corrected)) {
+if (!identical(di$parameters$drift_method, "none") && !is.null(di$data_corrected)) {
   wf("plot_beforeafter", di$data_imputed, di$data_corrected, di$metadata,
      plot_what = head(intersect(di$features_final, colnames(di$data_corrected)), 6),
      col_injection = std("InjectionSequence", spec$injection_col),
@@ -166,8 +166,7 @@ if (inherits(dif, "error")) {
 ```{r}
 vdat <- if (!is.null(dif)) wf("get_volcanodata", fc, dif) else NULL
 # Without run_diff results plot_volcano() returns a mean abundance plot instead
-vol <- wf("plot_volcano", if (is.null(dif)) list(fc) else list(fc, dif), y = "fold_change",
-          z = if (!is.null(dif) && "p_value_adj" %in% names(dif$summary_table)) "p_value_adj" else "p_value")
+vol <- wf("plot_volcano", if (is.null(dif)) list(fc) else list(fc, dif))
 invisible(lapply(vol$plots, print))
 if (is.null(vdat) || nrow(vdat) == 0) {
   cat("\n\nNo features passed the fold change and p-value thresholds;",

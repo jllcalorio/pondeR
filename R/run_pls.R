@@ -32,11 +32,11 @@
 #' @param permI Integer. Number of permutations for model validation. Default: 20.
 #' @param keepX Integer vector. For sPLS-DA only: specifies the number of variables to keep
 #'   on each component. Default: NULL (automatic selection or keeps all).
-#' @param verbose Logical. Print progress messages. Default: TRUE.
+#' @param verbose Logical. Print progress messages. Default: FALSE.
 #'
 #' @return A list containing:
-#'   \item{scores}{Matrix of scores (samples × components), aliased as PC1, PC2... for `plot_score` compatibility}
-#'   \item{loadings}{Matrix of feature loadings (features × components)}
+#'   \item{scores}{Matrix of scores (samples x components), aliased as PC1, PC2... for `plot_score` compatibility}
+#'   \item{loadings}{Matrix of feature loadings (features x components)}
 #'   \item{variance_explained}{Numeric vector of variance explained (%) per component}
 #'   \item{vip_scores}{Numeric vector of Variable Importance in Projection (VIP) scores (PLS-DA/OPLS-DA only)}
 #'   \item{pls_object}{Original model object from `ropls` or `mixOmics`}
@@ -82,7 +82,6 @@
 #' Rohart F, Gautier B, Singh A, Lê Cao K-A. (2017) mixOmics: An R package for 'omics feature selection 
 #' and multiple data integration. PLoS Comput Biol 13(11): e1005752.
 #'
-#' @importFrom stats var
 #' 
 #' @seealso \code{\link[dimsprepr]{run_DIpreprocess}}
 #' 
@@ -93,13 +92,13 @@
 #' if (requireNamespace("ropls", quietly = TRUE)) {
 #'   meta <- data.frame(Sample = rownames(iris), Species = iris$Species)
 #'   pls  <- run_pls(scale(iris[, 1:4]), meta, method = "plsda",
-#'                   group = "Species", verbose = FALSE)
+#'                   group = "Species", permI = 0, verbose = FALSE)
 #'   print(pls)
 #'   plot_score(pls, color_by = "Species", points_from = "Sample")
 #'
 #'   # OPLS-DA needs exactly two groups
 #'   opls <- run_pls(scale(iris[51:150, 1:4]), droplevels(meta[51:150, ]),
-#'                   method = "oplsda", group = "Species", verbose = FALSE)
+#'                   method = "oplsda", group = "Species", permI = 0, verbose = FALSE)
 #' }
 #' }
 #'
@@ -116,26 +115,27 @@ run_pls <- function(
     crossvalI = 10,
     permI = 20,
     keepX = NULL,
-    verbose = TRUE
+    verbose = FALSE
 ) {
   
   msg <- function(...) if (verbose) message(...)
   
   # --- Integration with run_DIpreprocess ---
-  if (inherits(x, "run_DIpreprocess")) {
-    if (missing(metadata) || is.null(metadata)) {
-      metadata <- if (!is.null(x$metadata_merged)) x$metadata_merged else x$metadata
-    }
+  from_di <- .is_di(x)
+  if (from_di) {
+    di <- .di_unpack(x, stage = "pls")
+    if (missing(metadata) || is.null(metadata)) metadata <- di$metadata
     # QC samples stay in the preprocessed data; drop them unless told otherwise
-    if (is.null(exclude)) exclude <- eval(x$parameters$qc_types)
-    x <- if (!is.null(x$data_pls_merged)) x$data_pls_merged else x$data_pls
+    if (is.null(exclude) && group %in% names(metadata))
+      exclude <- intersect(di$qc, as.character(metadata[[group]]))
+    x <- di$data
   }
 
   # dimsprepr is only needed for the optional in-function preprocessing
   if ((!is.null(scale_method) || !is.null(transform_method)) &&
       !requireNamespace("dimsprepr", quietly = TRUE))
-    stop("Package 'dimsprepr' is required for 'scale_method'/'transform_method'. ",
-         "Install with: pak::pak('jllcalorio/dimsprepr')", call. = FALSE)
+    stop("Package 'dimsprepr' is required for 'scale_method'/'transform_method'.",
+         call. = FALSE)
   
   # ============================================================================
   # INPUT VALIDATION
@@ -196,13 +196,13 @@ run_pls <- function(
   if (!is.null(exclude)) {
     exclude_indices <- metadata[[group]] %in% exclude
     n_excluded <- sum(exclude_indices)
-    
+
     if (n_excluded > 0) {
-      msg(sprintf("Excluding %d samples from groups: %s", 
+      msg(sprintf("Excluding %d samples from groups: %s",
                   n_excluded, paste(exclude, collapse = ", ")))
+      excluded_groups <- intersect(exclude, as.character(metadata[[group]][exclude_indices]))
       x_matrix <- x_matrix[!exclude_indices, , drop = FALSE]
       metadata <- metadata[!exclude_indices, , drop = FALSE]
-      excluded_groups <- exclude[exclude %in% unique(metadata[[group]][exclude_indices])]
     } else {
       msg("No samples found matching exclusion criteria")
     }
@@ -216,7 +216,7 @@ run_pls <- function(
   }
   
   # Check if data is from run_scale (which leaves scale attributes)
-  came_from_run_scale <- inherits(x, "run_scale") || 
+  came_from_run_scale <- from_di || inherits(x, "run_scale") ||
     (!is.null(attr(x, "scaled:center")) && !is.null(attr(x, "scaled:scale")))
   
   preprocessing_log <- list(
@@ -292,7 +292,7 @@ run_pls <- function(
 
     pls_model <- tryCatch({
       ropls::opls(x_matrix, Y, predI = 1, orthoI = orthoI, crossvalI = crossvalI,
-                  permI = permI, scaleC = "none",
+                  permI = permI, scaleC = "none", fig.pdfC = "none",
                   info.txtC = "none")
     }, error = function(e) stop("ropls::opls failed: ", e$message))
 
@@ -332,7 +332,7 @@ run_pls <- function(
 
     pls_model <- tryCatch({
       ropls::opls(x_matrix, Y, predI = ncomp, orthoI = 0, crossvalI = crossvalI,
-                  permI = permI, scaleC = "none",
+                  permI = permI, scaleC = "none", fig.pdfC = "none",
                   info.txtC = "none")
     }, error = function(e) stop("ropls::opls failed: ", e$message))
 
@@ -373,16 +373,6 @@ run_pls <- function(
   # FORMAT OUTPUT FOR plot_score COMPATIBILITY
   # ============================================================================
   
-  # n_pcs <- ncol(scores)
-  # n_samples <- nrow(scores)
-  # n_features <- ncol(x_matrix)
-  
-  # # Crucial Step: plot_score expects columns addressable via 'paste0("PC", pc)' 
-  # colnames(scores) <- paste0("PC", seq_len(n_pcs))
-  
-  # msg(sprintf("%s complete: %d components computed from %d samples and %d features",
-  #             toupper(method), n_pcs, n_samples, n_features))
-
   # Removed hard stop — emit a warning instead and let the result object through
   if (is.null(scores)) {
     warning("The PLS model failed to produce scores. Check if groups are valid or if data has variance.")
@@ -493,7 +483,8 @@ summary.run_pls <- function(object, ...) {
   
   var_table <- data.frame(
     Component = comp_names[1:min(10, object$n_pcs)],
-    Variance_Explained = object$variance_explained[1:min(10, object$n_pcs)]
+    "Variance explained (%)" = object$variance_explained[1:min(10, object$n_pcs)],
+    check.names = FALSE
   )
   
   ans <- list(

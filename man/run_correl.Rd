@@ -111,8 +111,8 @@ data frame with all result columns. Default is \code{FALSE}.}
 One of \code{"holm"}, \code{"hochberg"}, \code{"hommel"}, \code{"bonferroni"},
 \code{"BH"} (default), \code{"BY"}, \code{"fdr"}, or \code{"none"}.
 Applied only when \code{summary_table_only = TRUE} and the number of
-variable pairs is greater than 1. A \code{p_value_adj} column is added to
-the returned data frame when applicable. Default \code{"BH"}.}
+variable pairs is greater than 1. An \code{Adjusted p-value} column is
+added to the returned data frame when applicable. Default \code{"BH"}.}
 
 \item{method_in_row}{Logical. When summary_table_only = TRUE and
 method_in_row = FALSE, the method column is removed.
@@ -128,27 +128,28 @@ assumption checks and method selection are printed. Default \code{FALSE}.}
 When \code{summary_table_only = FALSE}, returns a named list of class
 \code{"run_correl"} with the following elements:
 \describe{
-\item{\code{correlations}}{A tidy data frame of pairwise correlation
-estimates with columns \code{var1}, \code{var2}, \code{estimate},
-\code{method_used}, and \code{n}.}
+\item{\code{correlations}}{A report-ready data frame of pairwise
+correlations with columns \code{Variable 1}, \code{Variable 2},
+\code{Correlation}, \code{Method}, and \code{n}.}
 \item{\code{correlations_masked}}{Same as \code{correlations} but
-\code{estimate} is \code{NA} for pairs where
-\code{p_value >= sig_threshold}.}
-\item{\code{p_values}}{A tidy data frame with columns \code{var1},
-\code{var2}, and \code{p_value}.}
-\item{\code{confidence_intervals}}{A tidy data frame with columns
-\code{var1}, \code{var2}, \code{ci_lower}, and \code{ci_upper}.}
+\code{Correlation} is \code{NA} for pairs that are not significant at
+\code{sig_threshold}.}
+\item{\code{p_values}}{A data frame with columns \code{Variable 1},
+\code{Variable 2}, and \code{p-value}.}
+\item{\code{confidence_intervals}}{A data frame with columns
+\code{Variable 1}, \code{Variable 2}, \code{95\% CI lower}, and
+\code{95\% CI upper}.}
 \item{\code{sig_threshold}}{The significance threshold used.}
 \item{\code{method}}{The method argument as supplied.}
 \item{\code{call}}{The matched call.}
 }
 
 When \code{summary_table_only = TRUE}, returns a data frame of class
-\code{"run_correl"} with columns \code{var1}, \code{var2}, \code{estimate},
-\code{ci_lower}, \code{ci_upper}, \code{p_value}, and \code{method}.
-When the number of variable pairs is greater than 1, an additional
-\code{p_value_adj} column contains adjusted p-values. Optional columns
-\code{interpretation} may be present if requested.
+\code{"run_correl"} with columns \code{Variable 1}, \code{Variable 2},
+\code{Correlation}, \code{95\% CI lower}, \code{95\% CI upper},
+\code{p-value}, \code{Method} and \code{n}. When the number of variable
+pairs is greater than 1, an \code{Adjusted p-value} column is added, and
+an \code{Interpretation} column when requested.
 }
 \description{
 Computes pairwise or targeted correlation analysis between numeric, ordinal,
@@ -163,9 +164,9 @@ confidence intervals, and p-values.
 
 \tabular{ll}{
 \strong{Method} \tab \strong{Conditions} \cr
-Pearson         \tab Both continuous, normal, homoscedastic \cr
-Spearman        \tab Ordinal or continuous, non-normal or heteroscedastic,
-\eqn{n \ge 30}, few ties \cr
+Pearson         \tab Both continuous and normal \cr
+Spearman        \tab Ordinal or continuous, non-normal, \eqn{n \ge 30},
+few ties \cr
 Kendall         \tab Ordinal or continuous, non-normal, \eqn{n < 30} or
 many ties \cr
 Point-biserial  \tab One continuous, one binary variable \cr
@@ -177,8 +178,9 @@ Polyserial      \tab One ordered factor, one continuous
 }
 
 Normality is assessed via Shapiro-Wilk (\eqn{n < 50}) or Lilliefors
-(\eqn{n \ge 50}; requires \pkg{nortest}). Homoscedasticity is assessed via
-Levene's test (requires \pkg{car}) with Bartlett's test as fallback.
+(\eqn{n \ge 50}; requires \pkg{nortest}). Confidence intervals for Spearman's
+rho and Kendall's tau use the Fisher z transformation with the standard
+errors of Fieller, Hartley and Pearson (1957).
 
 Confidence intervals for Cramer's V and polychoric/polyserial correlations
 are not available and are returned as \code{NA}. When \code{summary_table_only = TRUE},
@@ -186,7 +188,7 @@ the function returns a flat data frame instead of the structured list.
 
 \strong{P-value adjustment:} When \code{summary_table_only = TRUE} and the number
 of variable pairs is greater than 1, p-values are adjusted using the method
-specified in \code{p_adjust_method}, with results stored in a \code{p_value_adj}
+specified in \code{p_adjust_method}, with results stored in an \code{Adjusted p-value}
 column. This accounts for multiple comparisons across pairs.
 
 \strong{Exact p-values:} For Kendall's tau and Spearman's rho, the \code{exact}
@@ -269,6 +271,10 @@ res$correlations_masked
 Akoglu H. User's guide to correlation coefficients. Turk J Emerg Med.
 2018 Aug 7;18(3):91-93. doi: 10.1016/j.tjem.2018.08.001. PMID: 30191186;
 PMCID: PMC6107969.
+
+Fieller EC, Hartley HO, Pearson ES (1957). Tests for rank correlation
+coefficients. I. \emph{Biometrika}, 44(3/4), 470-481.
+\doi{10.1093/biomet/44.3-4.470}
 }
 \author{
 John Lennon L. Calorio

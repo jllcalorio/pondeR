@@ -101,9 +101,9 @@
 #' \doi{10.1097/00006199-198611000-00017}
 #' 
 #' Penfield, R. D., & Giacobbi, Jr., P. R. (2004). Applying a Score Confidence 
-#' Interval to Aiken’s Item Content-Relevance Index. 
+#' Interval to Aiken's Item Content-Relevance Index. 
 #' \emph{Measurement in Physical Education and Exercise Science}, 
-#' \emph{8}(4), 213–225. \doi{10.1207/s15327841mpee0804_3}
+#' \emph{8}(4), 213-225. \doi{10.1207/s15327841mpee0804_3}
 #' 
 #' Polit, D. F., & Beck, C. T. (2006). The content validity index: Are you
 #' sure you know what's being reported? Critique and recommendations.
@@ -326,7 +326,7 @@ run_contentvalidity <- function(
 
   items_out[["Aiken's V Lower"]] <- unname(v_lwr)
   items_out[["Aiken's V Upper"]] <- unname(v_upr)
-  items_out[["Aiken's V p"]]     <- unname(v_p)
+  items_out[["Aiken's V p-value"]] <- unname(v_p)
 
   # remove the degenerate AC columns
   items_out[c("gwet_ac1", "gwet_ac2")] <- NULL

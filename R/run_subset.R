@@ -18,7 +18,7 @@
 #'     number of chosen rows.
 #'   \item \strong{`independent = FALSE`:} All `match` columns are crossed
 #'     into a single Cartesian product of categories (e.g.
-#'     `"1-2 years × Male"`), and every unique combination is represented
+#'     `"1-2 years x Male"`), and every unique combination is represented
 #'     equally. This guarantees perfect joint balance.
 #' }
 #'
@@ -50,9 +50,9 @@
 #' @param random Logical; `TRUE` (default) to select rows or columns randomly.
 #' @param top_to_bottom Logical; `TRUE` (default). For deterministic row pulls.
 #' @param left_to_right Logical; `TRUE` (default). For deterministic col pulls.
-#' @param seed An integer; `123` (default). The random seed. `NULL` disables seeding.
+#' @param seed An integer passed to [set.seed()] for a reproducible draw. Default
+#'   `NULL` leaves the random number generator alone.
 #'
-#' @importFrom utils tail
 #' 
 #' @author John Lennon L. Calorio
 #' 
@@ -110,7 +110,7 @@ run_subset <- function(
     random         = TRUE,
     top_to_bottom  = TRUE,
     left_to_right  = TRUE,
-    seed           = 123
+    seed           = NULL
 ) {
 
   # ── 0. Input validation ─────────────────────────────────────────────────────
@@ -121,7 +121,6 @@ run_subset <- function(
   was_matrix <- is.matrix(x)
   if (was_matrix) {
     x <- as.data.frame(x)
-    message("Note: `x` was a matrix and has been coerced to a data frame.")
   }
 
   if (nrow(x) == 0L) stop("`x` has 0 rows. Nothing to subset.", call. = FALSE)
@@ -151,12 +150,6 @@ run_subset <- function(
   # ── 1. Seed Management ──────────────────────────────────────────────────────
   if (!is.null(seed)) {
     if (!is.numeric(seed) || length(seed) != 1L || is.na(seed)) stop("`seed` must be a valid integer.", call. = FALSE)
-    if (exists(".Random.seed", envir = .GlobalEnv)) {
-      old_seed <- get(".Random.seed", envir = .GlobalEnv)
-      on.exit(assign(".Random.seed", old_seed, envir = .GlobalEnv), add = TRUE)
-    } else {
-      on.exit(rm(".Random.seed", envir = .GlobalEnv), add = TRUE)
-    }
     set.seed(as.integer(seed))
   }
 

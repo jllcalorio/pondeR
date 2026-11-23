@@ -22,12 +22,13 @@
 #'   optional and defaults to the internal metadata.
 #' @param group Character string naming the column in \code{metadata}
 #'   that contains the grouping factor. If \code{x} is a \code{run_DIpreprocess}
-#'   object, this is optional and defaults to the group column used in that step.
+#'   object, this is optional and defaults to its standardized \code{Group}
+#'   column.
 #' @param arrange An optional character vector listing \emph{all} levels of
 #'   \code{group} (after filtering) in the desired comparison order. Fold
 #'   changes are computed for all pairwise combinations taken left-to-right:
 #'   \code{arrange[i] / arrange[j]} for all \eqn{i < j}. For example,
-#'   \code{c("A", "B", "C")} yields A_vs_B, A_vs_C, and B_vs_C.
+#'   \code{c("A", "B", "C")} yields \code{A vs B}, \code{A vs C}, and \code{B vs C}.
 #'   If \code{NULL} (default), levels are sorted alphanumerically.
 #' @param filter An optional character vector of group levels to \emph{exclude}
 #'   before analysis. If \code{x} is a \code{run_DIpreprocess} object, this
@@ -43,17 +44,13 @@
 #' @param eps A small positive numeric value. When \code{log2 = TRUE}, data are
 #'   shifted so that the global minimum of \code{x} (after filtering and
 #'   selection) becomes \code{eps}. Default \code{1e-8}.
-#' @param up Numeric. Optional threshold for up-regulation. If \code{up} or
-#'   \code{down} is supplied, \code{summary_table} gets two columns,
-#'   \code{regulation_num} and \code{regulation_den}, giving the regulation
-#'   (\code{"Up"}, \code{"Down"}, \code{"Not significant"}) in the numerator and
-#'   denominator group respectively. Features with \code{fold_change >= up} are
-#'   \code{"Up"} in the numerator group and \code{"Down"} in the denominator
-#'   group. Default \code{NULL}.
-#' @param down Numeric. Optional threshold for down-regulation. Features with
-#'   \code{fold_change <= down} are \code{"Down"} in the numerator group and
-#'   \code{"Up"} in the denominator group. Compared against the raw fold change,
-#'   not log2. Default \code{NULL}.
+#' @param up Numeric. Optional fold-change threshold. If \code{up} or
+#'   \code{down} is supplied, \code{summary_table} gains a \code{Regulation}
+#'   column describing group 1 relative to group 2: \code{"Up"} when the fold
+#'   change is at least \code{up}, \code{"Down"} when it is at most \code{down},
+#'   and \code{"Unchanged"} otherwise. Default \code{NULL}.
+#' @param down Numeric. Optional fold-change threshold; see \code{up}. Compared
+#'   against the raw fold change, not log2. Default \code{NULL}.
 #'
 #' @details
 #' \strong{Fold change computation}\cr
@@ -61,7 +58,7 @@
 #' \eqn{g_1, g_2, \ldots, g_k}, fold changes are computed for \strong{all}
 #' pairwise combinations taken left-to-right from \code{arrange}:
 #' \eqn{\bar{x}_{g_i} / \bar{x}_{g_j}} for all \eqn{i < j}, yielding
-#' \eqn{k(k-1)/2} comparisons (e.g., A_vs_B, A_vs_C, B_vs_C for 3 groups).
+#' \eqn{k(k-1)/2} comparisons (e.g., A vs B, A vs C, B vs C for 3 groups).
 #'
 #' \strong{Log2 shifting}\cr
 #' When \code{log2 = TRUE}, let \eqn{m} be the global minimum of the
@@ -77,10 +74,18 @@
 #'
 #' @return A named list containing:
 #' \describe{
-#'   \item{\code{fc_table}}{A \code{data.frame} of pairwise fold changes.
-#'     Rows are features; columns are labelled
-#'     \code{"<level_i>_vs_<level_{i+1}>"}. When \code{sort = TRUE} each
-#'     column is independently sorted (descending).}
+#'   \item{\code{summary_table}}{The report-ready table, one row per feature
+#'     and comparison: \code{Comparison}, \code{Feature}, \code{Mean (group 1)},
+#'     \code{Mean (group 2)}, \code{Fold change}, \code{log2 FC} and, when
+#'     \code{up} or \code{down} is given, \code{Regulation}. Group 1 is the group
+#'     named first in \code{Comparison}.}
+#'   \item{\code{feature_stats}}{The same rows with per-group means, standard
+#'     deviations and sample sizes, for downstream functions such as
+#'     \code{\link{plot_fcmetric}}.}
+#'   \item{\code{fc_table}}{A \code{data.frame} of pairwise fold changes with a
+#'     \code{Feature} column and one column per comparison (e.g.
+#'     \code{"A vs B"}). With \code{sort = TRUE}, rows follow the first
+#'     comparison from highest to lowest fold change.}
 #'   \item{\code{log2fc_table}}{A \code{data.frame} of log2 fold changes in
 #'     the same structure as \code{fc_table}. \code{NULL} when
 #'     \code{log2 = FALSE}.}
@@ -93,7 +98,7 @@
 #'   \item{\code{group_means}}{A \code{data.frame} of per-group, per-feature
 #'     means (unshifted) with one row per group level.}
 #'   \item{\code{comparisons}}{A character vector of comparison labels, e.g.
-#'     \code{c("A_vs_B", "B_vs_C")}.}
+#'     \code{c("A vs B", "B vs C")}.}
 #'   \item{\code{params}}{A list of all resolved parameter values for
 #'     reproducibility.}
 #' }
@@ -170,34 +175,15 @@ run_foldchange <- function(
 ) {
 
   # --- Integration with run_DIpreprocess ---
-  if (inherits(x, "run_DIpreprocess")) {
+  if (.is_di(x)) {
     from <- match.arg(from)
-
-    # 1. Resolve data stage
-    x_data <- switch(
-      from,
-      "corrected"   = x$data_corrected,
-      "normalized"  = x$data_normalized,
-      "transformed" = x$data_transformed,
-      "scaled"      = x$data_nonpls
-    )
-
-    if (is.null(x_data)) {
-      stop(sprintf("Requested data stage '%s' not found in the 'run_DIpreprocess' object.", from), call. = FALSE)
-    }
-
-    # 2. Resolve metadata, group, and filter
-    if (is.null(metadata)) {
-      metadata <- if (!is.null(x$metadata_merged)) x$metadata_merged else x$metadata
-    }
-    if (is.null(group)) {
-      group <- x$parameters$group_col
-    }
-    if (is.null(filter)) {
-      filter <- eval(x$parameters$qc_types)
-    }
-
-    x <- x_data
+    di <- .di_unpack(x, stage = from)
+    if (is.null(metadata)) metadata <- di$metadata
+    if (is.null(group)) group <- di$group
+    # Only exclude the QC labels that actually occur in this dataset
+    if (is.null(filter) && group %in% names(metadata))
+      filter <- intersect(di$qc, as.character(metadata[[group]]))
+    x <- di$data
   }
 
   # ---------------------------------------------------------------------------
@@ -410,8 +396,7 @@ run_foldchange <- function(
   # ---------------------------------------------------------------------------
   pairs       <- combn(seq_len(n_lvl), 2L)
   n_comp      <- ncol(pairs)
-  comp_labels <- paste0(lvl_order[pairs[1L, ]], "_vs_",
-                        lvl_order[pairs[2L, ]])
+  comp_labels <- paste(lvl_order[pairs[1L, ]], "vs", lvl_order[pairs[2L, ]])
 
   fc_mat <- matrix(NA_real_, nrow = n_feat, ncol = n_comp,
                    dimnames = list(feat_cols, comp_labels))
@@ -437,9 +422,9 @@ run_foldchange <- function(
   # ---------------------------------------------------------------------------
   .mat_to_df <- function(mat) {
     df           <- as.data.frame(mat, stringsAsFactors = FALSE)
-    df$feature   <- rownames(mat)
+    df$Feature   <- rownames(mat)
     rownames(df) <- NULL
-    df[, c("feature", comp_labels), drop = FALSE]
+    df[, c("Feature", comp_labels), drop = FALSE]
   }
 
   if (sort && n_comp >= 1L) {
@@ -484,29 +469,40 @@ run_foldchange <- function(
       row.names    = NULL
     )
 
-    if (!is.null(up) || !is.null(down)) {
-      hi <- if (!is.null(up))   !is.na(fc_col) & fc_col >= up   else rep(FALSE, n_feat)
-      lo <- if (!is.null(down)) !is.na(fc_col) & fc_col <= down else rep(FALSE, n_feat)
-      # A higher fold change means up in the numerator group, down in the denominator group
-      df$regulation_num <- ifelse(hi, "Up",   ifelse(lo, "Down", "Not significant"))
-      df$regulation_den <- ifelse(hi, "Down", ifelse(lo, "Up",   "Not significant"))
-    }
 
     df
   })
 
-  summary_table <- do.call(rbind, summary_list)
-  rownames(summary_table) <- NULL
+  feature_stats <- do.call(rbind, summary_list)
+  rownames(feature_stats) <- NULL
 
   if (sort && n_comp >= 1L) {
-    summary_table <- summary_table[
-      order(summary_table$comparison,
-            abs(summary_table$fold_change),
+    feature_stats <- feature_stats[
+      order(feature_stats$comparison,
+            abs(feature_stats$fold_change),
             decreasing = c(FALSE, TRUE),
             method = "radix"), ,
       drop = FALSE
     ]
-    rownames(summary_table) <- NULL
+    rownames(feature_stats) <- NULL
+  }
+
+  # Report-ready table; per-group SDs and sizes stay in feature_stats
+  summary_table <- data.frame(
+    Comparison       = feature_stats$comparison,
+    Feature          = feature_stats$feature,
+    `Mean (group 1)` = feature_stats$mean_num,
+    `Mean (group 2)` = feature_stats$mean_den,
+    `Fold change`    = feature_stats$fold_change,
+    check.names      = FALSE,
+    stringsAsFactors = FALSE
+  )
+  if (log2) summary_table[["log2 FC"]] <- feature_stats$log2_fc
+  if (!is.null(up) || !is.null(down)) {
+    fc <- feature_stats$fold_change
+    hi <- if (!is.null(up))   !is.na(fc) & fc >= up   else rep(FALSE, length(fc))
+    lo <- if (!is.null(down)) !is.na(fc) & fc <= down else rep(FALSE, length(fc))
+    summary_table$Regulation <- ifelse(hi, "Up", ifelse(lo, "Down", "Unchanged"))
   }
 
   # ---------------------------------------------------------------------------
@@ -517,6 +513,7 @@ run_foldchange <- function(
       fc_table      = fc_df,
       log2fc_table  = log2fc_df,
       summary_table = summary_table,
+      feature_stats = feature_stats,
       shifted_data  = shifted_data,
       min_value     = min_val,
       shift         = shift_delta,

@@ -6,7 +6,7 @@
 \usage{
 save_excel(
   x,
-  filename = "output",
+  filename = NULL,
   folder = NULL,
   overwrite = FALSE,
   freeze_first_row = TRUE,
@@ -24,16 +24,16 @@ of \code{\link{run_auc}()}, \code{\link{run_diff}()}), or a named list whose ele
 are any combination of those types.  One level of nesting is automatically
 unpacked when no direct tabular elements are found at the top level.}
 
-\item{filename}{A single character string for the output file name.  Used
-as-is when \code{x} is a single object.  Ignored when \code{x} is a list
-with multiple elements — each element's name is used as its sheet name and
-the list object's name becomes the file name.  Illegal characters are
-removed silently.  Defaults to \code{"output"} if not supplied.}
+\item{filename}{A single character string for the output file name. Used
+as-is when \code{x} is a single object. Illegal characters are removed
+silently. When \code{NULL} (default), the name of the object passed as
+\code{x} is used. Nothing is written unless \code{filename} or
+\code{folder} is supplied.}
 
 \item{folder}{A single character string giving the target directory.
 Supports nested folders (e.g., \code{"Main folder/sub folder"}).
-Created recursively if absent. Defaults to \code{NULL} (current working
-directory).}
+Created recursively if absent. With the default \code{NULL}, the file goes
+to the current working directory, so \code{filename} must then be given.}
 
 \item{overwrite}{Logical.  When \code{TRUE} an existing file is silently
 overwritten.  When \code{FALSE} (default) a Windows-style counter suffix
@@ -81,11 +81,8 @@ name \code{"History"} becomes \code{"History_"}, and duplicates get a
 \code{" (N)"} suffix (up to \code{" (999)"}, hence the 25-character base
 limit).
 
-\strong{Filename priority.}  The \code{filename} argument is prioritized
-unless it is left as the default \code{"output"}.  If \code{filename} is
-\code{"output"} and \code{x} is a list (or a pondeR result containing
-multiple tables), the function automatically uses the variable name of
-\code{x} as the filename for convenience.
+\strong{Filename.}  When \code{filename} is \code{NULL}, the name of the
+object passed as \code{x} is used.
 
 \strong{pondeR result objects.}  Objects whose class starts with
 \code{run_} (e.g. \code{\link{run_auc}}, \code{\link{run_diff}}) are unpacked

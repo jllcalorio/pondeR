@@ -43,8 +43,7 @@ run_summarytable(
   bold_labels = TRUE,
   italicize_levels = TRUE,
   clean_table = TRUE,
-  table_name = "auto",
-  .in_subgroup_recursion = FALSE
+  table_name = "auto"
 )
 }
 \arguments{
@@ -244,10 +243,6 @@ zero count (e.g., \code{0 (0.00\%)}) are replaced with empty strings.}
 \item{table_name}{String or \code{NULL}. Table title. \code{"auto"}
 (default) generates a title automatically. \code{NULL} suppresses the
 title.}
-
-\item{.in_subgroup_recursion}{Internal use only. Logical flag set to
-\code{TRUE} when \code{\link{run_summarytable}()} calls itself recursively to
-build subgroup tables; not intended to be set by users.}
 }
 \value{
 A \code{gt_tbl} object (via \code{gtsummary::as_gt()}) representing
@@ -267,17 +262,12 @@ continuous variables) and \code{\link{run_assoc}} (for categorical
 variables), then injected into the table. Each p-value cell carries a
 letter superscript identifying the exact test used; a legend is appended
 as table footnotes. Variables for which a p-value could not be computed
-are shown as \code{---†} with a corresponding footnote.
+are shown as a dash marked with a dagger and a corresponding footnote.
 }
 \examples{
 # Quick example
 run_summarytable(iris, split_by = "Species")
 \donttest{
-if (requireNamespace("forcats", quietly = TRUE) &&
-    requireNamespace("purrr", quietly = TRUE)) {
-library(gtsummary)
-library(dplyr)
-
 set.seed(123)
 sample_df <- data.frame(
   Age       = sample(c(18:65, NA), 100, replace = TRUE,
@@ -288,17 +278,9 @@ sample_df <- data.frame(
                         "Bachelors", "Masters", NA), 100,
                      replace = TRUE,
                      prob = c(0.40, 0.30, 0.15, 0.10, 0.05)),
-  Income    = sample(c(seq(5000, 40000, by = 5000), NA), 100,
-                     replace = TRUE, prob = c(rep(1, 8), 2)),
   Smoker    = sample(c(1, 0, NA), 100, replace = TRUE,
-                     prob = c(0.25, 0.65, 0.10)),
-  Region    = sample(c("North", "South", "East", "West", NA), 100,
-                     replace = TRUE,
-                     prob = c(0.24, 0.24, 0.24, 0.24, .04))
+                     prob = c(0.25, 0.65, 0.10))
 )
-
-# Basic descriptive statistics (no grouping)
-sample_df |> run_summarytable()
 
 # Descriptive statistics split by Gender
 sample_df |>
@@ -306,7 +288,6 @@ sample_df |>
     split_by        = "Gender",
     split_by_header = "Participant Gender",
     rename_variables = list(Age    ~ "Age (Years)",
-                            Income ~ "Annual Income",
                             Smoker ~ "Smoking Status")
   )
 
@@ -327,23 +308,6 @@ sample_df |>
     add_inferential_pvalues = TRUE
   )
 
-# Force non-parametric tests for continuous variables
-sample_df |>
-  run_summarytable(
-    split_by                = "Gender",
-    add_inferential_pvalues = TRUE,
-    test_type_continuous    = "nonparametric",
-    test_type_categorical   = "fisher"
-  )
-
-# Paired inferential p-values (descriptive body remains unpaired)
-sample_df |>
-  run_summarytable(
-    split_by                = "Gender",
-    add_inferential_pvalues = TRUE,
-    paired                  = TRUE
-  )
-
 # Combining categorical levels
 sample_df |>
   run_summarytable(
@@ -357,12 +321,11 @@ sample_df |>
 
 # Subgroup analysis: separate tables for each Education level,
 # with Gender comparison within each
-sample_df |>
+sample_df[c("Age", "Gender", "Education")] |>
   run_summarytable(
     subgroup = "Education",
     split_by = "Gender"
   )
-}
 }
 
 }

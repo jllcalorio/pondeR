@@ -13,7 +13,7 @@ run_lefse(
   alpha = 0.05,
   wilcox_alpha = 0.05,
   lda_threshold = 2,
-  verbose = TRUE
+  verbose = FALSE
 )
 }
 \arguments{
@@ -39,13 +39,15 @@ level for the pairwise Wilcoxon test (default: 0.05).}
 \item{lda_threshold}{Numeric value specifying the threshold on the absolute
 logarithmic LDA score for discriminative features (default: 2.0).}
 
-\item{verbose}{Logical indicating whether to print progress messages (default: TRUE).}
+\item{verbose}{Logical indicating whether to print progress messages (default: FALSE).}
 }
 \value{
 A list of class \code{\link{run_lefse}} containing:
-\item{lda}{A data frame with LDA results (features, means per class, LDA scores).}
-\item{summary_table}{A data frame summarizing significant features with
-effect sizes, p-values, and classifications.}
+\item{lda}{A data frame with \code{Feature}, one \code{Mean (<class>)} column
+per class, and \code{LDA score}.}
+\item{summary_table}{A report-ready data frame of the discriminative
+features: the columns of \code{lda} plus \code{p-value}, ordered by LDA
+score.}
 \item{parameters}{A list of the parameters used in the analysis.}
 \item{call}{The matched call.}
 }

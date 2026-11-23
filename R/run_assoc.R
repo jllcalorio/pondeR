@@ -81,7 +81,7 @@
 #' @param p_adjust_method P-value adjustment method for post-hoc comparisons.
 #'   See \code{\link[stats]{p.adjust}}. Default is \code{"BH"}.
 #' @param verbose A logical indicating whether to print detailed messages.
-#'   Default is \code{TRUE}.
+#'   Default is \code{FALSE}.
 #'
 #' @return A list with class \code{"run_assoc"} containing:
 #'   \item{test_used}{Character string of the statistical test performed.}
@@ -106,9 +106,6 @@
 #'   \item{warnings}{Character vector of any warnings generated.}
 #'   \item{parameters}{List of all parameters used in the analysis.}
 #'
-#' @importFrom stats chisq.test fisher.test mcnemar.test xtabs na.omit as.formula
-#' @importFrom effectsize phi cramers_v oddsratio interpret_phi interpret_cramers_v
-#' @importFrom rstatix pairwise_fisher_test
 #'
 #' @author John Lennon L. Calorio
 #'
@@ -187,7 +184,7 @@ run_assoc <- function(x,
                       calculate_association   = TRUE,
                       perform_posthoc         = TRUE,
                       p_adjust_method         = "BH",
-                      verbose                 = TRUE) {
+                      verbose                 = FALSE) {
 
   # ---------------------------------------------------------------------------
   # 1. Input Validation and Preparation
@@ -291,7 +288,7 @@ run_assoc <- function(x,
     })
     names(results) <- paste0(var1, "_vs_", var2)
     class(results) <- "run_assoc_multi"
-    return(invisible(results))
+    return(results)
   }
 
   # ---------------------------------------------------------------------------
@@ -578,13 +575,13 @@ run_assoc <- function(x,
     residuals         = if (!is.null(residuals_out))  as.data.frame.matrix(residuals_out)  else NULL,
     stdres            = if (!is.null(stdres_out))      as.data.frame.matrix(stdres_out)     else NULL,
     association       = if (!is.null(association_result)) {
-      as.data.frame(
+      .report_names(as.data.frame(
         lapply(association_result, function(v) if (length(v) == 0L || is.null(v)) NA else v),
         stringsAsFactors = FALSE
-      )
+      ))
     } else NULL,
-    posthoc_result    = posthoc_result,
-    assumptions       = assumptions,
+    posthoc_result    = if (!is.null(posthoc_result)) .report_names(posthoc_result),
+    assumptions       = .report_names(assumptions),
     var1              = var1,
     var2              = var2,
     paired            = paired,
@@ -644,18 +641,18 @@ print.run_assoc <- function(x, ...) {
                 "No significant association detected."))
 
   if (!is.null(x$association))
-    cat(sprintf("  %s\n", x$association$interpretation))
+    cat(sprintf("  %s\n", x$association$Interpretation))
 
   cat("\nObserved Frequencies:\n")
   print(x$contingency_table)
 
   if (!is.null(x$posthoc_result)) {
     cat(sprintf("\nPost-Hoc Tests (p-adjust: %s):\n", x$parameters$p_adjust_method))
-    sig_only <- x$posthoc_result[
-      !is.na(x$posthoc_result$p.adj) & x$posthoc_result$p.adj < x$test_alpha, ]
+    p_adj    <- x$posthoc_result[["Adjusted p-value"]]
+    sig_only <- x$posthoc_result[!is.na(p_adj) & p_adj < x$test_alpha, ]
     if (nrow(sig_only) > 0) {
       cat("Significant comparisons:\n")
-      cols <- intersect(c("group1", "group2", "p", "p.adj"), names(sig_only))
+      cols <- intersect(c("Group 1", "Group 2", "p-value", "Adjusted p-value"), names(sig_only))
       print(sig_only[, cols], row.names = FALSE)
     } else {
       cat("No significant pairwise differences found.\n")
@@ -735,13 +732,13 @@ summary.run_assoc <- function(object, ...) {
 
   if (!is.null(object$association)) {
     cat("\n--- Measures of Association ---\n")
-    cat(sprintf("Metric:    %s\n", object$association$metric))
-    cat(sprintf("Estimate:  %.3f", object$association$estimate))
-    if (!is.na(object$association$ci_low))
+    cat(sprintf("Metric:    %s\n", object$association$Metric))
+    cat(sprintf("Estimate:  %.3f", object$association$Estimate))
+    if (!is.na(object$association[["95% CI lower"]]))
       cat(sprintf(" [95%% CI: %.3f, %.3f]",
-                  object$association$ci_low, object$association$ci_high))
+                  object$association[["95% CI lower"]], object$association[["95% CI upper"]]))
     cat("\n")
-    cat(sprintf("Magnitude: %s\n", object$association$magnitude))
+    cat(sprintf("Magnitude: %s\n", object$association$Magnitude))
   }
 
   if (!is.null(object$posthoc_result)) {
@@ -755,9 +752,9 @@ summary.run_assoc <- function(object, ...) {
     cat(sprintf("Result: SIGNIFICANT association detected (p < %.2f).\n", object$test_alpha))
     if (!is.null(object$association))
       cat(sprintf("Strength: %s (%s = %.3f).\n",
-                  tolower(object$association$magnitude),
-                  object$association$metric,
-                  object$association$estimate))
+                  tolower(object$association$Magnitude),
+                  object$association$Metric,
+                  object$association$Estimate))
   } else {
     cat(sprintf("Result: NO significant association detected (p >= %.2f).\n", object$test_alpha))
   }

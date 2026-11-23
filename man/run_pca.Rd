@@ -11,7 +11,7 @@ run_pca(
   transform_method = NULL,
   group = "Group",
   exclude = NULL,
-  verbose = TRUE
+  verbose = FALSE
 )
 }
 \arguments{
@@ -36,12 +36,12 @@ exclusion. Required if \code{exclude} is specified. Default: "Group".}
 from PCA analysis. For example, c("QC", "Blank") excludes all samples with these group
 labels. Default: NULL (include all samples).}
 
-\item{verbose}{Logical. Print progress messages. Default: TRUE.}
+\item{verbose}{Logical. Print progress messages. Default: FALSE.}
 }
 \value{
 A list containing:
-\item{scores}{Matrix of PC scores (samples × PCs)}
-\item{loadings}{Matrix of PC loadings (features × PCs)}
+\item{scores}{Matrix of PC scores (samples x PCs)}
+\item{loadings}{Matrix of PC loadings (features x PCs)}
 \item{variance_explained}{Numeric vector of variance explained (\%) per PC}
 \item{eigenvalues}{Numeric vector of eigenvalues per PC}
 \item{cumulative_variance}{Numeric vector of cumulative variance explained (\%) per PC}
@@ -89,9 +89,9 @@ before performing PCA.
 
 PCA is performed using singular value decomposition (SVD) via \code{stats::prcomp()}.
 The function assumes data is appropriately preprocessed (normalized, transformed,
-and scaled) before analysis. PCA is performed without additional centering or
-scaling (\verb{center = FALSE, scale. = FALSE}) as these should have been applied
-during the scaling step.
+and scaled) before analysis. Columns are always mean-centered (a no-op for data
+that is already centered) and never rescaled here (\verb{center = TRUE, scale. = FALSE}):
+scaling belongs to the preprocessing step.
 
 \strong{Interpretation:}
 \itemize{

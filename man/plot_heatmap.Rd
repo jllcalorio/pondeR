@@ -24,18 +24,16 @@ plot_heatmap(
   round = 2L,
   mark_x = TRUE,
   mark_x_size = 1,
-  mark_x_alpha = 0.6,
+  mark_x_alpha = 0.4,
   show_dend = FALSE,
   dend_row_width = 0.2,
   dend_col_height = 0.2,
-  global_font_size = 15,
-  axis_title_size = NULL,
+  base_size = 11,
+  title_size = NULL,
+  subtitle_size = NULL,
   axis_text_size = NULL,
-  legend_title_size = NULL,
-  legend_text_size = NULL,
-  coef_text_size = NULL,
-  plot_title_size = NULL,
-  plot_subtitle_size = NULL,
+  legend_size = NULL,
+  label_size = NULL,
   ...
 )
 }
@@ -58,7 +56,8 @@ correlations) or \code{"masked"} (set non-significant cells to
 \item{remove}{Level-exclusion list passed to \code{\link{run_correl}}.}
 
 \item{theme}{A single character string: \code{"nature"} (default),
-\code{"classic"}, \code{"minimal"}, or \code{"bw"}.}
+\code{"classic"}, \code{"plos"}, \code{"minimal"}, \code{"bw"},
+\code{"light"}, \code{"dark"}, or \code{"gray"}.}
 
 \item{plot_title}{A single character string for the plot title. Default
 \code{NULL}.}
@@ -82,7 +81,7 @@ pairs with the lowest absolute correlation. Mutually exclusive with
 negative, neutral, and positive correlation respectively. Default
 \code{c("#2166AC", "#F7F7F7", "#B2182B")}.}
 
-\item{clab_angle}{A single numeric (0–360) controlling the rotation angle
+\item{clab_angle}{A single numeric (0 to 360) controlling the rotation angle
 of column (x-axis) labels in degrees. Default \code{45}.}
 
 \item{show_triangle}{A single character string: \code{"all"} (default),
@@ -97,15 +96,14 @@ coefficient annotation. Default \code{2}. When rounding produces exactly
 \code{1} or \code{-1} for a non-unity value, scientific notation is used
 and the font is reduced. Ignored when \code{show_coef = FALSE}.}
 
-\item{mark_x}{Logical. Overlay an \code{"\u00D7"} on non-significant cells
-when \code{show_coef = TRUE}. Default \code{TRUE}.}
+\item{mark_x}{Logical. Overlay a cross on non-significant cells when
+\code{show_coef = TRUE}. Default \code{TRUE}.}
 
 \item{mark_x_size}{A single positive numeric acting as a multiplier for the
-size of the "×" mark. Default \code{1.0} (fills ~85\% of the cell).
-Ignored when \code{mark_x = FALSE}.}
+size of the cross. Default \code{1}. Ignored when \code{mark_x = FALSE}.}
 
-\item{mark_x_alpha}{A single numeric (0–1) controlling the transparency of
-the "×" mark. Default \code{0.6}. Ignored when \code{mark_x = FALSE}.}
+\item{mark_x_alpha}{A single numeric (0 to 1) controlling the transparency
+of the cross. Default \code{0.6}. Ignored when \code{mark_x = FALSE}.}
 
 \item{show_dend}{Logical. Whether to attach hierarchical clustering
 dendrograms to the heatmap margins. Requires \pkg{patchwork}.
@@ -119,30 +117,12 @@ Default \code{0.2}.}
 height of the column dendrogram panel when \code{show_dend = TRUE}.
 Default \code{0.2}.}
 
-\item{global_font_size}{A single positive numeric specifying the base font
-size in points. Default \code{15}.}
+\item{base_size}{Base font size in points; every text element scales from
+it. Default \code{11}, which suits a default 7 x 5 inch Quarto figure.}
 
-\item{axis_title_size}{Font size for axis titles. Defaults to
-\code{global_font_size}.}
-
-\item{axis_text_size}{Font size for axis tick labels. Defaults to
-\code{global_font_size}.}
-
-\item{legend_title_size}{Font size for the legend title. Defaults to
-\code{global_font_size}.}
-
-\item{legend_text_size}{Font size for legend text. Defaults to
-\code{global_font_size}.}
-
-\item{coef_text_size}{Font size for in-cell coefficient annotations.
-Defaults to \code{global_font_size * 0.7}. Ignored when
-\code{show_coef = FALSE}.}
-
-\item{plot_title_size}{Font size for the plot title. Defaults to
-\code{global_font_size + 2}.}
-
-\item{plot_subtitle_size}{Font size for the plot subtitle. Defaults to
-\code{global_font_size}.}
+\item{title_size, subtitle_size, axis_text_size, legend_size, label_size}{Font
+sizes in points for the title, subtitle, tick labels, legend and in-cell
+coefficients. Default \code{NULL} derives each from \code{base_size}.}
 
 \item{...}{Additional arguments passed to \code{\link{run_correl}} and,
 when \code{show_dend = TRUE}, to \code{\link{plot_dend}}.}
@@ -178,7 +158,9 @@ plot_heatmap(mtcars, out = "masked", show_triangle = "lower")
 plot_heatmap(mtcars, show_coef = TRUE, mark_x = TRUE)
 
 ## With dendrograms
-plot_heatmap(mtcars, show_dend = TRUE)
+if (requireNamespace("ggdendro", quietly = TRUE)) {
+  plot_heatmap(mtcars, show_dend = TRUE)
+}
 
 }
 \references{

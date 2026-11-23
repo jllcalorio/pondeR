@@ -39,15 +39,6 @@
 #' @param show_values Logical. If `TRUE`, count or percentage labels are
 #' displayed on the bars. Default is `FALSE`.
 #'
-#' @param values_position Character string specifying label placement.
-#' Supported options are:
-#' \itemize{
-#'   \item `"auto"`: automatic placement
-#'   \item `"inside"`: inside bars
-#'   \item `"outside"`: outside bars
-#' }
-#' Default is `"auto"`.
-#'
 #' @param fill_missing_levels Logical. Default is `TRUE`.
 #' If `x_axis` is numeric, all integer values between the minimum and maximum
 #' observed values will be displayed on the axis, including values with zero
@@ -79,26 +70,13 @@
 #' @param flip Logical. If `TRUE`, flips the plot coordinates using
 #' `ggplot2::coord_flip()`. Default is `FALSE`.
 #'
-#' @param global_font_size A single positive numeric value specifying
-#' the base font size for the plot. Default is `25`.
+#' @param base_size Base font size in points; every text element scales from
+#' it. Default is `11`, which suits a default 7 x 5 inch Quarto figure.
 #'
-#' @param title_size A single positive numeric value specifying title font size.
-#' Defaults to `global_font_size`.
-#'
-#' @param subtitle_size A single positive numeric value specifying subtitle
-#' font size. Defaults to `global_font_size`.
-#'
-#' @param caption_size A single positive numeric value specifying caption
-#' font size. Defaults to `global_font_size`.
-#'
-#' @param legend_size A single positive numeric value specifying legend
-#' font size. Defaults to `global_font_size`.
-#'
-#' @param axis_title_size A single positive numeric value specifying axis
-#' title font size. Defaults to `global_font_size`.
-#'
-#' @param axis_text_size A single positive numeric value specifying axis
-#' text font size. Defaults to `global_font_size`.
+#' @param title_size,subtitle_size,caption_size,legend_size,xlab_size,ylab_size,axis_text_size,label_size
+#' Font sizes in points for the title, subtitle, caption, legend, x-axis label,
+#' y-axis label, tick labels and value labels. Default `NULL` derives each from
+#' `base_size`.
 #'
 #' @param theme Character string specifying ggplot2 theme style.
 #' Supported options are:
@@ -111,8 +89,6 @@
 #'   \item `"dark"`
 #' }
 #' Default is `"nature"`.
-#'
-#' @param ... Additional arguments passed to `ggplot2::ggplot()`.
 #'
 #' @details
 #' This function is designed for publication-ready categorical bar plots with
@@ -130,13 +106,6 @@
 #' Missing values are explicitly displayed as `"NA"`.
 #'
 #' Gridlines are removed by default for a cleaner publication-ready appearance.
-#'
-#' Requires the packages:
-#' \itemize{
-#'   \item ggplot2
-#'   \item scales
-#'   \item ggrepel
-#' }
 #'
 #' @return
 #' A `ggplot2` object representing the generated bar plot.
@@ -189,56 +158,29 @@ plot_bar <- function(
     x_axis,
     show_y_as = "n",
     show_values = FALSE,
-    values_position = "auto",
     fill_missing_levels = TRUE,
     arrange_x = NULL,
     x_axis_label = NULL,
     y_axis_label = NULL,
-    title = "",
-    subtitle = "",
-    caption = "",
+    title = NULL,
+    subtitle = NULL,
+    caption = NULL,
     legend = NULL,
     legend_position = "bottom",
     flip = FALSE,
-    global_font_size = 25,
-    title_size = global_font_size,
-    subtitle_size = global_font_size,
-    caption_size = global_font_size,
-    legend_size = global_font_size,
-    axis_title_size = global_font_size,
-    axis_text_size = global_font_size,
-    theme = "nature",
-    ...
+    base_size = 11,
+    title_size = NULL,
+    subtitle_size = NULL,
+    caption_size = NULL,
+    legend_size = NULL,
+    xlab_size = NULL,
+    ylab_size = NULL,
+    axis_text_size = NULL,
+    label_size = NULL,
+    theme = "nature"
 ) {
-
-  # ===========================================================================
-  # Dependency checks
-  # ===========================================================================
-
-  required_packages <- c(
-    "ggplot2",
-    "scales",
-    "ggrepel"
-  )
-
-  missing_packages <- required_packages[
-    !vapply(
-      required_packages,
-      requireNamespace,
-      logical(1L),
-      quietly = TRUE
-    )
-  ]
-
-  if (length(missing_packages) > 0L) {
-    stop(
-      sprintf(
-        "Missing required package(s): %s",
-        paste(missing_packages, collapse = ", ")
-      ),
-      call. = FALSE
-    )
-  }
+  sizes <- .text_sizes(base_size, title_size, subtitle_size, xlab_size, ylab_size,
+                       axis_text_size, legend_size, caption_size, label = label_size)
 
   # ===========================================================================
   # Input validation
@@ -320,22 +262,6 @@ plot_bar <- function(
     )
   }
 
-  valid_values_positions <- c(
-    "auto",
-    "inside",
-    "outside"
-  )
-
-  if (!values_position %in% valid_values_positions) {
-    stop(
-      sprintf(
-        "`values_position` must be one of: %s",
-        paste(valid_values_positions, collapse = ", ")
-      ),
-      call. = FALSE
-    )
-  }
-
   valid_legend_positions <- c(
     "bottom",
     "top",
@@ -348,25 +274,6 @@ plot_bar <- function(
       sprintf(
         "`legend_position` must be one of: %s",
         paste(valid_legend_positions, collapse = ", ")
-      ),
-      call. = FALSE
-    )
-  }
-
-  valid_themes <- c(
-    "nature",
-    "minimal",
-    "classic",
-    "bw",
-    "light",
-    "dark"
-  )
-
-  if (!theme %in% valid_themes) {
-    stop(
-      sprintf(
-        "`theme` must be one of: %s",
-        paste(valid_themes, collapse = ", ")
       ),
       call. = FALSE
     )
@@ -639,13 +546,11 @@ plot_bar <- function(
     x_axis_label <- x_axis
   }
 
-  if (is.null(y_axis_label)) {
+  # Filled bars always show proportions, whatever `show_y_as` is
+  y_is_pct <- show_y_as == "p" || plot_type == "filled"
 
-    y_axis_label <- if (show_y_as == "n") {
-      "Count"
-    } else {
-      "Percent"
-    }
+  if (is.null(y_axis_label)) {
+    y_axis_label <- if (y_is_pct) "Percent" else "Count"
   }
 
   if (is.null(legend)) {
@@ -663,114 +568,62 @@ plot_bar <- function(
     filled = "fill"
   )
 
-  # ===========================================================================
+  # ---------------------------------------------------------------------------
   # Plot construction
-  # ===========================================================================
+  # ---------------------------------------------------------------------------
 
-  if (is.null(by)) {
-
-    p <- ggplot2::ggplot(
-      summary_df,
-      ggplot2::aes(
-        x = x,
-        y = if (show_y_as == "n") count else prop
-      ),
-      ...
-    ) +
-      ggplot2::geom_col(
-        fill = okabe_ito[1]
-      )
-
+  p <- if (is.null(by)) {
+    ggplot2::ggplot(summary_df,
+                    ggplot2::aes(x = x, y = if (show_y_as == "n") count else prop)) +
+      ggplot2::geom_col(fill = okabe_ito[1])
   } else {
-
-    p <- ggplot2::ggplot(
-      summary_df,
-      ggplot2::aes(
-        x = x,
-        y = if (show_y_as == "n") count else prop,
-        fill = group
-      ),
-      ...
-    ) +
-      ggplot2::geom_col(
-        position = position_setting
-      ) +
-      ggplot2::scale_fill_manual(
-        values = colors,
-        name = legend
-      )
+    ggplot2::ggplot(summary_df,
+                    ggplot2::aes(x = x, y = if (show_y_as == "n") count else prop,
+                                 fill = group)) +
+      ggplot2::geom_col(position = position_setting) +
+      ggplot2::scale_fill_manual(values = colors, name = legend)
   }
 
-  # ===========================================================================
-  # Value labels
-  # ===========================================================================
+  # ---------------------------------------------------------------------------
+  # Value labels: centred in stacked segments, above dodged or single bars
+  # ---------------------------------------------------------------------------
 
   if (isTRUE(show_values)) {
-
-    # Labels must follow the bars' position (dodge/stack/fill) and grouping
     lab_aes <- if (is.null(by)) ggplot2::aes(label = label) else
       ggplot2::aes(label = label, group = group)
+    centred <- !is.null(by) && plot_type != "dodged"
     lab_pos <- if (is.null(by)) "identity" else switch(
       plot_type,
       stacked = ggplot2::position_stack(vjust = 0.5),
       dodged  = ggplot2::position_dodge(width = 0.9),
       filled  = ggplot2::position_fill(vjust = 0.5)
     )
-    p <- p +
-      ggrepel::geom_text_repel(
-        lab_aes,
-        position = lab_pos,
-        inherit.aes = TRUE,
-        size = global_font_size / 6,
-        segment.color = "black",
-        box.padding = 0.25,
-        point.padding = 0.2,
-        max.overlaps = Inf,
-        show.legend = FALSE
-      )
+    p <- p + ggplot2::geom_text(
+      data = summary_df[summary_df$count > 0, , drop = FALSE],
+      mapping = lab_aes,
+      position = lab_pos,
+      vjust = if (centred || flip) 0.5 else -0.3,
+      hjust = if (!centred && flip) -0.1 else 0.5,
+      size = .pt_to_mm(sizes$label),
+      show.legend = FALSE
+    )
   }
 
-  # ===========================================================================
-  # Percent formatting
-  # ===========================================================================
+  # ---------------------------------------------------------------------------
+  # Axes, labels and theme
+  # ---------------------------------------------------------------------------
 
-  if (show_y_as == "p") {
-
-    p <- p +
-      ggplot2::scale_y_continuous(
-        labels = scales::percent_format(
-          accuracy = 1
-        )
-      )
-  }
-
-  # ===========================================================================
-  # Coordinate flipping
-  # ===========================================================================
+  p <- p +
+    ggplot2::scale_y_continuous(
+      labels = if (y_is_pct) function(v) paste0(round(v * 100), "%") else ggplot2::waiver(),
+      expand = ggplot2::expansion(mult = c(0, 0.08))
+    )
 
   if (isTRUE(flip)) {
     p <- p + ggplot2::coord_flip()
   }
 
-  # ===========================================================================
-  # Themes
-  # ===========================================================================
-
-  selected_theme <- switch(
-    theme,
-    nature = ggplot2::theme_bw(),
-    minimal = ggplot2::theme_minimal(),
-    classic = ggplot2::theme_classic(),
-    bw = ggplot2::theme_bw(),
-    light = ggplot2::theme_light(),
-    dark = ggplot2::theme_dark()
-  )
-
-  # ===========================================================================
-  # Final formatting
-  # ===========================================================================
-
-  p <- p +
+  p +
     ggplot2::labs(
       x = x_axis_label,
       y = y_axis_label,
@@ -778,42 +631,10 @@ plot_bar <- function(
       subtitle = subtitle,
       caption = caption
     ) +
-    selected_theme +
+    .ponder_theme(theme, sizes) +
     ggplot2::theme(
       legend.position = legend_position,
-
       panel.grid.major = ggplot2::element_blank(),
-      panel.grid.minor = ggplot2::element_blank(),
-
-      plot.title = ggplot2::element_text(
-        size = title_size,
-        face = "bold"
-      ),
-
-      plot.subtitle = ggplot2::element_text(
-        size = subtitle_size
-      ),
-
-      plot.caption = ggplot2::element_text(
-        size = caption_size
-      ),
-
-      legend.title = ggplot2::element_text(
-        size = legend_size
-      ),
-
-      legend.text = ggplot2::element_text(
-        size = legend_size
-      ),
-
-      axis.title = ggplot2::element_text(
-        size = axis_title_size
-      ),
-
-      axis.text = ggplot2::element_text(
-        size = axis_text_size
-      )
+      panel.grid.minor = ggplot2::element_blank()
     )
-
-  return(p)
 }

@@ -14,7 +14,7 @@
 #'
 #' @return A named list with elements \code{violated}, \code{p_value},
 #'   \code{method}, \code{label}, and \code{warnings_list}.
-#' @keywords internal
+#' @noRd
 .check_normality <- function(data_vector,
                              group_label    = NULL,
                              method         = "auto",
@@ -88,7 +88,7 @@
 #' @return A list of normality-check result lists, one per group.
 #'   Each element carries its own \code{warnings_list} slot; callers
 #'   must harvest these.
-#' @keywords internal
+#' @noRd
 .parallel_normality <- function(groups, y, grp,
                                 normality_method, alpha_normality,
                                 num_cores) {
@@ -106,9 +106,6 @@
                     "normality_method", "alpha_normality"),
         envir   = environment()
       )
-      parallel::clusterEvalQ(cl, {
-        if (requireNamespace("nortest", quietly = TRUE)) library(nortest)
-      })
       parallel::parLapply(cl, groups, run_one)
     } else {
       parallel::mclapply(groups, run_one, mc.cores = num_cores)
@@ -130,7 +127,7 @@
 #'
 #' @return A list with \code{p_value}, \code{test_name}, \code{violated},
 #'   and \code{warnings_list}.
-#' @keywords internal
+#' @noRd
 .check_variance <- function(y, grp, alpha_variance,
                             verbose, warnings_list) {
 
@@ -163,7 +160,7 @@
 
 # -----------------------------------------------------------------------------
 #' Build the standard assumptions data frame row from a normality result
-#' @keywords internal
+#' @noRd
 .assumption_row <- function(label, method_name, p_value, violated) {
   data.frame(
     check    = label,
@@ -184,7 +181,7 @@
 #' @param parameter Named numeric vector from an \code{htest} or equivalent.
 #' @return A single character string, e.g.
 #'   \code{"df = 18"} or \code{"DFn = 2, DFd = 27"}.
-#' @keywords internal
+#' @noRd
 .format_df <- function(parameter) {
   if (is.null(parameter) || length(parameter) == 0)
     return(NA_character_)
@@ -201,7 +198,7 @@
 
 # -----------------------------------------------------------------------------
 #' Execute an independent two-sample test
-#' @keywords internal
+#' @noRd
 .run_independent_two_sample <- function(y, groups, grp,
                                         normality_violated,
                                         variance_violated,
@@ -255,7 +252,7 @@
 
 # -----------------------------------------------------------------------------
 #' Execute a paired two-sample test
-#' @keywords internal
+#' @noRd
 .run_paired_two_sample <- function(y, groups, grp,
                                    normality_violated,
                                    test_type,
@@ -294,7 +291,7 @@
 
 # -----------------------------------------------------------------------------
 #' Execute an independent ANOVA-family test
-#' @keywords internal
+#' @noRd
 .run_independent_anova <- function(y, grp,
                                    normality_violated,
                                    variance_violated,
@@ -356,16 +353,14 @@
 #' @param grp Factor grouping vector.
 #' @param group_ns Named integer table of per-group n.
 #' @param groups Character vector of group names (levels).
-#' @param parametric Logical — use mean-based interpretation when \code{TRUE}.
+#' @param parametric Logical - use mean-based interpretation when \code{TRUE}.
 #' @param test_alpha Significance threshold.
-#' @param p_adjust_method p-adjustment method (used only for Dunn's; others
-#'   already carry p.adj from rstatix).
 #'
 #' @return A data frame with a standardised column set.
-#' @keywords internal
+#' @noRd
 .build_posthoc_df <- function(ph, posthoc_label, y, grp,
                               group_ns, groups, parametric,
-                              test_alpha, p_adjust_method) {
+                              test_alpha) {
 
   ph <- as.data.frame(ph)
   ph$posthoc_test <- posthoc_label
@@ -460,7 +455,7 @@
 #' \code{within} is non-NULL.
 #'
 #' @return A list of class \code{"run_diff"}.
-#' @keywords internal
+#' @noRd
 .run_rm_anova <- function(x, metadata, outcome, group, within, subject_id,
                           test_family,
                           normality_method, alpha_normality,
@@ -808,7 +803,7 @@
 #'
 #' @return A list with \code{estimate}, \code{ci_low}, \code{ci_high},
 #'   \code{magnitude}, \code{metric}, and \code{interpretation}.
-#' @keywords internal
+#' @noRd
 .compute_effect_size <- function(y, grp, groups,
                                  test_family, parametric_used,
                                  variance_violated,
@@ -928,7 +923,7 @@
 #'
 #' \strong{Assumption Checking (\code{test_type = "auto"}):}
 #' \itemize{
-#'   \item \strong{Normality:} Shapiro-Wilk (n < 50) or Lilliefors (n ≥ 50)
+#'   \item \strong{Normality:} Shapiro-Wilk (n < 50) or Lilliefors (n >= 50)
 #'     under \code{"auto"}. Per-group for 2-group comparisons; on model
 #'     residuals for > 2 groups.
 #'   \item \strong{Homogeneity of Variance:} Levene's test (\code{car});
@@ -937,12 +932,12 @@
 #'
 #' \strong{Test Selection Logic (\code{test_type = "auto"}):}
 #' \itemize{
-#'   \item Independent two-sample: Mann-Whitney U (normality violated) →
-#'     Welch's t (variance violated) → Student's t.
-#'   \item Paired two-sample: Wilcoxon signed-rank (normality violated) →
+#'   \item Independent two-sample: Mann-Whitney U (normality violated) ->
+#'     Welch's t (variance violated) -> Student's t.
+#'   \item Paired two-sample: Wilcoxon signed-rank (normality violated) ->
 #'     Paired t.
-#'   \item Independent > 2 groups: Kruskal-Wallis (normality violated) →
-#'     Welch's ANOVA (variance violated) → One-way ANOVA.
+#'   \item Independent > 2 groups: Kruskal-Wallis (normality violated) ->
+#'     Welch's ANOVA (variance violated) -> One-way ANOVA.
 #' }
 #'
 #' \strong{Post-Hoc Tests (> 2 groups, significant omnibus):}
@@ -965,7 +960,7 @@
 #'   used as the metadata source (single data-frame workflow).
 #' @param metadata A data frame containing sample-level metadata (e.g.,
 #'   grouping, subgroups, subject IDs). When \code{NULL} (default),
-#'   \code{x} is used for both feature values and metadata — useful when a
+#'   \code{x} is used for both feature values and metadata - useful when a
 #'   single data frame holds all columns (see Examples).
 #' @param outcome A character string or character vector naming the numeric
 #'   outcome variable(s) found in \code{x}.
@@ -1041,21 +1036,22 @@
 #' @param simplify Logical; when \code{summary_table = TRUE}, controls whether
 #'   \code{$summary_table} (and subgroup tables) are post-processed into a
 #'   compact, presentation-ready form (class \code{"run_diff_summary"}, with
-#'   an \code{\link{as_gt}} method). See \code{\link{.simplify_summary_table}}
-#'   for the full set of transformations. Default \code{TRUE}.
+#'   an \code{\link{as_gt}} method): values are formatted, the effect size and
+#'   its confidence interval are merged, and superscripts on the p-values
+#'   identify the test used. Default \code{TRUE}.
 #' @param n_digits_pvalues Numeric or \code{NULL}; decimal places for
-#'   \code{p_value} / \code{p_value_adj} in \code{$summary_table} when
+#'   the p-value columns in \code{$summary_table} when
 #'   \code{simplify = TRUE}. \code{NULL} auto-formats (3 d.p. when
 #'   \eqn{p < 0.10}, otherwise 1 d.p.), matching \code{\link{run_summarytable}}'s
 #'   \code{n_digits_pvalues}. Default \code{3}.
 #' @param n_digits Integer; decimal places for numeric \code{$summary_table}
-#'   columns (\code{statistic}, \code{mean_*}, effect-size estimate/CI) when
+#'   columns (statistic, group means, effect-size estimate/CI) when
 #'   \code{simplify = TRUE}. Default \code{2}.
 #' @param zero_as_exp Logical; when \code{TRUE} (default) and
 #'   \code{simplify = TRUE}, numeric \code{$summary_table} values that round
 #'   to \code{0} at \code{n_digits} but are genuinely non-zero are shown in
 #'   scientific notation, matching \code{\link{run_summarytable}}'s \code{zero_as_exp}.
-#' @param verbose Logical. Default \code{TRUE}.
+#' @param verbose Logical. Print progress messages. Default \code{FALSE}.
 #' @param num_cores Integer or \code{"max"}. Default \code{1}.
 #'
 #' @return When \code{outcome} is a single string, a list of class
@@ -1070,16 +1066,15 @@
 #'
 #'   When \code{outcome} is length > 1, a named list of \code{"run_diff"}
 #'   objects, optionally with \code{$summary_table} and
-#'   \code{$summary_table_<sg>} elements.
+#'   \code{$summary_table_<sg>} elements. The summary table is ready for
+#'   reports, with columns \code{Variable}, \code{Statistic}, \code{df}, one
+#'   \code{Mean (<group>)} per group, \code{ES measure}, \code{ES (95\% CI)},
+#'   \code{Magnitude}, \code{Significant pairs}, \code{Pairs tested},
+#'   \code{p-value}, \code{Adjusted p-value}, \code{Significant} and
+#'   \code{Interpretation}. With \code{simplify = FALSE} it also has
+#'   \code{Test}, and \code{ES}, \code{ES CI lower} and \code{ES CI upper}
+#'   replace \code{ES (95\% CI)}.
 #'
-#' @importFrom car leveneTest
-#' @importFrom effectsize cohens_d rank_biserial eta_squared epsilon_squared interpret
-#' @importFrom rstatix tukey_hsd games_howell_test dunn_test
-#' @importFrom moments skewness kurtosis
-#' @importFrom nortest lillie.test
-#' @importFrom tibble tibble
-#' @importFrom stats aov as.formula bartlett.test complete.cases kruskal.test lm
-#' @importFrom stats median oneway.test quantile sd shapiro.test t.test wilcox.test
 #'
 #' @author John Lennon L. Calorio
 #'
@@ -1147,36 +1142,31 @@
 #'   Source Software}, 5(56), 2815. \doi{10.21105/joss.02815}
 #'
 #' @examples
-#' \dontrun{
-#' # --- Single data frame: x serves as its own metadata ---
-#'
-#' # 3+ groups (auto test selection)
+#' # 3+ groups (auto test selection); x serves as its own metadata
 #' res_iris <- run_diff(iris, outcome = "Sepal.Length", group = "Species")
-#' print(res_iris); summary(res_iris)
-#'
-#' # Two-sample independent
-#' mtcars$am <- factor(mtcars$am, labels = c("automatic", "manual"))
-#' run_diff(mtcars, outcome = "mpg", group = "am")
+#' res_iris
+#' res_iris$posthoc_result
 #'
 #' # Paired (with subject alignment)
 #' run_diff(sleep, outcome = "extra", group = "group",
 #'          paired = TRUE, subject_id = "ID")
 #'
-#' # --- Separate x / metadata data frames ---
-#'
-#' # Multi-outcome with summary table
+#' \donttest{
+#' # Several outcomes in one summary table, with separate x and metadata
 #' outcomes <- c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width")
-#' x_iris   <- iris[, outcomes]
-#' meta_iris <- iris["Species"]
-#' res_multi <- run_diff(x_iris, meta_iris, outcomes, "Species",
-#'                       summary_table = TRUE, verbose = FALSE)
+#' res_multi <- run_diff(iris[outcomes], iris["Species"], outcomes, "Species",
+#'                       summary_table = TRUE)
 #' res_multi$summary_table
 #'
-#' # --- One-way RM ANOVA ---
-#' run_diff(df_long, outcome = "HeartRate",
-#'          within = "Time", subject_id = "ID")
-#'
-#' # --- Mixed ANOVA ---
+#' # Repeated-measures and mixed ANOVA
+#' set.seed(1)
+#' df_long <- data.frame(
+#'   ID        = factor(rep(1:12, each = 3)),
+#'   Time      = factor(rep(c("T1", "T2", "T3"), 12)),
+#'   Group     = rep(c("A", "B"), each = 18),
+#'   HeartRate = rnorm(36, 70, 5) + rep(c(0, 3, 6), 12)
+#' )
+#' run_diff(df_long, outcome = "HeartRate", within = "Time", subject_id = "ID")
 #' run_diff(df_long, outcome = "HeartRate", group = "Group",
 #'          within = "Time", subject_id = "ID")
 #' }
@@ -1211,32 +1201,20 @@ run_diff <- function(
     n_digits_pvalues      = 3,
     n_digits              = 2,
     zero_as_exp           = TRUE,
-    verbose               = TRUE,
+    verbose               = FALSE,
     num_cores             = 1
 ) {
 
   # --- run_DIpreprocess integration ------------------------------------------
-  if (inherits(x, "run_DIpreprocess")) {
-    if (is.null(metadata)) {
-      metadata <- if (!is.null(x$metadata_merged)) x$metadata_merged else x$metadata
-    }
-    x_data <- if (!is.null(x$data_nonpls_merged)) x$data_nonpls_merged else x$data_nonpls
-
-    if (missing(outcome) || is.null(outcome)) outcome <- names(x_data)
-    if (is.null(group)) group <- x$parameters$group_col
-
-    if (is.null(filter)) {
-      # $parameters now stores evaluated values, so $qc_types is a plain
-      # character vector.  Fall back to the standard defaults if somehow
-      # the slot is still absent (e.g. an object built by an older version).
-      filter <- if (!is.null(x$parameters$qc_types))
-        x$parameters$qc_types
-      else
-        c("QC", "SQC", "EQC")
-    }
-
-    x <- x_data
+  if (.is_di(x)) {
+    di <- .di_unpack(x)
+    if (is.null(metadata)) metadata <- di$metadata
+    if (missing(outcome) || is.null(outcome)) outcome <- names(di$data)
+    if (is.null(group)) group <- di$group
+    if (is.null(filter)) filter <- di$qc
+    x <- di$data
   }
+  if (is.matrix(x)) x <- as.data.frame(x)
 
   # --- Default outcome if not specified ---
   if (missing(outcome) || is.null(outcome)) {
@@ -1298,9 +1276,9 @@ run_diff <- function(
 
     results <- lapply(outcome, function(oc) {
       tryCatch(
-        run_diff(
-          x = x, metadata = metadata, outcome = oc, group = group, 
-          filter = filter, within = within,
+        .run_diff_single(
+          x = x, metadata = metadata, outcome = oc, group = group,
+          within = within,
           subject_id = subject_id, paired = paired,
           test_type = test_type, normality_method = normality_method,
           alpha_normality = alpha_normality, alpha_variance = alpha_variance,
@@ -1311,7 +1289,7 @@ run_diff <- function(
           calculate_effect_size = calculate_effect_size,
           perform_posthoc = perform_posthoc, p_adjust_method = p_adjust_method,
           group_order = group_order, subgroup = subgroup,
-          summary_table = FALSE, verbose = verbose, num_cores = num_cores
+          verbose = verbose, num_cores = num_cores
         ),
         error = function(e) {
           warning(paste0("run_diff failed for outcome '", oc, "': ", e$message),
@@ -1358,6 +1336,8 @@ run_diff <- function(
         }
       }
     }
+    results[outcome] <- lapply(results[outcome], .report_tables)
+    attr(results, "test_alpha") <- test_alpha
     class(results) <- c("run_diff", "list")
     return(results)
   }
@@ -1373,7 +1353,6 @@ run_diff <- function(
     metadata = metadata,
     outcome = outcome,
     group = group,
-    filter = filter, # Pass filter for consistency, though .run_diff_single doesn't use it directly
     within = within,
     subject_id = subject_id,
     paired = paired,
@@ -1396,7 +1375,19 @@ run_diff <- function(
     num_cores = num_cores
   )
 
-  return(result)
+  .report_tables(result)
+}
+
+# The engine keeps short column names for its internal callers; what run_diff()
+# hands back to the user carries report-ready headers.
+.report_tables <- function(res) {
+  if (is.null(res)) return(NULL)
+  for (tb in c("data_summary", "assumptions", "posthoc_result"))
+    if (is.data.frame(res[[tb]])) res[[tb]] <- .report_names(res[[tb]])
+  if (!is.null(res$subgroup_analysis))
+    res$subgroup_analysis <- lapply(res$subgroup_analysis,
+                                    function(s) lapply(s, .report_tables))
+  res
 }
 
 # =============================================================================
@@ -1408,6 +1399,23 @@ run_diff <- function(
 #' @param ... Further arguments passed to or from other methods.
 #' @export
 print.run_diff <- function(x, ...) {
+  # Multi-outcome result: show its summary table, or list the outcomes
+  if (is.null(x[["test_used"]])) {
+    st <- x[["summary_table"]]
+    if (is.data.frame(st)) {
+      notes <- c(attr(st, "df_footnote", exact = TRUE),
+                 attr(st, "pvalue_legend", exact = TRUE))
+      class(st) <- "data.frame"
+      print(st, row.names = FALSE)
+      if (length(notes)) cat("\n", paste(notes, collapse = "\n"), "\n", sep = "")
+    } else {
+      oc <- setdiff(names(x), grep("^summary_table", names(x), value = TRUE))
+      cat(sprintf("run_diff results for %d outcomes: %s\n", length(oc),
+                  paste(oc, collapse = ", ")))
+      cat("Use `summary_table = TRUE` for a combined table.\n")
+    }
+    return(invisible(x))
+  }
   cat("\n=== Automatic Statistical Comparison ===\n\n")
   cat(sprintf("Test Used: %s\n", x$test_used))
   cat(sprintf("Parametric: %s\n\n", x$parametric))
@@ -1432,7 +1440,7 @@ print.run_diff <- function(x, ...) {
     print(x$anova_table, row.names = FALSE)
   } else if (!is.null(x$data_summary)) {
     cat("Data Summary:\n")
-    show_cols <- intersect(c("group", "n", "mean", "sd", "median"),
+    show_cols <- intersect(c("Group", "n", "Mean", "SD", "Median"),
                            names(x$data_summary))
     if (length(show_cols) >= 2)
       print(x$data_summary[, show_cols, drop = FALSE], row.names = FALSE)
@@ -1442,9 +1450,9 @@ print.run_diff <- function(x, ...) {
 
   if (!is.null(x$posthoc_result)) {
     cat(sprintf("\n\nPost-Hoc Tests (%s):\n",
-                paste(unique(x$posthoc_result$posthoc_test), collapse = ", ")))
-    sig_only <- x$posthoc_result[x$posthoc_result$significant %in% TRUE, , drop = FALSE]
-    ph_show  <- intersect(c("group1", "group2", "effect", "p.adj", "p.adj.signif"),
+                paste(unique(x$posthoc_result$Test), collapse = ", ")))
+    sig_only <- x$posthoc_result[x$posthoc_result$Significant %in% TRUE, , drop = FALSE]
+    ph_show  <- intersect(c("Group 1", "Group 2", "Effect", "Adjusted p-value", "Significance"),
                           names(sig_only))
     if (nrow(sig_only) > 0) {
       cat("Significant comparisons:\n")
@@ -1458,6 +1466,7 @@ print.run_diff <- function(x, ...) {
     cat("\nWarnings:\n")
     for (w in x$warnings) cat(sprintf("  - %s\n", w))
   }
+  invisible(x)
 }
 
 
@@ -1466,6 +1475,7 @@ print.run_diff <- function(x, ...) {
 #' @param ... Further arguments passed to or from other methods.
 #' @export
 summary.run_diff <- function(object, ...) {
+  if (is.null(object[["test_used"]])) return(print(object))
   cat("\n=== Detailed Statistical Comparison Summary ===\n\n")
   cat(sprintf("Outcome Variable:  %s\n", object$outcome))
   cat(sprintf("Grouping Variable: %s\n", object$group_var))
@@ -1522,11 +1532,11 @@ summary.run_diff <- function(object, ...) {
 
   if (!is.null(object$posthoc_result)) {
     cat(sprintf("\n--- Post-Hoc Pairwise Comparisons (%s) ---\n",
-                unique(object$posthoc_result$posthoc_test)))
+                paste(unique(object$posthoc_result$Test), collapse = ", ")))
     cat(sprintf("P-value adjustment method: %s\n\n", object$parameters$p_adjust_method))
     cols_to_show <- intersect(
-      c("group1", "group2", "n1", "n2", "statistic", "p",
-        "p.adj", "p.adj.signif", "interpretation"),
+      c("Group 1", "Group 2", "n (group 1)", "n (group 2)", "Statistic", "p-value",
+        "Adjusted p-value", "Significance", "Interpretation"),
       names(object$posthoc_result)
     )
     print(object$posthoc_result[, cols_to_show], row.names = FALSE)
@@ -1561,13 +1571,12 @@ summary.run_diff <- function(object, ...) {
 #' A lighter version of \code{\link{run_diff}} that returns a rich list suitable for
 #' downstream use by \code{\link{plot_diff}}. Not intended for direct use.
 #'
-#' @keywords internal
+#' @noRd
 .run_diff_single <- function(
     x,
     metadata              = NULL,
     outcome,
     group                 = NULL,
-    filter                = NULL,
     within                = NULL,
     subject_id            = NULL,
     paired                = FALSE,
@@ -1605,9 +1614,12 @@ summary.run_diff <- function(object, ...) {
     paired = paired, subgroup = subgroup
   )
 
-  avail_cores <- tryCatch(parallel::detectCores(), error = function(e) 1L)
-  if (is.na(avail_cores)) avail_cores <- 1L
-  num_cores <- if (identical(num_cores, "max")) max(1L, avail_cores - 2L) else as.integer(num_cores)
+  if (identical(num_cores, "max")) {
+    avail_cores <- tryCatch(parallel::detectCores(), error = function(e) 1L)
+    if (is.na(avail_cores)) avail_cores <- 1L
+    num_cores <- max(1L, avail_cores - 2L)
+  }
+  num_cores <- as.integer(num_cores)
 
   if (!is.data.frame(x)) stop("'x' must be a data frame.")
   if (!outcome %in% names(x)) stop(paste0("Outcome variable '", outcome, "' not found in 'x'."))
@@ -1621,7 +1633,7 @@ summary.run_diff <- function(object, ...) {
     test_family <- if (!is.null(group) && length(unique(na.omit(as.character(metadata[[group]])))) > 1)
       "mixed_anova" else "one_way_rm_anova"
     
-    return(.run_rm_anova(
+    rm_out <- .run_rm_anova(
       x = x, metadata = metadata, outcome = outcome, group = group, within = within,
       subject_id = subject_id, test_family = test_family,
       normality_method = normality_method, alpha_normality = alpha_normality,
@@ -1630,7 +1642,9 @@ summary.run_diff <- function(object, ...) {
       test_alpha = test_alpha, perform_posthoc = perform_posthoc,
       p_adjust_method = p_adjust_method, verbose = verbose,
       warnings_list = warnings_list, parameters = parameters
-    ))
+    )
+    if (!calculate_effect_size) rm_out$effect_size <- NULL
+    return(rm_out)
   }
 
   # --- 3. Classical Path -----------------------------------------------------
@@ -1670,7 +1684,7 @@ summary.run_diff <- function(object, ...) {
   if (n_groups == 2) {
     test_family <- if (paired) "paired_two_sample" else "independent_two_sample"
   } else {
-    if (paired) stop("Repeated measures ANOVA is not yet implemented in .run_diff_single.")
+    if (paired) stop("For three or more paired groups, use `within` and `subject_id`.")
     test_family <- "independent_anova"
   }
   if (paired && n_groups == 2 && group_ns[1] != group_ns[2])
@@ -1787,12 +1801,15 @@ summary.run_diff <- function(object, ...) {
                       variance_p, variance_violated))
 
   # --- Effect size -----------------------------------------------------------
-  es_out <- .compute_effect_size(
-    y, grp, groups, test_family, parametric_used,
-    variance_violated, fitted_model, warnings_list
-  )
-  es_result     <- es_out$result
-  warnings_list <- es_out$warnings_list
+  es_result <- NULL
+  if (calculate_effect_size) {
+    es_out <- .compute_effect_size(
+      y, grp, groups, test_family, parametric_used,
+      variance_violated, fitted_model, warnings_list
+    )
+    es_result     <- es_out$result
+    warnings_list <- es_out$warnings_list
+  }
 
   # --- Post-hoc --------------------------------------------------------------
   posthoc_result <- NULL
@@ -1800,20 +1817,20 @@ summary.run_diff <- function(object, ...) {
       !is.null(test_result) && test_result$p.value < test_alpha &&
       requireNamespace("rstatix", quietly = TRUE)) {
     posthoc_result <- tryCatch({
-      td <- tibble::tibble(y = y, grp = grp)
+      td <- data.frame(y = y, grp = grp)
       ph <- NULL
       if (test_used %in% c("One-way ANOVA", "One-way ANOVA (forced)")) {
         ph <- rstatix::tukey_hsd(td, y ~ grp)
         ph <- .build_posthoc_df(ph, "Tukey HSD", y, grp, group_ns, groups,
-                                parametric_used, test_alpha, p_adjust_method)
+                                parametric_used, test_alpha)
       } else if (test_used == "Welch's ANOVA") {
         ph <- rstatix::games_howell_test(td, y ~ grp)
         ph <- .build_posthoc_df(ph, "Games-Howell", y, grp, group_ns, groups,
-                                parametric_used, test_alpha, p_adjust_method)
+                                parametric_used, test_alpha)
       } else if (test_used %in% c("Kruskal-Wallis test", "Kruskal-Wallis test (forced)")) {
         ph <- rstatix::dunn_test(td, y ~ grp, p.adjust.method = p_adjust_method)
         ph <- .build_posthoc_df(ph, "Dunn's test", y, grp, group_ns, groups,
-                                parametric_used, test_alpha, p_adjust_method)
+                                parametric_used, test_alpha)
       }
       ph
     }, error = function(e) {
@@ -1849,13 +1866,12 @@ summary.run_diff <- function(object, ...) {
       for (lvl in sg_levels) {
         idx <- as.character(metadata[[sg_var]]) == lvl
         if (sum(idx, na.rm = TRUE) < 2) next
-        # Recursive call to run_diff to handle potential multi-outcome logic if needed, 
-        # but passing subgroup = NULL to terminate recursion.
+        # subgroup = NULL ends the recursion
         lvl_list[[lvl]] <- tryCatch({
-          run_diff(
+          .run_diff_single(
             x = x[idx, , drop = FALSE], metadata = metadata[idx, , drop = FALSE],
             outcome = outcome, group = group, paired = paired, test_type = test_type,
-            test_alpha = test_alpha, subgroup = NULL, summary_table = FALSE, verbose = FALSE
+            test_alpha = test_alpha, subgroup = NULL, verbose = FALSE
           )
         }, error = function(e) NULL)
       }
@@ -1890,7 +1906,7 @@ summary.run_diff <- function(object, ...) {
     subgroup_analysis  = subgroup_results,
     warnings           = warnings_list,
     parameters         = parameters,
-    raw_data           = tibble::tibble(outcome = y, group = grp)
+    raw_data           = data.frame(outcome = y, group = grp)
   )
   class(res) <- c("run_diff", "list")
   res
@@ -1924,7 +1940,7 @@ summary.run_diff <- function(object, ...) {
 #' @param zero_as_exp Passed to \code{\link{.simplify_summary_table}}.
 #'
 #' @return A data frame with one row per outcome.
-#' @keywords internal
+#' @noRd
 .build_summary_table <- function(results_list, outcome_names, test_alpha,
                                  p_adjust_method  = "BH",
                                  simplify         = TRUE,
@@ -2078,10 +2094,29 @@ summary.run_diff <- function(object, ...) {
                  "p_value", if (has_adj) "p_value_adj",
                  "significant", "interpretation")
   tbl <- tbl[, intersect(col_order, names(tbl)), drop = FALSE]
+  # No effect size for any outcome (e.g. calculate_effect_size = FALSE): no empty columns
+  if (all(is.na(tbl$effect_size_estimate)))
+    tbl <- tbl[, !startsWith(names(tbl), "effect_size_"), drop = FALSE]
 
   if (isTRUE(simplify))
     tbl <- .simplify_summary_table(tbl, n_digits_pvalues = n_digits_pvalues,
                                    n_digits = n_digits, zero_as_exp = zero_as_exp)
+
+  # Report-ready column names
+  header <- c(outcome = "Variable", test_used = "Test", statistic = "Statistic",
+              effect_size_metric = "ES measure", ES_metric = "ES measure",
+              effect_size_estimate = "ES", effect_size_ci_low = "ES CI lower",
+              effect_size_ci_high = "ES CI upper", effect_size_magnitude = "Magnitude",
+              ES_magnitude = "Magnitude", n_significant_posthoc = "Significant pairs",
+              posthoc_pairs = "Pairs tested", p_value = "p-value",
+              p_value_adj = "Adjusted p-value", significant = "Significant",
+              interpretation = "Interpretation")
+  nm  <- names(tbl)
+  hit <- nm %in% names(header)
+  nm[hit] <- header[nm[hit]]
+  is_mean <- startsWith(nm, "mean_")
+  nm[is_mean] <- paste0("Mean (", substring(nm[is_mean], 6L), ")")
+  names(tbl) <- nm
 
   tbl
 }
@@ -2092,7 +2127,7 @@ summary.run_diff <- function(object, ...) {
 #' would otherwise round to zero (mirrors run_summarytable's zero_as_exp).
 #' Whole numbers (e.g. df counts, exact-0/1 CI bounds) are shown bare, with
 #' no decimal places, regardless of \code{dig}.
-#' @keywords internal
+#' @noRd
 .format_num_simplify <- function(v, dig = 2, zero_as_exp = TRUE) {
   if (is.na(v)) return(NA_character_)
   if (abs(v - round(v)) < 1e-8) return(formatC(round(v), format = "d"))
@@ -2108,7 +2143,7 @@ summary.run_diff <- function(object, ...) {
 
 # -----------------------------------------------------------------------------
 #' Format a p-value string (mirrors run_summarytable's n_digits_pvalues logic)
-#' @keywords internal
+#' @noRd
 .format_pvalue_simplify <- function(p, n_digits_pvalues = 3) {
   if (is.na(p)) return(NA_character_)
   dig <- if (is.null(n_digits_pvalues)) (if (p < 0.10) 3 else 1) else n_digits_pvalues
@@ -2130,7 +2165,7 @@ summary.run_diff <- function(object, ...) {
 #' or "num df = 2, denom df = 24.316" -> "2, 24.32" (n_digits = 2). Needed
 #' because non-integer df (e.g. Welch's ANOVA denom df) otherwise keeps
 #' .format_df()'s fixed 4-decimal rounding regardless of n_digits.
-#' @keywords internal
+#' @noRd
 .strip_df_labels <- function(x, dig = 2, zero_as_exp = TRUE) {
   if (is.na(x)) return(x)
   parts <- strsplit(x, ",\\s*")[[1]]
@@ -2143,7 +2178,7 @@ summary.run_diff <- function(object, ...) {
 
 # -----------------------------------------------------------------------------
 #' Footnote explaining what the (now unlabelled) df column holds, per test family
-#' @keywords internal
+#' @noRd
 .df_footnote_for_tests <- function(test_used_vec) {
   tu    <- unique(stats::na.omit(test_used_vec))
   notes <- character(0)
@@ -2164,7 +2199,7 @@ summary.run_diff <- function(object, ...) {
 #' Unicode superscript letters a-z, for marking p-values with their test
 #' identity in place of the dropped test_used column. Unicode has no
 #' superscript "q"; it falls back to a parenthesised "(q)".
-#' @keywords internal
+#' @noRd
 .superscript_letters <- stats::setNames(
   c("\u1d43","\u1d47","\u1d9c","\u1d48","\u1d49","\u1da0","\u1d4d","\u02b0",
     "\u2071","\u02b2","\u1d4f","\u02e1","\u1d50","\u207f","\u1d52","\u1d56",
@@ -2176,7 +2211,7 @@ summary.run_diff <- function(object, ...) {
 
 # -----------------------------------------------------------------------------
 #' Symbolic notation for effect-size metric names, to keep columns narrow
-#' @keywords internal
+#' @noRd
 .es_metric_symbol <- c(
   "Cohen's d"                          = "d",
   "Cohen's d (paired)"                 = "d (paired)",
@@ -2203,7 +2238,7 @@ summary.run_diff <- function(object, ...) {
 #'
 #' @param tbl A \code{summary_table} data frame as built by
 #'   \code{\link{.build_summary_table}} (pre-simplification column order).
-#' @keywords internal
+#' @noRd
 .simplify_summary_table <- function(tbl, n_digits_pvalues = 3,
                                     n_digits = 2, zero_as_exp = TRUE) {
 
@@ -2319,12 +2354,12 @@ summary.run_diff <- function(object, ...) {
 #' Convert a simplified run_diff summary_table to a gt table
 #'
 #' Renders the \code{df_footnote} and \code{pvalue_legend} attributes
-#' attached by \code{\link{.simplify_summary_table}} as source notes, mirroring
+#' of the simplified table as source notes, mirroring
 #' \code{\link{as_gt.run_correl}}'s footnote pattern. Row-subsetting via
 #' \code{`[`} (see \code{\link{[.run_diff_summary}}) preserves these
 #' attributes; operations that bypass it (\code{rbind()}, \code{dplyr}
 #' verbs, \code{as.data.frame()}) do not, even though \code{class(x)} still
-#' reads \code{"run_diff_summary"} — in that case a generic fallback note is
+#' reads \code{"run_diff_summary"} - in that case a generic fallback note is
 #' shown instead of nothing.
 #'
 #' @param x A \code{run_diff_summary} data frame (i.e. \code{$summary_table}
@@ -2348,8 +2383,8 @@ as_gt.run_diff_summary <- function(x, ...) {
     df_fn <- paste("df: meaning depends on the test used per row (see run_diff()",
                    "documentation); specific wording was lost when this table was",
                    "reshaped (e.g. via rbind(), dplyr verbs) after being built by run_diff().")
-  if (is.null(pv_fn) && "p_value" %in% names(x) && any(!is.na(x$p_value)))
-    pv_fn <- paste("Superscripts in p_value/p_value_adj denote the test used per row;",
+  if (is.null(pv_fn) && "p-value" %in% names(x) && any(!is.na(x[["p-value"]])))
+    pv_fn <- paste("Superscripts in the p-value columns denote the test used per row;",
                    "the letter-to-test legend was lost when this table was reshaped",
                    "after being built by run_diff().")
 

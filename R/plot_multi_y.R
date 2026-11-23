@@ -5,20 +5,8 @@
 
 # ---- Internal helpers ------------------------------------------------------
 
-#' @keywords internal
-.check_zoom <- function(zoom) {
-  if (!is.numeric(zoom) || length(zoom) != 1L || is.na(zoom) || zoom <= 0) {
-    stop(
-      "`zoom` must be a single positive number (e.g. zoom = 1.5). ",
-      "You supplied: ", deparse(zoom),
-      call. = FALSE
-    )
-  }
-  zoom
-}
 
-
-#' @keywords internal
+#' @noRd
 .validate_col <- function(df, col, arg_name) {
   if (!is.character(col) || length(col) != 1L) {
     stop("`", arg_name, "` must be a single character string (a column name). ",
@@ -32,7 +20,7 @@
   }
 }
 
-#' @keywords internal
+#' @noRd
 .validate_cols <- function(df, cols, arg_name) {
   if (is.null(cols)) return(invisible(NULL))
   if (!is.character(cols)) {
@@ -49,7 +37,7 @@
   }
 }
 
-#' @keywords internal
+#' @noRd
 .validate_numeric_cols <- function(df, cols, arg_name) {
   if (is.null(cols)) return(invisible(NULL))
   non_num <- cols[!vapply(df[cols], is.numeric, logical(1L))]
@@ -60,7 +48,7 @@
   }
 }
 
-#' @keywords internal
+#' @noRd
 .validate_order <- function(order_vec, arg_name) {
   valid <- c("hist", "area", "line", "dot")
   bad   <- setdiff(order_vec, valid)
@@ -77,17 +65,17 @@
 
 # Okabe-Ito + extended colorblind-safe palette
 .oi_palette <- c(
-  "#E69F00", "#56B4E9", "#009E73", "#F0E442",
-  "#0072B2", "#D55E00", "#CC79A7", "#000000",
+  "#E69F00", "#56B4E9", "#009E73", "#0072B2",
+  "#D55E00", "#CC79A7", "#000000", "#F0E442",
   "#88CCEE", "#CC6677", "#DDCC77", "#117733",
   "#332288", "#AA4499"
 )
 
-#' @keywords internal
-.resolve_colors <- function(user_colors, n, arg_name) {
+#' @noRd
+.resolve_colors <- function(user_colors, n, arg_name, offset = 0L) {
   if (n == 0L) return(character(0L))
   if (is.null(user_colors) || length(user_colors) == 0L) {
-    return(rep_len(.oi_palette, n))
+    return(rep_len(.oi_palette, offset + n)[offset + seq_len(n)])
   }
   if (!is.character(user_colors)) {
     stop("`", arg_name, "` must be a character vector of color names or hex codes.",
@@ -96,109 +84,9 @@
   rep_len(user_colors, n)
 }
 
-# ---- Theme builder ---------------------------------------------------------
-
-#' @keywords internal
-.ponder_theme_multi_y <- function(
-    theme_name    = "nature",
-    base_size     = 20,
-    fs_title      = NULL,
-    fs_subtitle   = NULL,
-    fs_caption    = NULL,
-    fs_axis       = NULL,
-    fs_legend     = NULL,
-    fs_facet      = NULL,
-    legend_pos    = "top",
-    zoom          = 1
-) {
-
-  fs_title    <- (fs_title    %||% (base_size * 1.20)) * zoom
-  fs_subtitle <- (fs_subtitle %||% (base_size * 0.90)) * zoom
-  fs_caption  <- (fs_caption  %||% (base_size * 0.75)) * zoom
-  fs_axis     <- (fs_axis     %||% (base_size * 1.00)) * zoom
-  fs_legend   <- (fs_legend   %||% (base_size * 0.90)) * zoom
-  fs_facet    <- (fs_facet    %||% (base_size * 0.85)) * zoom
-
-  base_t <- ggplot2::theme_bw(base_size = base_size * zoom)
-
-  nature_add <- ggplot2::theme(
-    panel.grid.minor   = ggplot2::element_blank(),
-    panel.grid.major.x = ggplot2::element_blank(),
-    panel.border       = ggplot2::element_rect(colour = "grey80", fill = NA,
-                                               linewidth = 0.5 * zoom),
-    axis.ticks         = ggplot2::element_line(colour = "grey60",
-                                               linewidth = 0.4 * zoom)
-  )
-
-  theme_add <- switch(
-    theme_name,
-    "nature"  = nature_add,
-    "minimal" = ggplot2::theme(
-      panel.grid.minor = ggplot2::element_blank(),
-      panel.border     = ggplot2::element_blank(),
-      axis.line        = ggplot2::element_line(colour = "grey60",
-                                               linewidth = 0.4 * zoom)
-    ),
-    "classic" = ggplot2::theme(
-      panel.grid       = ggplot2::element_blank(),
-      panel.border     = ggplot2::element_blank(),
-      axis.line        = ggplot2::element_line(colour = "black",
-                                               linewidth = 0.5 * zoom)
-    ),
-    {
-      warning("`theme` = \"", theme_name, "\" is not recognised. ",
-              "Falling back to \"nature\". ",
-              "Valid options: \"nature\", \"minimal\", \"classic\".",
-              call. = FALSE)
-      nature_add
-    }
-  )
-
-  lp <- switch(
-    legend_pos,
-    "top"    = "top",
-    "bottom" = "bottom",
-    "left"   = "left",
-    "right"  = "right",
-    {
-      warning("`legend_pos` = \"", legend_pos, "\" is not recognised. ",
-              "Falling back to \"top\".",
-              call. = FALSE)
-      "top"
-    }
-  )
-
-  base_t +
-    theme_add +
-    ggplot2::theme(
-      plot.title        = ggplot2::element_text(size = fs_title,
-                                                face = "bold",
-                                                hjust = 0),
-      plot.subtitle     = ggplot2::element_text(size = fs_subtitle,
-                                                hjust = 0,
-                                                colour = "grey40"),
-      plot.caption      = ggplot2::element_text(size = fs_caption,
-                                                hjust = 1,
-                                                colour = "grey50"),
-      axis.title        = ggplot2::element_text(size = fs_axis),
-      axis.text         = ggplot2::element_text(size = fs_axis * 0.9),
-      axis.title.y.right = ggplot2::element_text(size = fs_axis,
-                                                  angle = 90,
-                                                  vjust = 0.5),
-      legend.position   = lp,
-      legend.text       = ggplot2::element_text(size = fs_legend),
-      legend.title      = ggplot2::element_blank(),
-      legend.key.size   = ggplot2::unit(fs_legend * 0.08, "cm"),
-      strip.text        = ggplot2::element_text(size = fs_facet,
-                                                face = "bold"),
-      strip.background  = ggplot2::element_rect(fill = "grey95",
-                                                colour = "grey80")
-    )
-}
-
 # ---- Main scaling helper for dual axis -------------------------------------
 
-#' @keywords internal
+#' @noRd
 .scale_to_primary <- function(primary_range, secondary_range) {
   slope     <- diff(primary_range)  / diff(secondary_range)
   intercept <- primary_range[1L]    - slope * secondary_range[1L]
@@ -321,25 +209,16 @@
 #'   an empty string.
 #' @param y_lab_secondary Character. Secondary y-axis label. Defaults to
 #'   \code{"Secondary axis"}.
-#' @param global_font_size Numeric. Base font size in points. Default
-#'   \code{20}.
-#' @param title_font_size Numeric. Override font size for the plot title.
-#'   Defaults to \code{1.20 * global_font_size}.
-#' @param subtitle_font_size Numeric. Override font size for the subtitle.
-#'   Defaults to \code{0.90 * global_font_size}.
-#' @param caption_font_size Numeric. Override font size for the caption.
-#'   Defaults to \code{0.75 * global_font_size}.
-#' @param axis_font_size Numeric. Override font size for axis titles and text.
-#'   Defaults to \code{1.00 * global_font_size}.
-#' @param legend_font_size Numeric. Override font size for legend text.
-#'   Defaults to \code{0.90 * global_font_size}.
-#' @param facet_font_size Numeric. Override font size for facet strip labels.
-#'   Only relevant when \code{facet} is non-\code{NULL}. Defaults to
-#'   \code{0.85 * global_font_size}.
+#' @param base_size Numeric. Base font size in points; every text element
+#'   scales from it. Default \code{11}, which suits a default 7 x 5 inch Quarto
+#'   figure.
+#' @param title_size,subtitle_size,caption_size,xlab_size,ylab_size,axis_text_size,legend_size,strip_size
+#'   Numeric. Font sizes in points for the title, subtitle, caption, x-axis
+#'   label, y-axis labels, tick labels, legend and facet strips. Default
+#'   \code{NULL} derives each from \code{base_size}.
 #' @param theme Character. Visual theme. One of \code{"nature"} (default),
-#'   \code{"minimal"}, or \code{"classic"}.
-#' @param zoom Numeric. Multiplicative scaling factor applied to all resolved
-#'   sizes at construction time. Default \code{1}.
+#'   \code{"classic"}, \code{"plos"}, \code{"minimal"}, \code{"bw"},
+#'   \code{"light"}, \code{"dark"}, or \code{"gray"}.
 #'
 #' @details
 #' \strong{Dual-axis implementation.}
@@ -448,21 +327,17 @@ plot_multi_y <- function(
     x_lab                    = NULL,
     y_lab_main               = NULL,
     y_lab_secondary          = "Secondary axis",
-    global_font_size         = 20,
-    title_font_size          = NULL,
-    subtitle_font_size       = NULL,
-    caption_font_size        = NULL,
-    axis_font_size           = NULL,
-    legend_font_size         = NULL,
-    facet_font_size          = NULL,
-    theme                    = "nature",
-    zoom                     = 1
+    base_size                = 11,
+    title_size               = NULL,
+    subtitle_size            = NULL,
+    caption_size             = NULL,
+    xlab_size                = NULL,
+    ylab_size                = NULL,
+    axis_text_size           = NULL,
+    legend_size              = NULL,
+    strip_size               = NULL,
+    theme                    = "nature"
 ) {
-
-  # ---- 0. Dependencies -----------------------------------------------------
-  if (!requireNamespace("ggplot2", quietly = TRUE))
-    stop("`ggplot2` is required. Install with: install.packages(\"ggplot2\")",
-         call. = FALSE)
 
   # ---- 1. Coerce input -----------------------------------------------------
   if (inherits(x, "matrix")) x <- as.data.frame(x)
@@ -473,9 +348,10 @@ plot_multi_y <- function(
   if (ncol(x) == 0L) stop("`x` has zero columns.",              call. = FALSE)
 
   # ---- 2. Validate scalars -------------------------------------------------
-  zoom <- .check_zoom(zoom)
-
-  for (nm in c("global_font_size", "linewidth_main_line",
+  sizes <- .text_sizes(base_size, title_size, subtitle_size, xlab_size, ylab_size,
+                       axis_text_size, legend_size, caption_size, strip_size)
+  legend_pos <- match.arg(legend_pos, c("top", "bottom", "left", "right"))
+  for (nm in c("linewidth_main_line",
                "linewidth_secondary_line", "size_main_dot",
                "size_secondary_dot")) {
     v <- get(nm)
@@ -487,18 +363,11 @@ plot_multi_y <- function(
     if (!is.numeric(v) || length(v) != 1L || is.na(v) || v < 0 || v > 1)
       stop("`", nm, "` must be a single number in [0, 1].", call. = FALSE)
   }
-  for (nm in c("title_font_size", "subtitle_font_size", "caption_font_size",
-               "axis_font_size", "legend_font_size", "facet_font_size")) {
-    v <- get(nm)
-    if (!is.null(v) && (!is.numeric(v) || length(v) != 1L || is.na(v) || v <= 0))
-      stop("`", nm, "` must be a single positive number or NULL.", call. = FALSE)
-  }
 
-  # Apply zoom to sizes at construction time
-  lw_main <- linewidth_main_line      * zoom
-  lw_sec  <- linewidth_secondary_line * zoom
-  sz_main <- size_main_dot            * zoom
-  sz_sec  <- size_secondary_dot       * zoom
+  lw_main <- linewidth_main_line
+  lw_sec  <- linewidth_secondary_line
+  sz_main <- size_main_dot
+  sz_sec  <- size_secondary_dot
 
   # ---- 3. Validate column args ---------------------------------------------
   .validate_col(x, x_axis, "x_axis")
@@ -587,16 +456,23 @@ plot_multi_y <- function(
   # single named vector that exactly matches the .series factor levels used in
   # the long-format data.  This guarantees scale_colour/fill_manual never sees
   # a mismatch between names(values) and the data's colour values.
+  # Default colours continue along the palette, so no two series share one.
 
+  n_used <- 0L
+  pick <- function(user, cols, arg) {
+    out <- stats::setNames(.resolve_colors(user, length(cols), arg, n_used), cols)
+    n_used <<- n_used + length(cols)
+    out
+  }
   color_lookup <- c(
-    stats::setNames(.resolve_colors(color_main_line,        length(main_as_line),        "color_main_line"),        main_as_line),
-    stats::setNames(.resolve_colors(color_main_area,        length(main_as_area),        "color_main_area"),        main_as_area),
-    stats::setNames(.resolve_colors(color_main_hist,        length(main_as_hist),        "color_main_hist"),        main_as_hist),
-    stats::setNames(.resolve_colors(color_main_dot,         length(main_as_dot),         "color_main_dot"),         main_as_dot),
-    stats::setNames(.resolve_colors(color_secondary_line,   length(secondary_as_line),   "color_secondary_line"),   secondary_as_line),
-    stats::setNames(.resolve_colors(color_secondary_area,   length(secondary_as_area),   "color_secondary_area"),   secondary_as_area),
-    stats::setNames(.resolve_colors(color_secondary_hist,   length(secondary_as_hist),   "color_secondary_hist"),   secondary_as_hist),
-    stats::setNames(.resolve_colors(color_secondary_dot,    length(secondary_as_dot),    "color_secondary_dot"),    secondary_as_dot)
+    pick(color_main_line,      main_as_line,      "color_main_line"),
+    pick(color_main_area,      main_as_area,      "color_main_area"),
+    pick(color_main_hist,      main_as_hist,      "color_main_hist"),
+    pick(color_main_dot,       main_as_dot,       "color_main_dot"),
+    pick(color_secondary_line, secondary_as_line, "color_secondary_line"),
+    pick(color_secondary_area, secondary_as_area, "color_secondary_area"),
+    pick(color_secondary_hist, secondary_as_hist, "color_secondary_hist"),
+    pick(color_secondary_dot,  secondary_as_dot,  "color_secondary_dot")
   )
   # In case the same column appears in multiple geom types, last write wins
   color_lookup <- color_lookup[!duplicated(names(color_lookup), fromLast = TRUE)]
@@ -623,13 +499,14 @@ plot_multi_y <- function(
   make_geom <- function(long_df, geom_type, lw = NULL, sz = NULL, alpha = 0.35) {
     if (is.null(long_df)) return(NULL)
 
-    base_aes <- ggplot2::aes(
-      x      = .data[[x_axis]],
-      y      = .data[[".y"]],
-      colour = .data[[".series"]],
-      fill   = .data[[".series"]],
-      group  = .data[[".series"]]
-    )
+    # Lines and points have no fill; areas and bars are coloured by fill only
+    base_aes <- if (geom_type %in% c("line", "dot")) {
+      ggplot2::aes(x = .data[[x_axis]], y = .data[[".y"]],
+                   colour = .data[[".series"]], group = .data[[".series"]])
+    } else {
+      ggplot2::aes(x = .data[[x_axis]], y = .data[[".y"]],
+                   fill = .data[[".series"]], group = .data[[".series"]])
+    }
 
     switch(
       geom_type,
@@ -752,18 +629,13 @@ plot_multi_y <- function(
   }
 
   # ---- 16. Theme -----------------------------------------------------------
-  p <- p + .ponder_theme_multi_y(
-    theme_name       = theme,
-    base_size        = global_font_size,
-    fs_title         = title_font_size,
-    fs_subtitle      = subtitle_font_size,
-    fs_caption       = caption_font_size,
-    fs_axis          = axis_font_size,
-    fs_legend        = legend_font_size,
-    fs_facet         = facet_font_size,
-    legend_pos       = legend_pos,
-    zoom             = zoom
-  )
+  p <- p + .ponder_theme(theme, sizes) +
+    ggplot2::theme(
+      legend.position    = legend_pos,
+      legend.title       = ggplot2::element_blank(),
+      axis.title.y.right = ggplot2::element_text(size = sizes$ylab, angle = 90, vjust = 0.5),
+      plot.caption       = ggplot2::element_text(size = sizes$caption, hjust = 1, colour = "grey40")
+    )
 
   p
 }

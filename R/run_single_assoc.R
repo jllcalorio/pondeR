@@ -19,17 +19,16 @@
 #' @return A list with the following components:
 #' \itemize{
 #'   \item \code{summary_table}: A data frame summarizing the test results.
-#'     Columns include: \code{subgroup}, \code{group_level}, \code{feature}, 
-#'     \code{method}, \code{estimate} (estimated proportion for binomial tests),
-#'     \code{lower_95_ci}, \code{upper_95_ci} (confidence interval for binomial tests),
-#'     \code{test_statistic} (e.g., Chi-squared value for chi-squared tests),
-#'     \code{p_value}, \code{note}, and \code{interpretation}.
+#'     Columns are \code{Variable}, \code{Test}, \code{Proportion} (estimated
+#'     proportion for binomial tests), \code{95\% CI lower}, \code{95\% CI upper}
+#'     (binomial tests), \code{Statistic} (e.g. chi-squared value),
+#'     \code{p-value}, \code{Note} and \code{Interpretation}, preceded by
+#'     \code{Subgroup} and \code{Level} when \code{subgroup} is used.
 #'     For tests where a specific metric is not applicable, its column will contain \code{NA}.
 #'   \item \code{raw_results}: A named list containing the full test objects 
 #'     returned by the underlying R functions.
 #' }
 #' 
-#' @importFrom stats binom.test
 #' 
 #' @author John Lennon L. Calorio
 #' 
@@ -204,6 +203,10 @@ run_single_assoc <- function(x,
 
   summary_table <- do.call(rbind, table_rows)
   rownames(summary_table) <- NULL
+  names(summary_table) <- c("Subgroup", "Level", "Variable", "Test", "Proportion",
+                            "95% CI lower", "95% CI upper", "Statistic", "p-value",
+                            "Note", "Interpretation")
+  if (is.null(subgroup)) summary_table[c("Subgroup", "Level")] <- NULL
 
   return(list(summary_table = summary_table, raw_results = res_list))
 }

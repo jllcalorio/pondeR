@@ -5,7 +5,7 @@
 
 # ── Internal helpers ──────────────────────────────────────────────────────────
 
-#' @keywords internal
+#' @noRd
 .sanitize_plot_filename <- function(x) {
   x <- gsub('[/\\\\:*?"<>|]', "", x)
   x <- trimws(x)
@@ -13,7 +13,7 @@
   x
 }
 
-#' @keywords internal
+#' @noRd
 .unique_plot_names <- function(nms) {
   counts <- table(nms)
   dups   <- names(counts)[counts > 1L]
@@ -34,7 +34,7 @@
   nms
 }
 
-#' @keywords internal
+#' @noRd
 .resolve_plot_path <- function(folder, base_name, ext,
                                 fd_date_stamp, fd_time_stamp,
                                 fn_date_stamp, fn_time_stamp,
@@ -76,19 +76,19 @@
 
 # ── Plot-type detection ───────────────────────────────────────────────────────
 
-#' @keywords internal
+#' @noRd
 .is_ggplot <- function(obj) inherits(obj, "ggplot")
 
-#' @keywords internal
+#' @noRd
 .is_plotly <- function(obj) inherits(obj, "plotly")
 
-#' @keywords internal
+#' @noRd
 .is_grob <- function(obj) inherits(obj, c("grob", "gTree", "gtable"))
 
-#' @keywords internal
+#' @noRd
 .is_recordedplot <- function(obj) inherits(obj, "recordedplot")
 
-#' @keywords internal
+#' @noRd
 .is_base_plot_fn <- function(obj) is.function(obj)
 
 # pondeR plot-producing classes (expand as new functions are added)
@@ -96,14 +96,14 @@
   "plot_diff", "run_auc", "plot_score", "plot_scree", "plot_volcano"
 )
 
-#' @keywords internal
+#' @noRd
 .is_ponder_plot_result <- function(obj) {
   # Matches any class starting with "plot_" or in the known list
   any(grepl("^plot_", class(obj))) ||
     any(class(obj) %in% .PONDER_PLOT_CLASSES)
 }
 
-#' @keywords internal
+#' @noRd
 .extract_plots_from_ponder <- function(obj) {
   # Recursively extract ggplot / grob objects from a pondeR result
   candidates <- Filter(function(el)
@@ -119,7 +119,7 @@
   candidates
 }
 
-#' @keywords internal
+#' @noRd
 .is_any_plot <- function(obj) {
   .is_ggplot(obj)          ||
     .is_plotly(obj)        ||
@@ -131,7 +131,7 @@
 
 # ── Device helpers ────────────────────────────────────────────────────────────
 
-#' @keywords internal
+#' @noRd
 .open_device <- function(path, ext, width, height, dpi, bg) {
   switch(ext,
     png  = grDevices::png( path, width = width, height = height,
@@ -155,7 +155,7 @@
   )
 }
 
-#' @keywords internal
+#' @noRd
 .write_one_plot <- function(obj, path, ext, width, height, dpi, transparent) {
   bg <- if (transparent) "transparent" else "white"
 
@@ -273,23 +273,24 @@
 #'   \code{recordedplot}, a zero-argument base-R drawing function, or a pondeR
 #'   result object.  One level of list nesting is automatically unpacked when
 #'   no direct plot objects are found at the top level.
-#' @param filename A single character string for the output file name.  Used
-#'   when \code{x} is a single plot.  When \code{x} is a multi-plot list this
+#' @param filename A single character string for the output file name. Used
+#'   when \code{x} is a single plot. When \code{x} is a multi-plot list this
 #'   argument is ignored and each element's name is used as the file name.
 #'   The extension in \code{filename} sets the format unless \code{format} is
-#'   also supplied.  Defaults to \code{"plot"} when omitted.
+#'   also supplied. Nothing is written unless \code{filename} or \code{folder}
+#'   is supplied.
 #' @param format Optional single character string overriding the file
 #'   extension for all exported files, e.g. \code{"pdf"}, \code{"svg"},
 #'   \code{"png"}.  Case-insensitive; accepts with or without a leading dot.
 #'   When supplied, the extension in \code{filename} is ignored.
-#' @param width Numeric.  Output width in inches.  Default \code{15}.
-#' @param height Numeric.  Output height in inches.  Default \code{12}.
+#' @param width Numeric. Output width in inches. Default \code{7}.
+#' @param height Numeric. Output height in inches. Default \code{5}.
 #' @param dpi Numeric.  Resolution in dots per inch for raster formats.
 #'   Default \code{300}.  Ignored for vector formats.
 #' @param folder A single character string for the target directory.
 #'   Supports nested folders (e.g., \code{"Main folder/sub folder"}).
-#'   Created recursively if absent. Defaults to \code{NULL} (current working
-#'   directory).
+#'   Created recursively if absent. With the default \code{NULL}, files go to
+#'   the current working directory, so \code{filename} must then be given.
 #' @param transparent Logical.  Use a transparent background.  Defaults to
 #'   \code{FALSE}.  A warning is issued and white is used as fallback for
 #'   JPEG, which does not support transparency.
@@ -352,10 +353,10 @@
 #' @export
 save_plots <- function(
     x,
-    filename      = "plot",
+    filename      = NULL,
     format        = NULL,
-    width         = 15,
-    height        = 12,
+    width         = 7,
+    height        = 5,
     dpi           = 300,
     folder        = NULL,
     transparent   = FALSE,
@@ -399,6 +400,10 @@ save_plots <- function(
   all_fmts    <- c(raster_fmts, vector_fmts, "html")
 
   # ── 4. filename validation ─────────────────────────────────────────────────
+  # Never write to a default location: the user must say where
+  if (is.null(filename) && is.null(folder))
+    stop("Say where to save: supply `filename` and/or `folder`.", call. = FALSE)
+  if (is.null(filename)) filename <- "plot"
   if (!is.character(filename) || length(filename) != 1L ||
       is.na(filename) || !nzchar(trimws(filename)))
     stop("'filename' must be a single non-empty character string.", call. = FALSE)
@@ -442,14 +447,6 @@ save_plots <- function(
     folder <- trimws(gsub('[*?"<>|]', "", folder))
     if (!nzchar(folder)) stop("'folder' resolves to an empty string after removing illegal characters.", call. = FALSE)
   }
-
-  # ── 7. Capture unevaluated name of x ─────────────────────────────────────
-  x_name_raw  <- tryCatch(deparse(substitute(x)), error = function(e) "plot")
-  x_name_raw  <- paste(x_name_raw, collapse = "")
-  # Replace any non-alphanumeric runs with a single underscore; strip edges
-  x_name_safe <- gsub("[^[:alnum:].]+", "_", x_name_raw)
-  x_name_safe <- gsub("^_+|_+$", "", x_name_safe)
-  if (!nzchar(x_name_safe)) x_name_safe <- "plot"
 
   # ── 8. Coerce x into a named list of plot objects ─────────────────────────
 
