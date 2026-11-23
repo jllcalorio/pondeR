@@ -85,6 +85,8 @@ jobs:
             any::pkgdown
             any::devtools
             any::BiocManager
+            # Not on CRAN yet; change to any::dimsprepr once it is accepted
+            github::jllcalorio/dimsprepr
             bioc::BiocParallel
             bioc::imputeLCMD
             bioc::matrixStats
