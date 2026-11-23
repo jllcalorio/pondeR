@@ -81,11 +81,12 @@ jobs:
       - name: Install R dependencies
         uses: r-lib/actions/setup-r-dependencies@v2.3.0
         with:
+          # dimsprepr is not on CRAN yet; change to any::dimsprepr once accepted.
+          # Comments cannot go inside the block below: pak reads every line.
           extra-packages: |
             any::pkgdown
             any::devtools
             any::BiocManager
-            # Not on CRAN yet; change to any::dimsprepr once it is accepted
             github::jllcalorio/dimsprepr
             bioc::BiocParallel
             bioc::imputeLCMD
