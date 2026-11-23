@@ -1,13 +1,12 @@
 # Regularized Regression with Cross-Validation (Ridge, Elastic Net, LASSO)
 
-Fits regularized regression models — Ridge (alpha = 0), LASSO (alpha =
-1), or Elastic Net (0 \< alpha \< 1) — with k-fold cross-validation via
-[`cv.glmnet`](https://glmnet.stanford.edu/reference/cv.glmnet.html).
-Supports both categorical (binary and multinomial classification) and
-continuous (Gaussian regression) dependent variables. When multiple
-alpha values are supplied, all are evaluated on identical
-cross-validation folds and the best-performing model is returned
-alongside a comparison table.
+Fits regularized regression models - Ridge (alpha = 0), LASSO (alpha =
+1), or Elastic Net (0 \< alpha \< 1) - with k-fold cross-validation via
+[`cv.glmnet`](https://rdrr.io/pkg/glmnet/man/cv.glmnet.html). Supports
+both categorical (binary and multinomial classification) and continuous
+(Gaussian regression) dependent variables. When multiple alpha values
+are supplied, all are evaluated on identical cross-validation folds and
+the best-performing model is returned alongside a comparison table.
 
 Unpenalized covariates (e.g., batch indicators, demographic confounders)
 can be included through the `not_penalized` argument; their coefficients
@@ -33,7 +32,7 @@ run_regreg(
   parallel = FALSE,
   standardize = FALSE,
   maxit = 100000L,
-  seed = 123
+  seed = NULL
 )
 ```
 
@@ -180,8 +179,8 @@ run_regreg(
 
   A single numeric value passed to
   [`set.seed()`](https://rdrr.io/r/base/Random.html) for reproducibility
-  of the train/test split and cross-validation fold assignment. Set to
-  `NULL` to disable. Default: `123`.
+  of the train/test split and cross-validation fold assignment. Default
+  `NULL` leaves the random number generator alone.
 
 ## Value
 
@@ -214,7 +213,7 @@ A named list of class `"run_regreg"` with the following elements:
   `Coefficients`
 
   :   A `data.frame` of non-zero coefficients (intercept included if
-      non-zero). Columns: `Feature`, `Coefficient`, and `OddsRatio`
+      non-zero). Columns: `Feature`, `Coefficient`, and `Odds ratio`
       (classification) or just `Feature` and `Coefficient` (regression).
       Multinomial models include a leading `Comparison` column.
 
@@ -258,7 +257,7 @@ Perform Regularized Regression Analysis
 columns are appended to the feature matrix. A `penalty.factor` vector of
 length `ncol(x)` is set to `1` for all penalized predictors and `0` for
 unpenalized ones, and is passed to
-[`glmnet::cv.glmnet`](https://glmnet.stanford.edu/reference/cv.glmnet.html).
+[`glmnet::cv.glmnet`](https://rdrr.io/pkg/glmnet/man/cv.glmnet.html).
 
 **Cross-validation consistency:** Fold IDs are generated once (using
 `seed`) and reused across all tested alpha values, ensuring a fair,
@@ -395,14 +394,14 @@ res_multi$BestModel$Coefficients
 #> Test Kappa     : 0 
 #> Warning: from glmnet C++ code (error code -85); Convergence for 85th lambda value not reached after maxit=100000 iterations; solutions for larger lambdas returned
 #> Warning: from glmnet C++ code (error code -88); Convergence for 88th lambda value not reached after maxit=100000 iterations; solutions for larger lambdas returned
-#>   Comparison     Feature  Coefficient OddsRatio
-#> 1     B vs A (Intercept)  0.048080475 1.0492551
-#> 2     B vs A      feat_2  0.117625148 1.1248224
-#> 3     B vs A     feat_13  0.053110255 1.0545459
-#> 4     B vs A     feat_18 -0.062575638 0.9393420
-#> 5     C vs A (Intercept) -0.175671100 0.8388938
-#> 6     C vs A      feat_2  0.117625148 1.1248224
-#> 7     C vs A     feat_13  0.053110255 1.0545459
-#> 8     C vs A     feat_25  0.003391519 1.0033973
+#>   Comparison     Feature  Coefficient Odds ratio
+#> 1     B vs A (Intercept)  0.048080475  1.0492551
+#> 2     B vs A      feat_2  0.117625148  1.1248224
+#> 3     B vs A     feat_13  0.053110255  1.0545459
+#> 4     B vs A     feat_18 -0.062575638  0.9393420
+#> 5     C vs A (Intercept) -0.175671100  0.8388938
+#> 6     C vs A      feat_2  0.117625148  1.1248224
+#> 7     C vs A     feat_13  0.053110255  1.0545459
+#> 8     C vs A     feat_25  0.003391519  1.0033973
 # }
 ```

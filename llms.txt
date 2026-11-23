@@ -1,108 +1,110 @@
-# pondeR: Statistical Analysis Made Easier
+# pondeR
 
-`pondeR` is an R package providing a curated collection of functions for
-generating publication-ready descriptive and inferential statistics
-tables and figures — with minimal coding overhead. It is built upon the
-robust `gtsummary` framework and leverages the power of the `tidyverse`.
-
-This package aims to make statistical analysis more accessible for
-everyone, ensuring transparency in analytical methods and providing a
-consistent template for results.
-
-## Key Features
-
-`pondeR` offers a comprehensive suite of tools for various stages of
-data analysis and general statistical reporting:
-
-- **Summarizing Data & Checking Distributions**: Generate
-  publication-ready summary tables, calculate anthropometric indices
-  according to WHO standards, and test for normality or skewness.
-- **Comparing Groups & Identifying Associations**: Provides methods for
-  detecting differences between cohorts, calculating fold changes, and
-  testing statistical associations. Includes plotting functions like
-  volcano plots and heatmaps.
-- **Predictive Modeling & Classification**: Offers tools for regularized
-  regression (Ridge, LASSO, Elastic Net), Linear Mixed-Effect Models,
-  and Logistic regression analysis with performance evaluation
-  (AUC/AUROC) and automated bias correction options.
-- **Multivariate Exploration and Discrimination**: Features
-  dimensionality reduction and visualization tools (PCA, PLS, PCoA) for
-  simplified exploration of complex datasets, including scree and score
-  plots.
-- **Plotting Functions**: A variety of plotting utilities, including
-  distribution plots, mean maps, and multi-Y plots.
-- **Export Functions**: Easily export data frames to Excel/CSV files and
-  figures to PNGs.
-- **Utilities & Helpers**: A collection of utility functions for data
-  management, relabelling, and randomization.
+pondeR turns a data frame into publication-ready statistical tables and
+figures with very little code. It picks a suitable test, reports effect
+sizes and post hoc comparisons, and returns tables whose column names
+can go straight into a report.
 
 ## Installation
 
-You can install the development version of `pondeR` directly from
-GitHub:
-
 ``` r
-# Install pak if you haven't already
-install.packages("pak")
-
-# Install the GitHub package
+# install.packages("pak")
 pak::pak("jllcalorio/pondeR")
 ```
 
-## Quick Start
+A few functions use optional packages. If one is missing, the function
+tells you which package to install.
 
-Here’s a quick example of how to generate a descriptive summary table
-using `pondeR` (assuming you have a data frame named `my_data`):
+## Quick start
 
 ``` r
 library(pondeR)
-library(dplyr) # Often useful with gtsummary-based packages
 
-# Example data (replace with your actual data)
-my_data <- tibble::tibble(
-  age = rnorm(100, 30, 5),
-  gender = sample(c("Male", "Female"), 100, replace = TRUE),
-  treatment = sample(c("A", "B", "C"), 100, replace = TRUE),
-  score = runif(100, 0, 100)
-)
+# Descriptive table with p-values
+run_summarytable(iris, split_by = "Species", add_inferential_pvalues = TRUE)
 
-# Generate a summary table
-my_data %>%
-  run_summarytable(
-    # Specify variables and grouping if needed
-    include = c(age, gender, score),
-    by = treatment
-  )
+# Automatic test selection, effect sizes and post hoc comparisons
+res <- run_diff(iris, outcome = c("Sepal.Length", "Sepal.Width"),
+                group = "Species", summary_table = TRUE)
+res$summary_table
+
+# A figure from the same result
+plot_diff(res, outcome = "Sepal.Length")$plots[[1]]
+
+# Correlations with confidence intervals
+run_correl(mtcars[c("mpg", "wt", "hp")], summary_table_only = TRUE)
 ```
 
-*(Note: The exact arguments for `run_summarytable` may vary. Please
-refer to the package documentation for detailed usage.)*
+## Working with dimsprepr
+
+pondeR accepts a [dimsprepr](https://github.com/jllcalorio/dimsprepr)
+[`run_DIpreprocess()`](https://jllcalorio.github.io/dimsprepr/reference/run_DIpreprocess.html)
+result directly. The data, metadata, group column and QC samples are
+picked up for you, and QC samples are left out of group comparisons.
+
+``` r
+library(dimsprepr)
+library(pondeR)
+
+di <- run_DIpreprocess(dims_data, dims_metadata, verbose = FALSE)
+
+# Differential analysis
+fc  <- run_foldchange(di)
+dif <- run_diff(di, summary_table = TRUE)
+plot_volcano(list(fc, dif))$plots[[1]]
+
+# Multivariate analysis
+pca <- run_pca(di)
+plot_score(pca)
+plot_scree(pca)
+```
+
+If you preprocessed with several methods at once, choose one result
+first, for example `run_pca(di[["median_log10"]])`.
+
+## Figures and tables in reports
+
+Every plot defaults to `base_size = 11`, which suits the 7 x 5 inch
+figures of a default Quarto document. Changing `base_size` rescales all
+the text in a figure. Arguments such as `title_size` and `xlab_size`
+override a single element.
+
+Table columns already have report-ready names, such as
+`Adjusted p-value` and `95% CI lower`, so tables can be printed without
+renaming anything:
+
+``` r
+knitr::kable(res$Sepal.Length$data_summary, digits = 2)
+as_gt(res$summary_table)
+```
+
+## What’s included
+
+| Task | Functions |
+|:---|:---|
+| Summary tables | [`run_summarytable()`](https://jllcalorio.github.io/pondeR/reference/run_summarytable.md), [`run_anthroindex()`](https://jllcalorio.github.io/pondeR/reference/run_anthroindex.md) |
+| Group comparisons | [`run_diff()`](https://jllcalorio.github.io/pondeR/reference/run_diff.md), [`plot_diff()`](https://jllcalorio.github.io/pondeR/reference/plot_diff.md), [`run_foldchange()`](https://jllcalorio.github.io/pondeR/reference/run_foldchange.md), [`plot_volcano()`](https://jllcalorio.github.io/pondeR/reference/plot_volcano.md), [`plot_fcmetric()`](https://jllcalorio.github.io/pondeR/reference/plot_fcmetric.md), [`run_lefse()`](https://jllcalorio.github.io/pondeR/reference/run_lefse.md) |
+| Associations and correlations | [`run_assoc()`](https://jllcalorio.github.io/pondeR/reference/run_assoc.md), [`run_single_assoc()`](https://jllcalorio.github.io/pondeR/reference/run_single_assoc.md), [`run_correl()`](https://jllcalorio.github.io/pondeR/reference/run_correl.md), [`plot_heatmap()`](https://jllcalorio.github.io/pondeR/reference/plot_heatmap.md), [`plot_dend()`](https://jllcalorio.github.io/pondeR/reference/plot_dend.md) |
+| Modelling | [`run_logreg()`](https://jllcalorio.github.io/pondeR/reference/run_logreg.md), [`run_regreg()`](https://jllcalorio.github.io/pondeR/reference/run_regreg.md), [`run_mixedmodel()`](https://jllcalorio.github.io/pondeR/reference/run_mixedmodel.md), [`plot_mixedmodel()`](https://jllcalorio.github.io/pondeR/reference/plot_mixedmodel.md), [`plot_oddsratio()`](https://jllcalorio.github.io/pondeR/reference/plot_oddsratio.md), [`run_auc()`](https://jllcalorio.github.io/pondeR/reference/run_auc.md) |
+| Multivariate analysis | [`run_pca()`](https://jllcalorio.github.io/pondeR/reference/run_pca.md), [`run_pls()`](https://jllcalorio.github.io/pondeR/reference/run_pls.md), [`run_pcoa()`](https://jllcalorio.github.io/pondeR/reference/run_pcoa.md), [`plot_score()`](https://jllcalorio.github.io/pondeR/reference/plot_score.md), [`plot_scree()`](https://jllcalorio.github.io/pondeR/reference/plot_scree.md) |
+| Other figures | [`plot_bar()`](https://jllcalorio.github.io/pondeR/reference/plot_bar.md), [`plot_meanmap()`](https://jllcalorio.github.io/pondeR/reference/plot_meanmap.md), [`plot_multi_y()`](https://jllcalorio.github.io/pondeR/reference/plot_multi_y.md), [`plot_relabund()`](https://jllcalorio.github.io/pondeR/reference/plot_relabund.md) |
+| Content validity | [`run_contentvalidity()`](https://jllcalorio.github.io/pondeR/reference/run_contentvalidity.md), [`run_contentvaliditycvr()`](https://jllcalorio.github.io/pondeR/reference/run_contentvaliditycvr.md) |
+| Export and reports | [`save_excel()`](https://jllcalorio.github.io/pondeR/reference/save_excel.md), [`save_plots()`](https://jllcalorio.github.io/pondeR/reference/save_plots.md), [`render_metabolomics()`](https://jllcalorio.github.io/pondeR/reference/render_metabolomics.md) |
+| Data helpers | [`run_relabel()`](https://jllcalorio.github.io/pondeR/reference/run_relabel.md), [`run_randomize()`](https://jllcalorio.github.io/pondeR/reference/run_randomize.md), [`run_subset()`](https://jllcalorio.github.io/pondeR/reference/run_subset.md), [`run_reduce()`](https://jllcalorio.github.io/pondeR/reference/run_reduce.md), [`run_vector2df()`](https://jllcalorio.github.io/pondeR/reference/run_vector2df.md), [`run_move_names()`](https://jllcalorio.github.io/pondeR/reference/run_move_names.md) |
+
+See the [function
+reference](https://jllcalorio.github.io/pondeR/reference/) for details.
 
 ## Contributing
 
-We welcome contributions to `pondeR`! Please review our Code of Conduct
-before contributing.
-
-## Reporting Bugs
-
-If you encounter any bugs or have feature requests, please open an issue
-on our GitHub Issues page.
+Bug reports and feature requests are welcome on the [issue
+tracker](https://github.com/jllcalorio/pondeR/issues). Please note that
+this project has a [Code of
+Conduct](https://github.com/jllcalorio/pondeR/blob/main/CODE_OF_CONDUCT.md).
 
 ## License
 
-This project is licensed under the MIT License.
-
-## Acknowledgements
-
-Huge thanks to The R Project for Statistical Computing, Positron,
-RStudio, the developers of the gtsummary, dplyr, ggplot2, everything in
-the tidyverse package, and all the dependencies I fail to mention. Your
-work makes `pondeR` possible.
-
-## Future Development
-
-More functions are continuously being added to `pondeR` to further
-enhance its capabilities and ease of use. Stay tuned for updates!
+MIT
 
 # Package index
 
@@ -351,82 +353,9 @@ S3 methods used by pondeR.
 
 Internal functions used by pondeR.
 
-- [`.assumption_row()`](https://jllcalorio.github.io/pondeR/reference/dot-assumption_row.md)
-  : Build the standard assumptions data frame row from a normality
-  result
-
-- [`.build_posthoc_df()`](https://jllcalorio.github.io/pondeR/reference/dot-build_posthoc_df.md)
-  : Build a standardised post-hoc result data frame
-
-- [`.build_summary_table()`](https://jllcalorio.github.io/pondeR/reference/dot-build_summary_table.md)
-  : Build a summary_table data frame from a list of run_diff objects
-
-- [`.check_normality()`](https://jllcalorio.github.io/pondeR/reference/dot-check_normality.md)
-  : Check normality of a numeric vector
-
-- [`.check_variance()`](https://jllcalorio.github.io/pondeR/reference/dot-check_variance.md)
-  : Run variance-homogeneity test (Levene or Bartlett fallback)
-
-- [`.compute_effect_size()`](https://jllcalorio.github.io/pondeR/reference/dot-compute_effect_size.md)
-  : Compute the appropriate effect size for a classical run_diff result
-
-- [`.df_footnote_for_tests()`](https://jllcalorio.github.io/pondeR/reference/dot-df_footnote_for_tests.md)
-  : Footnote explaining what the (now unlabelled) df column holds, per
-  test family
-
-- [`.es_metric_symbol`](https://jllcalorio.github.io/pondeR/reference/dot-es_metric_symbol.md)
-  : Symbolic notation for effect-size metric names, to keep columns
-  narrow
-
-- [`.format_df()`](https://jllcalorio.github.io/pondeR/reference/dot-format_df.md)
-  : Format a degrees-of-freedom string consistently across test types
-
-- [`.format_num_simplify()`](https://jllcalorio.github.io/pondeR/reference/dot-format_num_simplify.md)
-  :
-
-  Format a single numeric value, falling back to scientific notation
-  when it would otherwise round to zero (mirrors run_summarytable's
-  zero_as_exp). Whole numbers (e.g. df counts, exact-0/1 CI bounds) are
-  shown bare, with no decimal places, regardless of `dig`.
-
-- [`.format_pvalue_simplify()`](https://jllcalorio.github.io/pondeR/reference/dot-format_pvalue_simplify.md)
-  : Format a p-value string (mirrors run_summarytable's n_digits_pvalues
-  logic)
-
-- [`.parallel_normality()`](https://jllcalorio.github.io/pondeR/reference/dot-parallel_normality.md)
-  : Run normality checks in parallel (or sequentially)
-
-- [`.run_diff_single()`](https://jllcalorio.github.io/pondeR/reference/dot-run_diff_single.md)
-  : Internal single-outcome run_diff for plot_diff
-
-- [`.run_independent_anova()`](https://jllcalorio.github.io/pondeR/reference/dot-run_independent_anova.md)
-  : Execute an independent ANOVA-family test
-
-- [`.run_independent_two_sample()`](https://jllcalorio.github.io/pondeR/reference/dot-run_independent_two_sample.md)
-  : Execute an independent two-sample test
-
-- [`.run_paired_two_sample()`](https://jllcalorio.github.io/pondeR/reference/dot-run_paired_two_sample.md)
-  : Execute a paired two-sample test
-
-- [`.run_rm_anova()`](https://jllcalorio.github.io/pondeR/reference/dot-run_rm_anova.md)
-  : Execute RM or mixed ANOVA and return a full run_diff-compatible
-  result list
-
-- [`.simplify_summary_table()`](https://jllcalorio.github.io/pondeR/reference/dot-simplify_summary_table.md)
-  : Simplify a run_diff \$summary_table into a compact,
-  presentation-ready table
-
-- [`.strip_df_labels()`](https://jllcalorio.github.io/pondeR/reference/dot-strip_df_labels.md)
-  : Strip "name = " labels from a .format_df() string and reformat the
-  numbers per n_digits / zero_as_exp, e.g. "df1 = 2, df2 = 27" -\> "2,
-  27", or "num df = 2, denom df = 24.316" -\> "2, 24.32" (n_digits = 2).
-  Needed because non-integer df (e.g. Welch's ANOVA denom df) otherwise
-  keeps .format_df()'s fixed 4-decimal rounding regardless of n_digits.
-
-- [`.superscript_letters`](https://jllcalorio.github.io/pondeR/reference/dot-superscript_letters.md)
-  : Unicode superscript letters a-z, for marking p-values with their
-  test identity in place of the dropped test_used column. Unicode has no
-  superscript "q"; it falls back to a parenthesised "(q)".
+- [`pondeR`](https://jllcalorio.github.io/pondeR/reference/pondeR-package.md)
+  [`pondeR-package`](https://jllcalorio.github.io/pondeR/reference/pondeR-package.md)
+  : pondeR: Making Statistical Analysis a Little Bit Easier
 
 # Articles
 

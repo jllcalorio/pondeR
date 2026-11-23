@@ -47,7 +47,7 @@ run_diff(
   n_digits_pvalues = 3,
   n_digits = 2,
   zero_as_exp = TRUE,
-  verbose = TRUE,
+  verbose = FALSE,
   num_cores = 1
 )
 ```
@@ -66,7 +66,7 @@ run_diff(
 
   A data frame containing sample-level metadata (e.g., grouping,
   subgroups, subject IDs). When `NULL` (default), `x` is used for both
-  feature values and metadata — useful when a single data frame holds
+  feature values and metadata - useful when a single data frame holds
   all columns (see Examples).
 
 - outcome:
@@ -205,13 +205,13 @@ run_diff(
   `$summary_table` (and subgroup tables) are post-processed into a
   compact, presentation-ready form (class `"run_diff_summary"`, with an
   [`as_gt`](https://jllcalorio.github.io/pondeR/reference/as_gt.md)
-  method). See
-  [`.simplify_summary_table`](https://jllcalorio.github.io/pondeR/reference/dot-simplify_summary_table.md)
-  for the full set of transformations. Default `TRUE`.
+  method): values are formatted, the effect size and its confidence
+  interval are merged, and superscripts on the p-values identify the
+  test used. Default `TRUE`.
 
 - n_digits_pvalues:
 
-  Numeric or `NULL`; decimal places for `p_value` / `p_value_adj` in
+  Numeric or `NULL`; decimal places for the p-value columns in
   `$summary_table` when `simplify = TRUE`. `NULL` auto-formats (3 d.p.
   when \\p \< 0.10\\, otherwise 1 d.p.), matching
   [`run_summarytable`](https://jllcalorio.github.io/pondeR/reference/run_summarytable.md)'s
@@ -220,7 +220,7 @@ run_diff(
 - n_digits:
 
   Integer; decimal places for numeric `$summary_table` columns
-  (`statistic`, `mean_*`, effect-size estimate/CI) when
+  (statistic, group means, effect-size estimate/CI) when
   `simplify = TRUE`. Default `2`.
 
 - zero_as_exp:
@@ -233,7 +233,7 @@ run_diff(
 
 - verbose:
 
-  Logical. Default `TRUE`.
+  Logical. Print progress messages. Default `FALSE`.
 
 - num_cores:
 
@@ -250,7 +250,13 @@ only), `sphericity` (RM only), `sphericity_corrections` (RM only),
 `parameters`, `raw_data`.
 
 When `outcome` is length \> 1, a named list of `"run_diff"` objects,
-optionally with `$summary_table` and `$summary_table_<sg>` elements.
+optionally with `$summary_table` and `$summary_table_<sg>` elements. The
+summary table is ready for reports, with columns `Variable`,
+`Statistic`, `df`, one `Mean (<group>)` per group, `ES measure`,
+`ES (95% CI)`, `Magnitude`, `Significant pairs`, `Pairs tested`,
+`p-value`, `Adjusted p-value`, `Significant` and `Interpretation`. With
+`simplify = FALSE` it also has `Test`, and `ES`, `ES CI lower` and
+`ES CI upper` replace `ES (95% CI)`.
 
 ## Details
 
@@ -262,7 +268,7 @@ chosen; with \> 2 groups an ANOVA-family test is used.
 
 **Assumption Checking (`test_type = "auto"`):**
 
-- **Normality:** Shapiro-Wilk (n \< 50) or Lilliefors (n ≥ 50) under
+- **Normality:** Shapiro-Wilk (n \< 50) or Lilliefors (n \>= 50) under
   `"auto"`. Per-group for 2-group comparisons; on model residuals for \>
   2 groups.
 
@@ -271,14 +277,14 @@ chosen; with \> 2 groups an ANOVA-family test is used.
 
 **Test Selection Logic (`test_type = "auto"`):**
 
-- Independent two-sample: Mann-Whitney U (normality violated) → Welch's
-  t (variance violated) → Student's t.
+- Independent two-sample: Mann-Whitney U (normality violated) -\>
+  Welch's t (variance violated) -\> Student's t.
 
-- Paired two-sample: Wilcoxon signed-rank (normality violated) → Paired
-  t.
+- Paired two-sample: Wilcoxon signed-rank (normality violated) -\>
+  Paired t.
 
-- Independent \> 2 groups: Kruskal-Wallis (normality violated) → Welch's
-  ANOVA (variance violated) → One-way ANOVA.
+- Independent \> 2 groups: Kruskal-Wallis (normality violated) -\>
+  Welch's ANOVA (variance violated) -\> One-way ANOVA.
 
 **Post-Hoc Tests (\> 2 groups, significant omnibus):** Tukey HSD
 (ANOVA), Games-Howell (Welch's ANOVA), Dunn's test (Kruskal-Wallis),
@@ -376,37 +382,143 @@ John Lennon L. Calorio
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-# --- Single data frame: x serves as its own metadata ---
-
-# 3+ groups (auto test selection)
+# 3+ groups (auto test selection); x serves as its own metadata
 res_iris <- run_diff(iris, outcome = "Sepal.Length", group = "Species")
-print(res_iris); summary(res_iris)
-
-# Two-sample independent
-mtcars$am <- factor(mtcars$am, labels = c("automatic", "manual"))
-run_diff(mtcars, outcome = "mpg", group = "am")
+res_iris
+#> 
+#> === Automatic Statistical Comparison ===
+#> 
+#> Test Used: Kruskal-Wallis test
+#> Parametric: FALSE
+#> 
+#> Test Results:
+#>   Statistic: 96.9374
+#>   P-value: < 0.001 ***
+#>   Effect size: large (0.651)
+#> 
+#> Data Summary:
+#>       Group  n  Mean        SD Median
+#>      setosa 50 5.006 0.3524897    5.0
+#>  versicolor 50 5.936 0.5161711    5.9
+#>   virginica 50 6.588 0.6358796    6.5
+#> 
+#> 
+#> Post-Hoc Tests (Dunn's test):
+#> Significant comparisons:
+#>     Group 1    Group 2 Adjusted p-value Significance
+#>      setosa versicolor     1.529257e-09          ***
+#>      setosa  virginica     6.000296e-22          ***
+#>  versicolor  virginica     2.774866e-04          ***
+res_iris$posthoc_result
+#>      Group 1    Group 2 n (group 1) n (group 2) Statistic      p-value
+#> 1     setosa versicolor          50          50  6.106326 1.019504e-09
+#> 2     setosa  virginica          50          50  9.741785 2.000099e-22
+#> 3 versicolor  virginica          50          50  3.635459 2.774866e-04
+#>   Adjusted p-value        Test Significance Significant Mean (group 1)
+#> 1     1.529257e-09 Dunn's test          ***        TRUE          5.006
+#> 2     6.000296e-22 Dunn's test          ***        TRUE          5.006
+#> 3     2.774866e-04 Dunn's test          ***        TRUE          5.936
+#>   Mean (group 2)                                         Interpretation
+#> 1          5.936    setosa tends to have smaller values than versicolor
+#> 2          6.588     setosa tends to have smaller values than virginica
+#> 3          6.588 versicolor tends to have smaller values than virginica
 
 # Paired (with subject alignment)
 run_diff(sleep, outcome = "extra", group = "group",
          paired = TRUE, subject_id = "ID")
+#> 
+#> === Automatic Statistical Comparison ===
+#> 
+#> Test Used: Wilcoxon signed-rank test
+#> Parametric: FALSE
+#> 
+#> Test Results:
+#>   Statistic: 0.0000
+#>   P-value: 0.0039 **
+#>   Effect size: very large (-1.000)
+#> 
+#> Data Summary:
+#>  Group  n Mean       SD Median
+#>      1 10 0.75 1.789010   0.35
+#>      2 10 2.33 2.002249   1.75
 
-# --- Separate x / metadata data frames ---
-
-# Multi-outcome with summary table
+# \donttest{
+# Several outcomes in one summary table, with separate x and metadata
 outcomes <- c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width")
-x_iris   <- iris[, outcomes]
-meta_iris <- iris["Species"]
-res_multi <- run_diff(x_iris, meta_iris, outcomes, "Species",
-                      summary_table = TRUE, verbose = FALSE)
+res_multi <- run_diff(iris[outcomes], iris["Species"], outcomes, "Species",
+                      summary_table = TRUE)
 res_multi$summary_table
+#>       Variable Statistic     df Mean (setosa) Mean (versicolor)
+#> 1 Sepal.Length     96.94      2          5.01              5.94
+#> 2  Sepal.Width     49.16 2, 147          3.43              2.77
+#> 3 Petal.Length    130.41      2          1.46              4.26
+#> 4  Petal.Width    131.19      2          0.25              1.33
+#>   Mean (virginica) ES measure    ES (95% CI) Magnitude Significant pairs
+#> 1             6.59         ε² 0.65 (0.58, 1)     large                 3
+#> 2             2.97         η² 0.40 (0.30, 1)     large                 3
+#> 3             5.55         ε² 0.88 (0.86, 1)     large                 3
+#> 4             2.03         ε² 0.88 (0.87, 1)     large                 3
+#>   Pairs tested p-value Adjusted p-value Significant
+#> 1            3  <.001ᵃ           <.001ᵃ        TRUE
+#> 2            3  <.001ᵇ           <.001ᵇ        TRUE
+#> 3            3  <.001ᵃ           <.001ᵃ        TRUE
+#> 4            3  <.001ᵃ           <.001ᵃ        TRUE
+#>                                                                                                                                                      Interpretation
+#> 1 setosa tends to have smaller values than versicolor;\nsetosa tends to have smaller values than virginica;\nversicolor tends to have smaller values than virginica
+#> 2                                         setosa has higher mean than versicolor;\nsetosa has higher mean than virginica;\nversicolor has lower mean than virginica
+#> 3 setosa tends to have smaller values than versicolor;\nsetosa tends to have smaller values than virginica;\nversicolor tends to have smaller values than virginica
+#> 4 setosa tends to have smaller values than versicolor;\nsetosa tends to have smaller values than virginica;\nversicolor tends to have smaller values than virginica
 
-# --- One-way RM ANOVA ---
-run_diff(df_long, outcome = "HeartRate",
-         within = "Time", subject_id = "ID")
-
-# --- Mixed ANOVA ---
+# Repeated-measures and mixed ANOVA
+set.seed(1)
+df_long <- data.frame(
+  ID        = factor(rep(1:12, each = 3)),
+  Time      = factor(rep(c("T1", "T2", "T3"), 12)),
+  Group     = rep(c("A", "B"), each = 18),
+  HeartRate = rnorm(36, 70, 5) + rep(c(0, 3, 6), 12)
+)
+run_diff(df_long, outcome = "HeartRate", within = "Time", subject_id = "ID")
+#> 
+#> === Automatic Statistical Comparison ===
+#> 
+#> Test Used: One-way Repeated Measures ANOVA
+#> Parametric: TRUE
+#> 
+#> Test Results:
+#>   Statistic: 3.8200
+#>   P-value: 0.0380 *
+#>   Effect size: large (ges = 0.191)
+#> 
+#> ANOVA Table (all effects):
+#>       Effect DFn DFd        SSn     SSd        F        p p<.05   ges
+#>  (Intercept)   1  11 193505.741 227.282 9365.294 1.79e-17     * 0.996
+#>         Time   2  22    167.893 483.470    3.820 3.80e-02     * 0.191
+#> 
+#> 
+#> Post-Hoc Tests (Pairwise t-test (paired)):
+#> No significant pairwise differences found.
 run_diff(df_long, outcome = "HeartRate", group = "Group",
          within = "Time", subject_id = "ID")
-} # }
+#> 
+#> === Automatic Statistical Comparison ===
+#> 
+#> Test Used: Two-way Mixed ANOVA
+#> Parametric: TRUE
+#> 
+#> Test Results:
+#>   Statistic: 0.3930
+#>   P-value: 0.6800
+#>   Effect size: small (ges = 0.026)
+#> 
+#> ANOVA Table (all effects):
+#>       Effect DFn DFd        SSn     SSd        F        p p<.05   ges
+#>  (Intercept)   1  10 193505.741 222.875 8682.268 4.96e-16     * 0.996
+#>        Group   1  10      4.407 222.875    0.198 6.66e-01       0.006
+#>         Time   2  20    167.893 465.167    3.609 4.60e-02     * 0.196
+#>   Group:Time   2  20     18.303 465.167    0.393 6.80e-01       0.026
+#> 
+#> 
+#> Post-Hoc Tests (Pairwise t-test (paired)):
+#> No significant pairwise differences found.
+# }
 ```

@@ -21,7 +21,7 @@ run_pcoa(
   correction = "none",
   metadata = NULL,
   rhs = NULL,
-  perms = 9999L,
+  perms = 999L,
   groups = NULL,
   p_adjust = "BH",
   dispersion = FALSE,
@@ -73,7 +73,7 @@ run_pcoa(
   A positive integer. Number of permutations for PERMANOVA. Passed as
   the `permutations` argument to
   [`adonis2`](https://vegandevs.github.io/vegan/reference/adonis.html).
-  The same value is used when `dispersion = TRUE`. Default: `9999`.
+  The same value is used when `dispersion = TRUE`. Default: `999`.
 
 - groups:
 
@@ -341,12 +341,12 @@ if (requireNamespace("vegan", quietly = TRUE) &&
 #> Total axes           :  14 
 #> 
 #> Eigenvalues and variance explained (first 5 axes):
-#>  Axis Eigenvalue Variance_pct Cumulative_pct
-#>   PC1    1.71627       37.359         37.359
-#>   PC2    1.02240       22.255         59.615
-#>   PC3    0.46146       10.045         69.660
-#>   PC4    0.38225        8.321         77.980
-#>   PC5    0.27913        6.076         84.057
+#>  Axis Eigenvalue Variance explained (%) Cumulative (%)
+#>   PC1    1.71627                 37.359         37.359
+#>   PC2    1.02240                 22.255         59.615
+#>   PC3    0.46146                 10.045         69.660
+#>   PC4    0.38225                  8.321         77.980
+#>   PC5    0.27913                  6.076         84.057
 #> 
 #> ======================================================= 
 #>      PC1      PC2      PC3 
@@ -375,7 +375,6 @@ if (requireNamespace("vegan", quietly = TRUE) &&
 #> Warning: 5 negative eigenvalue(s) detected in the PCoA decomposition.
 #>   This is common with non-Euclidean dissimilarity indices (e.g., Bray-Curtis).
 #>   Consider correction = "lingoes" or "cailliez" for a fully Euclidean representation.
-#> Warning: number of items to replace is not a multiple of replacement length
 #>            Df SumOfSqs        R2        F Pr(>F)
 #> Management  3 1.468592 0.3416107 2.767243  0.003
 #> Residual   16 2.830430 0.6583893       NA     NA
@@ -412,6 +411,5 @@ if (requireNamespace("vegan", quietly = TRUE) &&
 #> Warning: 1 negative eigenvalue(s) detected in the PCoA decomposition.
 #>   This is common with non-Euclidean dissimilarity indices (e.g., Bray-Curtis).
 #>   Consider correction = "lingoes" or "cailliez" for a fully Euclidean representation.
-#> Warning: number of items to replace is not a multiple of replacement length
 #> [1] 0.2943778
 ```

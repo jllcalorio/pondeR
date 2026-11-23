@@ -14,7 +14,7 @@ run_pca(
   transform_method = NULL,
   group = "Group",
   exclude = NULL,
-  verbose = TRUE
+  verbose = FALSE
 )
 ```
 
@@ -23,8 +23,9 @@ run_pca(
 - x:
 
   Matrix or data frame. Numeric data with samples in rows and features
-  in columns. Can be output from `run_scale()` or raw data (which will
-  be scaled if `scale_method` is specified).
+  in columns. Can be output from
+  [`run_scale()`](https://jllcalorio.github.io/dimsprepr/reference/run_scale.html)
+  or raw data (which will be scaled if `scale_method` is specified).
 
 - metadata:
 
@@ -36,8 +37,9 @@ run_pca(
 
   Character or NULL. Scaling method to apply before PCA if `x` is not
   already scaled. Options: "mean", "auto", "pareto". If NULL (default)
-  and `x` is not from `run_scale()`, a warning is issued and PCA
-  proceeds without additional scaling.
+  and `x` is not from
+  [`run_scale()`](https://jllcalorio.github.io/dimsprepr/reference/run_scale.html),
+  a warning is issued and PCA proceeds without additional scaling.
 
 - transform_method:
 
@@ -59,7 +61,7 @@ run_pca(
 
 - verbose:
 
-  Logical. Print progress messages. Default: TRUE.
+  Logical. Print progress messages. Default: FALSE.
 
 ## Value
 
@@ -67,11 +69,11 @@ A list containing:
 
 - scores:
 
-  Matrix of PC scores (samples × PCs)
+  Matrix of PC scores (samples x PCs)
 
 - loadings:
 
-  Matrix of PC loadings (features × PCs)
+  Matrix of PC loadings (features x PCs)
 
 - variance_explained:
 
@@ -154,8 +156,10 @@ PCA:
 
 The function accepts data in two forms:
 
-1.  **Pre-scaled data** from `run_scale()`: PCA is performed directly
-    without additional preprocessing. This is the recommended workflow.
+1.  **Pre-scaled data** from
+    [`run_scale()`](https://jllcalorio.github.io/dimsprepr/reference/run_scale.html):
+    PCA is performed directly without additional preprocessing. This is
+    the recommended workflow.
 
 2.  **Raw data**: If `scale_method` is specified, the function will
     first apply optional transformation (via `transform_method`), then
@@ -166,9 +170,10 @@ The function accepts data in two forms:
 PCA is performed using singular value decomposition (SVD) via
 [`stats::prcomp()`](https://rdrr.io/r/stats/prcomp.html). The function
 assumes data is appropriately preprocessed (normalized, transformed, and
-scaled) before analysis. PCA is performed without additional centering
-or scaling (`center = FALSE, scale. = FALSE`) as these should have been
-applied during the scaling step.
+scaled) before analysis. Columns are always mean-centered (a no-op for
+data that is already centered) and never rescaled here
+(`center = TRUE, scale. = FALSE`): scaling belongs to the preprocessing
+step.
 
 **Interpretation:**
 
@@ -263,11 +268,11 @@ summary(pca)
 #> [1] 4
 #> 
 #> $variance_table
-#>    PC Variance_Explained Cumulative Eigenvalue
-#> 1 PC1         72.9624454   72.96245 2.91849782
-#> 2 PC2         22.8507618   95.81321 0.91403047
-#> 3 PC3          3.6689219   99.48213 0.14675688
-#> 4 PC4          0.5178709  100.00000 0.02071484
+#>    PC Variance explained (%) Cumulative (%) Eigenvalue
+#> 1 PC1             72.9624454       72.96245 2.91849782
+#> 2 PC2             22.8507618       95.81321 0.91403047
+#> 3 PC3              3.6689219       99.48213 0.14675688
+#> 4 PC4              0.5178709      100.00000 0.02071484
 #> 
 #> $preprocessing
 #> $preprocessing$came_from_run_scale

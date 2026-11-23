@@ -45,15 +45,16 @@ plot_multi_y(
   x_lab = NULL,
   y_lab_main = NULL,
   y_lab_secondary = "Secondary axis",
-  global_font_size = 20,
-  title_font_size = NULL,
-  subtitle_font_size = NULL,
-  caption_font_size = NULL,
-  axis_font_size = NULL,
-  legend_font_size = NULL,
-  facet_font_size = NULL,
-  theme = "nature",
-  zoom = 1
+  base_size = 11,
+  title_size = NULL,
+  subtitle_size = NULL,
+  caption_size = NULL,
+  xlab_size = NULL,
+  ylab_size = NULL,
+  axis_text_size = NULL,
+  legend_size = NULL,
+  strip_size = NULL,
+  theme = "nature"
 )
 ```
 
@@ -220,49 +221,22 @@ plot_multi_y(
 
   Character. Secondary y-axis label. Defaults to `"Secondary axis"`.
 
-- global_font_size:
+- base_size:
 
-  Numeric. Base font size in points. Default `20`.
+  Numeric. Base font size in points; every text element scales from it.
+  Default `11`, which suits a default 7 x 5 inch Quarto figure.
 
-- title_font_size:
+- title_size, subtitle_size, caption_size, xlab_size, ylab_size,
+  axis_text_size, legend_size, strip_size:
 
-  Numeric. Override font size for the plot title. Defaults to
-  `1.20 * global_font_size`.
-
-- subtitle_font_size:
-
-  Numeric. Override font size for the subtitle. Defaults to
-  `0.90 * global_font_size`.
-
-- caption_font_size:
-
-  Numeric. Override font size for the caption. Defaults to
-  `0.75 * global_font_size`.
-
-- axis_font_size:
-
-  Numeric. Override font size for axis titles and text. Defaults to
-  `1.00 * global_font_size`.
-
-- legend_font_size:
-
-  Numeric. Override font size for legend text. Defaults to
-  `0.90 * global_font_size`.
-
-- facet_font_size:
-
-  Numeric. Override font size for facet strip labels. Only relevant when
-  `facet` is non-`NULL`. Defaults to `0.85 * global_font_size`.
+  Numeric. Font sizes in points for the title, subtitle, caption, x-axis
+  label, y-axis labels, tick labels, legend and facet strips. Default
+  `NULL` derives each from `base_size`.
 
 - theme:
 
-  Character. Visual theme. One of `"nature"` (default), `"minimal"`, or
-  `"classic"`.
-
-- zoom:
-
-  Numeric. Multiplicative scaling factor applied to all resolved sizes
-  at construction time. Default `1`.
+  Character. Visual theme. One of `"nature"` (default), `"classic"`,
+  `"plos"`, `"minimal"`, `"bw"`, `"light"`, `"dark"`, or `"gray"`.
 
 ## Value
 
@@ -332,7 +306,6 @@ plot_multi_y(
   title         = NULL
 )
 #> Warning: The following column(s) contain NA values: RdRP GC/L, N GC/L. Rows where x_axis ("Week No.") is non-missing are retained; gaps will appear in the affected series at those x positions.
-#> Warning: Ignoring unknown aesthetics: fill
 #> Warning: Removed 20 rows containing missing values or values outside the scale range
 #> (`geom_line()`).
 
@@ -348,7 +321,6 @@ plot_multi_y(
   facet              = "Year"
 )
 #> Warning: The following column(s) contain NA values: RdRP GC/L, N GC/L. Rows where x_axis ("Week No.") is non-missing are retained; gaps will appear in the affected series at those x positions.
-#> Warning: Ignoring unknown aesthetics: fill
 #> Warning: Removed 20 rows containing missing values or values outside the scale range
 #> (`geom_line()`).
 

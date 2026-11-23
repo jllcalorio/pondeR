@@ -17,7 +17,7 @@ controls how they are combined:
   rows.
 
 - **`independent = FALSE`:** All `match` columns are crossed into a
-  single Cartesian product of categories (e.g. `"1-2 years × Male"`),
+  single Cartesian product of categories (e.g. `"1-2 years x Male"`),
   and every unique combination is represented equally. This guarantees
   perfect joint balance.
 
@@ -35,7 +35,7 @@ run_subset(
   random = TRUE,
   top_to_bottom = TRUE,
   left_to_right = TRUE,
-  seed = 123
+  seed = NULL
 )
 ```
 
@@ -106,7 +106,9 @@ run_subset(
 
 - seed:
 
-  An integer; `123` (default). The random seed. `NULL` disables seeding.
+  An integer passed to
+  [`set.seed()`](https://rdrr.io/r/base/Random.html) for a reproducible
+  draw. Default `NULL` leaves the random number generator alone.
 
 ## Value
 
@@ -160,8 +162,8 @@ tab(run_subset(d, match = c("Age Group", "Sex"), group = "Status"))
 #> 
 #>          Sex
 #> Age Group Female Male
-#>      2-5      36   58
-#>      6-10     25   26
+#>      2-5      40   51
+#>      6-10     28   24
 #> 
 #> , , Status = Stunted
 #> 

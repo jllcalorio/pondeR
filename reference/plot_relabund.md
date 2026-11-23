@@ -37,13 +37,13 @@ plot_relabund(
   unknown_before_others = TRUE,
   theme = "nature",
   colors = NULL,
-  plot_title = "",
-  plot_subtitle = "",
-  legend_title = "",
+  plot_title = NULL,
+  plot_subtitle = NULL,
+  legend_title = NULL,
   xlab = NULL,
   ylab = "Relative abundance",
-  global_font_size = 20,
-  font_family = "sans",
+  base_size = 11,
+  font_family = "",
   title_size = NULL,
   subtitle_size = NULL,
   legend_size = NULL,
@@ -86,7 +86,7 @@ plot_relabund(
   `limit` is set) and the order features appear in the legend/stack.
   `NULL` (default) preserves the original column order of `x`. Options:
   `"alphanumeric"` (lexicographic), `"high"` (highest total abundance
-  first — selects top `limit`), `"low"` (lowest total abundance first —
+  first - selects top `limit`), `"low"` (lowest total abundance first -
   selects bottom `limit`). **Note:** `"high"` and `"low"` rank by column
   totals and are meaningful only when `x` contains raw counts or
   intensities (row sums not already 0 or 1). If normalised data is
@@ -119,10 +119,9 @@ plot_relabund(
 
   Logical. Relevant when `group_aggregate = TRUE` or `sort` is
   `"high"`/`"low"`. If `TRUE` (default), row-wise relative abundance
-  normalisation is applied to `x` via
-  `run_normalize(method = "row_rel_abundance")` before aggregation or
-  ranking. Set to `FALSE` if `x` is already appropriately normalised.
-  Ignored when `ignore_normalization = TRUE`.
+  normalisation (each sample divided by its total) is applied to `x`
+  before aggregation or ranking. Set to `FALSE` if `x` is already
+  appropriately normalised. Ignored when `ignore_normalization = TRUE`.
 
 - ignore_normalization:
 
@@ -205,27 +204,28 @@ plot_relabund(
 
 - theme:
 
-  Character. ggplot2 theme. One of `"nature"`, `"minimal"`, `"classic"`,
-  `"bw"`, `"light"`, `"dark"`. Default `"nature"`.
+  Character. ggplot2 theme. One of `"nature"` (default), `"classic"`,
+  `"plos"`, `"minimal"`, `"bw"`, `"light"`, `"dark"`, or `"gray"`.
 
 - colors:
 
-  Character vector or `NULL`. Custom fill colours. Length must equal the
-  number of plotted fill levels. Named vectors matched by name. `NULL`
-  uses the Okabe-Ito palette (extended with HCL colours).
+  Character vector of fill colours, one per plotted feature, named by
+  feature or given in plotting order. Default `NULL` uses a
+  colour-blind-safe palette.
 
 - plot_title:
 
   Character. Main title. Supports `ggtext` markdown: `**bold**`,
-  `*italic*`. Default `""`.
+  `*italic*`. Default `NULL` (no title).
 
 - plot_subtitle:
 
-  Character. Subtitle. Supports same markdown. Default `""`.
+  Character. Subtitle. Supports same markdown. Default `NULL` (no
+  subtitle).
 
 - legend_title:
 
-  Character. Legend title. Default `""`.
+  Character or `NULL`. Legend title. Default `NULL`.
 
 - xlab:
 
@@ -235,34 +235,20 @@ plot_relabund(
 
   Character. Y-axis label. Default `"Relative abundance"`.
 
-- global_font_size:
+- base_size:
 
-  Numeric or `NULL`. Scales all text elements proportionally relative to
-  an internal 11 pt reference. Default `20`.
+  Base font size in points; every text element scales from it. Default
+  `11`, which suits a default 7 x 5 inch Quarto figure.
 
 - font_family:
 
-  Character. Font family for all text. Default `"sans"`.
+  Character. Font family for all text. Default `""` (the graphics
+  device's default).
 
-- title_size:
+- title_size, subtitle_size, legend_size, xlab_size, ylab_size:
 
-  Numeric or `NULL`. Title font size (pt).
-
-- subtitle_size:
-
-  Numeric or `NULL`. Subtitle font size (pt).
-
-- legend_size:
-
-  Numeric or `NULL`. Legend title font size (pt).
-
-- xlab_size:
-
-  Numeric or `NULL`. X-axis label font size (pt).
-
-- ylab_size:
-
-  Numeric or `NULL`. Y-axis label font size (pt).
+  Font sizes in points for the title, subtitle, legend, x-axis label and
+  y-axis label. Default `NULL` derives each from `base_size`.
 
 - ...:
 
@@ -291,11 +277,11 @@ retained; all others are collapsed into `"Others"`. When `sort = "low"`,
 the bottom `limit` features by total are retained instead.
 
 **Normalisation flow.** When `ignore_normalization = FALSE` and
-`normalize_to_relabund = TRUE`, row-relative abundance is applied via
-`run_normalize(method = "row_rel_abundance")` before any aggregation or
-ranking. Row-wise proportions are then computed so each bar sums to
-100\\ When `ignore_normalization = TRUE`, the data are plotted as
-supplied and the y-axis label should be interpreted accordingly.
+`normalize_to_relabund = TRUE`, each sample is divided by its total
+(row-relative abundance) before any aggregation or ranking. Row-wise
+proportions are then computed so each bar sums to 100\\ When
+`ignore_normalization = TRUE`, the data are plotted as supplied and the
+y-axis label should be interpreted accordingly.
 
 **Group aggregation.** When `group_aggregate = TRUE`, all rows belonging
 to the same level of `show_x_as` are summed (raw counts), and the result
@@ -345,15 +331,11 @@ meta <- data.frame(SampleID = paste0("S", 1:10),
 # Group-aggregated relative abundance (raw counts are normalized)
 plot_relabund(counts, metadata = meta, show_x_as = "Group",
               group_aggregate = TRUE, limit = 4L)
-#> Row-wise relative abundance normalisation applied via run_normalize() before aggregation/ranking.
 
-#> Relative abundance plot created successfully.
 
 # Individual samples with group brackets
 plot_relabund(counts, metadata = meta, show_x_as = "SampleID",
               group_aggregate = FALSE,
               group_brackets = Group ~ c("Control", "Treatment"), limit = 4L)
-#> Warning: The following row(s) in 'x' do not sum to 0 or 1, suggesting row-wise relative abundance normalisation has not been applied: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10. Consider running run_normalize(x, metadata, method = 'row_rel_abundance') first.
 
-#> Relative abundance plot created successfully.
 ```

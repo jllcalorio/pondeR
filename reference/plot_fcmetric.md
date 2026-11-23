@@ -33,14 +33,14 @@ plot_fcmetric(
   ns_color = "grey60",
   h_color = NULL,
   v_color = NULL,
-  size = 5,
+  size = 2,
   alpha = 0.6,
   theme = "nature",
   plot_title = NULL,
   plot_subtitle = NULL,
   xlab = NULL,
   ylab = NULL,
-  global_font_size = 25,
+  base_size = 11,
   title_size = NULL,
   subtitle_size = NULL,
   xlab_size = NULL,
@@ -132,7 +132,7 @@ plot_fcmetric(
   Default `NULL`.
 
 - use_ggrepel, up_color, down_color, ns_color, h_color, v_color, size,
-  alpha, theme, plot_title, plot_subtitle, xlab, ylab, global_font_size,
+  alpha, theme, plot_title, plot_subtitle, xlab, ylab, base_size,
   title_size, subtitle_size, xlab_size, ylab_size, axis_text_size,
   label_size, legend_size, legend_title, legend_nrow, ...:
 
@@ -145,8 +145,8 @@ plot_fcmetric(
 ## Value
 
 A list of class `plot_fcmetric` with `plots` (named list of `ggplot`
-objects), `classified` (data with the metric in `metric_value` and
-`.regulation`) and `params`.
+objects), `classified` (a table with `Comparison`, `Feature`,
+`Fold change`, `log2 FC`, the metric and `Regulation`) and `params`.
 
 ## Metrics
 
@@ -216,7 +216,7 @@ plot_fcmetric(fc)                                  # MA-style plot
 #>   Features   : 4  (Up: 0 | Down: 0 | NS: 4)
 #>   Thresholds : FC >= 1.5000 (up) | <= 0.5000 (down)
 #>   Plots      : Fold Change vs. Mean Abundance
-plot_fcmetric(fc, metric = "sd", global_font_size = 12)
+plot_fcmetric(fc, metric = "sd", base_size = 12)
 #> -- plot_fcmetric results -----------------------------------
 #>   Metric     : sd
 #>   Features   : 4  (Up: 0 | Down: 0 | NS: 4)

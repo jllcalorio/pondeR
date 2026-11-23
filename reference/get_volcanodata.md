@@ -56,8 +56,9 @@ get_volcanodata(
 ## Value
 
 A `data.frame` containing merged data from both objects: fold change
-columns, effect size (95\\ p-value column (`p_value_adj` when present,
-otherwise `p_value`). When the
+columns, effect size (95\\ p-value column (`Adjusted p-value` when
+present, otherwise `p-value`). Column names are ready for reports. When
+the
 [`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md)
 summary table is simplified, the p-value column keeps its superscript
 test markers (legend stored in the `"pvalue_legend"` attribute and shown
@@ -78,8 +79,8 @@ The function automatically detects the thresholds:
 
 - When
   [`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md)
-  result has multiple outcomes (nrow \> 1), a `p_value_adj` column is
-  present; this function prefers it over `p_value` for the volcano plot.
+  result has multiple outcomes, an `Adjusted p-value` column is present;
+  this function prefers it over `p-value`.
 
 ## References
 
@@ -113,19 +114,14 @@ dif <- run_diff(x, meta, outcome = names(x), group = "Species",
                 summary_table = TRUE, verbose = FALSE)
 
 get_volcanodata(fc, dif, filter = FALSE)
-#>                comparison  num_group den_group      feature mean_num mean_den
-#> 4 versicolor_vs_virginica versicolor virginica  Petal.Width    1.326    2.026
-#> 3 versicolor_vs_virginica versicolor virginica Petal.Length    4.260    5.552
-#> 2 versicolor_vs_virginica versicolor virginica Sepal.Length    5.936    6.588
-#> 1 versicolor_vs_virginica versicolor virginica  Sepal.Width    2.770    2.974
-#>      sd_num    sd_den n_num n_den fold_change    log2_fc          ES (95% CI)
-#> 4 0.1977527 0.2746501    50    50   0.6544916 -0.6115534 -0.96 (-0.97, -0.94)
-#> 3 0.4699110 0.5518947    50    50   0.7672911 -0.3821541 -2.52 (-3.04, -1.99)
-#> 2 0.5161711 0.6358796    50    50   0.9010322 -0.1503495 -1.13 (-1.55, -0.70)
-#> 1 0.3137983 0.3224966    50    50   0.9314055 -0.1025187 -0.33 (-0.51, -0.11)
-#>   ES_magnitude p_value_adj
-#> 4   very large      <.001ᵇ
-#> 3        large      <.001ᵃ
-#> 2        large      <.001ᵃ
-#> 1        large       .005ᵇ
+#>                Comparison      Feature Mean (group 1) Mean (group 2)
+#> 4 versicolor vs virginica  Petal.Width          1.326          2.026
+#> 3 versicolor vs virginica Petal.Length          4.260          5.552
+#> 2 versicolor vs virginica Sepal.Length          5.936          6.588
+#> 1 versicolor vs virginica  Sepal.Width          2.770          2.974
+#>   Fold change    log2 FC          ES (95% CI)  Magnitude Adjusted p-value
+#> 4   0.6544916 -0.6115534 -0.96 (-0.97, -0.94) very large           <.001ᵇ
+#> 3   0.7672911 -0.3821541 -2.52 (-3.04, -1.99)      large           <.001ᵃ
+#> 2   0.9010322 -0.1503495 -1.13 (-1.55, -0.70)      large           <.001ᵃ
+#> 1   0.9314055 -0.1025187 -0.33 (-0.51, -0.11)      large            .005ᵇ
 ```

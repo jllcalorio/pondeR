@@ -181,7 +181,6 @@ res_num  <- run_regreg(
 get_sigfeatures(res_num)
 # }
 }
-#> Warning: Passing 'maxit' to glmnet() is deprecated. Use control = list(maxit = ...) instead.
 #> No non-zero features from 'x' found for the selected model (alpha = 1). The model may have selected no predictors at the chosen lambda. Consider using lambda = "min" or a different alpha.
 #> 1 non-zero coefficient(s) belonging to 'not_penalized' metadata column(s) were excluded from the output. They are still part of the fitted model.
 #> [1] "feat_16" "feat_19" "feat_2" 

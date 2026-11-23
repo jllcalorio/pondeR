@@ -23,7 +23,7 @@ run_assoc(
   calculate_association = TRUE,
   perform_posthoc = TRUE,
   p_adjust_method = "BH",
-  verbose = TRUE
+  verbose = FALSE
 )
 ```
 
@@ -112,7 +112,7 @@ run_assoc(
 - verbose:
 
   A logical indicating whether to print detailed messages. Default is
-  `TRUE`.
+  `FALSE`.
 
 ## Value
 
@@ -263,15 +263,6 @@ John Lennon L. Calorio
 data(mtcars)
 res <- run_assoc(x = mtcars, var1 = "am", var2 = "vs",
                  force_categorical = TRUE)
-#> Warning: Column 'am' (numeric) coerced to factor via `force_categorical = TRUE`.
-#> Warning: Column 'vs' (numeric) coerced to factor via `force_categorical = TRUE`.
-#> Post-hoc tests skipped: applicable only for tables where one dimension is binary (2 x C or R x 2).
-#> 
-#> --- Test Results ---
-#> Test Selected: Pearson's Chi-square test
-#> X-squared: 0.3475
-#> P-value: 0.5555
-#> Interpretation: No significant association detected (p >= 0.05)
 print(res)
 #> 
 #> === Automatic Categorical Comparison ===
@@ -326,7 +317,7 @@ summary(res)
 #>   (Values beyond |1.96| or |2.58| indicate cells driving the association)
 #> 
 #> --- Assumption Checks ---
-#>                 check       result decision
+#>                 Check       Result Decision
 #>  Expected freq. > 5.0 4/4 cells OK       OK
 #> 
 #> --- Statistical Test Results ---
@@ -352,15 +343,6 @@ data(HairEyeColor)
 he <- as.data.frame.table(HairEyeColor)
 he_male <- he[he$Sex == "Male", ]
 res_hair <- run_assoc(x = he_male, var1 = "Hair", var2 = "Eye", weight = "Freq")
-#> Note: Expected counts < 5.0 detected. Using Fisher's Exact Test.
-#> Exact Fisher's test failed (possibly out of memory). Switching to simulation.
-#> Post-hoc tests skipped: applicable only for tables where one dimension is binary (2 x C or R x 2).
-#> 
-#> --- Test Results ---
-#> Test Selected: Fisher's Exact Test
-#> P-value: < 0.001
-#> Interpretation: Significant association detected (p < 0.05) ***
-#> 
 summary(res_hair)
 #> 
 #> === Detailed Categorical Comparison Summary ===
@@ -379,7 +361,7 @@ summary(res_hair)
 #> Blond     3   30     5     8
 #> 
 #> --- Assumption Checks ---
-#>           check                   result decision
+#>           Check                   Result Decision
 #>  Test Selection Fisher's Exact Test used       OK
 #> 
 #> --- Statistical Test Results ---
@@ -409,14 +391,6 @@ after[before == "Yes"][1:3]  <- "No"
 paired_df <- data.frame(before = before, after = after)
 res_paired <- run_assoc(x = paired_df, var1 = "before", var2 = "after",
                          paired = TRUE)
-#> Post-hoc tests skipped: applicable only for tables where one dimension is binary (2 x C or R x 2).
-#> 
-#> --- Test Results ---
-#> Test Selected: McNemar's test
-#> McNemar's chi-squared: 5.8824
-#> P-value: 0.0153
-#> Interpretation: Significant association detected (p < 0.05) ***
-#> Odds Ratio: 4.667 (positive change) (95% CI: 1.341, 16.239)
 summary(res_paired)
 #> 
 #> === Detailed Categorical Comparison Summary ===
@@ -433,7 +407,7 @@ summary(res_paired)
 #> Yes  3  31
 #> 
 #> --- Assumption Checks ---
-#>           check           result decision
+#>           Check           Result Decision
 #>  Data Structure 2x2 paired table       OK
 #> 
 #> --- Statistical Test Results ---
@@ -455,15 +429,6 @@ summary(res_paired)
 res_chisq <- run_assoc(x = mtcars, var1 = "am", var2 = "vs",
                         test_type = "chisq", continuity_correction = TRUE,
                         force_categorical = TRUE)
-#> Warning: Column 'am' (numeric) coerced to factor via `force_categorical = TRUE`.
-#> Warning: Column 'vs' (numeric) coerced to factor via `force_categorical = TRUE`.
-#> Post-hoc tests skipped: applicable only for tables where one dimension is binary (2 x C or R x 2).
-#> 
-#> --- Test Results ---
-#> Test Selected: Pearson's Chi-square test (forced)
-#> X-squared: 0.3475
-#> P-value: 0.5555
-#> Interpretation: No significant association detected (p >= 0.05)
 print(res_chisq)
 #> 
 #> === Automatic Categorical Comparison ===

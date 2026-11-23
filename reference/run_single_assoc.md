@@ -47,12 +47,12 @@ run_single_assoc(x, y = NULL, subgroup = NULL, force_categorical = NULL, ...)
 A list with the following components:
 
 - `summary_table`: A data frame summarizing the test results. Columns
-  include: `subgroup`, `group_level`, `feature`, `method`, `estimate`
-  (estimated proportion for binomial tests), `lower_95_ci`,
-  `upper_95_ci` (confidence interval for binomial tests),
-  `test_statistic` (e.g., Chi-squared value for chi-squared tests),
-  `p_value`, `note`, and `interpretation`. For tests where a specific
-  metric is not applicable, its column will contain `NA`.
+  are `Variable`, `Test`, `Proportion` (estimated proportion for
+  binomial tests), `95% CI lower`, `95% CI upper` (binomial tests),
+  `Statistic` (e.g. chi-squared value), `p-value`, `Note` and
+  `Interpretation`, preceded by `Subgroup` and `Level` when `subgroup`
+  is used. For tests where a specific metric is not applicable, its
+  column will contain `NA`.
 
 - `raw_results`: A named list containing the full test objects returned
   by the underlying R functions.
@@ -76,12 +76,10 @@ John Lennon L. Calorio
 # Testing if the distribution of 'am' (Transmission) in mtcars is 50/50
 run_single_assoc(mtcars, y = "am", force_categorical = "am")
 #> $summary_table
-#>   subgroup group_level feature              method estimate lower_95_ci
-#> 1   Global         All      am Exact binomial test  0.59375   0.4064492
-#>   upper_95_ci test_statistic   p_value                         note
-#> 1   0.7630159             NA 0.3770856 Prop: probability of success
-#>                interpretation
-#> 1 Not significantly different
+#>   Variable                Test Proportion 95% CI lower 95% CI upper Statistic
+#> 1       am Exact binomial test    0.59375    0.4064492    0.7630159        NA
+#>     p-value                         Note              Interpretation
+#> 1 0.3770856 Prop: probability of success Not significantly different
 #> 
 #> $raw_results
 #> $raw_results$am
@@ -104,11 +102,11 @@ run_single_assoc(mtcars, y = "am", force_categorical = "am")
 # Testing if the distribution of 'Species' in iris is uniform
 run_single_assoc(iris, y = "Species")
 #> $summary_table
-#>   subgroup group_level feature                                   method
-#> 1   Global         All Species Chi-squared test for given probabilities
-#>   estimate lower_95_ci upper_95_ci test_statistic p_value            note
-#> 1       NA          NA          NA              0       1 Goodness of fit
-#>                             interpretation
+#>   Variable                                     Test Proportion 95% CI lower
+#> 1  Species Chi-squared test for given probabilities         NA           NA
+#>   95% CI upper Statistic p-value            Note
+#> 1           NA         0       1 Goodness of fit
+#>                             Interpretation
 #> 1 Not significantly different distribution
 #> 
 #> $raw_results
@@ -126,13 +124,13 @@ run_single_assoc(iris, y = "Species")
 # Testing 'am' distribution stratified by 'vs' (Engine shape)
 run_single_assoc(mtcars, y = "am", subgroup = "vs", force_categorical = c("am", "vs"))
 #> $summary_table
-#>   subgroup group_level feature              method  estimate lower_95_ci
-#> 1       vs           0      am Exact binomial test 0.6666667   0.4099252
-#> 2       vs           1      am Exact binomial test 0.5000000   0.2303605
-#>   upper_95_ci test_statistic   p_value                         note
-#> 1   0.8665726             NA 0.2378845 Prop: probability of success
-#> 2   0.7696395             NA 1.0000000 Prop: probability of success
-#>                interpretation
+#>   Subgroup Level Variable                Test Proportion 95% CI lower
+#> 1       vs     0       am Exact binomial test  0.6666667    0.4099252
+#> 2       vs     1       am Exact binomial test  0.5000000    0.2303605
+#>   95% CI upper Statistic   p-value                         Note
+#> 1    0.8665726        NA 0.2378845 Prop: probability of success
+#> 2    0.7696395        NA 1.0000000 Prop: probability of success
+#>                Interpretation
 #> 1 Not significantly different
 #> 2 Not significantly different
 #> 

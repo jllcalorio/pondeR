@@ -150,9 +150,9 @@ validity. *Nursing Research*, *35*(6), 382–385.
 [doi:10.1097/00006199-198611000-00017](https://doi.org/10.1097/00006199-198611000-00017)
 
 Penfield, R. D., & Giacobbi, Jr., P. R. (2004). Applying a Score
-Confidence Interval to Aiken’s Item Content-Relevance Index.
+Confidence Interval to Aiken's Item Content-Relevance Index.
 *Measurement in Physical Education and Exercise Science*, *8*(4),
-213–225.
+213-225.
 [doi:10.1207/s15327841mpee0804_3](https://doi.org/10.1207/s15327841mpee0804_3)
 
 Polit, D. F., & Beck, C. T. (2006). The content validity index: Are you

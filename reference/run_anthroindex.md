@@ -1,10 +1,10 @@
 # Compute WHO Anthropometric Z-Scores and Nutritional Status
 
 Computes WHO Child Growth Standards z-scores for up to eight
-anthropometric indices—weight-for-age (WFA), length/height-for-age
+anthropometric indices-weight-for-age (WFA), length/height-for-age
 (HFA), weight-for-length/height (WFH), BMI-for-age (BMIFA), head
 circumference-for-age (HCFA), arm circumference-for-age (ACFA), triceps
-skinfold-for-age (TSFA), and subscapular skinfold-for-age (SSFA)—using
+skinfold-for-age (TSFA), and subscapular skinfold-for-age (SSFA)-using
 [`anthro_zscores`](https://rdrr.io/pkg/anthro/man/anthro_zscores.html)
 (WHO Child Growth Standards 2006) for ages 0 to \< 5 years, and
 [`anthroplus_zscores`](https://rdrr.io/pkg/anthroplus/man/anthroplus_zscores.html)
@@ -184,12 +184,12 @@ run_anthroindex(
   Logical. Master switch for collapsing granular WHO severity labels
   into a single category, across *all* indices (not just BMI-for-age).
   When `TRUE`, combines all stages of Obesity ("Stage 1 Obesity", "Stage
-  2 Obesity", "Stage 3 Obesity", and "Obesity") into just `"Obese"`, and
-  — via the `merge_wasted`, `merge_malnourished`, `merge_underweight`,
-  `merge_stunted`, and `merge_thinness` arguments below, each of which
-  defaults to this value — also collapses the wasted, malnourished,
-  underweight, stunted, and thinness categories for wfa, hfa, wfh, and
-  acfa. Defaults to `FALSE`.
+  2 Obesity", "Stage 3 Obesity", and "Obesity") into just `"Obese"`,
+  and - via the `merge_wasted`, `merge_malnourished`,
+  `merge_underweight`, `merge_stunted`, and `merge_thinness` arguments
+  below, each of which defaults to this value - also collapses the
+  wasted, malnourished, underweight, stunted, and thinness categories
+  for wfa, hfa, wfh, and acfa. Defaults to `FALSE`.
 
 - merge_wasted:
 
@@ -231,7 +231,7 @@ run_anthroindex(
 
   Logical. When `TRUE` (default), excludes additional flag and auxiliary
   z-score columns (e.g., `fbmi`, `zbmia`, `sbmi`) from the result,
-  keeping only supporting columns and the primary `z_score`.
+  keeping only supporting columns and the primary `Z-score`.
 
 - return:
 
@@ -244,7 +244,7 @@ run_anthroindex(
   or
   [`anthroplus_zscores`](https://rdrr.io/pkg/anthroplus/man/anthroplus_zscores.html);
   it is classified using the WHO adult BMI cut-offs applied to every row
-  regardless of age — see **Details**.
+  regardless of age - see **Details**.
 
 ## Value
 
@@ -256,18 +256,18 @@ The columns are ordered as follows:
 1.  All original columns from `x` (returned as-is, in their original
     order).
 
-2.  Supporting columns from `anthro_zscores` (e.g., `age_in_days`,
-    `age_in_months`, `clenhei`, `cbmi`).
+2.  Supporting columns from `anthro_zscores` (e.g., `Age (days)`,
+    `Age (months)`, `Length/height (cm)`, `BMI`).
 
-3.  `z_score` — the primary z-score for the requested index. For BMIFA:
-    sourced from anthro (`zbmi`) for ages 0–\< 5 years and from
-    anthroplus (`zbfa`) for ages 5–\< 20 years. For ages \\\geq\\ 20
-    years, `z_score` is `NA` (classification uses raw BMI instead).
+3.  `Z-score` - the primary z-score for the requested index. For BMIFA:
+    sourced from anthro (`zbmi`) for ages 0-\< 5 years and from
+    anthroplus (`zbfa`) for ages 5-\< 20 years. For ages \\\geq\\ 20
+    years, `Z-score` is `NA` (classification uses raw BMI instead).
 
 4.  Additional flag and auxiliary columns for the index (e.g., `fbmi`,
     `zbmia`, `sbmi`). These are omitted if `simplify = TRUE`.
 
-5.  Nutritional Status — a character column (named via
+5.  Nutritional Status - a character column (named via
     `status_col_name`) containing the WHO classification label based on
     z-score (ages \< 20 years) or raw BMI (ages \\\geq\\ 20 years, BMIFA
     only).
@@ -321,11 +321,11 @@ which package supplies the z-score for each index and age group:
 |----|----|----|----|
 | Index | 0 to \< 5 years | 5 to \< 20 years | \\\geq\\ 20 years |
 | BMIFA | anthro (`zbmi`) | anthroplus (`zbfa`) | raw BMI |
-| WFA | anthro (`zwei`) | anthroplus (`zwfa`) | — |
-| HFA | anthro (`zlen`) | anthroplus (`zhfa`) | — |
-| WFH, HCFA, ACFA, TSFA, SSFA | anthro | not available | — |
+| WFA | anthro (`zwei`) | anthroplus (`zwfa`) | \- |
+| HFA | anthro (`zlen`) | anthroplus (`zhfa`) | \- |
+| WFH, HCFA, ACFA, TSFA, SSFA | anthro | not available | \- |
 
-All z-scores are stored in a unified `z_score` column in the output.
+All z-scores are stored in a unified `Z-score` column in the output.
 
 ### Partial results
 
@@ -333,23 +333,23 @@ When a requested index cannot be computed because its required
 measurement column was not supplied, a warning is issued and that index
 is silently skipped. Required columns per index:
 
-- `wfa` — `weight_col`
+- `wfa` - `weight_col`
 
-- `hfa` — `height_col`
+- `hfa` - `height_col`
 
-- `wfh` — `weight_col` + `height_col`
+- `wfh` - `weight_col` + `height_col`
 
-- `bmifa` — `weight_col` + `height_col`
+- `bmifa` - `weight_col` + `height_col`
 
-- `hcfa` — `headcircumference_col`
+- `hcfa` - `headcircumference_col`
 
-- `acfa` — `armcircumference_col`
+- `acfa` - `armcircumference_col`
 
-- `tsfa` — `tricepskinfold_col`
+- `tsfa` - `tricepskinfold_col`
 
-- `ssfa` — `subscapularskinfold_col`
+- `ssfa` - `subscapularskinfold_col`
 
-- `bmi` — `weight_col` + `height_col`
+- `bmi` - `weight_col` + `height_col`
 
 ### Raw BMI (age-independent)
 
@@ -364,7 +364,7 @@ then divided by 100 to obtain metres (an exact conversion, since 1 m =
 100 cm exactly). The resulting data frame has a numeric `bmi` column,
 and `status_col_name` is populated using the WHO **adult** BMI cut-offs
 (see the 20 years and above table below) applied to every row regardless
-of age — no z-score is involved. This differs from `bmifa`, whose `cbmi`
+of age - no z-score is involved. This differs from `bmifa`, whose `BMI`
 column is also raw BMI but is only classified with these adult cut-offs
 for participants aged \\\geq\\ 20 years; younger ages use z-score-based
 classification instead.
@@ -391,7 +391,7 @@ classification instead.
 | Normal | HFA | \> \\-\\2 SD |
 | Normal | ACFA | \> \\-\\2 SD |
 
-#### 5 to 19 years — BMI-for-age only
+#### 5 to 19 years - BMI-for-age only
 
 |                    |                                       |
 |--------------------|---------------------------------------|
@@ -402,12 +402,12 @@ classification instead.
 | Thinness           | \< \\-\\2 SD and \\\geq\\ \\-\\3 SD   |
 | Severe thinness    | \< \\-\\3 SD                          |
 
-WHO nutritional status classifications for ages 5–19 years are currently
+WHO nutritional status classifications for ages 5-19 years are currently
 only available for BMIFA. For all other indices in participants aged 5
 years and above, `Nutritional Status` will be `NA` with an informational
 message.
 
-#### 20 years and above — BMI (absolute value) only
+#### 20 years and above - BMI (absolute value) only
 
 For participants aged 20 years and above, nutritional status is derived
 from the computed BMI value directly (not from a z-score), and is only
@@ -430,13 +430,13 @@ WHO Multicentre Growth Reference Study Group (2006). *WHO Child Growth
 Standards: Length/height-for-age, weight-for-age, weight-for-length,
 weight-for-height and body mass index-for-age: Methods and development*.
 Geneva: World Health Organization; pp 312.
-<http://www.who.int/childgrowth/publications/en/>
+<https://www.who.int/publications/i/item/924154693X>
 
 WHO Multicentre Growth Reference Study Group (2007). *WHO Child Growth
 Standards: Head circumference-for-age, arm circumference-for-age,
 triceps skinfold-for-age and subscapular skinfold-for-age: Methods and
 development*. Geneva: World Health Organization; pp 217.
-<http://www.who.int/childgrowth/publications/en/>
+<https://www.who.int/publications/i/item/9789241547185>
 
 de Onis M, Onyango AW, Borghi E, Siyam A, Nishida C, Siekmann J (2007).
 Development of a WHO growth reference for school-aged children and
@@ -453,14 +453,13 @@ WHO. <https://www.ncbi.nlm.nih.gov/books/NBK487900/table/fm.s1.t1/>
 World Health Organization (2006). *WHO child growth standards: methods
 and development. Length/height-for-age, weight-for-age,
 weight-for-length, weight-for-height and body mass index-for-age*.
-Geneva: WHO.
-<http://www.who.int/nutrition/publications/childgrowthstandards_technical_report_1/en/>
+Geneva: WHO. <https://www.who.int/publications/i/item/924154693X>
 
 Note: Weight-for-length is used for infants and young children aged 0-23
 months; weight-for-height is used for children aged 24 months and older.
 
 World Health Organization. Nutrition Landscape Information System
-(NLiS): Malnutrition in Women — Moderate and severe thinness,
+(NLiS): Malnutrition in Women - Moderate and severe thinness,
 underweight, overweight, obesity. Geneva: WHO.
 <https://apps.who.int/nutrition/landscape/help.aspx?menu=0&helpid=420>
 
@@ -497,7 +496,7 @@ if (requireNamespace("anthro", quietly = TRUE)) {
     oedema   = sample(c("n", "y"), n, replace = TRUE, prob = c(0.95, 0.05))
   )
 
-  # --- Multiple indices — returns a named list ---------------------------
+  # --- Multiple indices - returns a named list ---------------------------
   res <- run_anthroindex(
     x               = children,
     sex_col         = "sex",
@@ -512,10 +511,10 @@ if (requireNamespace("anthro", quietly = TRUE)) {
     return          = c("wfa", "hfa", "wfh", "bmifa")
   )
 
-  head(res$wfa[,  c("z_score", "Nutritional Status")])
-  head(res$bmifa[, c("cbmi", "z_score", "Nutritional Status")])
+  head(res$wfa[,  c("Z-score", "Nutritional Status")])
+  head(res$bmifa[, c("BMI", "Z-score", "Nutritional Status")])
 
-  # --- Single index — returns a plain data frame -------------------------
+  # --- Single index - returns a plain data frame -------------------------
   wfa_only <- run_anthroindex(
     x               = children,
     sex_col         = "sex",
@@ -548,10 +547,10 @@ if (requireNamespace("anthro", quietly = TRUE)) {
       height_measured = "H",
       return          = "bmifa"
     )
-    bmi_res[, c("age_yr", "cbmi", "z_score", "Nutritional Status")]
+    bmi_res[, c("age_yr", "BMI", "Z-score", "Nutritional Status")]
   }
 }
-#>   age_yr     cbmi z_score Nutritional Status
+#>   age_yr      BMI Z-score Nutritional Status
 #> 1      3 15.51247   -0.07             Normal
 #> 2     14 16.98753   -1.13             Normal
 #> 3     25 26.12245      NA         Overweight

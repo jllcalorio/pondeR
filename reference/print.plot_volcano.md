@@ -15,7 +15,7 @@ print(x, ...)
 
 - x:
 
-  An object as ouput of `"plot_volcano"`.
+  An object as output of `"plot_volcano"`.
 
 - ...:
 

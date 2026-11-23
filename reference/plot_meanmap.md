@@ -28,15 +28,15 @@ plot_meanmap(
   n_clusters = NULL,
   cluster_labels = NULL,
   cluster_colors = NULL,
-  heatmap_colors = c("#008000", "#FFFF00", "#FF0000"),
+  heatmap_colors = c("#2166AC", "#F7F7F7", "#B2182B"),
   show_values = FALSE,
   value_digits = 2L,
   value_color = "black",
-  global_font_size = 11,
-  row_font_size = NULL,
-  col_font_size = NULL,
-  legend_font_size = NULL,
-  cluster_label_size = NULL,
+  base_size = 11,
+  xlab_size = NULL,
+  ylab_size = NULL,
+  legend_size = NULL,
+  label_size = NULL,
   sig_marker_size = NULL,
   dend_width = 0.2,
   legend_position = "right",
@@ -129,7 +129,8 @@ plot_meanmap(
 
   A character vector of length \\\ge 2\\ specifying the colour gradient
   for the heatmap fill, from low to high values. Default
-  `c("#008000", "#FFFF00", "#FF0000")` (green–yellow–red).
+  `c("#2166AC", "#F7F7F7", "#B2182B")` (blue-white-red, which stays
+  readable for colour-blind viewers).
 
 - show_values:
 
@@ -145,35 +146,16 @@ plot_meanmap(
 
   A single character string for in-cell text colour. Default `"black"`.
 
-- global_font_size:
+- base_size:
 
-  Numeric. Base font size in points. Default `11`.
+  Numeric. Base font size in points; every text element scales from it.
+  Default `11`, which suits a default 7 x 5 inch Quarto figure.
 
-- row_font_size:
+- xlab_size, ylab_size, legend_size, label_size, sig_marker_size:
 
-  Numeric or `NULL`. Font size for row (variable) labels on the right
-  y-axis. Derived from `global_font_size` when `NULL` (default).
-
-- col_font_size:
-
-  Numeric or `NULL`. Font size for column (group) labels on the x-axis.
-  Derived from `global_font_size` when `NULL` (default).
-
-- legend_font_size:
-
-  Numeric or `NULL`. Font size for legend text. Derived from
-  `global_font_size` when `NULL` (default).
-
-- cluster_label_size:
-
-  Numeric or `NULL`. Font size for cluster bracket labels. Derived from
-  `global_font_size` when `NULL` (default). Ignored when `n_clusters` is
-  `NULL`.
-
-- sig_marker_size:
-
-  Numeric or `NULL`. Font size for significance markers. Derived from
-  `global_font_size` when `NULL` (default).
+  Font sizes in points for the group labels (x axis), variable labels (y
+  axis), legend text, cluster labels and in-cell values, and
+  significance markers. Default `NULL` derives each from `base_size`.
 
 - dend_width:
 
@@ -274,7 +256,7 @@ John Lennon L. Calorio
 
 ``` r
 # \donttest{
-## ── Basic example: iris mean intensity by species ────────────────────────
+## Basic example: iris mean intensity by species
 data(iris)
 num_part <- iris[, 1:4]
 meta_part <- data.frame(Species = iris$Species)
@@ -288,7 +270,7 @@ p <- plot_meanmap(
 print(p)
 
 
-## ── With cluster colouring and significance markers ──────────────────────
+## With cluster colouring and significance markers
 p2 <- plot_meanmap(
   x                = num_part,
   metadata         = meta_part,
@@ -297,13 +279,12 @@ p2 <- plot_meanmap(
   n_clusters       = 2,
   cluster_labels   = c("Cluster I", "Cluster II"),
   sig_vars         = c("Petal.Length", "Petal.Width"),
-  sig_color        = "red",
-  global_font_size = 11
+  sig_color        = "red"
 )
 print(p2)
 
 
-## ── Custom group order and colour palette ────────────────────────────────
+## Custom group order and colour palette
 p3 <- plot_meanmap(
   x           = num_part,
   metadata    = meta_part,

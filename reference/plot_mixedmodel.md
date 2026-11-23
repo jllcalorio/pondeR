@@ -22,7 +22,7 @@ plot_mixedmodel(
   label_features = NULL,
   minmax = NULL,
   iqr_k = 1.5,
-  label_size = 3,
+  label_size = NULL,
   label_max_overlap = 20L,
   label_box = FALSE,
   label_color = "match",
@@ -41,9 +41,8 @@ plot_mixedmodel(
   facet_scales = "fixed",
   facet_ncol = NULL,
   theme = "nature",
-  base_size = 12,
-  font_family = "",
-  zoom = 1
+  base_size = 11,
+  font_family = ""
 )
 ```
 
@@ -104,8 +103,8 @@ plot_mixedmodel(
 
 - label_size:
 
-  Numeric. Font size for point labels (in ggplot2 pt units). Default:
-  `3`.
+  Numeric. Font size for point labels, in points. Default: `NULL`,
+  derived from `base_size`.
 
 - label_max_overlap:
 
@@ -201,16 +200,12 @@ plot_mixedmodel(
 
 - base_size:
 
-  Numeric. Base font size passed to the theme. Default: `12`.
+  Base font size in points; every text element scales from it. Default:
+  `11`, which suits a default 7 x 5 inch Quarto figure.
 
 - font_family:
 
   Character. Font family. Default: `""` (system default).
-
-- zoom:
-
-  Numeric scalar. Multiplies all point sizes, label sizes, line widths,
-  and base font size proportionally for export scaling. Default: `1`.
 
 ## Value
 
@@ -224,16 +219,16 @@ or modified with standard `ggplot2` additions.
 **Significance classes**: Each feature is assigned one of three classes
 per term panel:
 
-- **Up** — estimate \> `estimate_threshold` AND p (adjusted or raw) \<
+- **Up** - estimate \> `estimate_threshold` AND p (adjusted or raw) \<
   `p_threshold`.
 
-- **Down** — estimate \< \\-\\`estimate_threshold` AND p \<
+- **Down** - estimate \< \\-\\`estimate_threshold` AND p \<
   `p_threshold`.
 
-- **NS** — does not meet either criterion.
+- **NS** - does not meet either criterion.
 
 When `estimate_threshold = 0` (default), the up/down split is purely on
-the sign of the estimate — useful for a single continuous predictor
+the sign of the estimate - useful for a single continuous predictor
 (e.g., age, time as numeric) where there is no conventional fold-change
 cutoff.
 
@@ -275,14 +270,8 @@ x <- data.frame(
 )
 fit <- run_mixedmodel(x, meta, formula = ".feature ~ time + (1 | subject_id)",
                       verbose = FALSE)
-#> 'subject_col' not specified; using detected column: 'subject_id'.
-#> 
-#> run_mixedmodel complete: 3/3 features fitted successfully (100.0%).
 
 plot_mixedmodel(fit)
 
 plot_mixedmodel(fit, label_features = "glucose", label_box = TRUE)
-#> Scale for colour is already present.
-#> Adding another scale for colour, which will replace the existing scale.
-
 ```

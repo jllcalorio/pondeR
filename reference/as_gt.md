@@ -45,11 +45,10 @@ as_gt(x, format_p = TRUE, ...)
 
 - format_p:
 
-  Logical. If `TRUE` (default), the `p_value` and `p_value_adj` columns
-  (when present) are displayed via
-  [`format.pval`](https://rdrr.io/r/base/format.pval.html) so that
-  values indistinguishable from zero at double precision render as
-  `"< 2.2e-16"`, matching
+  Logical. If `TRUE` (default), the p-value columns (when present) are
+  displayed via [`format.pval`](https://rdrr.io/r/base/format.pval.html)
+  so that values indistinguishable from zero at double precision render
+  as `"< 2.2e-16"`, matching
   [`cor.test`](https://rdrr.io/r/stats/cor.test.html)'s convention.
   Cosmetic only; does not affect the source `x`.
 
@@ -86,12 +85,9 @@ if (requireNamespace("gt", quietly = TRUE)) {
   as_gt(head(mtcars))
   as_gt(run_correl(mtcars[, 1:4], y = "mpg"))
 }
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
 
 
   
 
-var1
+Variable 1
 ```

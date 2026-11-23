@@ -8,7 +8,7 @@ data frame of those samples together with the columns responsible, so
 the user can inspect, impute, or exclude them deliberately before
 re-running the model.
 
-The function operates entirely on the original inputs — no fitted model
+The function operates entirely on the original inputs - no fitted model
 object is needed. This means it can be called before
 [`run_regreg()`](https://jllcalorio.github.io/pondeR/reference/run_regreg.md)
 to pre-screen data, or after to audit a run.
@@ -31,7 +31,7 @@ get_removed_samples(
 - x:
 
   A `data.frame`, `tibble`, `matrix`, **or a named list** of such
-  objects — matching what was passed (or would be passed) to
+  objects - matching what was passed (or would be passed) to
   [`run_regreg()`](https://jllcalorio.github.io/pondeR/reference/run_regreg.md).
   When a list is supplied, each element is processed independently.
 
@@ -58,28 +58,28 @@ get_removed_samples(
 
   Logical. If `TRUE` (default), all columns of `metadata` are appended
   to the returned data frame for context. If `FALSE`, only the columns
-  specified in `not_penalized` (plus `taxon` when `x` is a list) are
+  specified in `not_penalized` (plus `Taxon` when `x` is a list) are
   returned.
 
 - row_numbers:
 
-  Logical. If `TRUE`, a column `.row` containing the original row index
+  Logical. If `TRUE`, a column `Row` containing the original row index
   of each flagged sample is prepended to the result. Default: `TRUE`.
 
 ## Value
 
 A `data.frame` of flagged samples. Columns include:
 
-- `taxon`:
+- `Taxon`:
 
   Only present when `x` is a named list. The name of the list element
   from which the sample originated.
 
-- `.row`:
+- `Row`:
 
   Original row index in `metadata` (when `row_numbers = TRUE`).
 
-- `.missing_in`:
+- `Missing in`:
 
   A semicolon-separated string naming the `not_penalized` columns that
   are `NA` for that sample.
@@ -109,7 +109,7 @@ The function applies the same filtering sequence as
 
 When `x` is a named list (e.g., from a `lapply` call over taxonomic
 levels), the function iterates over each list element and returns a
-combined data frame with a leading `taxon` column.
+combined data frame with a leading `Taxon` column.
 
 ## See also
 
@@ -129,7 +129,7 @@ meta <- data.frame(Group = rep(c("A", "B"), 10), Age = c(NA, 30:47, NA))
 
 # Samples 1 and 20 are dropped because Age is missing
 get_removed_samples(feat, meta, not_penalized = "Age", pred = "Group")
-#>   .row .missing_in Group Age
-#> 1    1         Age     A  NA
-#> 2   20         Age     B  NA
+#>   Row Missing in Group Age
+#> 1   1        Age     A  NA
+#> 2  20        Age     B  NA
 ```

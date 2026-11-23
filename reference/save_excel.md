@@ -13,7 +13,7 @@ transparently unwrapped.
 ``` r
 save_excel(
   x,
-  filename = "output",
+  filename = NULL,
   folder = NULL,
   overwrite = FALSE,
   freeze_first_row = TRUE,
@@ -40,16 +40,16 @@ save_excel(
 - filename:
 
   A single character string for the output file name. Used as-is when
-  `x` is a single object. Ignored when `x` is a list with multiple
-  elements — each element's name is used as its sheet name and the list
-  object's name becomes the file name. Illegal characters are removed
-  silently. Defaults to `"output"` if not supplied.
+  `x` is a single object. Illegal characters are removed silently. When
+  `NULL` (default), the name of the object passed as `x` is used.
+  Nothing is written unless `filename` or `folder` is supplied.
 
 - folder:
 
   A single character string giving the target directory. Supports nested
   folders (e.g., `"Main folder/sub folder"`). Created recursively if
-  absent. Defaults to `NULL` (current working directory).
+  absent. With the default `NULL`, the file goes to the current working
+  directory, so `filename` must then be given.
 
 - overwrite:
 
@@ -100,11 +100,8 @@ removed from the end first, then consonants if needed), the reserved
 name `"History"` becomes `"History_"`, and duplicates get a `" (N)"`
 suffix (up to `" (999)"`, hence the 25-character base limit).
 
-**Filename priority.** The `filename` argument is prioritized unless it
-is left as the default `"output"`. If `filename` is `"output"` and `x`
-is a list (or a pondeR result containing multiple tables), the function
-automatically uses the variable name of `x` as the filename for
-convenience.
+**Filename.** When `filename` is `NULL`, the name of the object passed
+as `x` is used.
 
 **pondeR result objects.** Objects whose class starts with `run_` (e.g.
 [`run_auc`](https://jllcalorio.github.io/pondeR/reference/run_auc.md),
@@ -128,21 +125,18 @@ out <- tempdir()
 
 # Single data frame: filename is respected
 save_excel(mtcars, filename = "mtcars_export", folder = out)
-#> File saved: /tmp/Rtmpg44MIm/mtcars_export.xlsx
+#> Registered S3 method overwritten by 'openxlsx':
+#>   method               from         
+#>   as.character.formula formula.tools
+#> File saved: /tmp/RtmpmPH4II/mtcars_export.xlsx
 
 # Named list: one sheet per element
 save_excel(list(Cars = mtcars, Iris = iris), filename = "two_sheets",
            folder = out)
-#> File saved: /tmp/Rtmpg44MIm/two_sheets.xlsx
+#> File saved: /tmp/RtmpmPH4II/two_sheets.xlsx
 
 # pondeR result object
 res <- run_correl(mtcars[, 1:4])
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
 save_excel(res, filename = "correlations", folder = out)
-#> File saved: /tmp/Rtmpg44MIm/correlations.xlsx
+#> File saved: /tmp/RtmpmPH4II/correlations.xlsx
 ```

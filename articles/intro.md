@@ -2,13 +2,62 @@
 
 ``` r
 library(pondeR)
-#> Registered S3 method overwritten by 'lme4':
-#>   method           from
-#>   na.action.merMod car
-#> Registered S3 method overwritten by 'openxlsx':
-#>   method               from         
-#>   as.character.formula formula.tools
 ```
+
+## Tables and figures for reports
+
+Every plot defaults to `base_size = 11`, which suits the 7 x 5 inch
+figures of a default Quarto or R Markdown document. Changing `base_size`
+rescales all the text in a figure. Arguments such as `title_size` and
+`xlab_size` override one element.
+
+Result tables already have report-ready column names, so they can be
+printed as they are.
+
+``` r
+res <- run_diff(iris, outcome = "Sepal.Length", group = "Species")
+knitr::kable(res$data_summary[c("Group", "n", "Mean", "SD")], digits = 2)
+```
+
+| Group      |   n | Mean |   SD |
+|:-----------|----:|-----:|-----:|
+| setosa     |  50 | 5.01 | 0.35 |
+| versicolor |  50 | 5.94 | 0.52 |
+| virginica  |  50 | 6.59 | 0.64 |
+
+``` r
+knitr::kable(res$posthoc_result[c("Group 1", "Group 2", "Adjusted p-value", "Significance")],
+             digits = 3)
+```
+
+| Group 1    | Group 2    | Adjusted p-value | Significance |
+|:-----------|:-----------|-----------------:|:-------------|
+| setosa     | versicolor |                0 | \*\*\*       |
+| setosa     | virginica  |                0 | \*\*\*       |
+| versicolor | virginica  |                0 | \*\*\*       |
+
+## Working with dimsprepr
+
+pondeR accepts a
+[`dimsprepr::run_DIpreprocess()`](https://jllcalorio.github.io/dimsprepr/reference/run_DIpreprocess.html)
+result directly. The data, metadata, group column and QC samples are
+picked up for you, and QC samples are left out of group comparisons.
+
+``` r
+di <- dimsprepr::run_DIpreprocess(dimsprepr::dims_data, dimsprepr::dims_metadata,
+                                  verbose = FALSE)
+di_fc   <- run_foldchange(di)
+di_diff <- run_diff(di, summary_table = TRUE)
+plot_volcano(list(di_fc, di_diff))$plots[[1]]
+```
+
+![](intro_files/figure-html/dimsprepr-1.png)
+
+``` r
+plot_score(run_pca(di))
+```
+
+![](intro_files/figure-html/dimsprepr-2.png)
 
 ## Fold change against significance and against other metrics
 
@@ -87,7 +136,6 @@ Needs a
 result (PLS-DA or OPLS-DA) and the suggested package `ropls`.
 
 ``` r
-# ropls draws diagnostic plots while fitting; hide them here
 pls <- run_pls(scale(x), metadata = meta, group = "Group", method = "plsda",
                crossvalI = 5, permI = 0, verbose = FALSE)
 ```

@@ -2,10 +2,8 @@
 
 Generates box plots or violin plots with statistical tests and pairwise
 comparisons. Automatically selects appropriate statistical tests based
-on assumptions, or allows manual specification. Statistical testing is
-performed internally via
-[`.run_diff_single`](https://jllcalorio.github.io/pondeR/reference/dot-run_diff_single.md),
-the unexported single-outcome engine that powers
+on assumptions, or allows manual specification. Statistical testing uses
+the same engine as
 [`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md).
 
 ## Usage
@@ -16,10 +14,8 @@ plot_diff(
   outcome = NULL,
   group = NULL,
   metadata = NULL,
-  plot_vars = NULL,
   plot_type = "boxplot",
   test_type = NULL,
-  posthoc = NULL,
   p_adjust_method = "BH",
   hide_ns = TRUE,
   show_p_numeric = FALSE,
@@ -30,11 +26,11 @@ plot_diff(
   plot_subtitle = NULL,
   xlab = NULL,
   ylab = NULL,
-  linewidth = 3,
+  linewidth = 0.5,
   show_global_p = FALSE,
   global_p_position = NULL,
   global_p_x = NULL,
-  global_font_size = 30,
+  base_size = 11,
   title_size = NULL,
   subtitle_size = NULL,
   xlab_size = NULL,
@@ -62,19 +58,17 @@ plot_diff(
   multi-outcome `"run_diff"` object (i.e. the result of
   `run_diff(..., summary_table = TRUE)` with more than one `outcome`).
   When `x` is a `"run_diff"` object, `plot_diff` reuses its statistics
-  instead of recomputing them, and prefers the `p_value_adj` column of
-  `x$summary_table` (falling back to `p_value` when adjustment was not
-  performed, i.e. a single outcome) for determining significance.
+  instead of recomputing them, and prefers the `Adjusted p-value` column
+  of `x$summary_table` (falling back to `p-value` when adjustment was
+  not performed, i.e. a single outcome) for determining significance.
   `subgroup` and `sample_id`/`label_points` are not supported in this
   mode; run `run_diff(..., subgroup = ...)` beforehand, or pass the
   underlying data frame instead.
 
 - outcome:
 
-  Character string specifying the column name for the numeric outcome
-  variable. Used as the default for `plot_vars` if it is not specified.
-  Ignored when `x` is a `"run_diff"` object (use `plot_vars` to select
-  outcomes instead).
+  Character vector of numeric outcome column(s) to plot. When `x` is a
+  `"run_diff"` object, `NULL` (default) plots every outcome it contains.
 
 - group:
 
@@ -90,11 +84,6 @@ plot_diff(
   `NULL`, `x` is used as metadata. Default is `NULL`. Not used when `x`
   is a `"run_diff"` object.
 
-- plot_vars:
-
-  Character vector specifying column name(s) for numeric variables to
-  plot. If `NULL` (default), uses the value of `outcome`.
-
 - plot_type:
 
   Character string specifying plot type: `"boxplot"` or `"violin"`.
@@ -106,12 +95,6 @@ plot_diff(
   `"parametric"`, or `"nonparametric"`. See
   [`run_diff`](https://jllcalorio.github.io/pondeR/reference/run_diff.md)
   for details. If `NULL` (default), uses `"auto"`.
-
-- posthoc:
-
-  Character string or `NULL`. Retained for API compatibility; post-hoc
-  selection is handled automatically by the internal engine. Default is
-  `NULL`.
 
 - p_adjust_method:
 
@@ -164,7 +147,7 @@ plot_diff(
 - linewidth:
 
   Numeric. The width of the lines for the box/violin outlines and
-  statistical brackets. Default is 3.
+  statistical brackets. Default is 0.5.
 
 - show_global_p:
 
@@ -181,35 +164,17 @@ plot_diff(
   Numeric or `NULL`. X-axis position for the global p-value annotation.
   Default is `NULL` (automatic).
 
-- global_font_size:
+- base_size:
 
-  Numeric or `NULL`. Base font size for proportional scaling of all text
-  elements. Default is `30`.
+  Base font size in points; every text element scales from it. Default
+  is `11`, which suits a default 7 x 5 inch Quarto figure.
 
-- title_size:
+- title_size, subtitle_size, xlab_size, ylab_size, axis_text_size,
+  pvalue_size:
 
-  Numeric or `NULL`. Title font size. Default is `NULL`.
-
-- subtitle_size:
-
-  Numeric or `NULL`. Subtitle font size. Default is `NULL`.
-
-- xlab_size:
-
-  Numeric or `NULL`. X-axis label font size. Default is `NULL`.
-
-- ylab_size:
-
-  Numeric or `NULL`. Y-axis label font size. Default is `NULL`.
-
-- pvalue_size:
-
-  Numeric or `NULL`. Font size for p-value annotations (ggplot2 `size`
-  units). Default is `NULL`.
-
-- axis_text_size:
-
-  Numeric or `NULL`. Axis tick label font size. Default is `NULL`.
+  Font sizes in points for the title, subtitle, x-axis label, y-axis
+  label, tick labels and p-value annotations. Default `NULL` derives
+  each from `base_size`.
 
 - format_p_numeric:
 
@@ -274,9 +239,8 @@ A list containing:
 
 - statistics:
 
-  Named list of internal `.run_diff_single` result objects for each
-  variable, providing access to raw test objects, descriptive
-  statistics, and post-hoc tables.
+  Named list of test results for each variable, with raw test objects,
+  descriptive statistics, and post-hoc tables.
 
 - subgroup_analysis:
 
@@ -335,13 +299,13 @@ results <- plot_diff(
 print(results$plots$weight)
 
 
-# Example 2: Global font size scaling and omnibus p-value annotation
+# Example 2: Larger text and omnibus p-value annotation
 results2 <- plot_diff(
-  x                = PlantGrowth,
-  outcome          = "weight",
-  group            = "group",
-  global_font_size = 16,
-  show_global_p    = TRUE
+  x             = PlantGrowth,
+  outcome       = "weight",
+  group         = "group",
+  base_size     = 14,
+  show_global_p = TRUE
 )
 print(results2$plots$weight)
 

@@ -25,20 +25,20 @@ plot_volcano(
   annotate = NULL,
   annotate2 = NULL,
   use_ggrepel = TRUE,
-  up_color = c("red", "purple", "yellow"),
-  down_color = c("blue", "green", "cyan"),
+  up_color = c("red", "purple", "#E69F00"),
+  down_color = c("blue", "#009E73", "#56B4E9"),
   ns_color = "grey60",
   neglog10 = TRUE,
   h_color = NULL,
   v_color = NULL,
-  size = 5,
+  size = 2,
   alpha = 0.6,
   theme = "nature",
   plot_title = NULL,
   plot_subtitle = NULL,
   xlab = NULL,
   ylab = NULL,
-  global_font_size = 25,
+  base_size = 11,
   title_size = NULL,
   subtitle_size = NULL,
   xlab_size = NULL,
@@ -75,7 +75,7 @@ plot_volcano(
       [`run_diff()`](https://jllcalorio.github.io/pondeR/reference/run_diff.md)'s
       `$summary_table`, matched on feature name. When
       [`run_foldchange()`](https://jllcalorio.github.io/pondeR/reference/run_foldchange.md)
-      produced more than one pairwise comparison, the `comparison`
+      produced more than one pairwise comparison, the `Comparison`
       column is automatically used as `group`, overlaying all
       comparisons on a single plot with distinct colours. This is the
       recommended usage.
@@ -173,12 +173,12 @@ plot_volcano(
   `NULL` only the first element is used (default `"red"`). When `group`
   is supplied, one colour per group level is used; if fewer colours than
   levels are provided they are recycled with a warning. Default
-  `c("red", "purple", "yellow")`.
+  `c("red", "purple", "#E69F00")`.
 
 - down_color:
 
   Character vector of colours for down-regulated points. Same recycling
-  behaviour as `up_color`. Default `c("blue", "green", "cyan")`.
+  behaviour as `up_color`. Default `c("blue", "#009E73", "#56B4E9")`.
 
 - ns_color:
 
@@ -203,7 +203,7 @@ plot_volcano(
 - size:
 
   A single positive numeric value controlling the point size. Default
-  `5`.
+  `2`.
 
 - alpha:
 
@@ -235,40 +235,17 @@ plot_volcano(
   Character string or `NULL`. Default `NULL` uses `"-log10(p-value)"` or
   `"p-value"`.
 
-- global_font_size:
+- base_size:
 
-  A positive numeric value setting the base font size for all text
-  elements. Default `25`.
+  Base font size in points; every text element scales from it. Default
+  `11`, which suits a default 7 x 5 inch Quarto figure.
 
-- title_size:
+- title_size, subtitle_size, xlab_size, ylab_size, axis_text_size,
+  label_size, legend_size:
 
-  Override for title font size. Default `NULL`.
-
-- subtitle_size:
-
-  Override for subtitle font size. Default `NULL`.
-
-- xlab_size:
-
-  Override for x-axis label font size. Default `NULL`.
-
-- ylab_size:
-
-  Override for y-axis label font size. Default `NULL`.
-
-- axis_text_size:
-
-  Override for axis tick label font size. Default `NULL`.
-
-- label_size:
-
-  Font size for point annotation labels. Default `NULL` (derived from
-  `global_font_size` at \\0.75\times\\).
-
-- legend_size:
-
-  Font size for legend text. Respects `global_font_size`
-  (\\0.85\times\\) when `NULL`. Default `NULL`.
+  Font sizes in points for the title, subtitle, x-axis label, y-axis
+  label, tick labels, point labels and legend. Default `NULL` derives
+  each from `base_size`.
 
 - legend_title:
 
@@ -297,8 +274,8 @@ A named list with elements:
 
 - `classified`:
 
-  A `data.frame` identical to `x` with an additional column
-  `.regulation` (`"Up"`, `"Down"`, or `"NS"`).
+  A `data.frame` identical to `x` with an additional column `Regulation`
+  (`"Up"`, `"Down"`, or `"NS"`).
 
 - `params`:
 

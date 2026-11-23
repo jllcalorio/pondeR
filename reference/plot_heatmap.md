@@ -29,18 +29,16 @@ plot_heatmap(
   round = 2L,
   mark_x = TRUE,
   mark_x_size = 1,
-  mark_x_alpha = 0.6,
+  mark_x_alpha = 0.4,
   show_dend = FALSE,
   dend_row_width = 0.2,
   dend_col_height = 0.2,
-  global_font_size = 15,
-  axis_title_size = NULL,
+  base_size = 11,
+  title_size = NULL,
+  subtitle_size = NULL,
   axis_text_size = NULL,
-  legend_title_size = NULL,
-  legend_text_size = NULL,
-  coef_text_size = NULL,
-  plot_title_size = NULL,
-  plot_subtitle_size = NULL,
+  legend_size = NULL,
+  label_size = NULL,
   ...
 )
 ```
@@ -78,7 +76,7 @@ plot_heatmap(
 - theme:
 
   A single character string: `"nature"` (default), `"classic"`,
-  `"minimal"`, or `"bw"`.
+  `"plos"`, `"minimal"`, `"bw"`, `"light"`, `"dark"`, or `"gray"`.
 
 - plot_title:
 
@@ -116,7 +114,7 @@ plot_heatmap(
 
 - clab_angle:
 
-  A single numeric (0–360) controlling the rotation angle of column
+  A single numeric (0 to 360) controlling the rotation angle of column
   (x-axis) labels in degrees. Default `45`.
 
 - show_triangle:
@@ -138,18 +136,17 @@ plot_heatmap(
 
 - mark_x:
 
-  Logical. Overlay an `"\u00D7"` on non-significant cells when
+  Logical. Overlay a cross on non-significant cells when
   `show_coef = TRUE`. Default `TRUE`.
 
 - mark_x_size:
 
   A single positive numeric acting as a multiplier for the size of the
-  "×" mark. Default `1.0` (fills ~85% of the cell). Ignored when
-  `mark_x = FALSE`.
+  cross. Default `1`. Ignored when `mark_x = FALSE`.
 
 - mark_x_alpha:
 
-  A single numeric (0–1) controlling the transparency of the "×" mark.
+  A single numeric (0 to 1) controlling the transparency of the cross.
   Default `0.6`. Ignored when `mark_x = FALSE`.
 
 - show_dend:
@@ -167,39 +164,15 @@ plot_heatmap(
   A single positive numeric controlling the relative height of the
   column dendrogram panel when `show_dend = TRUE`. Default `0.2`.
 
-- global_font_size:
+- base_size:
 
-  A single positive numeric specifying the base font size in points.
-  Default `15`.
+  Base font size in points; every text element scales from it. Default
+  `11`, which suits a default 7 x 5 inch Quarto figure.
 
-- axis_title_size:
+- title_size, subtitle_size, axis_text_size, legend_size, label_size:
 
-  Font size for axis titles. Defaults to `global_font_size`.
-
-- axis_text_size:
-
-  Font size for axis tick labels. Defaults to `global_font_size`.
-
-- legend_title_size:
-
-  Font size for the legend title. Defaults to `global_font_size`.
-
-- legend_text_size:
-
-  Font size for legend text. Defaults to `global_font_size`.
-
-- coef_text_size:
-
-  Font size for in-cell coefficient annotations. Defaults to
-  `global_font_size * 0.7`. Ignored when `show_coef = FALSE`.
-
-- plot_title_size:
-
-  Font size for the plot title. Defaults to `global_font_size + 2`.
-
-- plot_subtitle_size:
-
-  Font size for the plot subtitle. Defaults to `global_font_size`.
+  Font sizes in points for the title, subtitle, tick labels, legend and
+  in-cell coefficients. Default `NULL` derives each from `base_size`.
 
 - ...:
 
@@ -248,161 +221,19 @@ John Lennon L. Calorio
 ``` r
 ## Basic heatmap
 plot_heatmap(mtcars)
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
 
 
 ## Masked, lower triangle only
 plot_heatmap(mtcars, out = "masked", show_triangle = "lower")
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
 
 
 ## Show coefficients
 plot_heatmap(mtcars, show_coef = TRUE, mark_x = TRUE)
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
 
 
 ## With dendrograms
-plot_heatmap(mtcars, show_dend = TRUE)
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
-#> Warning: cannot compute exact p-value with ties
+if (requireNamespace("ggdendro", quietly = TRUE)) {
+  plot_heatmap(mtcars, show_dend = TRUE)
+}
 
 ```

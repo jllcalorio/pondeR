@@ -21,8 +21,8 @@ plot_score(res, ...)
 plot_score(
   res,
   pc = c(1, 2),
-  color_by,
-  points_from,
+  color_by = NULL,
+  points_from = NULL,
   title = NULL,
   subtitle = NULL,
   caption = NULL,
@@ -36,21 +36,21 @@ plot_score(
   show_outliers = FALSE,
   label_outliers = "all",
   outlier_margin = 1,
-  outlier_label_size = NULL,
   show_groups = NULL,
   colors = NULL,
-  point_size = 10,
+  point_size = 3,
   point_alpha = 0.8,
   theme = "nature",
-  base_size = 30,
-  font_family = "sans",
-  axis_title_size = NULL,
+  base_size = 11,
+  font_family = "",
+  title_size = NULL,
+  subtitle_size = NULL,
+  xlab_size = NULL,
+  ylab_size = NULL,
   axis_text_size = NULL,
-  plot_title_size = NULL,
-  legend_title_size = NULL,
-  legend_text_size = NULL,
-  zoom = 1,
-  verbose = TRUE,
+  legend_size = NULL,
+  label_size = NULL,
+  verbose = FALSE,
   ...
 )
 
@@ -61,34 +61,11 @@ plot_score(res, pc = c(1, 2), title = NULL, subtitle = NULL, ...)
 plot_score(
   res,
   pc = c(1, 2),
-  color_by,
-  points_from,
+  color_by = NULL,
+  points_from = NULL,
   metadata = NULL,
   title = NULL,
   subtitle = NULL,
-  caption = NULL,
-  position = "center",
-  arrange_levels = NULL,
-  ellipse = TRUE,
-  ellipse_type = "t",
-  ellipse_level = 0.95,
-  legend = NULL,
-  legend_position = "bottom",
-  show_outliers = FALSE,
-  label_outliers = "all",
-  colors = NULL,
-  point_size = 3,
-  point_alpha = 0.8,
-  theme = "nature",
-  base_size = 11,
-  font_family = "sans",
-  axis_title_size = NULL,
-  axis_text_size = NULL,
-  plot_title_size = NULL,
-  legend_title_size = NULL,
-  legend_text_size = NULL,
-  zoom = 1,
-  verbose = TRUE,
   ...
 )
 
@@ -120,19 +97,20 @@ plot_score(res, ...)
 
 - color_by:
 
-  Character. Name of column in `metadata` to use for coloring points. If
-  the column contains categorical data, points are colored by discrete
-  groups with optional confidence ellipses. If the column contains
-  numeric data, points are colored using a continuous gradient scale.
-  Required parameter with no default.
+  Character. Name of the metadata column used to colour points.
+  Categorical columns give discrete groups with optional confidence
+  ellipses; numeric columns give a continuous gradient. Default `NULL`
+  uses the `group` column of the fitted
+  [`run_pca()`](https://jllcalorio.github.io/pondeR/reference/run_pca.md)
+  or
+  [`run_pls()`](https://jllcalorio.github.io/pondeR/reference/run_pls.md)
+  model (required for
+  [`run_pcoa()`](https://jllcalorio.github.io/pondeR/reference/run_pcoa.md)).
 
 - points_from:
 
-  Character. Name of column in `metadata` to use for labeling points.
-  This determines which values are used for sample labels in the plot
-  and for outlier labeling when enabled. If the specified column is not
-  found in metadata, sequential labels will be used instead. Required
-  parameter with no default.
+  Character. Name of the metadata column holding sample labels, used
+  when labelling outliers. Default `NULL` uses the sample (row) names.
 
 - title:
 
@@ -200,15 +178,9 @@ plot_score(res, ...)
   threshold that exactly matches the drawn `stat_ellipse` boundary (same
   covariance estimator and critical value formula). Default `1.0` labels
   any sample that falls outside that boundary. Values \> 1 require the
-  sample to be proportionally farther beyond it: `1.0`–`1.5` labels most
-  ellipse-breaching samples; `1.5`–`3.0` labels clearly separated
-  samples; `> 3.0` labels only extreme outliers.
-
-- outlier_label_size:
-
-  Numeric or `NULL`. Font size (ggplot2 text units) for outlier labels.
-  Default: `NULL` (resolves to `base_size / 3.5`, consistent with
-  `base_size`).
+  sample to be proportionally farther beyond it: `1.0` to `1.5` labels
+  most ellipse-breaching samples; `1.5` to `3.0` labels clearly
+  separated samples; `> 3.0` labels only extreme outliers.
 
 - show_groups:
 
@@ -227,7 +199,7 @@ plot_score(res, ...)
 
 - point_size:
 
-  Numeric. Size of points. Default: `10`.
+  Numeric. Size of points. Default: `3`.
 
 - point_alpha:
 
@@ -235,56 +207,38 @@ plot_score(res, ...)
 
 - theme:
 
-  Character. ggplot2 theme to apply. Options: `"nature"`, `"minimal"`,
-  `"classic"`, `"bw"`, `"light"`, `"dark"`. Default: `"nature"` (a
-  clean, publication-ready style based on `theme_bw()`).
+  Character. ggplot2 theme to apply. Options: `"nature"`, `"classic"`,
+  `"plos"`, `"minimal"`, `"bw"`, `"light"`, `"dark"`, `"gray"`. Default:
+  `"nature"` (a clean, publication-ready style based on `theme_bw()`).
 
 - base_size:
 
-  Numeric. Base font size for the theme (pts). Default: `30`.
+  Base font size in points; every text element scales from it. Default:
+  `11`, which suits a default 7 x 5 inch Quarto figure.
 
 - font_family:
 
-  Character. Font family for all text elements. Default: `"sans"`.
+  Character. Font family for all text elements. Default: `""` (the
+  graphics device's default).
 
-- axis_title_size:
+- title_size, subtitle_size, xlab_size, ylab_size, axis_text_size,
+  legend_size, label_size:
 
-  Numeric. Font size for axis titles. Default: `base_size + 1`.
-
-- axis_text_size:
-
-  Numeric. Font size for axis tick labels. Default: `base_size - 1`.
-
-- plot_title_size:
-
-  Numeric. Font size for the plot title. Default: `base_size + 3`.
-
-- legend_title_size:
-
-  Numeric. Font size for the legend title. Default: `base_size`.
-
-- legend_text_size:
-
-  Numeric. Font size for legend text. Default: `base_size - 1`.
-
-- zoom:
-
-  Numeric. Scaling factor applied uniformly to all text and point size
-  elements. Values \> 1 enlarge, values \< 1 shrink. Default: `1`.
+  Font sizes in points for the title, subtitle, x-axis label, y-axis
+  label, tick labels, legend and outlier labels. Default `NULL` derives
+  each from `base_size`.
 
 - verbose:
 
-  Logical. Print progress messages. Default: `TRUE`.
+  Logical. Print progress messages. Default: `FALSE`.
 
 - metadata:
 
-  A `data.frame` with one row per observation (sample). Required for
-  `plot_score.run_pcoa` because
+  A `data.frame` with one row per observation (sample). Used by
+  `plot_score.run_pcoa`; defaults to the metadata stored by
   [`run_pcoa()`](https://jllcalorio.github.io/pondeR/reference/run_pcoa.md)
-  does not bundle metadata inside its result (unlike
-  [`run_pca()`](https://jllcalorio.github.io/pondeR/reference/run_pca.md)).
-  Row order must match the row order of the data matrix originally
-  passed to
+  when it was given one. Row order must match the row order of the data
+  matrix originally passed to
   [`run_pcoa()`](https://jllcalorio.github.io/pondeR/reference/run_pcoa.md).
 
 ## Value
@@ -411,18 +365,10 @@ meta <- data.frame(Sample = rownames(iris), Species = iris$Species)
 pca  <- run_pca(scale(iris[, 1:4]), meta, group = "Species", verbose = FALSE)
 
 plot_score(pca, color_by = "Species", points_from = "Sample")
-#> Using discrete coloring by 'Species'
-#> Using labels from column 'Sample'
-#> Scores plot created successfully.
 
 
 # PC2 vs PC3, classic theme, outliers flagged
 plot_score(pca, pc = c(2, 3), color_by = "Species", points_from = "Sample",
            show_outliers = TRUE, theme = "classic")
-#> Using discrete coloring by 'Species'
-#> Using labels from column 'Sample'
-#> Computing outliers (ellipse level: 95.0%)...
-#> Outliers detected: 12 (8.0%)
-#> Scores plot created successfully.
 
 ```

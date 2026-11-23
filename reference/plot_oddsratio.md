@@ -25,12 +25,12 @@ plot_oddsratio(
   dot_size = 3,
   line_size = 0.8,
   theme = "nature",
-  global_font_size = 15,
+  base_size = 11,
   plot_title = NULL,
   plot_subtitle = NULL,
   x_label = NULL,
   y_label = NULL,
-  font_family = "Helvetica"
+  font_family = ""
 )
 ```
 
@@ -64,7 +64,7 @@ plot_oddsratio(
 - ci:
 
   Numeric scalar (default `95`). The confidence level expressed as a
-  percentage (e.g., `95`, `99`). Used only in axis and legend labels —
+  percentage (e.g., `95`, `99`). Used only in axis and legend labels -
   it does not compute any CI values.
 
 - feature_col:
@@ -93,13 +93,13 @@ plot_oddsratio(
 - theme:
 
   Character string specifying the ggplot2 theme. One of `"nature"`
-  (default), `"bw"`, `"classic"`, `"minimal"`, `"gray"`, or `"dark"`.
+  (default), `"classic"`, `"plos"`, `"minimal"`, `"bw"`, `"light"`,
+  `"dark"`, or `"gray"`.
 
-- global_font_size:
+- base_size:
 
-  Numeric scalar. Base font size (in pt) applied to all text elements in
-  the plot (axis text, axis titles, plot title, subtitle, caption,
-  legend). Defaults to `15`.
+  Base font size in points; every text element scales from it. Defaults
+  to `11`, which suits a default 7 x 5 inch Quarto figure.
 
 - plot_title:
 
@@ -124,8 +124,8 @@ plot_oddsratio(
 
 - font_family:
 
-  Character string. Font family for all text elements. Defaults to
-  `"Helvetica"`.
+  Character string. Font family for all text elements. Defaults to `""`
+  (the graphics device's default).
 
 ## Value
 
@@ -140,11 +140,11 @@ passed to
 
 Each odds ratio point is colored by comparing its value to 1:
 
-- OR \< 1 → first color in `colors` (default `"blue"`)
+- OR \< 1 -\> first color in `colors` (default `"blue"`)
 
-- OR = 1 → second color in `colors` (default `"grey"`)
+- OR = 1 -\> second color in `colors` (default `"grey"`)
 
-- OR \> 1 → third color in `colors` (default `"red"`)
+- OR \> 1 -\> third color in `colors` (default `"red"`)
 
 A small numerical tolerance (`.Machine$double.eps^0.5`) is applied when
 testing for exact equality to 1.
@@ -180,7 +180,7 @@ John Lennon L. Calorio
 ## Examples
 
 ``` r
-# ── Basic usage: OR only ─────────────────────────────────────────────────────
+# -- Basic usage: OR only -----------------------------------------------------
 df_basic <- data.frame(
   feature  = c("Age", "BMI", "Smoking", "Hypertension", "Diabetes"),
   OR       = c(1.45, 0.82, 2.31, 0.55, 1.02),
@@ -191,7 +191,7 @@ rownames(df_basic) <- df_basic$feature
 plot_oddsratio(x = df_basic, or = "OR")
 
 
-# ── With confidence intervals ────────────────────────────────────────────────
+# -- With confidence intervals ------------------------------------------------
 df_ci <- data.frame(
   feature  = c("Age", "BMI", "Smoking", "Hypertension", "Diabetes"),
   OR       = c(1.45, 0.82, 2.31, 0.55, 1.02),
@@ -209,10 +209,9 @@ plot_oddsratio(
   feature_col = "feature",
   plot_title  = "Logistic Regression: Odds Ratios"
 )
-#> `height` was translated to `width`.
 
 
-# ── Special-character column names ───────────────────────────────────────────
+# -- Special-character column names -------------------------------------------
 df_special <- data.frame(
   check.names = FALSE,
   "OR (adjusted)" = c(0.73, 1.88, 1.05),
@@ -227,10 +226,9 @@ plot_oddsratio(
   low  = "Lower 95% CI",
   high = "Upper 95% CI"
 )
-#> `height` was translated to `width`.
 
 
-# ── Custom colors and theme ──────────────────────────────────────────────────
+# -- Custom colors and theme --------------------------------------------------
 plot_oddsratio(
   x      = df_ci,
   or     = "OR",
@@ -239,11 +237,11 @@ plot_oddsratio(
   feature_col = "feature",
   colors = c("#2166AC", "#878787", "#D6604D"),
   theme  = "classic",
-  global_font_size = 13,
+  base_size  = 12,
   plot_title = "Forest Plot",
   x_label    = "Odds Ratio (95% CI)",
   y_label    = "Predictor"
 )
-#> `height` was translated to `width`.
+
 
 ```

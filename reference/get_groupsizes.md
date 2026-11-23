@@ -7,8 +7,8 @@ performs: removing rows with `NA` in `pred`, and optionally subsetting
 rows to match those that would survive the `not_penalized` NA removal.
 This lets the user see exactly why
 [`run_regreg`](https://jllcalorio.github.io/pondeR/reference/run_regreg.md)
-may warn that `cv_folds` was reduced — because the smallest group has
-fewer samples than the requested number of folds — and which group is
+may warn that `cv_folds` was reduced - because the smallest group has
+fewer samples than the requested number of folds - and which group is
 the bottleneck.
 
 ## Usage
@@ -30,7 +30,7 @@ get_groupsizes(
 
 - metadata:
 
-  A `data.frame`, `tibble`, **or a named list** of such objects —
+  A `data.frame`, `tibble`, **or a named list** of such objects -
   identical to what was (or will be) passed to
   [`run_regreg()`](https://jllcalorio.github.io/pondeR/reference/run_regreg.md).
   When a list, names must be set.
@@ -58,7 +58,7 @@ get_groupsizes(
   so group sizes are counted on exactly the same sample set. For
   example, if `"Serum albumin (g/L)"` is stored as character but is
   truly numeric, listing it here prevents it from being coerced to
-  integer codes — which could introduce spurious NAs or hide real ones.
+  integer codes - which could introduce spurious NAs or hide real ones.
   Default: `NULL`.
 
 - train_percent:
@@ -78,11 +78,10 @@ get_groupsizes(
 
 - show_summary_table:
 
-  Logical. If `TRUE` and `pred` is categorical, a
+  Logical. If `TRUE` and `pred` is categorical, the result becomes a
+  list holding the `group_sizes` data frame and a
   [`run_summarytable()`](https://jllcalorio.github.io/pondeR/reference/run_summarytable.md)
-  summary of `metadata` stratified by `pred` is printed as a
-  side-effect. The numeric count data frame is still returned invisibly.
-  Default: `FALSE`.
+  `summary_table` of `metadata` stratified by `pred`. Default: `FALSE`.
 
 - summarytable_args:
 
@@ -93,37 +92,38 @@ get_groupsizes(
 
 ## Value
 
-A `data.frame` with the following columns:
+A report-ready `data.frame` with the following columns (or a list
+containing it; see `show_summary_table`):
 
-- `taxon`:
+- `Taxon`:
 
   Only when `metadata` is a named list.
 
-- `group`:
+- `Group`:
 
   Level of the `pred` variable.
 
-- `n_total`:
+- `Total n`:
 
   Number of samples in that group (after NA removal).
 
-- `n_train_projected`:
+- `Projected training n`:
 
-  Projected training-set size: `floor(n_total * train_percent)`.
+  Projected training-set size: `floor(Total n * train_percent)`.
 
-- `folds_requested`:
+- `Folds requested`:
 
   The value of `cv_folds`.
 
-- `fold_reduction_expected`:
+- `Fold reduction expected`:
 
-  Logical; `TRUE` when `n_train_projected < cv_folds`.
+  Logical; `TRUE` when the projected training size is below `cv_folds`.
 
-- `suggested_cv_folds`:
+- `Suggested CV folds`:
 
   The fold count
   [`run_regreg`](https://jllcalorio.github.io/pondeR/reference/run_regreg.md)
-  would actually use: `max(3, n_train_projected)`.
+  would actually use: the projected training size, but at least 3.
 
 ## Details
 
@@ -142,7 +142,7 @@ An optional publication-ready summary table can be produced via
 when `show_summary_table = TRUE`.
 
 When `metadata` is a named list (parallel to a `lapply` call), each
-element is processed and results are stacked with a leading `taxon`
+element is processed and results are stacked with a leading `Taxon`
 column.
 
 ## References
@@ -174,10 +174,10 @@ meta$Age[c(3, 9)] <- NA   # rows with missing covariates are dropped
 
 get_groupsizes(meta, pred = "Group", not_penalized = c("Age", "Sex"),
                train_percent = 0.7, cv_folds = 5L)
-#>     group n_total n_train_projected folds_requested fold_reduction_expected
-#> 1    Case      30                21               5                   FALSE
-#> 2 Control      28                19               5                   FALSE
-#>   suggested_cv_folds
+#>     Group Total n Projected training n Folds requested Fold reduction expected
+#> 1    Case      30                   21               5                   FALSE
+#> 2 Control      28                   19               5                   FALSE
+#>   Suggested CV folds
 #> 1                 21
 #> 2                 19
 ```

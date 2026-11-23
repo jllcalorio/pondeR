@@ -22,10 +22,10 @@ top level but holds a list of plots one level deep (e.g.
 ``` r
 save_plots(
   x,
-  filename = "plot",
+  filename = NULL,
   format = NULL,
-  width = 15,
-  height = 12,
+  width = 7,
+  height = 5,
   dpi = 300,
   folder = NULL,
   transparent = FALSE,
@@ -52,8 +52,8 @@ save_plots(
   A single character string for the output file name. Used when `x` is a
   single plot. When `x` is a multi-plot list this argument is ignored
   and each element's name is used as the file name. The extension in
-  `filename` sets the format unless `format` is also supplied. Defaults
-  to `"plot"` when omitted.
+  `filename` sets the format unless `format` is also supplied. Nothing
+  is written unless `filename` or `folder` is supplied.
 
 - format:
 
@@ -64,11 +64,11 @@ save_plots(
 
 - width:
 
-  Numeric. Output width in inches. Default `15`.
+  Numeric. Output width in inches. Default `7`.
 
 - height:
 
-  Numeric. Output height in inches. Default `12`.
+  Numeric. Output height in inches. Default `5`.
 
 - dpi:
 
@@ -79,7 +79,8 @@ save_plots(
 
   A single character string for the target directory. Supports nested
   folders (e.g., `"Main folder/sub folder"`). Created recursively if
-  absent. Defaults to `NULL` (current working directory).
+  absent. With the default `NULL`, files go to the current working
+  directory, so `filename` must then be given.
 
 - transparent:
 
@@ -155,11 +156,11 @@ p <- ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg)) + ggplot2::geom_point()
 # Single ggplot
 save_plots(p, filename = "scatter", folder = out, width = 4, height = 3,
            dpi = 72)
-#> Plot saved [1/1]: /tmp/Rtmpg44MIm/scatter.png
+#> Plot saved [1/1]: /tmp/RtmpmPH4II/scatter.png
 
 # Named list: list names become file names; base-R plots as functions
 save_plots(list(scatter = p, hist_mpg = function() hist(mtcars$mpg)),
            folder = out, format = "png", width = 4, height = 3, dpi = 72)
-#> Plot saved [1/2]: /tmp/Rtmpg44MIm/scatter (1).png
-#> Plot saved [2/2]: /tmp/Rtmpg44MIm/hist_mpg.png
+#> Plot saved [1/2]: /tmp/RtmpmPH4II/scatter (1).png
+#> Plot saved [2/2]: /tmp/RtmpmPH4II/hist_mpg.png
 ```

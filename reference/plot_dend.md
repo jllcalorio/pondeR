@@ -17,16 +17,11 @@ plot_dend(
   theme = "nature",
   title = NULL,
   subtitle = NULL,
-  global_font_size = 15,
-  axis_title_size = NULL,
-  axis_text_size = NULL,
-  legend_title_size = NULL,
-  legend_text_size = NULL,
-  plot_title_size = NULL,
-  plot_subtitle_size = NULL,
+  base_size = 11,
+  title_size = NULL,
+  subtitle_size = NULL,
   label_size = NULL,
   leaf_label_angle = NULL,
-  leaf_label_size = NULL,
   leaf_labels = NULL,
   line_width = 0.5,
   line_color = "black",
@@ -70,7 +65,8 @@ plot_dend(
 - theme:
 
   A single character string specifying the plot theme. One of `"nature"`
-  (default), `"classic"`, `"minimal"`, or `"bw"`.
+  (default), `"classic"`, `"plos"`, `"minimal"`, `"bw"`, `"light"`,
+  `"dark"`, or `"gray"`.
 
 - title:
 
@@ -82,45 +78,15 @@ plot_dend(
   A single character string for the plot subtitle. Default `NULL` (no
   subtitle).
 
-- global_font_size:
+- base_size:
 
-  A single positive numeric specifying the base font size in points.
-  Default `15`.
+  Base font size in points; every text element scales from it. Default
+  `11`, which suits a default 7 x 5 inch Quarto figure.
 
-- axis_title_size:
+- title_size, subtitle_size, label_size:
 
-  A single positive numeric for axis title font size. Defaults to
-  `global_font_size`.
-
-- axis_text_size:
-
-  A single positive numeric for axis text font size. Defaults to
-  `global_font_size`.
-
-- legend_title_size:
-
-  A single positive numeric for legend title font size. Defaults to
-  `global_font_size`.
-
-- legend_text_size:
-
-  A single positive numeric for legend text font size. Defaults to
-  `global_font_size`.
-
-- plot_title_size:
-
-  A single positive numeric for plot title font size. Defaults to
-  `global_font_size + 2`.
-
-- plot_subtitle_size:
-
-  A single positive numeric for plot subtitle font size. Defaults to
-  `global_font_size`.
-
-- label_size:
-
-  A single positive numeric controlling the font size of leaf labels.
-  Defaults to `global_font_size * 0.8`.
+  Font sizes in points for the title, subtitle and leaf labels. Default
+  `NULL` derives each from `base_size`.
 
 - leaf_label_angle:
 
@@ -129,17 +95,11 @@ plot_dend(
   `orientation = "rows"` (horizontal labels) or 90 if
   `orientation = "cols"` (vertical labels).
 
-- leaf_label_size:
-
-  A single positive numeric controlling the font size of leaf labels.
-  Defaults to `global_font_size * 0.8`. When provided, overrides
-  `label_size`.
-
 - leaf_labels:
 
-  A character vector of custom names for the leaf labels. Default
-  `NULL`. When provided, must have length equal to the number of columns
-  in `x`, and will override the default leaf names.
+  A character vector of custom leaf names. Default `NULL`. Must have one
+  name per row for `orientation = "rows"` and one per column for
+  `orientation = "cols"`; not used with `orientation = "both"`.
 
 - line_width:
 
@@ -205,7 +165,6 @@ dends$cols
 
 ## Custom styling
 plot_dend(mtcars, theme = "minimal", line_color = "#2166AC",
-          line_width = 0.8, global_font_size = 10,
+          line_width = 0.8, base_size = 10,
           title = "Sample Clustering")
-
 ```

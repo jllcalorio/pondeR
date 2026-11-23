@@ -9,7 +9,7 @@ spaces, computes advanced model fit metrics, maps specific reference
 categories, removes specified categories from predictor variables, and
 optionally iterates through all possible combinations of independent
 variables. When `apply_firth = TRUE`, Firth's correction is applied
-selectively — only to models where at least one predictor-outcome
+selectively - only to models where at least one predictor-outcome
 cross-tabulation contains a zero cell, which is the primary condition
 warranting penalized likelihood. A column in the output indicates
 whether Firth's correction was applied to each model. Output is
@@ -133,7 +133,7 @@ run_logreg(
   Logical; if `TRUE` (default), Firth's bias-reduced
   penalized-likelihood logistic regression
   ([`logistf::logistf()`](https://rdrr.io/pkg/logistf/man/logistf.html))
-  is applied *selectively* — only to models where at least one predictor
+  is applied *selectively* - only to models where at least one predictor
   variable has a zero cell count in its cross-tabulation with the
   outcome. Models with no zero cells are fitted using standard
   [`glm()`](https://rdrr.io/r/stats/glm.html) regardless of this
@@ -208,13 +208,13 @@ run_logreg(
 
 If `crude = TRUE`, returns a single tidy data frame with rows for all
 `indep` variables stacked sequentially (separated by blank spacer rows).
-Columns: Predictor, Log Odds, Std Error, p-value, Significance, OR, 95\\
-Deviance, AIC, BIC, McFadden R2, CoxSnell R2, Nagelkerke R2, Tjur R2,
-Firth Corrected. Inline model metrics are placed in the first
+Columns: Predictor, Log Odds, Std. error, p-value, Significance, OR,
+95\\ Deviance, AIC, BIC, McFadden R2, CoxSnell R2, Nagelkerke R2, Tjur
+R2, Firth Corrected. Inline model metrics are placed in the first
 (intercept) row of each variable's block.
 
 If `crude = FALSE` and `iterate = FALSE`, returns a data frame
-containing Predictor, Log Odds, Std Error, p-value, Significance, OR,
+containing Predictor, Log Odds, Std. error, p-value, Significance, OR,
 95\\ (Deviance, AIC, BIC, McFadden R2, CoxSnell R2, Nagelkerke R2, Tjur
 R2, Firth Corrected) in the first row. Model metrics are also attached
 as `attr(result, "model_metrics")`. When `stepwise = TRUE`, the
@@ -255,9 +255,9 @@ containing:
 **Crude odds ratios (`crude = TRUE`):** Each variable in `indep` is
 fitted in a separate simple logistic regression model with `y` as the
 only outcome and no covariates, yielding unadjusted (crude) odds ratios.
-All preprocessing steps — category exclusion (`exclude`), predictor
+All preprocessing steps - category exclusion (`exclude`), predictor
 category removal (`remove`), dependent variable releveling (`ref`), and
-predictor releveling (`ref_levels`) — are applied before each model is
+predictor releveling (`ref_levels`) - are applied before each model is
 fitted. The results are stacked row-wise into a single tidy data frame.
 Each variable's rows are separated by a blank spacer row to visually
 group the predictors. Inline model-fit metrics (Deviance, AIC, BIC, and
@@ -277,7 +277,7 @@ method
 ([`logistf::logistf()`](https://rdrr.io/pkg/logistf/man/logistf.html))
 addresses the monotone likelihood problem caused by complete or
 quasi-complete separation, which arises when a predictor level perfectly
-predicts one outcome group — typically evidenced by a zero cell in the
+predicts one outcome group - typically evidenced by a zero cell in the
 cross-tabulation. When `apply_firth = TRUE`, the function checks each
 model's predictors against the outcome for zero cells. If any are found,
 `logistf()` is used in place of
@@ -334,11 +334,11 @@ Fox J, Weisberg S (2019). *An R Companion to Applied Regression*, 3rd
 ed. Sage.
 
 Firth D (1993). "Bias reduction of maximum likelihood estimates."
-*Biometrika*, 80(1), 27–38.
+*Biometrika*, 80(1), 27-38.
 [doi:10.1093/biomet/80.1.27](https://doi.org/10.1093/biomet/80.1.27)
 
 Heinze G, Schemper M (2002). "A solution to the problem of separation in
-logistic regression." *Statistics in Medicine*, 21(16), 2409–2419.
+logistic regression." *Statistics in Medicine*, 21(16), 2409-2419.
 [doi:10.1002/sim.1047](https://doi.org/10.1002/sim.1047)
 
 Heinze G, Ploner M, Jiricka L, Steuer A (2024). *logistf: Firth's
@@ -364,11 +364,11 @@ d$vs <- factor(d$vs, labels = c("V", "S"))
 # Adjusted model (Firth correction is applied automatically when needed)
 fit <- run_logreg(d, y = "am", confounders = "wt", indep = "hp", ref = "auto")
 fit
-#>     Predictor   Log Odds  Std Error     p-value Significance           OR
+#>     Predictor   Log Odds Std. error     p-value Significance           OR
 #> 1 (Intercept) 18.8662987 7.44355806 0.011258199            * 1.561455e+08
 #> 2          wt -8.0834752 3.06867511 0.008433813           ** 3.085967e-04
 #> 3          hp  0.0362556 0.01773415 0.040914646            * 1.036921e+00
-#>     95% CI Low  95% CI High      VIF Deviance      AIC      BIC McFadden R2
+#>   95% CI lower 95% CI upper      VIF Deviance      AIC      BIC McFadden R2
 #> 1 7.203795e+01 3.384524e+14       NA 10.05911 16.05911 20.45632   0.7673104
 #> 2 7.539288e-07 1.263142e-01 2.444297       NA       NA       NA          NA
 #> 3 1.001498e+00 1.073596e+00 2.444297       NA       NA       NA          NA
@@ -385,7 +385,7 @@ attr(fit, "model_metrics")
 # Crude (unadjusted) odds ratios, one model per variable
 run_logreg(d, y = "am", indep = c("wt", "hp", "vs"), ref = "auto",
            ref_levels = list("vs" ~ "V"), crude = TRUE)
-#>     Predictor     Log Odds   Std Error     p-value Significance           OR
+#>     Predictor     Log Odds  Std. error     p-value Significance           OR
 #> 1 (Intercept) 12.040369659 4.509706105 0.007587858           ** 1.694596e+05
 #> 2          wt -4.023969940 1.436415784 0.005088198           ** 1.788183e-02
 #> 3                       NA          NA          NA         <NA>           NA
@@ -394,15 +394,15 @@ run_logreg(d, y = "am", indep = c("wt", "hp", "vs"), ref = "auto",
 #> 6                       NA          NA          NA         <NA>           NA
 #> 7 (Intercept) -0.693147181 0.499999908 0.165656960              5.000000e-01
 #> 8         vsS  0.693147181 0.731924992 0.343628884              2.000000e+00
-#>    95% CI Low  95% CI High VIF Deviance      AIC      BIC McFadden R2
-#> 1 24.56955593 1.168786e+09  NA 19.17608 23.17608 26.10756  0.55641445
-#> 2  0.00107086 2.986011e-01  NA       NA       NA       NA          NA
-#> 3          NA           NA  NA       NA       NA       NA          NA
-#> 4  0.36146372 1.307655e+01  NA 41.22757 45.22757 48.15904  0.04631460
-#> 5  0.98017652 1.003796e+00  NA       NA       NA       NA          NA
-#> 6          NA           NA  NA       NA       NA       NA          NA
-#> 7  0.18765896 1.332204e+00  NA 42.32263 46.32263 49.25410  0.02098329
-#> 8  0.47644669 8.395483e+00  NA       NA       NA       NA          NA
+#>   95% CI lower 95% CI upper VIF Deviance      AIC      BIC McFadden R2
+#> 1  24.56955593 1.168786e+09  NA 19.17608 23.17608 26.10756  0.55641445
+#> 2   0.00107086 2.986011e-01  NA       NA       NA       NA          NA
+#> 3           NA           NA  NA       NA       NA       NA          NA
+#> 4   0.36146372 1.307655e+01  NA 41.22757 45.22757 48.15904  0.04631460
+#> 5   0.98017652 1.003796e+00  NA       NA       NA       NA          NA
+#> 6           NA           NA  NA       NA       NA       NA          NA
+#> 7   0.18765896 1.332204e+00  NA 42.32263 46.32263 49.25410  0.02098329
+#> 8   0.47644669 8.395483e+00  NA       NA       NA       NA          NA
 #>   CoxSnell R2 Nagelkerke R2    Tjur R2 Firth Corrected
 #> 1  0.52842471    0.71312328 0.62400276           FALSE
 #> 2          NA            NA         NA              NA

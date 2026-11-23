@@ -23,7 +23,7 @@ run_pls(
   crossvalI = 10,
   permI = 20,
   keepX = NULL,
-  verbose = TRUE
+  verbose = FALSE
 )
 ```
 
@@ -32,8 +32,10 @@ run_pls(
 - x:
 
   Matrix or data frame. Numeric data with samples in rows and features
-  in columns. Can be output from `run_scale()`, raw data (which will be
-  scaled if `scale_method`, or from `run_DIpreprocess`. is specified).
+  in columns. Can be output from
+  [`run_scale()`](https://jllcalorio.github.io/dimsprepr/reference/run_scale.html),
+  raw data (which will be scaled if `scale_method`, or from
+  `run_DIpreprocess`. is specified).
 
 - metadata:
 
@@ -98,7 +100,7 @@ run_pls(
 
 - verbose:
 
-  Logical. Print progress messages. Default: TRUE.
+  Logical. Print progress messages. Default: FALSE.
 
 ## Value
 
@@ -106,12 +108,12 @@ A list containing:
 
 - scores:
 
-  Matrix of scores (samples × components), aliased as PC1, PC2... for
+  Matrix of scores (samples x components), aliased as PC1, PC2... for
   `plot_score` compatibility
 
 - loadings:
 
-  Matrix of feature loadings (features × components)
+  Matrix of feature loadings (features x components)
 
 - variance_explained:
 
@@ -222,15 +224,14 @@ John Lennon L. Calorio
 if (requireNamespace("ropls", quietly = TRUE)) {
   meta <- data.frame(Sample = rownames(iris), Species = iris$Species)
   pls  <- run_pls(scale(iris[, 1:4]), meta, method = "plsda",
-                  group = "Species", verbose = FALSE)
+                  group = "Species", permI = 0, verbose = FALSE)
   print(pls)
   plot_score(pls, color_by = "Species", points_from = "Sample")
 
   # OPLS-DA needs exactly two groups
   opls <- run_pls(scale(iris[51:150, 1:4]), droplevels(meta[51:150, ]),
-                  method = "oplsda", group = "Species", verbose = FALSE)
+                  method = "oplsda", group = "Species", permI = 0, verbose = FALSE)
 }
-
 #> === Partial Least Squares Analysis (PLSDA) ===
 #> Samples:      150 
 #> Features:     4 
@@ -241,9 +242,5 @@ if (requireNamespace("ropls", quietly = TRUE)) {
 #>   Component 2: 22.8%
 #> 
 #> Use plot_score() to visualize sample positions.
-#> Using discrete coloring by 'Species'
-#> Using labels from column 'Sample'
-#> Scores plot created successfully.
-
 # }
 ```

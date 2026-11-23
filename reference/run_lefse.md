@@ -15,7 +15,7 @@ run_lefse(
   alpha = 0.05,
   wilcox_alpha = 0.05,
   lda_threshold = 2,
-  verbose = TRUE
+  verbose = FALSE
 )
 ```
 
@@ -60,7 +60,8 @@ run_lefse(
 
 - verbose:
 
-  Logical indicating whether to print progress messages (default: TRUE).
+  Logical indicating whether to print progress messages (default:
+  FALSE).
 
 ## Value
 
@@ -68,12 +69,13 @@ A list of class `run_lefse` containing:
 
 - lda:
 
-  A data frame with LDA results (features, means per class, LDA scores).
+  A data frame with `Feature`, one `Mean (<class>)` column per class,
+  and `LDA score`.
 
 - summary_table:
 
-  A data frame summarizing significant features with effect sizes,
-  p-values, and classifications.
+  A report-ready data frame of the discriminative features: the columns
+  of `lda` plus `p-value`, ordered by LDA score.
 
 - parameters:
 
@@ -138,11 +140,11 @@ rel <- x / rowSums(x) * 1e6   # LEfSe scale
 res <- run_lefse(rel, meta, class = "Group", verbose = FALSE)
 #> Warning: variables are collinear
 res$summary_table
-#>   feature mean_Control mean_Case lda_score       pvalue
-#> 1  taxon1     176427.2  338688.4  5.206063 6.292924e-08
-#> 3  taxon3     177038.1  125748.7  4.686542 2.750987e-05
-#> 5  taxon5     159957.5  125765.5  4.578816 1.187308e-02
-#> 6  taxon6     158882.2  131631.8  4.450627 9.402764e-03
-#> 2  taxon2     168136.0  144647.1  4.190324 2.844022e-02
-#> 4  taxon4     159559.0  133518.4  4.184950 8.024598e-03
+#>   Feature Mean (Control) Mean (Case) LDA score      p-value
+#> 1  taxon1       176427.2    338688.4  5.206063 6.292924e-08
+#> 2  taxon3       177038.1    125748.7  4.686542 2.750987e-05
+#> 3  taxon5       159957.5    125765.5  4.578816 1.187308e-02
+#> 4  taxon6       158882.2    131631.8  4.450627 9.402764e-03
+#> 5  taxon2       168136.0    144647.1  4.190324 2.844022e-02
+#> 6  taxon4       159559.0    133518.4  4.184950 8.024598e-03
 ```

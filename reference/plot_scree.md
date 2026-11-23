@@ -23,12 +23,14 @@ plot_scree(
   cumulative_color = "#D55E00",
   theme = "nature",
   base_size = 11,
-  font_family = "sans",
-  axis_title_size = NULL,
+  font_family = "",
+  title_size = NULL,
+  subtitle_size = NULL,
+  xlab_size = NULL,
+  ylab_size = NULL,
   axis_text_size = NULL,
-  plot_title_size = NULL,
-  zoom = 1,
-  verbose = TRUE
+  label_size = NULL,
+  verbose = FALSE
 )
 ```
 
@@ -99,40 +101,31 @@ plot_scree(
 
 - theme:
 
-  Character. ggplot2 theme to apply. Options: `"nature"`, `"minimal"`,
-  `"classic"`, `"bw"`, `"light"`, `"dark"`. Default: `"nature"` (a
-  clean, publication-ready style based on `theme_bw()` with no
-  gridlines).
+  Character. ggplot2 theme to apply. Options: `"nature"`, `"classic"`,
+  `"plos"`, `"minimal"`, `"bw"`, `"light"`, `"dark"`, `"gray"`. Default:
+  `"nature"` (a clean, publication-ready style based on `theme_bw()`
+  with no gridlines).
 
 - base_size:
 
-  Numeric. Base font size for the theme (pts). Default: `11`.
+  Base font size in points; every text element scales from it. Default:
+  `11`, which suits a default 7 x 5 inch Quarto figure.
 
 - font_family:
 
-  Character. Font family for all text elements. Default: `"sans"`.
+  Character. Font family for all text elements. Default: `""` (the
+  graphics device's default).
 
-- axis_title_size:
+- title_size, subtitle_size, xlab_size, ylab_size, axis_text_size,
+  label_size:
 
-  Numeric. Font size for axis titles. Default: `base_size + 1`.
-
-- axis_text_size:
-
-  Numeric. Font size for axis tick labels. Default: `base_size - 1`.
-
-- plot_title_size:
-
-  Numeric. Font size for the plot title. Default: `base_size + 3`.
-
-- zoom:
-
-  Numeric. Uniform scaling factor applied to all text sizes and
-  point/line sizes. Values \> 1 enlarge, values \< 1 shrink. Default:
-  `1`.
+  Font sizes in points for the title, subtitle, x-axis label, y-axis
+  label, tick labels and value labels. Default `NULL` derives each from
+  `base_size`.
 
 - verbose:
 
-  Logical. Print progress messages. Default: `TRUE`.
+  Logical. Print progress messages. Default: `FALSE`.
 
 ## Value
 
@@ -152,7 +145,7 @@ The scree plot helps determine how many principal components to retain:
   `what = "eigen"`). These PCs explain more variance than a single
   original variable.
 
-- **Cumulative Variance**: Retain enough PCs to explain 70–90% of total
+- **Cumulative Variance**: Retain enough PCs to explain 70-90% of total
   variance (shown when `show_cumulative = TRUE`).
 
 **Plot Types:**
@@ -180,17 +173,17 @@ labelled accordingly. Only available when `what = "variance"`.
 **Themes:**
 
 The `"nature"` theme (default) applies `theme_bw()` with all gridlines
-removed — suitable for journal figures. Other options map directly to
+removed - suitable for journal figures. Other options map directly to
 their ggplot2 equivalents, also with gridlines suppressed.
 
 ## References
 
 Cattell, R.B. (1966). The scree test for the number of factors.
-*Multivariate Behavioral Research*, 1(2), 245–276.
+*Multivariate Behavioral Research*, 1(2), 245-276.
 [doi:10.1207/s15327906mbr0102_10](https://doi.org/10.1207/s15327906mbr0102_10)
 
 Kaiser, H.F. (1960). The application of electronic computers to factor
-analysis. *Educational and Psychological Measurement*, 20(1), 141–151.
+analysis. *Educational and Psychological Measurement*, 20(1), 141-151.
 [doi:10.1177/001316446002000116](https://doi.org/10.1177/001316446002000116)
 
 ## See also

@@ -17,26 +17,26 @@ plot_bar(
   x_axis,
   show_y_as = "n",
   show_values = FALSE,
-  values_position = "auto",
   fill_missing_levels = TRUE,
   arrange_x = NULL,
   x_axis_label = NULL,
   y_axis_label = NULL,
-  title = "",
-  subtitle = "",
-  caption = "",
+  title = NULL,
+  subtitle = NULL,
+  caption = NULL,
   legend = NULL,
   legend_position = "bottom",
   flip = FALSE,
-  global_font_size = 25,
-  title_size = global_font_size,
-  subtitle_size = global_font_size,
-  caption_size = global_font_size,
-  legend_size = global_font_size,
-  axis_title_size = global_font_size,
-  axis_text_size = global_font_size,
-  theme = "nature",
-  ...
+  base_size = 11,
+  title_size = NULL,
+  subtitle_size = NULL,
+  caption_size = NULL,
+  legend_size = NULL,
+  xlab_size = NULL,
+  ylab_size = NULL,
+  axis_text_size = NULL,
+  label_size = NULL,
+  theme = "nature"
 )
 ```
 
@@ -90,18 +90,6 @@ plot_bar(
   Logical. If `TRUE`, count or percentage labels are displayed on the
   bars. Default is `FALSE`.
 
-- values_position:
-
-  Character string specifying label placement. Supported options are:
-
-  - `"auto"`: automatic placement
-
-  - `"inside"`: inside bars
-
-  - `"outside"`: outside bars
-
-  Default is `"auto"`.
-
 - fill_missing_levels:
 
   Logical. Default is `TRUE`. If `x_axis` is numeric, all integer values
@@ -151,40 +139,17 @@ plot_bar(
   [`ggplot2::coord_flip()`](https://ggplot2.tidyverse.org/reference/coord_flip.html).
   Default is `FALSE`.
 
-- global_font_size:
+- base_size:
 
-  A single positive numeric value specifying the base font size for the
-  plot. Default is `25`.
+  Base font size in points; every text element scales from it. Default
+  is `11`, which suits a default 7 x 5 inch Quarto figure.
 
-- title_size:
+- title_size, subtitle_size, caption_size, legend_size, xlab_size,
+  ylab_size, axis_text_size, label_size:
 
-  A single positive numeric value specifying title font size. Defaults
-  to `global_font_size`.
-
-- subtitle_size:
-
-  A single positive numeric value specifying subtitle font size.
-  Defaults to `global_font_size`.
-
-- caption_size:
-
-  A single positive numeric value specifying caption font size. Defaults
-  to `global_font_size`.
-
-- legend_size:
-
-  A single positive numeric value specifying legend font size. Defaults
-  to `global_font_size`.
-
-- axis_title_size:
-
-  A single positive numeric value specifying axis title font size.
-  Defaults to `global_font_size`.
-
-- axis_text_size:
-
-  A single positive numeric value specifying axis text font size.
-  Defaults to `global_font_size`.
+  Font sizes in points for the title, subtitle, caption, legend, x-axis
+  label, y-axis label, tick labels and value labels. Default `NULL`
+  derives each from `base_size`.
 
 - theme:
 
@@ -204,11 +169,6 @@ plot_bar(
   - `"dark"`
 
   Default is `"nature"`.
-
-- ...:
-
-  Additional arguments passed to
-  [`ggplot2::ggplot()`](https://ggplot2.tidyverse.org/reference/ggplot.html).
 
 ## Value
 
@@ -230,14 +190,6 @@ Missing values are explicitly displayed as `"NA"`.
 
 Gridlines are removed by default for a cleaner publication-ready
 appearance.
-
-Requires the packages:
-
-- ggplot2
-
-- scales
-
-- ggrepel
 
 ## References
 

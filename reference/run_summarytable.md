@@ -15,7 +15,8 @@ When `add_inferential_pvalues = TRUE`, p-values are computed *outside*
 (for categorical variables), then injected into the table. Each p-value
 cell carries a letter superscript identifying the exact test used; a
 legend is appended as table footnotes. Variables for which a p-value
-could not be computed are shown as `---†` with a corresponding footnote.
+could not be computed are shown as a dash marked with a dagger and a
+corresponding footnote.
 
 ## Usage
 
@@ -59,8 +60,7 @@ run_summarytable(
   bold_labels = TRUE,
   italicize_levels = TRUE,
   clean_table = TRUE,
-  table_name = "auto",
-  .in_subgroup_recursion = FALSE
+  table_name = "auto"
 )
 ```
 
@@ -340,12 +340,6 @@ run_summarytable(
 
   String or `NULL`. Table title. `"auto"` (default) generates a title
   automatically. `NULL` suppresses the title.
-
-- .in_subgroup_recursion:
-
-  Internal use only. Logical flag set to `TRUE` when
-  `run_summarytable()` calls itself recursively to build subgroup
-  tables; not intended to be set by users.
 
 ## Value
 
